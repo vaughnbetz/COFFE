@@ -34,11 +34,12 @@ import shutil
 import argparse
 import time
 import coffe.fpga as fpga
+import coffe.spice as spice
 import coffe.tran_sizing as tran_sizing
-import coffe.hspice_extract as hspice_extract
+#import coffe.hspice_extract as hspice_extract
 import coffe.utils
 
-print "\nCOFFE 1.0\n"
+print "\nCOFFE 1.1\n"
 print "Man is a tool-using animal."
 print "Without tools he is nothing, with tools he is all."
 print "                           - Thomas Carlyle\n\n"
@@ -154,19 +155,21 @@ fpga_inst.print_details()
 ## TRANSISTOR SIZING
 ###############################################################
 
+# Create an HSPICE interface
+spice_interface = spice.SpiceInterface()
+
 # Size FPGA transistors
-num_hspice_sims = 0
 if is_size_transistors:
-    num_hspice_sims = tran_sizing.size_fpga_transistors(fpga_inst, 
-                                                        opt_type, 
-                                                        re_erf, 
-                                                        max_iterations, 
-                                                        area_opt_weight, 
-                                                        delay_opt_weight, 
-                                                        num_hspice_sims)    
+    tran_sizing.size_fpga_transistors(fpga_inst, 
+                                      opt_type, 
+                                      re_erf, 
+                                      max_iterations, 
+                                      area_opt_weight, 
+                                      delay_opt_weight, 
+                                      spice_interface)    
     
 # Update subcircuit delays (these are the final values)
-num_hspice_sims = fpga_inst.update_delays(num_hspice_sims)
+fpga_inst.update_delays(spice_interface)
 
 print "|------------------------------------------------------------------------------|"
 print "|    Area and Delay Report                                                     |"
@@ -208,5 +211,5 @@ total_hours_elapsed = int(total_time_elapsed/3600)
 total_minutes_elapsed = int((total_time_elapsed-3600*total_hours_elapsed)/60)
 total_seconds_elapsed = int(total_time_elapsed - 3600*total_hours_elapsed - 60*total_minutes_elapsed)
 
-print "Number of HSPICE simulations performed: " + str(num_hspice_sims)
+print "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed())
 print "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" 

@@ -174,8 +174,11 @@ class _SwitchBlockMUX(_SizableCircuit):
         self.delay_weight = 0.3596
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
-        """ Generate switch block mux. Calculates implementation specific details about itself and write the SPICE subcircuit. """
+    def generate(self, subcircuit_filename, min_tran_width):
+        """ 
+        Generate switch block mux. 
+        Calculates implementation specific details and write the SPICE subcircuit. 
+        """
         
         print "Generating switch block mux"
         
@@ -197,11 +200,10 @@ class _SwitchBlockMUX(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4
         self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 10
         self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 20
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
+       
+        return self.initial_transistor_sizes
 
-    
+
     def generate_top(self):
         """ Generate top level SPICE file """
         
@@ -289,7 +291,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
         self.delay_weight = 0.176
         
     
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         print "Generating connection block mux"
         
         # Calculate level sizes and number of SRAMs per mux
@@ -310,11 +312,10 @@ class _ConnectionBlockMUX(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
         self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 6
         self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 12
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-    
-    
+       
+        return self.initial_transistor_sizes
+
+
     def generate_top(self):
         print "Generating top-level connection block mux"
         self.top_spice_path = top_level.generate_connection_block_top(self.name)
@@ -399,7 +400,7 @@ class _LocalMUX(_SizableCircuit):
         self.delay_weight = 0.0862
     
     
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         print "Generating local mux"
         
         # Calculate level sizes and number of SRAMs per mux
@@ -418,11 +419,9 @@ class _LocalMUX(_SizableCircuit):
         self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-    
-    
+       
+        return self.initial_transistor_sizes
+
     def generate_top(self):
         print "Generating top-level local mux"
         self.top_spice_path = top_level.generate_local_mux_top(self.name)
@@ -493,7 +492,7 @@ class _LUTInputDriver(_SizableCircuit):
         self.delay_weight = 0.031
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         """ Generate SPICE netlist based on type of LUT input driver. """
         
         self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut_driver(subcircuit_filename, self.name, self.type)
@@ -510,11 +509,10 @@ class _LUTInputDriver(_SizableCircuit):
             self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 2
         self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 2
-                
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
+               
+        return self.initial_transistor_sizes
 
-            
+
     def generate_top(self):
         """ Generate top-level SPICE file based on type of LUT input driver. """
         
@@ -591,7 +589,7 @@ class _LUTInputNotDriver(_SizableCircuit):
         self.delay_weight = 0.031
    
     
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         """ Generate not-driver SPICE netlist """
     
         self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut_not_driver(subcircuit_filename, self.name)
@@ -601,11 +599,10 @@ class _LUTInputNotDriver(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 2
         self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 2
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-    
-    
+       
+        return self.initial_transistor_sizes
+
+
     def generate_top(self):
         """ Generate top-level SPICE file for LUT not driver """
 
@@ -667,15 +664,17 @@ class _LUTInput(_CompoundCircuit):
         self.delay_weight = 1
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         """ Generate both driver and not-driver SPICE netlists. """
         
         print "Generating lut " + self.name + "-input driver (" + self.type + ")"
 
         # Generate the driver
-        self.driver.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        init_tran_sizes = self.driver.generate(subcircuit_filename, min_tran_width)
         # Generate the not driver
-        self.not_driver.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        init_tran_sizes.update(self.not_driver.generate(subcircuit_filename, min_tran_width))
+
+        return init_tran_sizes
   
             
     def generate_top(self):
@@ -791,18 +790,20 @@ class _LUT(_SizableCircuit):
             self.input_drivers["f"].delay_weight = 0.0186
         
     
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         """ Generate LUT SPICE netlist based on LUT size. """
         
         # Generate LUT differently based on K
         if self.K == 6:
-            self._generate_6lut(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+            init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width)
         elif self.K == 5:
-            self._generate_5lut(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+            init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width)
         elif self.K == 4:
-            self._generate_4lut(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+            init_tran_sizes = self._generate_4lut(subcircuit_filename, min_tran_width)
    
-    
+        return init_tran_sizes
+
+
     def generate_top(self):
         print "Generating top-level lut"
         if self.K == 6:
@@ -1014,7 +1015,7 @@ class _LUT(_SizableCircuit):
             print ""
 
     
-    def _generate_6lut(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def _generate_6lut(self, subcircuit_filename, min_tran_width):
         print "Generating 6-LUT"
         
         # Call the generation function
@@ -1040,16 +1041,13 @@ class _LUT(_SizableCircuit):
         self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
         self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
         
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-        
         # Generate input drivers (with register feedback if input is in Rfb)
-        self.input_drivers["a"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["b"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["c"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["d"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["e"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["f"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["f"].generate(subcircuit_filename, min_tran_width)
         
         # Generate input driver loads
         self.input_driver_loads["a"].generate(subcircuit_filename, self.K)
@@ -1058,9 +1056,11 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["f"].generate(subcircuit_filename, self.K)
+       
+        return self.initial_transistor_sizes
+
         
-        
-    def _generate_5lut(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def _generate_5lut(self, subcircuit_filename, min_tran_width):
         print "Generating 5-LUT"
         
         # Call the generation function
@@ -1084,16 +1084,13 @@ class _LUT(_SizableCircuit):
         self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
         self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
         self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-        
+       
         # Generate input drivers (with register feedback if input is in Rfb)
-        self.input_drivers["a"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["b"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["c"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["d"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["e"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
         
         # Generate input driver loads
         self.input_driver_loads["a"].generate(subcircuit_filename, self.K)
@@ -1102,8 +1099,10 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
         
+        return self.initial_transistor_sizes
+
   
-    def _generate_4lut(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def _generate_4lut(self, subcircuit_filename, min_tran_width):
         print "Generating 4-LUT"
         
         # Call the generation function
@@ -1126,15 +1125,12 @@ class _LUT(_SizableCircuit):
         self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
         self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
         self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-        
+       
         # Generate input drivers (with register feedback if input is in Rfb)
-        self.input_drivers["a"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["b"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["c"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.input_drivers["d"].generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
         
         # Generate input driver loads
         self.input_driver_loads["a"].generate(subcircuit_filename, self.K)
@@ -1142,6 +1138,8 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["c"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
         
+        return self.initial_transistor_sizes
+
 
 class _FlipFlop:
     """ FlipFlop class.
@@ -1173,7 +1171,7 @@ class _FlipFlop:
         self.delay_weight = 1
         
          
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         """ Generate FF SPICE netlists. Optionally includes register select. """
         
         # Generate FF with optional register select
@@ -1212,9 +1210,8 @@ class _FlipFlop:
         self.initial_transistor_sizes["inv_ff_output_driver_nmos"] = 4
         self.initial_transistor_sizes["inv_ff_output_driver_pmos"] = 9.7
 
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-     
+        return self.initial_transistor_sizes
+
 
     def generate_top(self):
         """ """
@@ -1302,7 +1299,7 @@ class _LocalBLEOutput(_SizableCircuit):
         self.delay_weight = 0.0928
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         print "Generating local BLE output"
         self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
         
@@ -1313,10 +1310,9 @@ class _LocalBLEOutput(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 4
         self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 4
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-    
+      
+        return self.initial_transistor_sizes
+
 
     def generate_top(self):
         print "Generating top-level " + self.name
@@ -1360,7 +1356,7 @@ class _GeneralBLEOutput(_SizableCircuit):
         self.delay_weight = 0.0502
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         print "Generating general BLE output"
         self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
         
@@ -1371,11 +1367,10 @@ class _GeneralBLEOutput(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
         self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
-        
-        # Add to transistor sizes file
-        _add_transistor_to_file(transistor_sizes_filename, self.name, min_tran_width, self.initial_transistor_sizes)
-     
-     
+       
+        return self.initial_transistor_sizes
+
+
     def generate_top(self):
         print "Generating top-level " + self.name
         self.top_spice_path = top_level.generate_general_ble_output_top(self.name)
@@ -1419,7 +1414,7 @@ class _LUTOutputLoad:
         self.wire_names = []
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         print "Generating LUT output load"
         self.wire_names = load_subcircuits.generate_lut_output_load(subcircuit_filename, self.num_local_outputs, self.num_general_outputs)
         
@@ -1461,21 +1456,26 @@ class _BLE(_CompoundCircuit):
         self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs)
         
         
-    def generate(self, subcircuit_filename, transistor_sizes_filename, min_tran_width):
+    def generate(self, subcircuit_filename, min_tran_width):
         print "Generating BLE"
         
         # Generate LUT and FF
-        self.lut.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.ff.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        init_tran_sizes = {}
+        init_tran_sizes.update(self.lut.generate(subcircuit_filename, min_tran_width))
+        init_tran_sizes.update(self.ff.generate(subcircuit_filename, min_tran_width))
         
         # Generate BLE outputs
-        self.local_output.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        self.general_output.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
+        init_tran_sizes.update(self.local_output.generate(subcircuit_filename, 
+                                                          min_tran_width))
+        init_tran_sizes.update(self.general_output.generate(subcircuit_filename, 
+                                                            min_tran_width))
         load_subcircuits.generate_ble_outputs(subcircuit_filename, self.num_local_outputs, self.num_general_outputs)
             
         # Generate LUT load
-        self.lut_output_load.generate(subcircuit_filename, transistor_sizes_filename, min_tran_width)
-        
+        self.lut_output_load.generate(subcircuit_filename, min_tran_width)
+       
+        return init_tran_sizes
+
      
     def generate_top(self):
         self.lut.generate_top()
@@ -1721,14 +1721,17 @@ class _LogicCluster(_CompoundCircuit):
         self.local_ble_output_load = _LocalBLEOutputLoad()
 
         
-    def generate(self, subcircuits_filename, transistor_sizes_filename, min_tran_width, specs):
+    def generate(self, subcircuits_filename, min_tran_width, specs):
         print "Generating logic cluster"
-        self.ble.generate(subcircuits_filename, transistor_sizes_filename, min_tran_width)
-        self.local_mux.generate(subcircuits_filename, transistor_sizes_filename, min_tran_width)
+        init_tran_sizes = {}
+        init_tran_sizes.update(self.ble.generate(subcircuits_filename, min_tran_width))
+        init_tran_sizes.update(self.local_mux.generate(subcircuits_filename, min_tran_width))
         self.local_routing_wire_load.generate(subcircuits_filename, specs, self.local_mux)
         self.local_ble_output_load.generate(subcircuits_filename)
         
-        
+        return init_tran_sizes
+
+
     def generate_top(self):
         self.local_mux.generate_top()
         self.ble.generate_top()
@@ -2035,7 +2038,6 @@ class FPGA:
         
         ### INITIALIZE OTHER VARIABLES, LISTS AND DICTIONARIES
         # Initialize SPICE library filenames
-        self.tran_sizes_filename = "transistor_sizes.l"
         self.wire_RC_filename = "wire_RC.l"
         self.process_data_filename = "process_data.l"
         self.includes_filename = "includes.l"
@@ -2126,29 +2128,35 @@ class FPGA:
         # ---------------------------------------------------------------------------------
     
     
+        # TODO: We don't use the transistor_sizes.l file anymore.
+        # But, we could add some kind of input file for transistor sizes...
         # If transistor sizing is turned off, we want to keep the transistor sizes
         # that are in 'transistor_sizes.l'. To do this, we keep a copy of the original file
         # as COFFE will overwrite the original, and then we replace the overwritten file with
         # our copy near the end of this function.
-        if is_size_transistors:
-            print "TRANSISTOR SIZING MODE"
-        else:
-            print "UPDATE MODE"
-            os.rename("transistor_sizes.l", "transistor_sizes_hold.l")
+        #if is_size_transistors:
+        #    print "TRANSISTOR SIZING MODE"
+        #else:
+        #    print "UPDATE MODE"
+        #    os.rename("transistor_sizes.l", "transistor_sizes_hold.l")
         
         # Generate basic subcircuit library (pass-transistor, inverter, wire, etc.).
         # This library will be used to build other netlists.
         self._generate_basic_subcircuits()
         
-        # Create 'subcircuits.l' and 'transistor_sizes.l' libraries.
+        # Create 'subcircuits.l' library.
         # The subcircuit generation functions between 'self._create_lib_files()'
         # and 'self._end_lib_files()' will add things to these library files. 
         self._create_lib_files()
         
         # Generate the various subcircuits netlists of the FPGA (call members)
-        self.sb_mux.generate(self.subcircuits_filename, self.tran_sizes_filename, self.specs.min_tran_width)
-        self.cb_mux.generate(self.subcircuits_filename, self.tran_sizes_filename, self.specs.min_tran_width)
-        self.logic_cluster.generate(self.subcircuits_filename, self.tran_sizes_filename, self.specs.min_tran_width, self.specs)
+        self.transistor_sizes.update(self.sb_mux.generate(self.subcircuits_filename, 
+                                                          self.specs.min_tran_width))
+        self.transistor_sizes.update(self.cb_mux.generate(self.subcircuits_filename, 
+                                                          self.specs.min_tran_width))
+        self.transistor_sizes.update(self.logic_cluster.generate(self.subcircuits_filename, 
+                                                                 self.specs.min_tran_width, 
+                                                                 self.specs))
         self.cluster_output_load.generate(self.subcircuits_filename, self.specs, self.sb_mux)
         self.routing_wire_load.generate(self.subcircuits_filename, self.specs, self.sb_mux, self.cb_mux)
         
@@ -2173,23 +2181,22 @@ class FPGA:
         
         # Delete new transistor sizes file if transistor sizing is turned off
         # and replace with our copy.
-        if not is_size_transistors:
-            print "Restoring transistor sizes..."
-            os.remove("transistor_sizes.l")
-            os.rename("transistor_sizes_hold.l", "transistor_sizes.l")
+        # TODO: WE don't use the tran sizes file anymore
+        #if not is_size_transistors:
+        #    print "Restoring transistor sizes..."
+        #    os.remove("transistor_sizes.l")
+        #    os.rename("transistor_sizes_hold.l", "transistor_sizes.l")
         
         # Calculate area, and wire data.
         print "Calculating area..."
-        # Load transistor sizes from spice file
-        self.transistor_sizes = self._load_transistor_sizes(self.tran_sizes_filename)
         # Update area values
         self.update_area()
         print "Calculating wire lengths..."
         self.update_wires()
         print "Calculating wire resistance and capacitance..."
         self.update_wire_rc()
-        print "Updating wire RC file..."
-        self.update_wire_rc_file()
+        #print "Updating wire RC file..."
+        #self.update_wire_rc_file()
     
         print ""
         
@@ -2281,109 +2288,132 @@ class FPGA:
             # Add to wire_rc dictionary
             self.wire_rc_dict[wire] = (resistance, capacitance)     
 
-        
-    def update_wire_rc_file(self):
-        """ Updates the wire_RC SPICE file with self.wire_rc_dict. """
 
-        # Create wire RC file (overwrites if it exists)
-        wire_rc_file = open(self.wire_RC_filename, 'w')
-        wire_rc_file.write("*** WIRE RESISTANCE AND CAPACITANCE LIBRARY\n\n")
-        wire_rc_file.write(".LIB WIRE_RC\n\n")
-        
-        # Write wire RC values to file
-        for wire, rc in self.wire_rc_dict.iteritems():
-            wire_rc_file.write(".PARAM " + wire + "_res = " + str(rc[0]) + "\n")
-            wire_rc_file.write(".PARAM " + wire + "_cap = " + str(rc[1]) + "f\n\n")        
-
-        # End wire RC file
-        wire_rc_file = open(self.wire_RC_filename, 'a')
-        wire_rc_file.write(".ENDL WIRE_RC")
-        wire_rc_file.close()   
-
-        
-    def update_delays(self, num_hspice_sims):
+    def update_delays(self, spice_interface):
         """ Extract HSPICE delays for each subcircuit. """
         
         crit_path_delay = 0
-        
-        # Switch Block MUX
-        delays = spice.get_total_tfall_trise(self.sb_mux.name, self.sb_mux.top_spice_path)
-        num_hspice_sims += 1
-        self.sb_mux.tfall = delays[0]
-        self.sb_mux.trise = delays[1]
-        self.sb_mux.delay = max(delays[0], delays[1])
+       
+        # Create parameter dict of all current transistor sizes and wire rc
+        parameter_dict = {}
+        for tran_name, tran_size in self.transistor_sizes.iteritems():
+            parameter_dict[tran_name] = [1e-9*tran_size*self.specs.min_tran_width]
+        for wire_name, rc_data in self.wire_rc_dict.iteritems():
+            parameter_dict[wire_name + "_res"] = [rc_data[0]]
+            parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+
+        # Run HSPICE on all subcircuits and collect the total tfall and trise for that 
+        # subcircuit. We are only doing a single run on HSPICE so we expect the result
+        # to be in [0] of the spice_meas dictionary. We should probably check for
+        # measurements that "failed" before converting to float... 
+
+        # Switch Block MUX 
+        print "Updating delay for " + self.sb_mux.name
+        spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict) 
+        tfall = float(spice_meas["meas_total_tfall"][0])
+        trise = float(spice_meas["meas_total_trise"][0])
+        self.sb_mux.tfall = tfall
+        self.sb_mux.trise = trise
+        self.sb_mux.delay = max(tfall, trise)
         crit_path_delay += self.sb_mux.delay*self.sb_mux.delay_weight
         self.delay_dict[self.sb_mux.name] = self.sb_mux.delay 
         
         # Connection Block MUX
-        delays = spice.get_total_tfall_trise(self.cb_mux.name, self.cb_mux.top_spice_path)
-        num_hspice_sims += 1
-        self.cb_mux.tfall = delays[0]
-        self.cb_mux.trise = delays[1]
-        self.cb_mux.delay = max(delays[0], delays[1])
+        print "Updating delay for " + self.cb_mux.name
+        spice_meas = spice_interface.run(self.cb_mux.top_spice_path, parameter_dict) 
+        tfall = float(spice_meas["meas_total_tfall"][0])
+        trise = float(spice_meas["meas_total_trise"][0])
+        self.cb_mux.tfall = tfall
+        self.cb_mux.trise = trise
+        self.cb_mux.delay = max(tfall, trise)
         crit_path_delay += self.cb_mux.delay*self.cb_mux.delay_weight
         self.delay_dict[self.cb_mux.name] = self.cb_mux.delay
         
         # Local MUX
-        delays = spice.get_total_tfall_trise(self.logic_cluster.local_mux.name, self.logic_cluster.local_mux.top_spice_path)
-        num_hspice_sims += 1
-        self.logic_cluster.local_mux.tfall = delays[0]
-        self.logic_cluster.local_mux.trise = delays[1]
-        self.logic_cluster.local_mux.delay = max(delays[0], delays[1])
-        crit_path_delay += self.logic_cluster.local_mux.delay*self.logic_cluster.local_mux.delay_weight
+        print "Updating delay for " + self.logic_cluster.local_mux.name
+        spice_meas = spice_interface.run(self.logic_cluster.local_mux.top_spice_path, 
+                                         parameter_dict) 
+        tfall = float(spice_meas["meas_total_tfall"][0])
+        trise = float(spice_meas["meas_total_trise"][0])
+        self.logic_cluster.local_mux.tfall = tfall
+        self.logic_cluster.local_mux.trise = trise
+        self.logic_cluster.local_mux.delay = max(tfall, trise)
+        crit_path_delay += (self.logic_cluster.local_mux.delay*
+                            self.logic_cluster.local_mux.delay_weight)
         self.delay_dict[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux.delay
         
         # Local BLE output
-        delays = spice.get_total_tfall_trise(self.logic_cluster.ble.local_output.name, self.logic_cluster.ble.local_output.top_spice_path)
-        num_hspice_sims += 1
-        self.logic_cluster.ble.local_output.tfall = delays[0]
-        self.logic_cluster.ble.local_output.trise = delays[1]
-        self.logic_cluster.ble.local_output.delay = max(delays[0], delays[1])
-        crit_path_delay += self.logic_cluster.ble.local_output.delay*self.logic_cluster.ble.local_output.delay_weight
+        print "Updating delay for " + self.logic_cluster.ble.local_output.name 
+        spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
+                                         parameter_dict) 
+        tfall = float(spice_meas["meas_total_tfall"][0])
+        trise = float(spice_meas["meas_total_trise"][0])
+        self.logic_cluster.ble.local_output.tfall = tfall
+        self.logic_cluster.ble.local_output.trise = trise
+        self.logic_cluster.ble.local_output.delay = max(tfall, trise)
+        crit_path_delay += (self.logic_cluster.ble.local_output.delay*
+                            self.logic_cluster.ble.local_output.delay_weight)
         self.delay_dict[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output.delay
         
         # General BLE output
-        delays = spice.get_total_tfall_trise(self.logic_cluster.ble.general_output.name, self.logic_cluster.ble.general_output.top_spice_path)
-        num_hspice_sims += 1
-        self.logic_cluster.ble.general_output.tfall = delays[0]
-        self.logic_cluster.ble.general_output.trise = delays[1]
-        self.logic_cluster.ble.general_output.delay = max(delays[0], delays[1])
-        crit_path_delay += self.logic_cluster.ble.general_output.delay*self.logic_cluster.ble.general_output.delay_weight
+        print "Updating delay for " + self.logic_cluster.ble.general_output.name
+        spice_meas = spice_interface.run(self.logic_cluster.ble.general_output.top_spice_path, 
+                                         parameter_dict) 
+        tfall = float(spice_meas["meas_total_tfall"][0])
+        trise = float(spice_meas["meas_total_trise"][0])
+        self.logic_cluster.ble.general_output.tfall = tfall
+        self.logic_cluster.ble.general_output.trise = trise
+        self.logic_cluster.ble.general_output.delay = max(tfall, trise)
+        crit_path_delay += (self.logic_cluster.ble.general_output.delay*
+                            self.logic_cluster.ble.general_output.delay_weight)
         self.delay_dict[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output.delay
         
         # LUT delay
-        delays = spice.get_total_tfall_trise(self.logic_cluster.ble.lut.name, self.logic_cluster.ble.lut.top_spice_path)
-        num_hspice_sims += 1
-        self.logic_cluster.ble.lut.tfall = delays[0]
-        self.logic_cluster.ble.lut.trise = delays[1]
-        self.logic_cluster.ble.lut.delay = max(delays[0], delays[1])
+        print "Updating delay for " + self.logic_cluster.ble.lut.name
+        spice_meas = spice_interface.run(self.logic_cluster.ble.lut.top_spice_path, 
+                                         parameter_dict) 
+        tfall = float(spice_meas["meas_total_tfall"][0])
+        trise = float(spice_meas["meas_total_trise"][0])
+        self.logic_cluster.ble.lut.tfall = tfall
+        self.logic_cluster.ble.lut.trise = trise
+        self.logic_cluster.ble.lut.delay = max(tfall, trise)
         self.delay_dict[self.logic_cluster.ble.lut.name] = self.logic_cluster.ble.lut.delay
         
-        # Get delay for all paths through the LUT. We get delay for each path through the LUT as well as for the LUT input drivers.
+        # Get delay for all paths through the LUT.
+        # We get delay for each path through the LUT as well as for the LUT input drivers.
         for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
             driver = lut_input.driver
             not_driver = lut_input.not_driver
+
             # Get the delay for a path through the LUT (we do it for each input)
-            delays = spice.get_total_tfall_trise(driver.name.replace("_driver", ""), (driver.top_spice_path.rstrip(".sp") + "_with_lut.sp"))
-            num_hspice_sims += 1
-            lut_input.tfall = delays[0]
-            lut_input.trise = delays[1]
-            lut_input.delay = max(delays[0], delays[1])
+            print "Updating delay for " + driver.name.replace("_driver", "")
+            driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
+            spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
+            tfall = float(spice_meas["meas_total_tfall"][0])
+            trise = float(spice_meas["meas_total_trise"][0])
+            lut_input.tfall = tfall
+            lut_input.trise = trise
+            lut_input.delay = max(tfall, trise)
             self.delay_dict[lut_input.name] = lut_input.delay
             
             # Now, we want to get the delay and power for the driver
-            delays = spice.get_total_tfall_trise(driver.name, driver.top_spice_path)
-            num_hspice_sims += 1
-            driver.tfall = delays[0]
-            driver.trise = delays[1]
-            driver.delay = max(delays[0], delays[1])
+            print "Updating delay for " + driver.name 
+            spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
+            tfall = float(spice_meas["meas_total_tfall"][0])
+            trise = float(spice_meas["meas_total_trise"][0])
+            driver.tfall = tfall
+            driver.trise = trise
+            driver.delay = max(tfall, trise)
             self.delay_dict[driver.name] = driver.delay
+
             # ... and the not_driver
-            delays = spice.get_total_tfall_trise(not_driver.name, not_driver.top_spice_path)
-            num_hspice_sims += 1
-            not_driver.tfall = delays[0]
-            not_driver.trise = delays[1]
-            not_driver.delay = max(delays[0], delays[1])
+            print "Updating delay for " + not_driver.name
+            spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
+            tfall = float(spice_meas["meas_total_tfall"][0])
+            trise = float(spice_meas["meas_total_trise"][0])
+            not_driver.tfall = tfall
+            not_driver.trise = trise
+            not_driver.delay = max(tfall, trise)
             self.delay_dict[not_driver.name] = not_driver.delay
             
             lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
@@ -2393,7 +2423,7 @@ class FPGA:
         
         print ""
         
-        return num_hspice_sims
+        return
                   
                   
     def print_specs(self):
@@ -2451,14 +2481,8 @@ class FPGA:
         sc_file.write("*** SUBCIRCUITS\n\n")
         sc_file.write(".LIB SUBCIRCUITS\n\n")
         sc_file.close()
-        
-        # Create transistor sizes file
-        tran_sizes_file = open(self.tran_sizes_filename, 'w')
-        tran_sizes_file.write("*** TRANSISTOR SIZES LIBRARY\n\n")
-        tran_sizes_file.write(".LIB TRAN_SIZES\n\n")
-        tran_sizes_file.close()
-        
-        
+       
+
     def _end_lib_files(self):
         """ End the SPICE library files. """
 
@@ -2466,13 +2490,8 @@ class FPGA:
         sc_file = open(self.subcircuits_filename, 'a')
         sc_file.write(".ENDL SUBCIRCUITS")
         sc_file.close()
-        
-        # End transistor sizes file
-        tran_sizes_file = open(self.tran_sizes_filename, 'a')
-        tran_sizes_file.write(".ENDL TRAN_SIZES")
-        tran_sizes_file.close()
+       
 
- 
     def _generate_basic_subcircuits(self):
         """ Generates the basic subcircuits SPICE file (pass-transistor, inverter, etc.) """
         
@@ -2539,9 +2558,8 @@ class FPGA:
         includes_file.write("* Include process data (voltage levels, gate length and device models library)\n")
         includes_file.write(".LIB \"process_data.l\" PROCESS_DATA\n\n")
         includes_file.write("* Include transistor parameters\n")
-        includes_file.write(".LIB \"transistor_sizes.l\" TRAN_SIZES\n\n")
         includes_file.write("* Include wire resistance and capacitance\n")
-        includes_file.write(".LIB \"wire_RC.l\" WIRE_RC\n\n")
+        #includes_file.write(".LIB \"wire_RC.l\" WIRE_RC\n\n")
         includes_file.write("* Include basic subcircuits\n")
         includes_file.write(".LIB \"basic_subcircuits.l\" BASIC_SUBCIRCUITS\n\n")
         includes_file.write("* Include subcircuits\n")
@@ -2560,31 +2578,6 @@ class FPGA:
         sweep_data_file.close()
         
 
-    def _load_transistor_sizes(self, tran_size_filename):
-        """ Opens transistor size SPICE file and loads all transistor sizes into a dictionary 
-            in xMin width format : 'name': 'size'. Ex: 'inv_sb_mux_1_nmos': '2' 
-            Returns this dictionary."""
-
-        # Open the transistor size file    
-        tran_file = open(tran_size_filename, 'r')
-        
-        # Go through file line by line, get size for each transistor
-        transistor_sizes = {}
-        for line in tran_file:
-            if ".PARAM" in line:
-                words = line.split()
-                # Get transistor name
-                tran_name = words[1]
-                # Get transistor size in nm 
-                tran_size = words[3]
-                # Add to transistor_sizes dictionary
-                transistor_sizes[tran_name] = float(tran_size.replace("n", ""))/self.specs.min_tran_width                                                
-        # Close the file
-        tran_file.close()
-        
-        return transistor_sizes
-
-        
     def _update_transistor_sizes(self, element_names, combo, inv_ratios=None):
         """ This function is used to update self.transistor_sizes for a particular transistor sizing combination.
             'element_names' is a list of elements (ptran, inv, etc.) that need their sizes updated.
@@ -2713,20 +2706,4 @@ class FPGA:
         self.area_dict = area_dict
         self.width_dict = width_dict
   
-  
-def _add_transistor_to_file(transistor_sizes_filename, subcircuit_name, min_tran_width, transistor_sizes):
-    """ Utility function to write transistor sizes to transistor sizes file. """
-
-    # Open file for appending
-    transistor_sizes_file = open(transistor_sizes_filename, 'a')
-    
-    # Write each transistor with initial size
-    transistor_sizes_file.write("******************************************************************************************\n")
-    transistor_sizes_file.write("* " + subcircuit_name +"\n")
-    transistor_sizes_file.write("******************************************************************************************\n")
-    for tran_name, tran_size in transistor_sizes.iteritems():
-        transistor_sizes_file.write(".PARAM " + tran_name + " = " + str(tran_size*min_tran_width) + "n\n")
-    transistor_sizes_file.write("\n\n")
-    
-    # Close file
-    transistor_sizes_file.close()
+        return

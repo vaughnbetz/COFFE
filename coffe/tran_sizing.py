@@ -10,7 +10,77 @@ import os
 import math
 import time
 import spice
+from itertools import product
 
+# This flag controls whether or not to print a bunch of ERF messages to the terminal
+ERF_MONITOR_VERBOSE = True
+
+# This is the ERF error tolerance. E.g. 0.01 means 1%.
+ERF_ERROR_TOLERANCE = 0.01
+
+# Maximum number of times the algorithm will try to meet ERF_ERROR_TOLERANCE before quitting.
+ERF_MAX_ITERATIONS = 3
+
+
+def expand_ranges(sizing_ranges):
+    """ The input to this function is a dictionary that describes the SPICE sweep
+        ranges. dict = {"name": (start_value, stop_value, increment)}
+        To make it easy to run all the described SPICE simulations, this function
+        creates a list of all possible combinations in the ranges.
+        It also produces a 'name' list that matches the order of 
+        the parameters for each combination."""
+    
+    # Use a copy of sizing ranges
+    sizing_ranges_copy = sizing_ranges.copy()
+    
+    # Expand the ranges into full list of values    
+    for key, values in sizing_ranges_copy.items():
+        # Initialization
+        start_value = values[0]
+        end_value = values[1]
+        increment = values[2]
+        current_value = start_value
+        value_list = []
+        # Loop till current values is larger than end value
+        while current_value <= end_value:
+            value_list.append(current_value)
+            current_value = current_value + increment
+        # Replace the range with a list
+        sizing_ranges_copy[key] = value_list
+                                     
+    # Now we want to make a list of all possible combinations
+    sizing_combinations = [] 
+    for combination in product(*[sizing_ranges_copy[i] for i in sorted(sizing_ranges_copy.keys())]):
+        sizing_combinations.append(combination)
+
+    # Make a list of sorted parameter names to go with the list of
+    # combinations. The sorted list of names will match the order of 
+    # items in each combinations of the list. 
+    parameter_names = sorted(sizing_ranges_copy.keys())
+
+    return parameter_names, sizing_combinations
+
+
+def get_middle_value_config(param_names, spice_ranges):
+    """ """
+    
+    # Initialize config as a tuple
+    config = ()
+
+    # For each parameter, find the mid value and create a config tuple
+    for name in param_names:
+        # Replaced code with unexpdanded.
+        #range_len = len(spice_expanded_ranges[name])
+        #mid_val = spice_expanded_ranges[name][range_len/2]
+        #config = config + (mid_val,)
+        range = spice_ranges[name]
+        min = range[0]
+        max = range[1]
+        mid = (max-min)/2 + min
+        config = config + (mid,)
+        
+    return config
+   
 
 def find_best_config(spice_results, area_exp, delay_exp):
     """ """
@@ -259,14 +329,476 @@ def cost_function(area, delay, area_opt_weight, delay_opt_weight):
     return pow(area,area_opt_weight)*pow(delay,delay_opt_weight)
     
 
-def erf_combo(fpga_inst, spice_filedir, spice_filename, element_names, combo, num_hspice_sims):
+def erf_inverter_balance_trise_tfall(sp_path,
+                                     inv_name,
+                                     inv_nm_size,
+                                     target_tran_name,
+                                     parameter_dict,
+                                     fpga_inst,
+                                     spice_interface):
+    """
+    This function will balance the rise and fall delays of an inverter by either making the 
+    NMOS bigger or the PMOS bigger.
+
+    sp_path 
+        Path to the top-level spice file for the inverter that we want to size.
+    inv_name
+        Name of the inverter that we want to ERF
+    inv_nm_size
+        Size in nanometers of the inverter that we want to ERF. The size of an inverter 
+        refers to the size of the smallest between NMOS and PMOS. So if we need to make
+        the PMOS bigger to ERF, than nmos size would be = inv_nm_size and pmos size would
+        end up being something bigger than inv_nm_size by the end of this function!
+    target_tran_name
+        Name of the transistor that needs to have it's size increased (i.e. the NMOS or PMOS
+        of inv_name).
+    fpga_inst
+        An FPGA object.
+    spice_interface
+        A spice interface object.
+
+    Returns: target_tran_nm_size, which is the size for target_tran_name that gives ERF
+    """
+
+    # This function will balance the rise and fall times of an inverter by either making 
+    # the NMOS bigger or the PMOS bigger. If ever I speak in terms of the PMOS or NMOS only
+    # when I explain things in the comments, just know that the same logic applies to the 
+    # transistor type as well. Just substitute PMOS<->NMOS and tfall<->trise.
+        
+    # Update the parameter dict needed by the spice_interface. 
+    # The parameter dict contains the sizes of all transistors and RC of all wires.
+    parameter_dict[inv_name + "_nmos"] = [1e-9*inv_nm_size]
+    parameter_dict[inv_name + "_pmos"] = [1e-9*inv_nm_size]
+
+    # The first thing we are going to do is increase the PMOS size in fixed increments
+    # to get an upper bound on the PMOS size. We also monitor trise. We expect that 
+    # increasing the PMOS size will decrease trise and increase tfall (because we are making
+    # the pull up stronger). If at any time, we see that increasing the PMOS is increasing 
+    # trise, we should stop increasing the PMOS size. We might be self-loading the inverter.
+    if ERF_MONITOR_VERBOSE:
+        print "Looking for " + target_tran_name + " size upper bound"
+    upper_bound_not_found = True
+    self_loading = False
+    multiplication_factor = 1
+    previous_tfall = 1
+    previous_trise = 1
+    while upper_bound_not_found and not self_loading:
+        # Increase the target transistor size, update parameter dict and run HSPICE
+        target_tran_nm_size = multiplication_factor*inv_nm_size
+        parameter_dict[target_tran_name][0] = 1e-9*target_tran_nm_size
+        spice_meas = spice_interface.run(sp_path, parameter_dict)
+        
+        # Get the rise and fall measurements for our inverter out of 'spice_meas'
+        # This was a single HSPICE run, so the value we want is at index 0
+        tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+        trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+
+        # TODO: We should check if the HSPICE measurement failed before trying to convert
+        # to a float. If the measurement failed, float conversion will throw an exception.
+        # (we do this at multiple places in this function)
+        tfall = float(tfall_str)
+        trise = float(trise_str)
+
+        if ERF_MONITOR_VERBOSE:
+            if "_pmos" in target_tran_name:
+                sizing_bounds_str = ("NMOS=" + str(inv_nm_size) + 
+                                     "  PMOS=" + str(target_tran_nm_size))
+            else:
+                sizing_bounds_str = ("NMOS=" + str(target_tran_nm_size) + 
+                                     "  PMOS=" + str(inv_nm_size))
+            print (sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
+                   " diff=" + str(tfall-trise))
+
+        # Figure out if we have found the upper bound by looking at tfall and trise. 
+        # For a PMOS, upper bound is found if tfall > trise
+        # For an NMOS, upper bound is found if tfall < trise 
+        # We use the transistor name to figure out if our target tran is an NMOS of PMOS
+        if "_pmos" in target_tran_name:
+            if tfall > trise:
+                upper_bound_not_found = False
+                if ERF_MONITOR_VERBOSE:
+                    print "Upper bound found, PMOS=" + str(target_tran_nm_size)
+            else:
+                # Check if trise is increasing or decreasing by comparing to previous trise
+                if trise > previous_trise:
+                    self_loading = True
+                    if ERF_MONITOR_VERBOSE:
+                        print "Increasing PMOS is no longer decreasing trise"
+                        print ("Inverter could be self-loaded, using PMOS=" + 
+                               str(target_tran_nm_size))
+                        print ""
+                previous_trise = trise    
+        else:
+            if trise > tfall:
+                upper_bound_not_found = False
+                if ERF_MONITOR_VERBOSE:
+                    print "Upper bound found, NMOS=" + str(target_tran_nm_size)
+            else:
+                # Check if tfall is increasing or decreasing by comparing to previous tfall
+                if tfall > previous_tfall:
+                    self_loading = True
+                    if ERF_MONITOR_VERBOSE:
+                        print "Increasing NMOS is no longer decreasing tfall"
+                        print ("Inverter could be self-loaded, using NMOS=" + 
+                               str(target_tran_nm_size))
+                previous_tfall = tfall   
+
+        # This will increment the target transistor size by another 'inv_nm_size'
+        multiplication_factor += 1
+
+    # At this point, we have found an upper bound for out target transistsor. If the 
+    # inverter is self-loaded, we are just going to use whatever transistor size we 
+    # currently have as the target transistor size. But if the inverter is not self-loaded,
+    # we are going to find the precise transistor size that gives balanced rise/fall.
+    if not self_loading:      
+
+        # The trise/tfall equality occurs in [target_tran_size-inv_size, target_tran_size]
+        # To find it, we'll sweep this range in two steps. In the first step, we'll sweep
+        # it in increments of min_tran_width. This will allow us to narrow down the range
+        # where equality occurs. In the second step, we'll sweep the new smaller range with
+        # a 1 nm granularity. This two step approach is meant to reduce runtime, but I have
+        # no data proving that it actually does reduce runtime.
+        nm_size_lower_bound = target_tran_nm_size - inv_nm_size
+        nm_size_upper_bound = target_tran_nm_size
+        interval = fpga_inst.specs.min_tran_width
+
+        # Create a list of transistor sizes we want to try
+        nm_size_list = []
+        current_nm_size = nm_size_lower_bound
+        while current_nm_size <= nm_size_upper_bound:
+            nm_size_list.append(current_nm_size)
+            current_nm_size += interval
+         
+        # Normally when we change transistor sizes, we should recalculate areas
+        # and wire RC to account for the change. In this case, however, we are going
+        # to make the simplifying assumption that the changes we are making will not
+        # have a significant impact on area and on wire lengths. Thus, we save CPU time
+        # and just use the same wire RC for this part of the algorithm. 
+        #
+        # So what we are going to do here is use the parameter_dict that we defined earlier
+        # in this function to populate a new parameter dict for the HSPICE sweep that we
+        # want to do. All parameters will keep the same value as the one in parameter_dict
+        # except for the target transistor that we want to sweep.
+        sweep_parameter_dict = {}
+        for i in xrange(len(nm_size_list)):
+            for name in parameter_dict.keys():
+                # Get the value from the existing dictionary and only change it if it's our
+                # target transistor.
+                value = parameter_dict[name][0]
+                if name == target_tran_name:
+                    value = 1e-9*nm_size_list[i]
+                # On the first iteration, we have to add the lists themselves, but every 
+                # other iteration we can just append to the lists.
+                if i == 0:
+                    sweep_parameter_dict[name] = [value]
+                else:
+                    sweep_parameter_dict[name].append(value)
+
+        # Run HSPICE sweep
+        if ERF_MONITOR_VERBOSE:
+            print "Running HSPICE sweep..."
+        spice_meas = spice_interface.run(sp_path, sweep_parameter_dict)
+        
+        # Find the new interval where the tfall trise equality occurs.
+        for i in xrange(len(nm_size_list)):
+            tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
+            trise_str = spice_meas["meas_" + inv_name + "_trise"][i] 
+            tfall = float(tfall_str)
+            trise = float(trise_str)
+         
+            # We are making the PMOS bigger, that means that initially, tfall was smaller
+            # than trise. At some point, making the PMOS larger will make trise smaller 
+            # than tfall. That's what we use to identify our ERF transistor size interval. 
+            if "_pmos" in target_tran_name:
+                if tfall > trise:
+                    nm_size_upper_bound = nm_size_list[i]
+                    nm_size_lower_bound = nm_size_list[i-1]
+                    break
+            # We are making the NMOS bigger, that means that initially, trise was smaller 
+            # than tfall. At some point, making the NMOS larger will make tfall smaller
+            # than trise. That's what we use to identify our ERF transistor size interval.
+            else:
+                if trise > tfall:
+                    nm_size_upper_bound = nm_size_list[i]
+                    nm_size_lower_bound = nm_size_list[i-1]
+                    break
+
+        if ERF_MONITOR_VERBOSE:
+            if "_pmos" in target_tran_name:
+                print ("ERF PMOS size in range: [" + 
+                       str(int(nm_size_lower_bound)) + ", " + 
+                       str(int(nm_size_upper_bound)) + "]")
+            else:
+                print ("ERF NMOS size in range: [" + 
+                       str(int(nm_size_lower_bound)) + ", " + 
+                       str(int(nm_size_upper_bound)) + "]")
+        
+        # We know that ERF is in between nm_size_lower_bound and nm_size_upper_bound
+        # Now we'll sweep this interval with a 1 nm step.
+        interval = 1
+        # Create a list of transistor sizes we want to try
+        nm_size_list = []
+        current_nm_size = nm_size_lower_bound
+        while current_nm_size <= nm_size_upper_bound:
+            nm_size_list.append(current_nm_size)
+            current_nm_size += interval
+        
+        # Make a new sweep parameter dict
+        sweep_parameter_dict = {}
+        for i in xrange(len(nm_size_list)):
+            for name in parameter_dict.keys():
+                # Get the value from the existing dictionary and only change it if it's our
+                # target transistor.
+                value = parameter_dict[name][0]
+                if name == target_tran_name:
+                    value = 1e-9*nm_size_list[i]
+                # On the first iteration, we have to add the lists themselves, but every 
+                # other iteration we can just append to the lists.
+                if i == 0:
+                    sweep_parameter_dict[name] = [value]
+                else:
+                    sweep_parameter_dict[name].append(value)
+        # Run HSPICE sweep
+        if ERF_MONITOR_VERBOSE:
+            print "Running HSPICE sweep..."
+        spice_meas = spice_interface.run(sp_path, sweep_parameter_dict)
+
+        # This time around, we want to select the PMOS size that makes the difference
+        # between trise and tfall as small as possible. (we know that the minimum
+        # was in the interval we just swept)
+        current_best_tfall_trise_balance = 1
+        best_index = 0
+        for i in xrange(len(nm_size_list)):
+            tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
+            trise_str = spice_meas["meas_" + inv_name + "_trise"][i]
+            tfall = float(tfall_str)
+            trise = float(trise_str)
+            diff = abs(tfall-trise) 
+            if diff < current_best_tfall_trise_balance:
+                current_best_tfall_trise_balance = diff
+                best_index = i
+        target_tran_nm_size = nm_size_list[best_index]
+
+        if ERF_MONITOR_VERBOSE:
+            print "ERF PMOS size is " + str(target_tran_nm_size) + "\n"
+    
+    return target_tran_nm_size
+
+
+def erf_inverter(sp_path, 
+                 inv_name, 
+                 inv_mtw_size, 
+                 parameter_dict,
+                 fpga_inst, 
+                 spice_interface):
+    """ 
+    Equalize the rise and fall delays of an inverter by increasing the size of either the
+    NMOS or the PMOS transistor.
+
+    sp_path 
+        The path to the top level spice file for this inverter
+
+    inv_name 
+        The name of the inverter
+
+    inv_mtw_size
+        The inverter size in minimum width transistor areas. The size of an inverter refers
+        to the width of it's smallest transistor. The other transistor will be made bigger
+        to balance rise and fall delays.
+
+    fpga_inst
+        An FPGA object
+
+    spice_interface
+        A spice interface object
+    """        
+    
+    if ERF_MONITOR_VERBOSE:
+        print "ERF MONITOR: " + inv_name 
+     
+    pmos_name = inv_name + "_pmos"
+    nmos_name = inv_name + "_nmos"
+
+    # Get the nm size of the inverter from the mininum transistor widths size
+    inv_nm_size = inv_mtw_size*fpga_inst.specs.min_tran_width
+    nmos_nm_size = inv_nm_size
+    pmos_nm_size = inv_nm_size
+   
+    # Modify the parameter dict with the size of this inverter
+    parameter_dict[nmos_name][0] = 1e-9*inv_nm_size
+    parameter_dict[pmos_name][0] = 1e-9*inv_nm_size
+    
+    # The NMOS and PMOS sizes of this inverter are both equal to 'inv_nm_size' right now.
+    # That is, they are equal. We'll run HSPICE on the circuit to get initial rise and fall
+    # delays. Then, we'll use these delays to figure out if it's the NMOS we need to 
+    # make bigger to balance rise/fall or the PMOS.
+    spice_meas = spice_interface.run(sp_path, parameter_dict)
+    
+    # Get the rise and fall measurements for our inverter out of 'spice_meas'
+    # This was a single HSPICE run, so the value we want is at index 0
+    inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+    inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+    
+    # TODO: We should check if the HSPICE measurement failed before trying to convert
+    # to a float. If the measurement failed, float conversion will throw an exception.
+    inv_tfall = float(inv_tfall_str)
+    inv_trise = float(inv_trise_str)
+
+    # If the rise time is faster, nmos must be made bigger.
+    # If the fall time is faster, pmos must be made bigger. 
+    if inv_trise > inv_tfall:
+        # ERF by increasing PMOS size
+        pmos_nm_size = erf_inverter_balance_trise_tfall(sp_path,
+                                                        inv_name,
+                                                        inv_nm_size,
+                                                        pmos_name,
+                                                        parameter_dict,
+                                                        fpga_inst,
+                                                        spice_interface)
+                                                                   
+    else:    
+        # ERF by increasing NMOS size 
+        nmos_nm_size = erf_inverter_balance_trise_tfall(sp_path,
+                                                        inv_name,
+                                                        inv_nm_size,
+                                                        nmos_name,
+                                                        parameter_dict,
+                                                        fpga_inst,
+                                                        spice_interface)  
+     
+    # Update the parameter dict
+    parameter_dict[nmos_name][0] = 1e-9*nmos_nm_size
+    parameter_dict[pmos_name][0] = 1e-9*pmos_nm_size
+
+    # Update fpga_inst transistor sizes with new NMOS & PMOS sizes
+    fpga_inst.transistor_sizes[nmos_name] = (nmos_nm_size/fpga_inst.specs.min_tran_width)
+    fpga_inst.transistor_sizes[pmos_name] = (pmos_nm_size/fpga_inst.specs.min_tran_width)
+         
+    return 
+   
+
+def erf(sp_path, 
+        element_names, 
+        element_sizes, 
+        fpga_inst, 
+        spice_interface):
+    """ 
+    Equalize rise and fall times of all inverters listed in 'element_names' for the  
+    transistor sizes in 'config'.
+
+    Returns the inverter ratios that give equal rise and fall. 
+    """
+
+    # This function will equalize rise and fall times on all inverters in the input 
+    # 'element_names'. It iteratively finds P/N ratios that equalize the rise and fall times 
+    # of each inverter. Iteration stops if tfall and trise are found to be sufficiently 
+    # equal or if a maximum number of iterations have been performed.
+   
+    # Generate the parameter dict needed by the spice_interface. 
+    # The parameter dict contains the sizes of all transistors and RC of all wires.
+    parameter_dict = {}
+    for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+        parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
+    for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+        parameter_dict[wire_name + "_res"] = [rc_data[0]]
+        parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+
+    # Set ERF tolerance flag to False so that we can enter the while loop
+    erf_tolerance_met = False
+    erf_iteration = 1
+    while not erf_tolerance_met:
+        # Start by assuming that ERF tolerance will be met.
+        erf_tolerance_met = True
+
+        # ERF each inverter in the circuit
+        for i in xrange(len(element_names)):
+            circuit_element = element_names[i]
+            element_size = element_sizes[i]
+    
+            # If the element is an inverter, equalize its rise and fall delays
+            # 'erf_inverter' will mutate parameter dict and the fpga object with ERFed sizes.
+            if element_names[i].startswith("inv_"):
+                erf_inverter(sp_path, 
+                             circuit_element, 
+                             element_size, 
+                             parameter_dict, 
+                             fpga_inst, 
+                             spice_interface)
+                
+    
+        # At this point, all inverters have been ERFed.
+        # Parameter dict, and the FPGA object itself both contain the ERFed transistor sizes.
+        # Let's see how we did by running HSPICE on the circuit and comparing the rise and
+        # fall delays for each inverter.
+        spice_meas = spice_interface.run(sp_path, parameter_dict)
+    
+        if ERF_MONITOR_VERBOSE:
+            print "ERF SUMMARY (iteration " + str(erf_iteration) + "):"
+        
+        # Check the trise/tfall error of all inverters and if at least one of them 
+        # doesn't meet the ERF tolerance, we'll set the erf_tolerance_met flag to false
+        for circuit_element in element_names:
+            # We are only interested in inverters
+            if not circuit_element.startswith("inv_"):
+                continue
+
+            # Get the tfall and trise delays for the inverter from the spice measurements
+            tfall = float(spice_meas["meas_" + circuit_element + "_tfall"][0])
+            trise = float(spice_meas["meas_" + circuit_element + "_trise"][0])
+            erf_error = abs((tfall - trise)/tfall)
+    
+            nmos_nm_size = int(parameter_dict[circuit_element + "_nmos"][0]/1e-9)
+            pmos_nm_size = int(parameter_dict[circuit_element + "_pmos"][0]/1e-9)
+   
+            # Check to see if the ERF tolerance is met for this inverter
+            if erf_error > ERF_ERROR_TOLERANCE:
+                erf_tolerance_met = False
+    
+            if ERF_MONITOR_VERBOSE:
+                print (circuit_element + " (N=" + str(nmos_nm_size) + " P=" + 
+                       str(pmos_nm_size) + ", tfall=" + str(tfall) + ", trise=" + 
+                       str(trise) + ", erf_err=" + str(100*round(erf_error,3)) + "%)")
+        
+        if ERF_MONITOR_VERBOSE:
+            if not erf_tolerance_met:
+                print "One or more inverter(s) failed to meet ERF tolerance"
+            else:
+                print "All inverters met ERF tolerance"
+   
+        # Stop ERFing even if tolerance not met if max number of ERF iterations performed.
+        if erf_iteration >= ERF_MAX_ITERATIONS:
+            if ERF_MONITOR_VERBOSE:
+                print "Stopping ERF because max iterations reached"
+                print
+            break
+
+        erf_iteration += 1
+
+        if ERF_MONITOR_VERBOSE:
+            print ""
+
+    # Get the ERF ratios
+    erf_ratios = {}
+    for circuit_element in element_names:
+        if circuit_element.startswith("inv_"):
+            nmos_size = fpga_inst.transistor_sizes[circuit_element + "_nmos"]
+            pmos_size = fpga_inst.transistor_sizes[circuit_element + "_pmos"]
+            erf_ratios[circuit_element] = float(pmos_size)/nmos_size
+
+    return erf_ratios
+                  
+
+def erf_combo(fpga_inst, 
+              sp_path, 
+              element_names, 
+              combo,
+              spice_interface):
     """ Equalize the rise and fall of all inverters in a transistor sizing combination.
         Returns the inverter ratios that give equal rise and fall for this combo. """
-    
+   
+    # TODO: element_names should be a tuple, just like combo
+
     # We want to ERF a transistor sizing combination
-    # The first thing we need to do is initialize the transistor sizes file.
-    # We need to do this so that any elements that aren't inverters have the right value (like ptran for instance).
-    spice.initialize_transistor_file(fpga_inst.tran_sizes_filename, element_names, combo, fpga_inst.specs.min_tran_width)
     # Update transistor sizes
     fpga_inst._update_transistor_sizes(element_names, combo)
     # Calculate area of everything
@@ -276,25 +808,21 @@ def erf_combo(fpga_inst, spice_filedir, spice_filename, element_names, combo, nu
     # Update wire resistance and capacitance
     fpga_inst.update_wire_rc()
     # Update wire R and C SPICE file
-    fpga_inst.update_wire_rc_file()
+    #fpga_inst.update_wire_rc_file()
     # Find ERF ratios
-    erf_ratios = spice.erf(spice_filedir, 
-                           spice_filename, 
-                           fpga_inst.tran_sizes_filename, 
-                           element_names, 
-                           combo, 
-                           fpga_inst.specs.min_tran_width, 
-                           num_hspice_sims)
+    erf_ratios = erf(sp_path, 
+                     element_names, 
+                     combo, 
+                     fpga_inst, 
+                     spice_interface)
     
     return erf_ratios
     
     
-def run_combo(fpga_inst, spice_filedir, spice_filename, element_names, combo, erf_ratios):
+def run_combo(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interface):
     """ Run HSPICE to measure delay for this transistor sizing combination.
         Returns tfall, trise """
-
-    # Change transistor sizes in SPICE file
-    spice.set_parameters(fpga_inst.tran_sizes_filename, element_names, combo, erf_ratios, fpga_inst.specs.min_tran_width)
+    
     # Update transistor sizes
     fpga_inst._update_transistor_sizes(element_names, combo, erf_ratios)
     # Calculate area of everything
@@ -304,18 +832,30 @@ def run_combo(fpga_inst, spice_filedir, spice_filename, element_names, combo, er
     # Update wire resistance and capacitance
     fpga_inst.update_wire_rc()
     # Update wire R and C SPICE file
-    fpga_inst.update_wire_rc_file()
-    # Run HSPICE with the current transistor sizes
-    spice_meas = spice.run(spice_filedir, spice_filename)                                            
+    #fpga_inst.update_wire_rc_file()
+
+    # Make parameter dict
+    parameter_dict = {}
+    for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+        parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
+    for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+        parameter_dict[wire_name + "_res"] = [rc_data[0]]
+        parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+
+    # Run HSPICE with the current transistor size
+    spice_meas = spice_interface.run(sp_path, parameter_dict)                                           
+
+    # run returns a dict of measurements. For each key, we have a list of meaasurements. 
+    # That;s why we add the [0] 
     # Extract total delay from measurements
-    tfall = spice_meas["meas_total_tfall"]
-    trise = spice_meas["meas_total_trise"]
+    tfall = float(spice_meas["meas_total_tfall"][0])
+    trise = float(spice_meas["meas_total_trise"][0])
     
     return tfall, trise
 
     
 def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, area_opt_weight, 
-                  delay_opt_weight, outer_iter, inner_iter, bunch_num, num_hspice_sims):
+                  delay_opt_weight, outer_iter, inner_iter, bunch_num, spice_interface):
     """ 
         Function for searching a range of transistor sizes. 
         The first thing we do is determine P/N ratios to use for these size ranges.
@@ -330,38 +870,35 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
         So, we sort by cost again and choose the lowest cost sizing combination as the
         best transistor sizing for the given ranges.
     """
-        
-    # Get the SPICE file name and the directory name
-    spice_filename = ""
-    spice_filedir = ""
-    if "/" in sizable_circuit.top_spice_path:
-        words = sizable_circuit.top_spice_path.split("/")
-        for i in range(len(words)-1):
-            spice_filedir = spice_filedir + words[i] + "/"
-        spice_filename = words[len(words)-1]
     
     # Export current transistor sizes
-    tran_sizes_filename = (spice_filedir + 
-                           "sizes_" + sizable_circuit.name + 
-                           "_o" + str(outer_iter) + 
-                           "_i" + str(inner_iter) + 
-                           "_b" + str(bunch_num) + ".txt")
-    export_transistor_sizes(tran_sizes_filename, fpga_inst.transistor_sizes)
+    # TODO: Turning this off for now
+    #tran_sizes_filename = (spice_filedir + 
+    #                       "sizes_" + sizable_circuit.name + 
+    #                       "_o" + str(outer_iter) + 
+    #                       "_i" + str(inner_iter) + 
+    #                       "_b" + str(bunch_num) + ".txt")
+    #export_transistor_sizes(tran_sizes_filename, fpga_inst.transistor_sizes)
     
     # Expand ranges to get a list of all possible sizing combinations from ranges
-    element_names, sizing_combos = spice.expand_ranges(sizing_ranges)
+    element_names, sizing_combos = expand_ranges(sizing_ranges)
 
     # Find the combo that is near the middle of all ranges
-    middle_combo = spice.get_middle_value_config(element_names, sizing_ranges)
-    
-    # Find ERF ratios for middle combo
-    print "Determining initial inverter P/N ratios..."
-    erf_ratios, num_hspice_sims = erf_combo(fpga_inst, spice_filedir, spice_filename, element_names, middle_combo, num_hspice_sims)
+    middle_combo = get_middle_value_config(element_names, sizing_ranges)
         
-    # Count number of HSPICE simulations (does not ERF sims)
-    num_hspice_sims += len(sizing_combos)
+    print "Determining initial inverter P/N ratios..."
+    if ERF_MONITOR_VERBOSE:
+        print ""
+
+    # Find ERF ratios for middle combo
+    erf_ratios = erf_combo(fpga_inst, 
+                           sizable_circuit.top_spice_path, 
+                           element_names, 
+                           middle_combo,
+                           spice_interface)
     
-    # For each transistor sizing combination, we want to calculate area, wire sizes, and wire R and C
+    # For each transistor sizing combination, we want to calculate area, wire sizes, 
+    # and wire R and C
     print "Calculating area and wire data for all transistor sizing combinations..."
     
     area_list = []
@@ -382,22 +919,93 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
         wire_rc = fpga_inst.wire_rc_dict
         wire_rc_list.append(wire_rc)
 
-    # Now we have area and all wire R and C for each transistor sizing combination
-    # All we have left to do is measure delay
-    # We are going to create a ".DATA" block for HSPICE simulation
-    # This data block contains all the transistor sizing combinations we are going to try
-    # as well as the correct R and C data for the wire loading
-    spice.make_data_block(element_names, sizing_combos, erf_ratios, wire_rc_list, fpga_inst.specs.min_tran_width)
     
+    # We have to make a parameter dict for HSPICE
+    current_tran_sizes = {}
+    for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+        current_tran_sizes[tran_name] = 1e-9*tran_size*fpga_inst.specs.min_tran_width
+    # Initialize the parameter dict to all empty lists
+    parameter_dict = {}
+    for tran_name in current_tran_sizes.keys():
+        parameter_dict[tran_name] = []
+    for wire_name in wire_rc_list[0].keys():
+        parameter_dict[wire_name + "_res"] = []
+        parameter_dict[wire_name + "_cap"] = []
+
+    for i in xrange(len(sizing_combos)):
+        for tran_name, tran_size in current_tran_sizes.iteritems():
+            # We need this temp value to compare agains 'element_names'
+            tmp_tran_name = tran_name.replace("_nmos", "")
+            tmp_tran_name = tmp_tran_name.replace("_pmos", "")
+           
+            # If this transistor is one of the transistor sizes that we are sweeping,
+            # we have to properly compute the size, if we aren't sweeping it, just add
+            # the current size to the list.
+            if tmp_tran_name in element_names:
+                # We need this id to pick the right data from sizing combo
+                element_id = element_names.index(tmp_tran_name)
+
+                # Let's calculate the size of this transistor
+                tran_size = 1e-9*(sizing_combos[i][element_id]*fpga_inst.specs.min_tran_width)
+
+                # If transistor is an inverter, we need to do some stuff to calc sizes for
+                # both the NMOS and PMOS, if it is anything else (eg. ptran), we can just add 
+                # it directly.
+                if tran_name.startswith("inv_"):
+                    if tran_name.endswith("_nmos"):
+                        # If the NMOS is bigger than the PMOS
+                        if erf_ratios[tmp_tran_name] < 1:
+                            nmos_size = tran_size/erf_ratios[tmp_tran_name]
+                        # If the PMOS is bigger than the NMOS
+                        else:
+                            nmos_size = tran_size
+                        parameter_dict[tran_name].append(nmos_size)
+                    else:
+                        # If the NMOS is bigger than the PMOS
+                        if erf_ratios[tmp_tran_name] < 1:
+                            pmos_size = tran_size
+                        # If the PMOS is bigger than the NMOS
+                        else:
+                            pmos_size = tran_size*erf_ratios[tmp_tran_name]
+                        parameter_dict[tran_name].append(pmos_size)
+
+                else: 
+                    parameter_dict[tran_name].append(tran_size) 
+            else:
+                parameter_dict[tran_name].append(tran_size)
+    
+        # Now add the wire information for this wire
+        for wire_name, rc_data in wire_rc_list[i].iteritems():
+            parameter_dict[wire_name + "_res"].append(rc_data[0])
+            parameter_dict[wire_name + "_cap"].append(rc_data[1]*1e-15)
+   
     # Run HSPICE data sweep
-    print "Running HSPICE for " + str(len(sizing_combos)) + " transistor sizing combinations..."
-    tfall_trise_list = spice.sweep_data(spice_filedir, spice_filename)
-    
-    # Get delay metric used for evaluation for each transistor sizing combo as well as ERF error
+    print ("Running HSPICE for " + str(len(sizing_combos)) + 
+           " transistor sizing combinations...")
+    spice_meas = spice_interface.run(sizable_circuit.top_spice_path, parameter_dict)
+
+    # Now we need to create a list of tfall_trise to be compatible with old code
+    tfall_trise_list = []
+    for i in xrange(len(sizing_combos)):
+        tfall_str = spice_meas["meas_total_tfall"][i]
+        trise_str = spice_meas["meas_total_trise"][i]
+        if tfall_str == "failed":
+            tfall = 1
+        else:
+            tfall = float(tfall_str)
+        if trise_str == "failed":
+            trise = 1
+        else:
+            trise = float(trise_str)
+        tfall_trise_list.append((tfall, trise))
+  
+    # Get delay metric used for evaluation for each transistor sizing combo as well as 
+    # ERF error
     for i in range(len(tfall_trise_list)):    
         # Calculate evaluation delay
         tfall_trise = tfall_trise_list[i]
-        delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, tfall_trise[0], tfall_trise[1])
+        delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, 
+                               tfall_trise[0], tfall_trise[1])
         eval_delay_list.append(delay)
         
     # len(area_list) should be equal to len(delay_list), make sure...
@@ -432,18 +1040,19 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
     print ""
     
     # Write results to file
-    export_filename = (spice_filedir + 
-                       sizable_circuit.name + 
-                       "_o" + str(outer_iter) + 
-                       "_i" + str(inner_iter) + 
-                       "_b" + str(bunch_num) + ".csv")
-    export_all_results(export_filename, 
-                       element_names, 
-                       sizing_combos, 
-                       cost_list, 
-                       area_list, 
-                       eval_delay_list, 
-                       tfall_trise_list)
+    # TODO: Turning this off for now
+    #export_filename = (spice_filedir + 
+    #                   sizable_circuit.name + 
+    #                   "_o" + str(outer_iter) + 
+    #                   "_i" + str(inner_iter) + 
+    #                   "_b" + str(bunch_num) + ".csv")
+    #export_all_results(export_filename, 
+    #                   element_names, 
+    #                   sizing_combos, 
+    #                   cost_list, 
+    #                   area_list, 
+    #                   eval_delay_list, 
+    #                   tfall_trise_list)
 
     # Re-ERF some of the top results
     # This is the number of top results to re-ERF
@@ -451,13 +1060,26 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
     best_results = []
     for i in range(re_erf_num):
         # Re-ERF i-th best combo
-        print "Re-equalizing rise and fall times on combo #" + str(cost_list[i][1]) + " (ranked #" + str(i+1) + ")\n"
-        erf_ratios, num_hspice_sims = erf_combo(fpga_inst, spice_filedir, spice_filename, element_names, sizing_combos[cost_list[i][1]], num_hspice_sims)
+        print ("Re-equalizing rise and fall times on combo #" + str(cost_list[i][1]) + 
+               " (ranked #" + str(i+1) + ")\n")
+        erf_ratios = erf_combo(fpga_inst, 
+                               sizable_circuit.top_spice_path, 
+                               element_names, 
+                               sizing_combos[cost_list[i][1]], 
+                               spice_interface)
+
         # Measure delay for combo
-        trise, tfall = run_combo(fpga_inst, spice_filedir, spice_filename, element_names, sizing_combos[cost_list[i][1]], erf_ratios)
+        trise, tfall = run_combo(fpga_inst, 
+                                 sizable_circuit.top_spice_path, 
+                                 element_names, 
+                                 sizing_combos[cost_list[i][1]], 
+                                 erf_ratios,
+                                 spice_interface)
+
         # Get final delay (we use final because ERFing is done for each combo)
         delay = get_final_delay(fpga_inst, opt_type, sizable_circuit, tfall, trise)
-        # Get area (run_combo will have updated the area numbers for us so we can get it directly)
+        # Get area (run_combo will have updated the area numbers for us so we can get it 
+        # directly)
         area = get_final_area(fpga_inst, opt_type, sizable_circuit)
         # Calculate cost
         cost = cost_function(area, delay, area_opt_weight, delay_opt_weight)
@@ -479,21 +1101,20 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
     print ""
 
     # Write post-erf results to file
-    erf_export_filename = (spice_filedir + 
-                           sizable_circuit.name + 
-                           "_o" + str(outer_iter) + 
-                           "_i" + str(inner_iter) + 
-                           "_b" + str(bunch_num) + "_erf.csv")
-    export_erf_results(erf_export_filename, 
-                       element_names, 
-                       sizing_combos, 
-                       best_results)
+    # TODO: Turn this off for now
+    #erf_export_filename = (spice_filedir + 
+    #                       sizable_circuit.name + 
+    #                       "_o" + str(outer_iter) + 
+    #                       "_i" + str(inner_iter) + 
+    #                       "_b" + str(bunch_num) + "_erf.csv")
+    #export_erf_results(erf_export_filename, 
+    #                   element_names, 
+    #                   sizing_combos, 
+    #                   best_results)
     
     # Update transistor sizes file as well as area and wires to best combo
     best_combo = sizing_combos[best_results[0][1]]
     best_combo_erf_ratios = best_results[0][6]
-    # Change transistor sizes in SPICE file
-    spice.set_parameters(fpga_inst.tran_sizes_filename, element_names, best_combo, best_combo_erf_ratios, fpga_inst.specs.min_tran_width)
     # Update transistor sizes
     fpga_inst._update_transistor_sizes(element_names, best_combo, best_combo_erf_ratios)
     # Calculate area of everything
@@ -502,8 +1123,6 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
     fpga_inst.update_wires()
     # Update wire resistance and capacitance
     fpga_inst.update_wire_rc()
-    # Update wire R and C SPICE file
-    fpga_inst.update_wire_rc_file()
     
     # We want to return the best combo, this must contain all NMOS and PMOS values
     best_combo_detailed = {}
@@ -527,7 +1146,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
                 best_combo_detailed[name + "_nmos"] = best_combo[i]
                 best_combo_detailed[name + "_pmos"] = best_combo[i]*best_combo_erf_ratios[name]
         
-    return (best_combo_dict, best_combo_detailed, best_results[0], num_hspice_sims)
+    return (best_combo_dict, best_combo_detailed, best_results[0])
   
     
 def format_transistor_names_to_basic_subcircuits(transistor_names):
@@ -822,8 +1441,15 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
     return valid
        
 
-def size_subcircuit_transistors(fpga_inst, subcircuit, opt_type, re_erf, area_opt_weight, delay_opt_weight, outer_iter, 
-                                initial_transistor_sizes, num_hspice_sims):
+def size_subcircuit_transistors(fpga_inst, 
+                                subcircuit, 
+                                opt_type, 
+                                re_erf, 
+                                area_opt_weight, 
+                                delay_opt_weight, 
+                                outer_iter, 
+                                initial_transistor_sizes, 
+                                spice_interface):
     """
         Size transistors for one subcircuit.
     """
@@ -845,18 +1471,14 @@ def size_subcircuit_transistors(fpga_inst, subcircuit, opt_type, re_erf, area_op
 
     # Find initial transistor sizing ranges for each set of transistors
     for tran_names_set in tran_names_set_list:
-        sizing_ranges_set = _find_initial_sizing_ranges(tran_names_set, initial_transistor_sizes)
+        sizing_ranges_set = _find_initial_sizing_ranges(tran_names_set, 
+                                                        initial_transistor_sizes)
         sizing_ranges_set_list.append(sizing_ranges_set.copy())
         sizing_ranges_complete.update(sizing_ranges_set)
 
     # Get the SPICE file name and the directory name
-    spice_filename = ""
-    spice_filedir = ""
-    if "/" in subcircuit.top_spice_path:
-        words = subcircuit.top_spice_path.split("/")
-        for i in range(len(words)-1):
-            spice_filedir = spice_filedir + words[i] + "/"
-        spice_filename = words[len(words)-1]
+    spice_filename = os.path.basename(subcircuit.top_spice_path)
+    spice_filedir = os.path.dirname(subcircuit.top_spice_path)
     
     # If there is more than one set to size, we should first ERF everything.
     # Once that is done, we can work on individual sets.
@@ -864,9 +1486,13 @@ def size_subcircuit_transistors(fpga_inst, subcircuit, opt_type, re_erf, area_op
         element_names = sorted(sizing_ranges_complete.keys())
         print "Determining initial inverter P/N ratios for all transistor groups..."
         # Find the combo that is near the middle of all ranges
-        middle_combo = spice.get_middle_value_config(element_names, sizing_ranges_complete)
+        middle_combo = get_middle_value_config(element_names, sizing_ranges_complete)
         # ERF mid-range transistor sizing combination
-        erf_ratios, num_hspice_sims = erf_combo(fpga_inst, spice_filedir, spice_filename, element_names, middle_combo, num_hspice_sims)
+        erf_ratios = erf_combo(fpga_inst,
+                               subcircuit.top_spice_path,
+                               element_names, 
+                               middle_combo, 
+                               spice_interface)
 
     # Perform transistor sizing on each set of transistors
     sizing_results = {}
@@ -904,12 +1530,11 @@ def size_subcircuit_transistors(fpga_inst, subcircuit, opt_type, re_erf, area_op
                                                  outer_iter, 
                                                  inner_iter, 
                                                  set_num, 
-                                                 num_hspice_sims)
+                                                 spice_interface)
                                          
             sizing_results_set = search_ranges_return[0]
             sizing_results_set_detailed = search_ranges_return[1]
             area_delay_results = search_ranges_return[2]
-            num_hspice_sims = search_ranges_return[3]
             
             sizing_results_list.append(sizing_results_set)
             sizing_results_detailed_list.append(sizing_results_set_detailed)
@@ -930,7 +1555,7 @@ def size_subcircuit_transistors(fpga_inst, subcircuit, opt_type, re_erf, area_op
             
             inner_iter += 1
 
-    return sizing_results, sizing_results_detailed, num_hspice_sims
+    return sizing_results, sizing_results_detailed
 
     
 def print_results(opt_type, sizing_results_list, area_results_list, delay_results_list):
@@ -1123,7 +1748,13 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
     return False, 0
 
     
-def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_weight, delay_opt_weight, num_hspice_sims):
+def size_fpga_transistors(fpga_inst, 
+                          opt_type, 
+                          re_erf, 
+                          max_iterations, 
+                          area_opt_weight, 
+                          delay_opt_weight, 
+                          spice_interface):
     """ Size FPGA transistors. 
     
         Inputs: fpga_inst - fpga object instance
@@ -1153,18 +1784,18 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
         [1] C. Chiasson and V.Betz, "COFFE: Fully-Automated Transistor Sizing for FPGAs", FPT2013
         
         """
-    
+   
     # Create results folder if it doesn't exist
     if not os.path.exists("sizing_results"):
         os.makedirs("sizing_results")
     
     # Initialize FPGA subcircuit delays
-    num_hspice_sims = fpga_inst.update_delays(num_hspice_sims)
+    fpga_inst.update_delays(spice_interface)
     
     print "Starting transistor sizing...\n"
     
-    # These lists store transistor sizing, area and delay results for each FPGA sizing iteration.
-    # Each entry in the list represents an FPGA sizing iteration.
+    # These lists store transistor sizing, area and delay results for each FPGA sizing
+    # iteration. Each entry in the list represents an FPGA sizing iteration.
     # For example, area_results_list[0] has area results for the first FPGA sizing iteration.
     sizing_results_list = []
     sizing_results_detailed_list = []
@@ -1173,14 +1804,15 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
     
     # Keep performing FPGA sizing iterations until algorithm terminates
     # Two conditions can make it terminate:
-    #    1 - Cost stops improving ('is_done')
-    #    2 - The max number of iterations of this while loop have been performed (max_iterations)
+    # 1 - Cost stops improving ('is_done')
+    # 2 - The max number of iterations of this while loop have been performed (max_iterations)
     is_done = False
     iteration = 1
     while not is_done:
     
         if iteration > max_iterations:
-            print "Algorithm is terminating: maximum number of iterations has been reached (" + str(max_iterations) + ")\n" 
+            print ("Algorithm is terminating: maximum number of iterations has been " +
+                   "reached (" + str(max_iterations) + ")\n")
             break
     
         print "FPGA TRANSISTOR SIZING ITERATION #" + str(iteration) + "\n"
@@ -1191,23 +1823,25 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
         # Now we are going to size the transistors of each subcircuit.
         # The order we do this has an importance due to rise-fall balancing. 
         # We want the input signal to be rise-fall balanced as much as possible. 
-        # So we start in the general routing, and move gradually deeper into the logic cluster, 
-        # finally emerging back into the general routing when we reach the cluster outputs.
-        # This code is all basically the same, just repeated for each subcircuit.
+        # So we start in the general routing, and move gradually deeper into the logic
+        # cluster, finally emerging back into the general routing when we reach the cluster 
+        # outputs. This code is all basically the same, just repeated for each subcircuit.
         
         ############################################
         ## Size switch block mux transistors
         ############################################
         name = fpga_inst.sb_mux.name
-        # If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-        # If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+        # If this is the first iteration, use the 'initial_transistor_sizes' as the 
+        # starting sizes. If it's not the first iteration, we use the transistor sizes 
+        # of the previous iteration as the starting sizes.
         if iteration == 1:
-            starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.sb_mux.initial_transistor_sizes)
+            starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(
+                                            fpga_inst.sb_mux.initial_transistor_sizes)
         else:
             starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
         
         # Size the transistors of this subcircuit        
-        sizing_results_dict[name], sizing_results_detailed_dict[name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+        sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         ############################################
         ## Size connection block mux transistors
@@ -1221,7 +1855,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
             starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
             
         # Size the transistors of this subcircuit
-        sizing_results_dict[name], sizing_results_detailed_dict[name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+        sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         ############################################
         ## Size local routing mux transistors
@@ -1235,7 +1869,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
             starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
         
         # Size the transistors of this subcircuit
-        sizing_results_dict[name], sizing_results_detailed_dict[name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+        sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         ############################################
         ## Size LUT
@@ -1251,7 +1885,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
             starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
         
         # Size the transistors of this subcircuit
-        sizing_results_dict[name], sizing_results_detailed_dict[name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.lut, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+        sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.lut, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         ############################################
         ## Size LUT input drivers
@@ -1266,7 +1900,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
                 starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
             
             # Size the transistors of this subcircuit
-            sizing_results_dict[input_driver.driver.name], sizing_results_detailed_dict[input_driver.driver.name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, input_driver.driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+            sizing_results_dict[input_driver.driver.name], sizing_results_detailed_dict[input_driver.driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
            
             # Not driver
             # If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
@@ -1277,7 +1911,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
                 starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
             
             # Size the transistors of this subcircuit
-            sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+            sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         ############################################        
         ## Size local ble output transistors
@@ -1291,7 +1925,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
             starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
         
         # Size the transistors of this subcircuit
-        sizing_results_dict[name], sizing_results_detailed_dict[name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.local_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+        sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.local_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         ############################################
         ## Size general ble output transistors
@@ -1305,7 +1939,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
             starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
         
         # Size the transistors of this subcircuit
-        sizing_results_dict[name], sizing_results_detailed_dict[name], num_hspice_sims = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, num_hspice_sims)
+        sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
         
         
         ############################################
@@ -1317,7 +1951,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
         sizing_results_list.append(sizing_results_dict.copy())
         sizing_results_detailed_list.append(sizing_results_detailed_dict.copy())
         
-        num_hspice_sims = fpga_inst.update_delays(num_hspice_sims)
+        fpga_inst.update_delays(spice_interface)
         
         # Add subcircuit delays and area to list (need to copy because of mutability)
         area_results_list.append(fpga_inst.area_dict.copy())
@@ -1346,9 +1980,7 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
     final_transistor_sizes_detailed_full = {}
     for subcircuit_name, subcircuit_sizes in final_transistor_sizes_detailed.iteritems():
         final_transistor_sizes_detailed_full.update(subcircuit_sizes)
-
-    # Set the transistor sizes in the SPICE file
-    spice.set_all_parameters(fpga_inst.tran_sizes_filename, final_transistor_sizes_detailed_full, fpga_inst.specs.min_tran_width)
+    
     # Update FPGA transistor sizes
     fpga_inst.transistor_sizes.update(final_transistor_sizes_detailed_full)
     # Calculate area of everything
@@ -1357,7 +1989,5 @@ def size_fpga_transistors(fpga_inst, opt_type, re_erf, max_iterations, area_opt_
     fpga_inst.update_wires()
     # Update wire resistance and capacitance
     fpga_inst.update_wire_rc()
-    # Update wire R and C SPICE file
-    fpga_inst.update_wire_rc_file()
-        
-    return num_hspice_sims
+           
+    return 0
