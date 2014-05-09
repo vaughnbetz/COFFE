@@ -103,8 +103,8 @@ def print_block_area(fpga_inst):
         print "  Connection block".ljust(20) + str(round(cb,3)).ljust(20) + str(round(cb/tile*100,3)) + "%"
         print "  Switch block".ljust(20) + str(round(sb,3)).ljust(20) + str(round(sb/tile*100,3)) + "%"
         print ""    
-  
-  
+ 
+
 def print_vpr_delays(fpga_inst):
 
     print "  VPR DELAYS"
@@ -198,7 +198,8 @@ def load_arch_params(filename):
          
         param = words[0]
         value = words[1]
-             
+
+        #architecture parameters 
         if param == 'W':
             arch_params['W'] = int(value)
         elif param == 'L':
@@ -222,31 +223,11 @@ def load_arch_params(filename):
         elif param == 'Fclocal':
             arch_params['Fclocal'] = float(value)
         elif param == 'Rsel':
-            # Check if this is a valid value for Rsel
-            if value != 'z' and (value < 'a' or value > chr(arch_params['K']+96)):
-                print "ERROR: Invalid value (" + str(value) + ") for Rsel in " + filename
-                sys.exit()
             arch_params['Rsel'] = value
         elif param == 'Rfb':
-            # Check if this is a valid value for Rfb
-            # If the value is only Z, there are no register feedback muxes, that's valid
-            if value == 'z':
-                arch_params['Rfb'] = value
-            elif len(value) > arch_params['K']:
-                print "ERROR: Invalid value (" + str(value) + ") for Rfb in " + filename + " (string too long)"
-                sys.exit()
-            else:
-                # Now, let's make sure all these characters are valid characters
-                for character in value:
-                    # The character has to be a valid LUT input
-                    if (character < 'a' or character > chr(arch_params['K']+96)):
-                        print "ERROR: Invalid value (" + str(value) + ") for Rfb in " + filename + " (" + character + " is not valid)"
-                        sys.exit()
-                    # The character should not appear twice
-                    elif value.count(character) > 1:
-                        print "ERROR: Invalid value (" + str(value) + ") for Rfb in " + filename + " (" + character + " appears more than once)"
-                        sys.exit()
-                arch_params['Rfb'] = value
+            arch_params['Rfb'] = value
+        
+        #process technology parameters
         elif param == 'vdd':
             arch_params['vdd'] = float(value)
         elif param == 'vsram':
@@ -287,4 +268,67 @@ def load_arch_params(filename):
             print "ERROR: Did not find architecture parameter " + param + " in " + filename
             sys.exit()
     
+    check_arch_params(arch_params, filename)
     return arch_params 
+
+def check_arch_params (arch_params, filename):
+    if arch_params['W'] <= 0:
+        print_error (arch_params['W'], "W", filename)
+    if arch_params['L'] <= 0:
+        print_error (arch_params['L'], "L", filename)
+    if arch_params['Fs'] <= 0:
+        print_error (arch_params['Fs'], "Fs", filename)
+    if arch_params['N'] <= 0:
+        print_error (arch_params['N'], "N", filename)
+    if arch_params['K'] <= 4 and  arch_params['K'] != 5 and arch_params['K'] != 6:
+        print_error (arch_params['K'], "K", filename)
+    if arch_params['I'] <= 0:
+        print_error (arch_params['I'], "I", filename)
+    if arch_params['Fcin'] <= 0.0 or arch_params['Fcin'] > 1.0:
+        print_error (arch_params['Fcin'], "Fcin", filename)
+    if arch_params['Fcout'] <= 0.0 or arch_params['Fcout'] > 1.0 :
+        print_error (arch_params['Fcout'], "Fcout", filename)
+    if arch_params['Or'] <= 0:
+        print_error (arch_params['Or'], "Or", filename)
+    if arch_params['Ofb'] <= 0:
+        print_error (arch_params['Ofb'], "Ofb", filename)
+    if arch_params['Fclocal'] <= 0.0 or arch_params['Fclocal'] >= 1.0:
+        print_error (arch_params['Fclocal'], "Fclocal", filename)
+    if arch_params['Rsel'] != 'z' and (arch_params['Rsel'] < 'a' or arch_params['Rsel'] > chr(arch_params['K']+96)):
+        print_error (arch_params['Rsel'], "Fclocal", filename)
+    if len(arch_params['Rfb']) > arch_params['K'] and arch_params['Rfb'] != 'z':
+        print "ERROR: Invalid value (" + str(arch_params['Rfb']) + ") for Rfb in " + filename + " (string too long)"
+    else:
+        # Now, let's make sure all these characters are valid characters
+        for character in arch_params['Rfb']:
+            # The character has to be a valid LUT input
+            if (character < 'a' or character > chr(arch_params['K']+96)):
+                print "ERROR: Invalid value (" + str(arch_params['Rfb']) + ") for Rfb in " + filename + " (" + character + " is not valid)"
+                sys.exit()
+            # The character should not appear twice
+            elif arch_params['Rfb'].count(character) > 1:
+                print "ERROR: Invalid value (" + str(arch_params['Rfb']) + ") for Rfb in " + filename + " (" + character + " appears more than once)"
+                sys.exit()
+
+    #process technology parameters
+    if arch_params['vdd'] < 0 :
+        print_warning (arch_params['vdd'], "vdd", filename)            
+    # if arch_params['vsram'] < 0 :
+    #     print_error (arch_params['vsram'], "vsram", filename)            
+    # if arch_params['vsram_n'] < 0 :
+    #     print_error (arch_params['vsram_n'], "vsram_n", filename)            
+    if arch_params['gate_length'] < 0 :
+        print_error (arch_params['gate_length'], "gate_length", filename)            
+    if arch_params['min_tran_width'] < 0 :
+        print_error (arch_params['min_tran_width'], "min_tran_width", filename)            
+    if arch_params['min_width_tran_area'] < 0 :
+        print_error (arch_params['min_width_tran_area'], "min_width_tran_area", filename)            
+    if arch_params['sram_cell_area'] < 0 :
+        print_error (arch_params['sram_cell_area'], "sram_cell_area", filename)            
+    
+def print_error(value, arguement, filename):
+    print "ERROR: Invalid value (" + value + ") for " + arguement + " in " + filename
+    sys.exit()
+
+def print_warning(value, arguement, filename):
+    print "WARNING: Negative value (" + value + ") for " + arguement + " in " + filename
