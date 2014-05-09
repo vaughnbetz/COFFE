@@ -36,9 +36,9 @@ def wire_generate(filename):
     spice_file.write("* Interconnect wire\n")
     spice_file.write("******************************************************************************************\n")
     spice_file.write(".SUBCKT wire n_in n_out Rw=1 Cw=1\n")
-    spice_file.write("CWIRE_1 n_in gnd Cw\n")
+    spice_file.write("CWIRE_1 n_in n_gnd Cw\n")
     spice_file.write("RWIRE_1 n_in n_out Rw\n")
-    spice_file.write("CWIRE_2 n_out gnd Cw\n")
+    spice_file.write("CWIRE_2 n_out n_gnd Cw\n")
     spice_file.write(".ENDS\n\n\n")   
     spice_file.close()
     
