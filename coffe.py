@@ -214,16 +214,16 @@ print "|------------------------------------------------------------------------
 print ""
 
 
-report_file.write( "  SUMMARY")
-report_file.write( "  -------")
-report_file.write( "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2")
-report_file.write( "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps")
+report_file.write( "  SUMMARY\n")
+report_file.write( "  -------\n")
+report_file.write( "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2\n")
+report_file.write( "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps\n")
 report_file.write ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
-	   + str(round(final_cost,5)))
+	   + str(round(final_cost,5)) + "\n")
 
-report_file.write( "")
-report_file.write( "|------------------------------------------------------------------------------|")
-report_file.write( "")
+report_file.write( "\n")
+report_file.write( "|------------------------------------------------------------------------------|\n")
+report_file.write( "\n")
 
 # Come back to top level directory
 os.chdir("../")
@@ -238,7 +238,7 @@ total_seconds_elapsed = int(total_time_elapsed - 3600*total_hours_elapsed - 60*t
 print "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed())
 print "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" 
 
-report_file.write( "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed()))
+report_file.write( "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed()) + "\n")
 report_file.write( "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" )
 report_file.write( "\n")
 
