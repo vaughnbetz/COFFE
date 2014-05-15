@@ -52,3 +52,10 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+#files generated for hspic
+input_files/*
+!input_files/example.txt
+
+#output files
+*.out
+
