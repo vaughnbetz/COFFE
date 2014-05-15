@@ -2,7 +2,7 @@
 # Created by: Charles Chiasson (charles.chiasson@gmail.com)
 #         at: University of Toronto
 #         in: 2013        
-           
+		   
 #
 # The big picture:
 #
@@ -38,6 +38,7 @@ import coffe.spice as spice
 import coffe.tran_sizing as tran_sizing
 #import coffe.hspice_extract as hspice_extract
 import coffe.utils
+import datetime
 
 print "\nCOFFE 1.1\n"
 print "Man is a tool-using animal."
@@ -65,13 +66,13 @@ max_iterations = args.max_iterations
 # Print the options
 print "RUN OPTIONS:"
 if is_size_transistors:
-    print "Transistor sizing: on"
+	print "Transistor sizing: on"
 else:
-    print "Transistor sizing: off"
+	print "Transistor sizing: off"
 if opt_type == "global":
-    print "Optimization type: global"
+	print "Optimization type: global"
 else:
-    print "Optimization type: local"
+	print "Optimization type: local"
 print "Number of top combos to re-ERF: " + str(re_erf)
 print "Area optimization weight: " + str(area_opt_weight)
 print "Delay optimization weight: " + str(delay_opt_weight)
@@ -106,19 +107,21 @@ model_path = arch_params_dict['model_path']
 model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
 
+default_dir = os.getcwd()
+
 # Record start time
 total_start_time = time.time()
 
 # Create an FPGA instance
 fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                      vdd, vsram, vsram_n, 
-                      gate_length, 
-                      min_tran_width, 
-                      min_width_tran_area, 
-                      sram_cell_area, 
-                      model_path, 
-                      model_library, 
-                      metal_stack)
+					  vdd, vsram, vsram_n, 
+					  gate_length, 
+					  min_tran_width, 
+					  min_width_tran_area, 
+					  sram_cell_area, 
+					  model_path, 
+					  model_library, 
+					  metal_stack)
 
 # Print basic FPGA specs                       
 fpga_inst.print_specs()
@@ -131,16 +134,16 @@ fpga_inst.print_specs()
 arch_desc_words = arch_description_filename.split('.')
 arch_folder = arch_desc_words[0]
 if not os.path.exists(arch_folder):
-    os.mkdir(arch_folder)
+	os.mkdir(arch_folder)
 else:
-    # Delete contents of sub-directories
-    # COFFE generates several 'intermediate results' files during sizing
-    # so we delete them to avoid from having them pile up if we run COFFE
-    # more than once.
-    dir_contents = os.listdir(arch_folder)
-    for content in dir_contents:
-        if os.path.isdir(arch_folder + "/" + content):
-            shutil.rmtree(arch_folder + "/" + content)
+	# Delete contents of sub-directories
+	# COFFE generates several 'intermediate results' files during sizing
+	# so we delete them to avoid from having them pile up if we run COFFE
+	# more than once.
+	dir_contents = os.listdir(arch_folder)
+	for content in dir_contents:
+		if os.path.isdir(arch_folder + "/" + content):
+			shutil.rmtree(arch_folder + "/" + content)
 
 # Change to the architecture directory
 os.chdir(arch_folder)  
@@ -154,20 +157,19 @@ fpga_inst.print_details()
 ###############################################################
 ## TRANSISTOR SIZING
 ###############################################################
-
 # Create an HSPICE interface
 spice_interface = spice.SpiceInterface()
 
 # Size FPGA transistors
 if is_size_transistors:
-    tran_sizing.size_fpga_transistors(fpga_inst, 
-                                      opt_type, 
-                                      re_erf, 
-                                      max_iterations, 
-                                      area_opt_weight, 
-                                      delay_opt_weight, 
-                                      spice_interface)    
-    
+	tran_sizing.size_fpga_transistors(fpga_inst, 
+									  opt_type, 
+									  re_erf, 
+									  max_iterations, 
+									  area_opt_weight, 
+									  delay_opt_weight, 
+									  spice_interface)    
+	
 # Update subcircuit delays (these are the final values)
 fpga_inst.update_delays(spice_interface)
 
@@ -176,18 +178,28 @@ print "|    Area and Delay Report                                               
 print "|------------------------------------------------------------------------------|"
 print ""
 
+os.chdir(default_dir)
+# Also print report to a
+report_file = open( arch_desc_words[0] + ".results", 'a')
+report_file.write( str(datetime.datetime.now()) + "\n")
+report_file.write( "|------------------------------------------------------------------------------|\n")
+report_file.write( "|    Area and Delay Report                                                     |\n")
+report_file.write( "|------------------------------------------------------------------------------|\n")
+report_file.write( "\n")
+
+
 # Print area and delay per subcircuit
-coffe.utils.print_area_and_delay(fpga_inst)
+coffe.utils.print_area_and_delay(report_file, fpga_inst)
 
 # Print block areas
-coffe.utils.print_block_area(fpga_inst)
+coffe.utils.print_block_area(report_file, fpga_inst)
 
 # Print VPR delays (to be used to make architecture file)
-coffe.utils.print_vpr_delays(fpga_inst)
+coffe.utils.print_vpr_delays(report_file, fpga_inst)
 
 # Print VPR areas (to be used to make architecture file)
-coffe.utils.print_vpr_areas(fpga_inst)
-      
+coffe.utils.print_vpr_areas(report_file, fpga_inst)
+	  
 # Print area and delay summary
 final_cost = fpga_inst.area_dict["tile"]*fpga_inst.delay_dict["rep_crit_path"]
 print "  SUMMARY"
@@ -195,11 +207,23 @@ print "  -------"
 print "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2"
 print "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps"
 print ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
-       + str(round(final_cost,5)))
+	   + str(round(final_cost,5)))
 
 print ""
 print "|------------------------------------------------------------------------------|"
-print ""       
+print ""
+
+
+report_file.write( "  SUMMARY")
+report_file.write( "  -------")
+report_file.write( "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2")
+report_file.write( "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps")
+report_file.write ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
+	   + str(round(final_cost,5)))
+
+report_file.write( "")
+report_file.write( "|------------------------------------------------------------------------------|")
+report_file.write( "")
 
 # Come back to top level directory
 os.chdir("../")
@@ -213,3 +237,9 @@ total_seconds_elapsed = int(total_time_elapsed - 3600*total_hours_elapsed - 60*t
 
 print "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed())
 print "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" 
+
+report_file.write( "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed()))
+report_file.write( "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" )
+report_file.write( "\n")
+
+report_file.close()
