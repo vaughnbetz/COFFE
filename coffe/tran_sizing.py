@@ -420,7 +420,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
                     print "Upper bound found, PMOS=" + str(target_tran_nm_size)
             else:
                 # Check if trise is increasing or decreasing by comparing to previous trise
-                if trise > previous_trise:
+                if trise >= previous_trise:
                     self_loading = True
                     if ERF_MONITOR_VERBOSE:
                         print "Increasing PMOS is no longer decreasing trise"
@@ -435,7 +435,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
                     print "Upper bound found, NMOS=" + str(target_tran_nm_size)
             else:
                 # Check if tfall is increasing or decreasing by comparing to previous tfall
-                if tfall > previous_tfall:
+                if tfall >= previous_tfall:
                     self_loading = True
                     if ERF_MONITOR_VERBOSE:
                         print "Increasing NMOS is no longer decreasing tfall"
