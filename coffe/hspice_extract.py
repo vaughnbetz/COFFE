@@ -4,286 +4,286 @@ import spice
 
 
 def extract_hspice_delay_and_power(fpga_inst):
-    """ Extract HSPICE delays for one architecture """
-    
-    # TODO: Should we actually incorporate this into FPGA.py? It would be a function called update_delays()
-    # The question is: should the fpga object be allowed to run HSPICE or not???
-    # I'm not sure. The FPGA object knows everything about the FPGA structure, it can calculate its area and wire lengths.
-    # It creates SPICE decks. And it knows which spice deck is associated with which FPGA subcircuit.
-    
-    # Also, we might want to update area and wires here... just to be sure that when we update delay, it is most recent possible.
-    
-    print "UPDATING DELAY FOR ALL SUBCIRCUITS:"
-    
-    # Switch Block MUX
-    delays = spice.get_total_tfall_trise(fpga_inst.sb_mux.name, fpga_inst.sb_mux.top_spice_path)
-    fpga_inst.sb_mux.tfall = delays[0]
-    fpga_inst.sb_mux.trise = delays[1]
-    fpga_inst.sb_mux.delay = max(delays[0], delays[1])
-    
-    # Connection Block MUX
-    delays = spice.get_total_tfall_trise(fpga_inst.cb_mux.name, fpga_inst.cb_mux.top_spice_path)
-    fpga_inst.cb_mux.tfall = delays[0]
-    fpga_inst.cb_mux.trise = delays[1]
-    fpga_inst.cb_mux.delay = max(delays[0], delays[1])
-    
-    # Local MUX
-    delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.local_mux.name, fpga_inst.logic_cluster.local_mux.top_spice_path)
-    fpga_inst.logic_cluster.local_mux.tfall = delays[0]
-    fpga_inst.logic_cluster.local_mux.trise = delays[1]
-    fpga_inst.logic_cluster.local_mux.delay = max(delays[0], delays[1])
-    
-    # Local BLE output
-    delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.ble.local_output.name, fpga_inst.logic_cluster.ble.local_output.top_spice_path)
-    fpga_inst.logic_cluster.ble.local_output.tfall = delays[0]
-    fpga_inst.logic_cluster.ble.local_output.trise = delays[1]
-    fpga_inst.logic_cluster.ble.local_output.delay = max(delays[0], delays[1])
-    
-    # General BLE output
-    delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.ble.general_output.name, fpga_inst.logic_cluster.ble.general_output.top_spice_path)
-    fpga_inst.logic_cluster.ble.general_output.tfall = delays[0]
-    fpga_inst.logic_cluster.ble.general_output.trise = delays[1]
-    fpga_inst.logic_cluster.ble.general_output.delay = max(delays[0], delays[1])
-    
-    # LUT delay
-    delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.ble.lut.name, fpga_inst.logic_cluster.ble.lut.top_spice_path)
-    fpga_inst.logic_cluster.ble.lut.tfall = delays[0]
-    fpga_inst.logic_cluster.ble.lut.trise = delays[1]
-    fpga_inst.logic_cluster.ble.lut.delay = max(delays[0], delays[1])
-    
-    # Get delay for all paths through the LUT. We get delay for each path through the LUT as well as for the LUT input drivers.
-    for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
-        driver = lut_input.driver
-        not_driver = lut_input.not_driver
-        # Get the delay for a path through the LUT (we do it for each input)
-        delays = spice.get_total_tfall_trise(driver.name.replace("_driver", ""), (driver.top_spice_path.rstrip(".sp") + "_with_lut.sp"))
-        lut_input.tfall = delays[0]
-        lut_input.trise = delays[1]
-        lut_input.delay = max(delays[0], delays[1])
-        
-        # Now, we want to get the delay and power for the driver
-        delays = spice.get_total_tfall_trise(driver.name, driver.top_spice_path)
-        driver.tfall = delays[0]
-        driver.trise = delays[1]
-        driver.delay = max(delays[0], delays[1])
-        # ... and the not_driver
-        delays = spice.get_total_tfall_trise(not_driver.name, not_driver.top_spice_path)
-        not_driver.tfall = delays[0]
-        not_driver.trise = delays[1]
-        not_driver.delay = max(delays[0], delays[1])
-    
-    print ""
-    
+	""" Extract HSPICE delays for one architecture """
+	
+	# TODO: Should we actually incorporate this into FPGA.py? It would be a function called update_delays()
+	# The question is: should the fpga object be allowed to run HSPICE or not???
+	# I'm not sure. The FPGA object knows everything about the FPGA structure, it can calculate its area and wire lengths.
+	# It creates SPICE decks. And it knows which spice deck is associated with which FPGA subcircuit.
+	
+	# Also, we might want to update area and wires here... just to be sure that when we update delay, it is most recent possible.
+	
+	print "UPDATING DELAY FOR ALL SUBCIRCUITS:"
+	
+	# Switch Block MUX
+	delays = spice.get_total_tfall_trise(fpga_inst.sb_mux.name, fpga_inst.sb_mux.top_spice_path)
+	fpga_inst.sb_mux.tfall = delays[0]
+	fpga_inst.sb_mux.trise = delays[1]
+	fpga_inst.sb_mux.delay = max(delays[0], delays[1])
+	
+	# Connection Block MUX
+	delays = spice.get_total_tfall_trise(fpga_inst.cb_mux.name, fpga_inst.cb_mux.top_spice_path)
+	fpga_inst.cb_mux.tfall = delays[0]
+	fpga_inst.cb_mux.trise = delays[1]
+	fpga_inst.cb_mux.delay = max(delays[0], delays[1])
+	
+	# Local MUX
+	delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.local_mux.name, fpga_inst.logic_cluster.local_mux.top_spice_path)
+	fpga_inst.logic_cluster.local_mux.tfall = delays[0]
+	fpga_inst.logic_cluster.local_mux.trise = delays[1]
+	fpga_inst.logic_cluster.local_mux.delay = max(delays[0], delays[1])
+	
+	# Local BLE output
+	delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.ble.local_output.name, fpga_inst.logic_cluster.ble.local_output.top_spice_path)
+	fpga_inst.logic_cluster.ble.local_output.tfall = delays[0]
+	fpga_inst.logic_cluster.ble.local_output.trise = delays[1]
+	fpga_inst.logic_cluster.ble.local_output.delay = max(delays[0], delays[1])
+	
+	# General BLE output
+	delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.ble.general_output.name, fpga_inst.logic_cluster.ble.general_output.top_spice_path)
+	fpga_inst.logic_cluster.ble.general_output.tfall = delays[0]
+	fpga_inst.logic_cluster.ble.general_output.trise = delays[1]
+	fpga_inst.logic_cluster.ble.general_output.delay = max(delays[0], delays[1])
+	
+	# LUT delay
+	delays = spice.get_total_tfall_trise(fpga_inst.logic_cluster.ble.lut.name, fpga_inst.logic_cluster.ble.lut.top_spice_path)
+	fpga_inst.logic_cluster.ble.lut.tfall = delays[0]
+	fpga_inst.logic_cluster.ble.lut.trise = delays[1]
+	fpga_inst.logic_cluster.ble.lut.delay = max(delays[0], delays[1])
+	
+	# Get delay for all paths through the LUT. We get delay for each path through the LUT as well as for the LUT input drivers.
+	for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+		driver = lut_input.driver
+		not_driver = lut_input.not_driver
+		# Get the delay for a path through the LUT (we do it for each input)
+		delays = spice.get_total_tfall_trise(driver.name.replace("_driver", ""), (driver.top_spice_path.rstrip(".sp") + "_with_lut.sp"))
+		lut_input.tfall = delays[0]
+		lut_input.trise = delays[1]
+		lut_input.delay = max(delays[0], delays[1])
+		
+		# Now, we want to get the delay and power for the driver
+		delays = spice.get_total_tfall_trise(driver.name, driver.top_spice_path)
+		driver.tfall = delays[0]
+		driver.trise = delays[1]
+		driver.delay = max(delays[0], delays[1])
+		# ... and the not_driver
+		delays = spice.get_total_tfall_trise(not_driver.name, not_driver.top_spice_path)
+		not_driver.tfall = delays[0]
+		not_driver.trise = delays[1]
+		not_driver.delay = max(delays[0], delays[1])
+	
+	print ""
+	
 
 def get_tfall_trise(name, spice_path):
-    """ Run HSPICE on multiplexer SPICE decks and parse output 
-        Returns this tuple: (tfall, trise) """
-        
-    print 'Updating delay for ' + name
-    
-    # We are going to change the working directory to the SPICE deck directory so that files generated by SPICE area created there
-    saved_cwd = os.getcwd()
-    new_cwd = ""
-    spice_filename_nodir = ""
-    if "/" in spice_path:
-        words = spice_path.split("/")
-        for i in range(len(words)-1):
-            new_cwd = new_cwd + words[i] + "/"
-        os.chdir(new_cwd)
-        spice_filename_nodir = words[len(words)-1]
+	""" Run HSPICE on multiplexer SPICE decks and parse output 
+		Returns this tuple: (tfall, trise) """
+		
+	print 'Updating delay for ' + name
+	
+	# We are going to change the working directory to the SPICE deck directory so that files generated by SPICE area created there
+	saved_cwd = os.getcwd()
+	new_cwd = ""
+	spice_filename_nodir = ""
+	if "/" in spice_path:
+		words = spice_path.split("/")
+		for i in range(len(words)-1):
+			new_cwd = new_cwd + words[i] + "/"
+		os.chdir(new_cwd)
+		spice_filename_nodir = words[len(words)-1]
 
-    # Run the SPICE simulation and capture console output
-    spice_output_filename = spice_filename_nodir.rstrip(".sp") + ".output"
-    output = open(spice_output_filename, "w")
-    subprocess.call(["hspice", spice_filename_nodir], stdout=output, stderr=output)
-    output.close()
+	# Run the SPICE simulation and capture console output
+	spice_output_filename = spice_filename_nodir.rstrip(".sp") + ".output"
+	output = open(spice_output_filename, "w")
+	subprocess.call(["hspice", spice_filename_nodir], stdout=output, stderr=output)
+	output.close()
 
-    # Return to saved cwd
-    os.chdir(saved_cwd)
+	# Return to saved cwd
+	os.chdir(saved_cwd)
 
-    # Parse output files
-    spice_output = open(spice_path.rstrip(".sp") + ".output", 'r')
-    tfall = 0.0
-    trise = 0.0
-    avg_power = 0.0
-    for line in spice_output:
-        if 'meas_total_tfall' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            tfall = convert_spice_num(delay_str)
-        elif 'meas_total_trise' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            trise = convert_spice_num(delay_str)
-        elif 'avg_power_gen_routing' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            power_str = split2[0]
-            avg_power = convert_spice_num(power_str)
-    spice_output.close()
+	# Parse output files
+	spice_output = open(spice_path.rstrip(".sp") + ".output", 'r')
+	tfall = 0.0
+	trise = 0.0
+	avg_power = 0.0
+	for line in spice_output:
+		if 'meas_total_tfall' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			tfall = convert_spice_num(delay_str)
+		elif 'meas_total_trise' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			trise = convert_spice_num(delay_str)
+		elif 'avg_power_gen_routing' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			power_str = split2[0]
+			avg_power = convert_spice_num(power_str)
+	spice_output.close()
 
-    return (tfall, trise)
+	return (tfall, trise)
 
-    
+	
 
 def flip_flop(architecture_dir, delay_dict, power_dict):
-    """ Run HSPICE on flipflop spice decks and parse output 
-        It will mutate delay_dict and power_dict so it contains right values """
-        
-    print 'Extracting delay and power in flip_flop'
-    
-    # Save my current directory
-    saved_cwd = os.getcwd()
-    
-    # Change to the flip_flop directory
-    flip_flop_dir = architecture_dir + '/flip_flop/decks'
-    os.chdir(flip_flop_dir)
-    
-    # Run HSPICE on ff_input_select.sp and capture output
-    ff_input_select_output = open('ff_input_select.output', 'w')
-    subprocess.call(['hspice', 'ff_input_select.sp'], stdout=ff_input_select_output, stderr=ff_input_select_output)
-    ff_input_select_output.close()
-    
-    # Run HSPICE on ff_input_select2.sp and capture output
-    ff_input_select2_output = open('ff_input_select2.output', 'w')
-    subprocess.call(['hspice', 'ff_input_select2.sp'], stdout=ff_input_select2_output, stderr=ff_input_select2_output)
-    ff_input_select2_output.close()
-    
-    # Run HSPICE on flipflop.sp and capture output
-    flipflop_output = open('flipflop.output', 'w')
-    subprocess.call(['hspice', 'flipflop.sp'], stdout=flipflop_output, stderr=flipflop_output)
-    flipflop_output.close()
-    
-    # Return to saved directory
-    os.chdir(saved_cwd)
+	""" Run HSPICE on flipflop spice decks and parse output 
+		It will mutate delay_dict and power_dict so it contains right values """
+		
+	print 'Extracting delay and power in flip_flop'
+	
+	# Save my current directory
+	saved_cwd = os.getcwd()
+	
+	# Change to the flip_flop directory
+	flip_flop_dir = architecture_dir + '/flip_flop/decks'
+	os.chdir(flip_flop_dir)
+	
+	# Run HSPICE on ff_input_select.sp and capture output
+	ff_input_select_output = open('ff_input_select.output', 'w')
+	subprocess.call(['hspice', 'ff_input_select.sp'], stdout=ff_input_select_output, stderr=ff_input_select_output)
+	ff_input_select_output.close()
+	
+	# Run HSPICE on ff_input_select2.sp and capture output
+	ff_input_select2_output = open('ff_input_select2.output', 'w')
+	subprocess.call(['hspice', 'ff_input_select2.sp'], stdout=ff_input_select2_output, stderr=ff_input_select2_output)
+	ff_input_select2_output.close()
+	
+	# Run HSPICE on flipflop.sp and capture output
+	flipflop_output = open('flipflop.output', 'w')
+	subprocess.call(['hspice', 'flipflop.sp'], stdout=flipflop_output, stderr=flipflop_output)
+	flipflop_output.close()
+	
+	# Return to saved directory
+	os.chdir(saved_cwd)
 
-    # Parse output files
-    ff_input_select = open(architecture_dir + '/flip_flop/decks/ff_input_select.output', 'r')
-    lut_to_ff_tfall = 0.0
-    lut_to_ff_trise = 0.0
-    avg_power_ff_input_select = 0.0
-    for line in ff_input_select:
-        if 'lut_to_ff_tfall' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            lut_to_ff_tfall = convert_spice_num(delay_str)
-        elif 'lut_to_ff_trise' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            lut_to_ff_trise = convert_spice_num(delay_str)
-        elif 'avg_power_ff_input_select' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            power_str = split2[0]
-            avg_power_ff_input_select = convert_spice_num(power_str)
-    ff_input_select.close()
-    
-    ff_input_select2 = open(architecture_dir + '/flip_flop/decks/ff_input_select2.output', 'r')
-    C_to_ff_tfall = 0.0
-    C_to_ff_trise = 0.0
-    for line in ff_input_select2:
-        if 'c_to_ff_tfall' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            C_to_ff_tfall = convert_spice_num(delay_str)
-        elif 'c_to_ff_trise' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            C_to_ff_trise = convert_spice_num(delay_str)    
-    ff_input_select2.close()
-    
-    flipflop = open(architecture_dir + '/flip_flop/decks/flipflop.output', 'r')
-    avg_power_ff = 0.0
-    for line in flipflop:
-        if 'avg_power_ff' in line:
-            split1 = line.split("=")
-            split2 = split1[1].split()
-            delay_str = split2[0]
-            avg_power_ff = convert_spice_num(delay_str)
-    flipflop.close()
-    
-    # Now that we have everything we needed from the output files, 
-    # We choose to keep either trise or tfall for delay value
-    lut_to_ff = compare_tfall_trise(lut_to_ff_tfall, lut_to_ff_trise)
-    delay_dict['lut_to_ff'] = lut_to_ff
-    
-    C_to_ff = compare_tfall_trise(C_to_ff_tfall, C_to_ff_trise)
-    delay_dict['C_to_ff'] = C_to_ff
-    
-    power_dict['avg_power_ff_input_select'] = avg_power_ff_input_select
-    power_dict['avg_power_ff'] = avg_power_ff
-    
+	# Parse output files
+	ff_input_select = open(architecture_dir + '/flip_flop/decks/ff_input_select.output', 'r')
+	lut_to_ff_tfall = 0.0
+	lut_to_ff_trise = 0.0
+	avg_power_ff_input_select = 0.0
+	for line in ff_input_select:
+		if 'lut_to_ff_tfall' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			lut_to_ff_tfall = convert_spice_num(delay_str)
+		elif 'lut_to_ff_trise' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			lut_to_ff_trise = convert_spice_num(delay_str)
+		elif 'avg_power_ff_input_select' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			power_str = split2[0]
+			avg_power_ff_input_select = convert_spice_num(power_str)
+	ff_input_select.close()
+	
+	ff_input_select2 = open(architecture_dir + '/flip_flop/decks/ff_input_select2.output', 'r')
+	C_to_ff_tfall = 0.0
+	C_to_ff_trise = 0.0
+	for line in ff_input_select2:
+		if 'c_to_ff_tfall' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			C_to_ff_tfall = convert_spice_num(delay_str)
+		elif 'c_to_ff_trise' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			C_to_ff_trise = convert_spice_num(delay_str)    
+	ff_input_select2.close()
+	
+	flipflop = open(architecture_dir + '/flip_flop/decks/flipflop.output', 'r')
+	avg_power_ff = 0.0
+	for line in flipflop:
+		if 'avg_power_ff' in line:
+			split1 = line.split("=")
+			split2 = split1[1].split()
+			delay_str = split2[0]
+			avg_power_ff = convert_spice_num(delay_str)
+	flipflop.close()
+	
+	# Now that we have everything we needed from the output files, 
+	# We choose to keep either trise or tfall for delay value
+	lut_to_ff = compare_tfall_trise(lut_to_ff_tfall, lut_to_ff_trise)
+	delay_dict['lut_to_ff'] = lut_to_ff
+	
+	C_to_ff = compare_tfall_trise(C_to_ff_tfall, C_to_ff_trise)
+	delay_dict['C_to_ff'] = C_to_ff
+	
+	power_dict['avg_power_ff_input_select'] = avg_power_ff_input_select
+	power_dict['avg_power_ff'] = avg_power_ff
+	
 
 ## THIS HAS BEEN MOVED TO UTILS    
 def compare_tfall_trise(tfall, trise):
-    """ Compare tfall and trise and returns largest value or -1.0
-        -1.0 is return if something went wrong in SPICE """
-    
-    # Initialize output delay
-    delay = -1.0
-    
-    # Compare tfall and trise
-    if (tfall == 0.0) or (trise == 0.0):
-        # Couldn't find one of the values in output
-        # This is an error because maybe SPICE failed
-        delay = -1.0
-    elif tfall > trise:
-        if tfall > 0.0:
-            # tfall is positive and bigger than the trise, this is a valid result
-            delay = tfall
-        else:
-            # Both tfall and trise are negative, this is an invalid result
-            delay = -1.0
-    elif trise >= tfall:
-        if trise > 0.0:
-            # trise is positive and larger or equal to tfall, this is value result
-            delay = trise
-        else:
-            delay = -1.0
-    else:
-        delay = -1.0
-        
-    return delay
-    
-    
+	""" Compare tfall and trise and returns largest value or -1.0
+		-1.0 is return if something went wrong in SPICE """
+	
+	# Initialize output delay
+	delay = -1.0
+	
+	# Compare tfall and trise
+	if (tfall == 0.0) or (trise == 0.0):
+		# Couldn't find one of the values in output
+		# This is an error because maybe SPICE failed
+		delay = -1.0
+	elif tfall > trise:
+		if tfall > 0.0:
+			# tfall is positive and bigger than the trise, this is a valid result
+			delay = tfall
+		else:
+			# Both tfall and trise are negative, this is an invalid result
+			delay = -1.0
+	elif trise >= tfall:
+		if trise > 0.0:
+			# trise is positive and larger or equal to tfall, this is value result
+			delay = trise
+		else:
+			delay = -1.0
+	else:
+		delay = -1.0
+		
+	return delay
+	
+	
 def convert_spice_num(spice_number):
-    """ Convert a numbers from SPICE output of the form 4.3423p to a float """
-    
-    # Make dictionary of exponent values
-    exponent_values = {'u' : float(1e-6),
-                       'n' : float(1e-9),
-                       'p' : float(1e-12),
-                       'f' : float(1e-15),
-                       'a' : float(1e-18)}
-    # The coefficient is everything but the last character
-    coefficient = float(spice_number[0:len(spice_number)-1])
-    # The exponent is the last char (convert to num with dict)
-    exponent = exponent_values[spice_number[len(spice_number)-1]]
+	""" Convert a numbers from SPICE output of the form 4.3423p to a float """
+	
+	# Make dictionary of exponent values
+	exponent_values = {'u' : float(1e-6),
+					   'n' : float(1e-9),
+					   'p' : float(1e-12),
+					   'f' : float(1e-15),
+					   'a' : float(1e-18)}
+	# The coefficient is everything but the last character
+	coefficient = float(spice_number[0:len(spice_number)-1])
+	# The exponent is the last char (convert to num with dict)
+	exponent = exponent_values[spice_number[len(spice_number)-1]]
 
-    return coefficient*exponent
-    
-    
+	return coefficient*exponent
+	
+	
 def check_no_errors(delay_dict):
-    """ This function checks for -1.0 in the HSPICE measurements """
+	""" This function checks for -1.0 in the HSPICE measurements """
 
-    print 'Checking HSPICE measurements for potential errors...'
-    
-    error_counter = 0
-    
-    for key, value in delay_dict.iteritems():
-        if value == -1.0:
-            print 'Found error for: ' + key
-            error_counter = error_counter + 1
-        
-    if error_counter == 0:
-        print 'No errors found.'
-    else:
-        print 'Found ' + str(error_counter) + ' errors.'
-        
-    return error_counter
+	print 'Checking HSPICE measurements for potential errors...'
+	
+	error_counter = 0
+	
+	for key, value in delay_dict.iteritems():
+		if value == -1.0:
+			print 'Found error for: ' + key
+			error_counter = error_counter + 1
+		
+	if error_counter == 0:
+		print 'No errors found.'
+	else:
+		print 'Found ' + str(error_counter) + ' errors.'
+		
+	return error_counter
