@@ -522,6 +522,13 @@ def erf_inverter_balance_trise_tfall(sp_path,
                     nm_size_upper_bound = nm_size_list[i]
                     nm_size_lower_bound = nm_size_list[i-1]
                     break
+               
+
+        #checks to see if indicies are swapped
+        if nm_size_lower_bound > nm_size_upper_bound:
+            temp_size = nm_size_upper_bound
+            nm_size_upper_bound = nm_size_lower_bound
+            nm_size_lower_bound = temp_size
 
         if ERF_MONITOR_VERBOSE:
             if "_pmos" in target_tran_name:
@@ -581,7 +588,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 
         if ERF_MONITOR_VERBOSE:
             print "ERF PMOS size is " + str(target_tran_nm_size) + "\n"
-    
+    #end if not self_loading
     return target_tran_nm_size
 
 
