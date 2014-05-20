@@ -39,8 +39,8 @@ def print_area_and_delay(report_file, fpga_inst):
 	print "  SUBCIRCUIT AREA & DELAY"
 	print "  -----------------------"
 
-	report_file.write( "  SUBCIRCUIT AREA & DELAY")
-	report_file.write( "  -----------------------")
+	report_file.write( "  SUBCIRCUIT AREA & DELAY\n")
+	report_file.write( "  -----------------------\n")
 	
 	
 	area_dict = fpga_inst.area_dict
@@ -378,3 +378,31 @@ def print_error(value, arguement, filename):
 
 def print_warning(value, arguement, filename):
 	print "WARNING: Negative value (" + value + ") for " + arguement + " in " + filename
+
+def print_architecture_params(report_file, arch_params_dict):
+	report_file.write("----------Archetecture Parameters----------\n")
+	report_file.write( "N = " + str( arch_params_dict['N']) + "\n" )
+	report_file.write( "K = " + str( arch_params_dict['K']) + "\n" )
+	report_file.write( "W = " + str( arch_params_dict['W']) + "\n" )
+	report_file.write( "L = " + str( arch_params_dict['L']) + "\n" )
+	report_file.write( "I = " + str( arch_params_dict['I']) + "\n" )
+	report_file.write( "Fs = " + str( arch_params_dict['Fs']) + "\n" )
+	report_file.write( "Fcin = " + str( arch_params_dict['Fcin']) + "\n" )
+	report_file.write( "Fcout = " + str( arch_params_dict['Fcout']) + "\n" )
+	report_file.write( "Or = " + str( arch_params_dict['Or']) + "\n" )
+	report_file.write( "Ofb = " + str( arch_params_dict['Ofb']) + "\n" )
+	report_file.write( "Rsel = " + str( arch_params_dict['Rsel']) + "\n" )
+	report_file.write( "Rfb = " + str( arch_params_dict['Rfb']) + "\n" )
+	report_file.write( "Fclocal = " + str( arch_params_dict['Fclocal']) + "\n" )
+
+	report_file.write("----------Process Technology Parameters----------\n")
+	report_file.write ( "vdd = " + str( arch_params_dict['vdd']) + "\n" )
+	report_file.write ( "vsram = " + str( arch_params_dict['vsram']) + "\n" )
+	report_file.write ( "vsram_n = " + str( arch_params_dict['vsram_n']) + "\n" )
+	report_file.write ( "gate_length = " + str( arch_params_dict['gate_length']) + "\n" )
+	report_file.write ( "min_tran_width = " + str( arch_params_dict['min_tran_width']) + "\n" )
+	report_file.write ( "min_width_tran_area = " + str( arch_params_dict['min_width_tran_area']) + "\n" )
+	report_file.write ( "sram_cell_area = " + str( arch_params_dict['sram_cell_area']) + "\n" )
+	report_file.write ( "model_path = " + str( arch_params_dict['model_path']) + "\n" )
+	report_file.write ( "model_library = " + str( arch_params_dict['model_library']) + "\n" )
+	report_file.write ( "metal = " + str( arch_params_dict['metal']) + "\n" )
