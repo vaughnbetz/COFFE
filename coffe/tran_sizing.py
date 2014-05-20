@@ -523,7 +523,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 					nm_size_lower_bound = nm_size_list[i-1]
 					break
 			   
-		co#checks to see if indicies are swapped
+		#checks to see if indicies are swapped
 		if nm_size_lower_bound > nm_size_upper_bound:
 			temp_size = nm_size_upper_bound
 			nm_size_upper_bound = nm_size_lower_bound
@@ -566,20 +566,22 @@ def erf_inverter_balance_trise_tfall(sp_path,
 					sweep_parameter_dict[name].append(value)
 		# Run HSPICE sweep
 		if ERF_MONITOR_VERBOSE:
-			print "Running HSPICE sweep..."
+			print "Running HSPICE sweep on: " + sp_path + ""
 		spice_meas = spice_interface.run(sp_path, sweep_parameter_dict)
 
 		# This time around, we want to select the PMOS size that makes the difference
 		# between trise and tfall as small as possible. (we know that the minimum
 		# was in the interval we just swept)
 		current_best_tfall_trise_balance = 1
+
+		
 		best_index = 0
 		for i in xrange(len(nm_size_list)):
 			tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
 			trise_str = spice_meas["meas_" + inv_name + "_trise"][i]
 			tfall = float(tfall_str)
 			trise = float(trise_str)
-			diff = abs(tfall-trise) 
+			diff = abs(tfall-trise)
 			if diff < current_best_tfall_trise_balance:
 				current_best_tfall_trise_balance = diff
 				best_index = i
