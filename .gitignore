@@ -66,6 +66,7 @@ input_files/*
 #output folder contents
 results/*
 run_scripts/*
+outputs/*
 
 #temporary files
 *.fuse_hidden*
