@@ -67,3 +67,5 @@ input_files/*
 results/*
 run_scripts/*
 
+#temporary files
+*.fuse_hidden*
