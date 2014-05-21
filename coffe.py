@@ -54,6 +54,8 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
+parser.add_argument('-t', '--use_tgate', type=int, default=0, help="flag to use transmission gates instead of pass transistors")
+
 args = parser.parse_args()
 arch_description_filename = args.arch_description
 is_size_transistors = not args.no_sizing
@@ -62,6 +64,7 @@ re_erf = args.re_erf
 area_opt_weight = args.area_opt_weight
 delay_opt_weight = args.delay_opt_weight
 max_iterations = args.max_iterations
+use_tgate = args.use_tgate
 
 # Print the options
 print "RUN OPTIONS:"
@@ -121,7 +124,8 @@ fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rf
 					  sram_cell_area, 
 					  model_path, 
 					  model_library, 
-					  metal_stack)
+					  metal_stack,
+					  use_tgate)
 
 # Print basic FPGA specs                       
 fpga_inst.print_specs()

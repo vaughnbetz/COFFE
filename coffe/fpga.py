@@ -1990,7 +1990,7 @@ class FPGA:
 	""" This class describes an FPGA. """
 		
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library, metal_stack):
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library, metal_stack, use_tgate):
 		  
 		# Initialize the specs
 		self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
@@ -2102,6 +2102,8 @@ class FPGA:
 		# e.g. metal_stack[0] = (R0, C0)
 		self.metal_stack = metal_stack
 		
+		# weather or not to use transmission gates
+		self.use_tgate = use_tgate
 
 	def generate(self, is_size_transistors):
 		""" This function generates all SPICE netlists and library files. """

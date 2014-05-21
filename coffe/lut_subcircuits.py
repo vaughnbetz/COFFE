@@ -439,3 +439,144 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K):
 	wire_names_list.append("wire_lut_" + lut_input_name + "_driver_load")
 	
 	return wire_names_list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def generate_tgate_lut6(spice_filename, min_tran_width):
+	""" Generates a 6LUT SPICE deck """
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the 6-LUT circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* 6-LUT subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	Wn = min_tran_width
+	Wp = 1.667*min_tran_width
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+
+	return tran_names_list, wire_names_list
+
+
+def generate_tgate_lut5(spice_filename, min_tran_width):
+	""" Generates a 5LUT SPICE deck """
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the 5-LUT circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* 5-LUT subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	Wn = min_tran_width
+	Wp = 1.667*min_tran_width
+
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+
+	return tran_names_list, wire_names_list
+
+	
+def generate_tgate_lut4(spice_filename, min_tran_width):
+	""" Generates a 4LUT SPICE deck """
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the 4-LUT circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* 4-LUT subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	Wn = min_tran_width
+	Wp = 1.667*min_tran_width
+
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return tran_names_list, wire_names_list
+	
+
+def generate_tgate_lut_driver(spice_filename, lut_input_name, lut_input_type):
+	""" Generate a pass-transistor LUT driver based on type. """
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	  
+	# Create the LUT-input circuit header (same interface for all LUT input types)
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* LUT " + lut_input_name + " subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return tran_names_list, wire_names_list
+ 
+
+#samething doesn't change?
+def generate_tgate_lut_not_driver(spice_filename, lut_input_name):
+	""" Generate a pass-transistor LUT driver based on type. """
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	  
+	# Create the LUT-input circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* LUT " + lut_input_name + " subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return tran_names_list, wire_names_list
+   
+   
+def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K):
+	""" Generates LUT input load SPICE deck """
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the input load circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* LUT " + lut_input_name + "-input load subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return wire_names_list

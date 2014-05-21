@@ -281,3 +281,146 @@ def generate_ptran_2_to_1_mux(spice_filename, mux_name):
 	wire_names_list.append("wire_" + mux_name + "_driver")
 	
 	return tran_names_list, wire_names_list 
+
+
+
+
+
+
+
+
+def _generate_tgate_driver(spice_file, mux_name, implemented_mux_size):
+	""" Generate mux driver for pass-transistor based MUX (it has a level restorer) """
+	
+	# Create the MUX output driver circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " driver subcircuit (" + str(implemented_mux_size) + ":1)\n")
+	spice_file.write("******************************************************************************************\n")
+
+	
+def _generate_tgate_sense_only(spice_file, mux_name, implemented_mux_size):
+	""" Generate mux driver for pass-transistor based MUX (it has a level restorer) """
+	
+	# Create the MUX output sense inverter only circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " sense inverter subcircuit (" + str(implemented_mux_size) + ":1)\n")
+	spice_file.write("******************************************************************************************\n")
+	
+def _generate_tgate_2lvl_mux_off(spice_file, mux_name, implemented_mux_size):
+	""" Generate off pass-transistor 2-level mux """
+	
+	# Create the off MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), turned off \n")
+	spice_file.write("******************************************************************************************\n")
+	
+def _generate_tgate_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size):
+	""" Generate partially on pass-transistor 2-level mux """
+
+	# Create the partially-on MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), partially turned on\n")
+	spice_file.write("******************************************************************************************\n")
+
+
+def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size):
+	""" Generate on pass-transistor 2-level mux, never call this outside this file """
+
+	# Create the fully-on MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (mux only)\n")
+	spice_file.write("******************************************************************************************\n")
+
+
+	
+def generate_tgate_2lvl_mux(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
+	""" 
+	Creates two-level MUX circuits
+	There are 3 different types of MUX that are generated depending on how 'on' the mux is
+		1. Fully on (both levels are on) circuit name: mux_name + "_on"
+		2. Partially on (only level 1 is on) circuit name: mux_name + "_partial"
+		3. Off (both levels are off) circuit name: mux_name + "_off"
+	"""
+   
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Generate SPICE subcircuits
+	_generate_ptran_driver(spice_file, mux_name, implemented_mux_size)
+	_generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
+	_generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
+	_generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
+	
+	# Create the fully-on MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on \n")
+	spice_file.write("******************************************************************************************\n")
+	
+	# Close SPICE file
+	spice_file.close()
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return tran_names_list, wire_names_list
+	
+	
+def generate_tgate_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
+	""" 
+	Creates two-level MUX files
+	There are 3 different types of MUX that are generated depending on how 'on' the mux is
+		1. Fully on (both levels are on) circuit name: mux_name + "_on"
+		2. Partially on (only level 1 is on) circuit name: mux_name + "_partial"
+		3. Off (both levels are off) circuit name: mux_name + "_off"
+		
+	No driver is attached to the on mux (we need this for the local routing mux)
+	"""
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Generate SPICE subcircuits
+	_generate_ptran_sense_only(spice_file, mux_name, implemented_mux_size)
+	_generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
+	_generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
+	_generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
+	
+	# Create the fully-on MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on \n")
+	spice_file.write("******************************************************************************************\n")
+	
+	# Close SPICE file
+	spice_file.close()
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return tran_names_list, wire_names_list
+	
+ 
+def generate_tgate_2_to_1_mux(spice_filename, mux_name):
+	""" Generate a 2:1 pass-transistor MUX with shared SRAM """
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the 2:1 MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + mux_name + " subcircuit (2:1)\n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.close()
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	
+	return tran_names_list, wire_names_list 
