@@ -38,6 +38,7 @@ import coffe.spice as spice
 import coffe.tran_sizing as tran_sizing
 #import coffe.hspice_extract as hspice_extract
 import coffe.utils
+import coffe.vpr
 import datetime
 
 print "\nCOFFE 1.1\n"
@@ -183,8 +184,11 @@ print "|------------------------------------------------------------------------
 print ""
 
 os.chdir(default_dir)
-# Also print report to a
+# Also print report to a file
 report_file = open( arch_desc_words[0] + ".results", 'a')
+#prints archtecture parameters
+print_architecture_params(report_file, arch_params_dict)
+
 report_file.write( str(datetime.datetime.now()) + "\n")
 report_file.write( "|------------------------------------------------------------------------------|\n")
 report_file.write( "|    Area and Delay Report                                                     |\n")
