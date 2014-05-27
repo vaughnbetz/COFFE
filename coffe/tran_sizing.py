@@ -668,8 +668,7 @@ def erf_inverter(sp_path,
 			inv_nm_size = inv_nm_size + initial_inv_nm_size
 			irt = irt + 1
 
-	print "Found valid transistor sizes after " + str(irt) " iterations"
-
+	print "Found valid transistor sizes after " + str(irt) + " iterations"
 
 	# If the rise time is faster, nmos must be made bigger.
 	# If the fall time is faster, pmos must be made bigger. 
