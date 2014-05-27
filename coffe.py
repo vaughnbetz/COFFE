@@ -187,7 +187,7 @@ os.chdir(default_dir)
 # Also print report to a file
 report_file = open( arch_desc_words[0] + ".results", 'a')
 #prints archtecture parameters
-print_architecture_params(report_file, arch_params_dict)
+coffe.utils.print_architecture_params(report_file, arch_params_dict)
 
 report_file.write( str(datetime.datetime.now()) + "\n")
 report_file.write( "|------------------------------------------------------------------------------|\n")
@@ -251,3 +251,8 @@ report_file.write( "Total time elapsed: " + str(total_hours_elapsed) + " hours "
 report_file.write( "\n")
 
 report_file.close()
+
+os.chdir(default_dir)
+vpr_file = open( arch_desc_words[0] + ".xml", 'w')
+coffe.vpr.print_vpr_file(vpr_file, fpga_inst)
+vpr_file.close()

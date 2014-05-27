@@ -15,11 +15,13 @@ def print_vpr_file(vpr_file, fpga_inst):
 	lut_input_names.sort()
 	lut_delays = {}
 	for input_name in lut_input_names:
-	  lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
-	  driver_delay = max(lut_input.driver.delay, lut_input.not_driver.delay)
-	  path_delay = lut_input.delay
-	  lut_delays[input_name] = driver_delay+path_delay
-	  
+		lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
+		driver_delay = max(lut_input.driver.delay, lut_input.not_driver.delay)
+		path_delay = lut_input.delay
+		lut_delays[input_name] = driver_delay+path_delay
+
+	Rfb = fpga_inst.specs.Rfb
+		
 	# get areas
 	grid_logic_tile_area = fpga_inst.area_dict["logic_cluster"]/fpga_inst.specs.min_width_tran_area
 	ipin_mux_trans_size = fpga_inst.area_dict["ipin_mux_trans_size"]/fpga_inst.specs.min_width_tran_area
@@ -73,9 +75,9 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("<layout auto=\"1.0\"/>\n")
 
 	vpr_file.write("  <device>\n")
-	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\" ipin_mux_trans_size=" + ipin_mux_trans_size+ "/>\n")
-	vpr_file.write("    <timing C_ipin_cblock=\"0.000000e+00\" T_ipin_cblock=" + T_ipin_cblock + "/>\n")
-	vpr_file.write("    <area grid_logic_tile_area=" + grid_logic_tile_area +"/>\n")
+	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\" ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n")
+	vpr_file.write("    <timing C_ipin_cblock=\"0.000000e+00\" T_ipin_cblock=\"" + str(T_ipin_cblock) + "\"/>\n")
+	vpr_file.write("    <area grid_logic_tile_area=\"" + str(grid_logic_tile_area) +"\"/>\n")
 	vpr_file.write("    <chan_width_distr>\n")
 	vpr_file.write("      <io width=\"1.000000\"/>\n")
 	vpr_file.write("      <x distr=\"uniform\" peak=\"1.000000\"/>\n")
@@ -84,7 +86,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("    <switch_block type=\"wilton\" fs=\"3\"/>\n")
 	vpr_file.write("  </device>\n")
 	vpr_file.write("  <switchlist>\n")
-	vpr_file.write("    <switch type=\"mux\" name=\"0\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=" + Tdel + " mux_trans_size=" + mux_trans_size + " buf_size=" + buf_size + "/>\n")
+	vpr_file.write("    <switch type=\"mux\" name=\"0\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(Tdel) + "\" mux_trans_size=\"" + str(mux_trans_size) + "\" buf_size=\"" + str(buf_size) + "\"/>\n")
 	vpr_file.write("  </switchlist>\n")
 	vpr_file.write("  <segmentlist>\n")
 	vpr_file.write("    <segment freq=\"1.000000\" length=\"4\" type=\"unidir\" Rmetal=\"0.000000\" Cmetal=\"0.000000e+00\">\n")
@@ -98,7 +100,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("      <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->\n")
 	vpr_file.write("     <pb_type name=\"io\" capacity=\"8\">\n")
 	vpr_file.write("       <input name=\"outpad\" num_pins=\"1\"/>\n")
-	vpr_file.write("       <output name\"inpad\" num_pins=\"1\"/>\n")
+	vpr_file.write("       <output name=\"inpad\" num_pins=\"1\"/>\n")
 	vpr_file.write("       <clock name=\"clock\" num_pins=\"1\"/>\n")
 
 	vpr_file.write("    <!-- IOs can operate as either inputs or outputs -->\n")
@@ -188,101 +190,91 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("  <T_clock_to_Q max=\"6.032e-11\" port=\"ff.Q\" clock=\"clk\"/>\n")
 	vpr_file.write("  </pb_type>\n")
 
-	#       <interconnect>
-	#       <!-- BLE input to LUT input direct connections and delays -->
-	#       <direct name="direct1" input="ble6.in_A" output="lut6.in[0:0]">
-	#       ***************************************************
-	#         <delay_constant max="***lut_a" in_port="ble6.in_A" out_port="lut6.in[0:0]" />
-	#       ***************************************************
-	#       </direct>
-	#       <direct name="direct2" input="ble6.in_B" output="lut6.in[1:1]">
-	#       ***************************************************
-	#         <delay_constant max="***lut_b" in_port="ble6.in_B" out_port="lut6.in[1:1]" />
-	#       ***************************************************
-	#       </direct>
-	#       <direct name="direct3" input="ble6.in_D" output="lut6.in[3:3]">
-	#       ***************************************************
-	#         <delay_constant max="***lut_d" in_port="ble6.in_D" out_port="lut6.in[3:3]" />
-	#       ***************************************************
-	#       </direct>
-	#       <direct name="direct4" input="ble6.in_E" output="lut6.in[4:4]">
-	#       ***************************************************
-	#         <delay_constant max="***lut_e" in_port="ble6.in_E" out_port="lut6.in[4:4]" />
-	#       ***************************************************
-	#       </direct>
-	#       <direct name="direct5" input="ble6.in_F" output="lut6.in[5:5]">
-	#       ***************************************************
-	#         <delay_constant max="***lut_f" in_port="ble6.in_F" out_port="lut6.in[5:5]" />
-	#       ***************************************************
-	#       </direct>
-	#       <!--Clock -->  
-	#       <direct name="direct6" input="ble6.clk" output="ff.clk"/>      
-	#           <!-- Register feedback mux -->   
-	#           <mux name="mux1" input="ble6.in_C ff.Q" output="lut6.in[2:2]">
-	#       ***************************************************
-	#         <delay_constant max="***lut_c" in_port="ble6.in_C" out_port="lut6.in[2:2]" />
-	#       ***************************************************
-	#         <delay_constant max="?????" in_port="ff.Q" out_port="lut6.in[2:2]" />  
-	#       </mux>
-	#           <!-- FF input selection mux -->
-	#           <mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
-	#         <delay_constant max="?????" in_port="lut6.out" out_port="ff.D" />
-	#         <delay_constant max="?????" in_port="ble6.in_C" out_port="ff.D" />
-	#       </mux>
-	#           <!-- BLE output (local) -->                  
-	#       <mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">
-	#         <delay_constant max="?????" in_port="ff.Q" out_port="ble6.out_local" />
-	#       ***************************************************
-	#             <delay_constant max="***local feedback" in_port="lut6.out" out_port="ble6.out_local" />
-	#       ***************************************************
-	#       </mux>
-	#           <!-- BLE output (routing 1) --> 
-	#           <mux name="mux4" input="ff.Q lut6.out" output="ble6.out_routing[0:0]">
-	#       ***************************************************
-	#             <delay_constant max="***local CLB routing" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
-	#       ***************************************************
-	#       ***************************************************
-	#         <delay_constant max="***logic block output" in_port="lut6.out" out_port="ble6.out_routing[0:0]" />
-	#       ***************************************************
-	#       </mux>
-	#           <!-- BLE output (routing 2) --> 
-	#       <mux name="mux5" input="ff.Q lut6.out" output="ble6.out_routing[1:1]">
-	#       ***************************************************
-	#             <delay_constant max="***local CLB routing" in_port="ff.Q" out_port="ble6.out_routing[1:1]" />
-	#       ***************************************************
-	#       ***************************************************
-	#         <delay_constant max="***logic block output" in_port="lut6.out" out_port="ble6.out_routing[1:1]" />
-	#       ***************************************************
-	#       </mux>
-	#       </interconnect>
-	#     </pb_type>
+	vpr_file.write("      <interconnect>\n")
 
+
+	feedback_mux = {}
+	input_num = 0
+	direct_num = 1
+	for input_name in lut_input_names:
+		if Rfb.count(input_name) != 1 :
+			vpr_file.write("    <direct name=\"direct" + str(input_num) + "\" input=\"ble6.in_" + input_name.upper() + "\" output=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\">")
+			vpr_file.write("      <delay_constant max=\"" + str(lut_delays[input_name]) + "\" in_port=\"ble6.in_" + input_name.upper() + "\" out_port=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\" />")
+			vpr_file.write("    </direct>")
+			direct_num = direct_num + 1
+
+		else:
+			feedback_mux[input_name] = input_num
+
+		input_num = input_num + 1
+
+	vpr_file.write("      <!--Clock -->\n")
+	vpr_file.write("      <direct name=\"direct" + str(direct_num) + "\" input=\"ble6.clk\" output=\"ff.clk\"/>\n")
+
+
+	mux_num = 1
+	for name in feedback_mux :
+		vpr_file.write("      <!-- Register feedback mux -->   \n")
+		vpr_file.write("      <mux name=\"mux" + str(mux_num) + "\" input=\"ble6.in_" + name.upper() + " ff.Q\" output=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\">\n")
+		vpr_file.write("        <delay_constant max=\"" + str(lut_delays[name]) + "\" in_port=\"ble6.in_" + name.upper() + "\" out_port=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\" />\n")
+		vpr_file.write("        <delay_constant max=\"" + str(lut_delays[name]) + "\" in_port=\"ff.Q\" out_port=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\" />  \n")
+		vpr_file.write("      </mux>\n")
+		mux_num = mux_num + 1
+		vpr_file.write("      <!-- FF input selection mux -->\n")
+		vpr_file.write("      <mux name=\"" + str(mux_num) + "\" input=\"lut6.out ble6.in_" + name.upper() + "\" output=\"ff.D\">\n")
+		vpr_file.write("        <delay_constant max=\"1.74588e-11\" in_port=\"lut6.out\" out_port=\"ff.D\" />\n")
+		vpr_file.write("        <delay_constant max=\"1.74588e-11\" in_port=\"ble6.in_" + name.upper() + "\" out_port=\"ff.D\" />\n")
+		vpr_file.write("      </mux>\n")
+		mux_num = mux_num + 1
+
+
+	vpr_file.write("      <!-- BLE output (local) -->\n")
+	vpr_file.write("      <mux name=\"mux" + str(mux_num) + "\" input=\"ff.Q lut6.out\" output=\"ble6.out_local\">\n")
+	vpr_file.write("        <delay_constant max=\"" + str(local_feedback) + "\" in_port=\"ff.Q\" out_port=\"ble6.out_local\" />\n")
+	vpr_file.write("        <delay_constant max=\"" + str(local_feedback) + "\" in_port=\"lut6.out\" out_port=\"ble6.out_local\" />\n")
+	vpr_file.write("      </mux>\n")
+	mux_num = mux_num + 1
+
+	vpr_file.write("      <!-- BLE output (routing 1) --> \n")
+	vpr_file.write("      <mux name=\"mux" + str(mux_num) + "\" input=\"ff.Q lut6.out\" output=\"ble6.out_routing[0:0]\">\n")
+	vpr_file.write("        <delay_constant max=\"" + str(logic_block_output)+ "\" in_port=\"ff.Q\" out_port=\"ble6.out_routing[0:0]\" />\n")
+	vpr_file.write("        <delay_constant max=\"" + str(logic_block_output)+ "\" in_port=\"lut6.out\" out_port=\"ble6.out_routing[0:0]\" />\n")
+	vpr_file.write("      </mux>\n")
+	mux_num = mux_num + 1
+
+	vpr_file.write("      <!-- BLE output (routing 2) --> \n")
+	vpr_file.write("      <mux name=\"mux" + str(mux_num) + "\" input=\"ff.Q lut6.out\" output=\"ble6.out_routing[1:1]\">\n")
+	vpr_file.write("        <delay_constant max=\"" + str(logic_block_output)+ "\" in_port=\"ff.Q\" out_port=\"ble6.out_routing[1:1]\" />\n")
+	vpr_file.write("        <delay_constant max=\"" + str(logic_block_output)+ "\" in_port=\"lut6.out\" out_port=\"ble6.out_routing[1:1]\" />\n")
+	vpr_file.write("      </mux>\n")
+	vpr_file.write("      </interconnect>\n")
+	vpr_file.write("    </pb_type>\n")
         
 	vpr_file.write("    <interconnect>\n")
-	vpr_file.write("      <!-- 50% sparsely populated local routing -->\n")
-	vpr_file.write("      <complete name=\"lutA\" input=\"clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local ble6[8:8].out_local\" output=\"ble6[9:0].in_A\">\n")
-	vpr_file.write("  <delay_constant max=\"6.07717e-11\" in_port=\"clb.I4\" out_port=\"ble6.in_A\" />\n")
-	vpr_file.write("  <delay_constant max=\"6.07717e-11\" in_port=\"clb.I3\" out_port=\"ble6.in_A\" />\n")
+	vpr_file.write("    <!-- 50% sparsely populated local routing -->\n")
+	vpr_file.write("    <complete name=\"lutA\" input=\"clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local ble6[8:8].out_local\" output=\"ble6[9:0].in_A\">\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I4\" out_port=\"ble6.in_A\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I3\" out_port=\"ble6.in_A\" />\n")
 	vpr_file.write("      </complete>\n")
 	vpr_file.write("    <complete name=\"lutB\" input=\"clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local ble6[9:9].out_local\" output=\"ble6[9:0].in_B\">\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I3\" out_port=\"ble6.in_B\" />\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I2\" out_port=\"ble6.in_B\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I3\" out_port=\"ble6.in_B\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I2\" out_port=\"ble6.in_B\" />\n")
 	vpr_file.write("      </complete>\n")
 	vpr_file.write("    <complete name=\"lutC\" input=\"clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local ble6[8:8].out_local\" output=\"ble6[9:0].in_C\">\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I2\" out_port=\"ble6.in_C\" />\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I1\" out_port=\"ble6.in_C\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I2\" out_port=\"ble6.in_C\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I1\" out_port=\"ble6.in_C\" />\n")
 	vpr_file.write("      </complete>\n")
 	vpr_file.write("    <complete name=\"lutD\" input=\"clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local ble6[9:9].out_local\" output=\"ble6[9:0].in_D\">\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I4\" out_port=\"ble6.in_D\" />\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I2\" out_port=\"ble6.in_D\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I4\" out_port=\"ble6.in_D\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I2\" out_port=\"ble6.in_D\" />\n")
 	vpr_file.write("      </complete>\n")
 	vpr_file.write("    <complete name=\"lutE\" input=\"clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local ble6[8:8].out_local\" output=\"ble6[9:0].in_E\">\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I3\" out_port=\"ble6.in_E\" />\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I1\" out_port=\"ble6.in_E\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I3\" out_port=\"ble6.in_E\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I1\" out_port=\"ble6.in_E\" />\n")
 	vpr_file.write("      </complete>\n")
 	vpr_file.write("    <complete name=\"lutF\" input=\"clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local ble6[9:9].out_local\" output=\"ble6[9:0].in_F\">\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I4\" out_port=\"ble6.in_F\" />\n")
-	vpr_file.write("      <delay_constant max=\"6.07717e-11\" in_port=\"clb.I1\" out_port=\"ble6.in_F\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I4\" out_port=\"ble6.in_F\" />\n")
+	vpr_file.write("      <delay_constant max=\"" + str(local_CLB_routing) + "\" in_port=\"clb.I1\" out_port=\"ble6.in_F\" />\n")
 	vpr_file.write("      </complete>\n")
 	vpr_file.write("      <complete name=\"clks\" input=\"clb.clk\" output=\"ble6[9:0].clk\">\n")
 	vpr_file.write("      </complete>\n")
