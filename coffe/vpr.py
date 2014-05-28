@@ -20,7 +20,15 @@ def print_vpr_file(vpr_file, fpga_inst):
 		path_delay = lut_input.delay
 		lut_delays[input_name] = driver_delay+path_delay
 
+	# get archetecture parameters
 	Rfb = fpga_inst.specs.Rfb
+	Fcin = fpga_inst.specs.Fcin
+	Fcout = fpga_inst.specs.Fcout
+	Fs = fpga_inst.specs.Fs
+	N = fpga_inst.specs.N
+	K = fpga_inst.specs.K
+	L = fpga_inst.specs.L
+
 		
 	# get areas
 	grid_logic_tile_area = fpga_inst.area_dict["logic_cluster"]/fpga_inst.specs.min_width_tran_area
@@ -83,13 +91,13 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("      <x distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("      <y distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("    </chan_width_distr>\n")
-	vpr_file.write("    <switch_block type=\"wilton\" fs=\"3\"/>\n")
+	vpr_file.write("    <switch_block type=\"wilton\" fs=\"" + str(Fs) + "\"/>\n")
 	vpr_file.write("  </device>\n")
 	vpr_file.write("  <switchlist>\n")
 	vpr_file.write("    <switch type=\"mux\" name=\"0\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(Tdel) + "\" mux_trans_size=\"" + str(mux_trans_size) + "\" buf_size=\"" + str(buf_size) + "\"/>\n")
 	vpr_file.write("  </switchlist>\n")
 	vpr_file.write("  <segmentlist>\n")
-	vpr_file.write("    <segment freq=\"1.000000\" length=\"4\" type=\"unidir\" Rmetal=\"0.000000\" Cmetal=\"0.000000e+00\">\n")
+	vpr_file.write("    <segment freq=\"1.000000\" length=\"" + str(L) + "\" type=\"unidir\" Rmetal=\"0.000000\" Cmetal=\"0.000000e+00\">\n")
 	vpr_file.write("    <mux name=\"0\"/>\n")
 	vpr_file.write("    <sb type=\"pattern\">1 1 1 1 1</sb>\n")
 	vpr_file.write("    <cb type=\"pattern\">1 1 1 1</cb>\n")
@@ -124,7 +132,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("        </direct>\n")
 	vpr_file.write("      </interconnect>\n")
 	vpr_file.write("    </mode>\n")
-	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
+	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"" + str(Fcin) + "\" default_out_type=\"frac\" default_out_val=\"" + str(Fcout) + "\"/>\n")
 	vpr_file.write("    <!-- IOs go on the periphery of the FPGA, for consistency, \n")
 	vpr_file.write("      make it physically equivalent on all sides so that only one definition of I/Os is needed.\n")
 	vpr_file.write("      If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA\n")
@@ -142,10 +150,10 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("  </pb_type>\n")
 	vpr_file.write("  <!-- Logic cluster definition -->\n")
 	vpr_file.write("  <pb_type name=\"clb\">\n")
-	vpr_file.write("    <input name=\"I1\" num_pins=\"10\" equivalent=\"true\"/>\n")
-	vpr_file.write("    <input name=\"I2\" num_pins=\"10\" equivalent=\"true\"/>\n")
-	vpr_file.write("    <input name=\"I3\" num_pins=\"10\" equivalent=\"true\"/>\n")
-	vpr_file.write("    <input name=\"I4\" num_pins=\"10\" equivalent=\"true\"/>\n")
+	vpr_file.write("    <input name=\"I1\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
+	vpr_file.write("    <input name=\"I2\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
+	vpr_file.write("    <input name=\"I3\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
+	vpr_file.write("    <input name=\"I4\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
 	vpr_file.write("    <output name=\"O1\" num_pins=\"2\" equivalent=\"true\"/>\n")
 	vpr_file.write("    <output name=\"O2\" num_pins=\"2\" equivalent=\"true\"/>\n")
 	vpr_file.write("    <output name=\"O3\" num_pins=\"2\" equivalent=\"true\"/>\n")
@@ -159,7 +167,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("    <clock name=\"clk\" num_pins=\"1\"/>")
 
 	vpr_file.write("  <!-- Basic logic element definition -->\n")
-	vpr_file.write("  <pb_type name=\"ble6\" num_pb=\"10\">\n")
+	vpr_file.write("  <pb_type name=\"ble6\" num_pb=\"" + str(N) + "\">\n")
 	vpr_file.write("  <input name=\"in_A\" num_pins=\"1\" equivalent=\"false\"/>\n")
 	vpr_file.write("  <input name=\"in_B\" num_pins=\"1\" equivalent=\"false\"/>\n")
 	vpr_file.write("  <input name=\"in_C\" num_pins=\"1\" equivalent=\"false\"/>\n")
@@ -170,7 +178,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("  <output name=\"out_routing\" num_pins=\"2\" equivalent=\"true\"/>\n")
 	vpr_file.write("  <clock name=\"clk\" num_pins=\"1\"/> \n")
 	vpr_file.write("  <pb_type name=\"lut6\" blif_model=\".names\" num_pb=\"1\" class=\"lut\">\n")
-	vpr_file.write("  <input name=\"in\" num_pins=\"6\" port_class=\"lut_in\"/>\n")
+	vpr_file.write("  <input name=\"in\" num_pins=\"" + str(K) + "\" port_class=\"lut_in\"/>\n")
 	vpr_file.write("  <output name=\"out\" num_pins=\"1\" port_class=\"lut_out\"/>\n")
 	vpr_file.write("  <!-- We define the LUT delays on the LUT pins instead of through the LUT -->\n")
 	vpr_file.write("  <delay_matrix type=\"max\" in_port=\"lut6.in\" out_port=\"lut6.out\">\n")
@@ -198,9 +206,9 @@ def print_vpr_file(vpr_file, fpga_inst):
 	direct_num = 1
 	for input_name in lut_input_names:
 		if Rfb.count(input_name) != 1 :
-			vpr_file.write("    <direct name=\"direct" + str(input_num) + "\" input=\"ble6.in_" + input_name.upper() + "\" output=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\">")
-			vpr_file.write("      <delay_constant max=\"" + str(lut_delays[input_name]) + "\" in_port=\"ble6.in_" + input_name.upper() + "\" out_port=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\" />")
-			vpr_file.write("    </direct>")
+			vpr_file.write("    <direct name=\"direct" + str(input_num) + "\" input=\"ble6.in_" + input_name.upper() + "\" output=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\">\n")
+			vpr_file.write("      <delay_constant max=\"" + str(lut_delays[input_name]) + "\" in_port=\"ble6.in_" + input_name.upper() + "\" out_port=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\" />\n")
+			vpr_file.write("    </direct>\n")
 			direct_num = direct_num + 1
 
 		else:
@@ -292,7 +300,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("      <direct name=\"clbouts10\" input=\"ble6[9:9].out_routing\" output=\"clb.O10\"/>\n")
 
 	vpr_file.write("    </interconnect>\n")
-	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.2\" default_out_type=\"frac\" default_out_val=\"0.025\"/>\n")
+	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"" + str(Fcin) + "\" default_out_type=\"frac\" default_out_val=\"" + str(Fcout) + "\"/>\n")
 	vpr_file.write("    <!-- Two sided connectivity CLB architecture--> \n")
 	vpr_file.write("    <pinlocations pattern=\"custom\">\n")
 	vpr_file.write("  <loc side=\"right\">clb.O1 clb.O2 clb.O3 clb.O4 clb.O5 clb.I1 clb.I3 clb.clk</loc> \n")
@@ -304,7 +312,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("  </pb_type>\n")
 
 	vpr_file.write("  <!-- This is the 36*36 uniform mult -->\n")
-	vpr_file.write("  <pb_type name=\"mult_36\" height=\"4\">\n")
+	vpr_file.write("  <pb_type name=\"mult_36\" height=\"" + str(L) + "\">\n")
 	vpr_file.write("      <input name=\"a\" num_pins=\"36\"/>\n")
 	vpr_file.write("      <input name=\"b\" num_pins=\"36\"/>\n")
 	vpr_file.write("      <output name=\"out\" num_pins=\"72\"/>\n")
@@ -471,7 +479,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	          
 	vpr_file.write("      <mode name=\"mem_1024x32_sp\">\n")
 	vpr_file.write("        <pb_type name=\"mem_1024x32_sp\" blif_model=\".subckt single_port_ram\" class=\"memory\" num_pb=\"1\">\n")
-	vpr_file.write("          <input name=\"addr\" num_pins=\"10\" port_class=\"address\"/>\n")
+	vpr_file.write("          <input name=\"addr\" num_pins=\"" + str(N) + "\" port_class=\"address\"/>\n")
 	vpr_file.write("          <input name=\"data\" num_pins=\"32\" port_class=\"data_in\"/>\n")
 	vpr_file.write("          <input name=\"we\" num_pins=\"1\" port_class=\"write_en\"/>\n")
 	vpr_file.write("          <output name=\"out\" num_pins=\"32\" port_class=\"data_out\"/>\n")
@@ -628,8 +636,8 @@ def print_vpr_file(vpr_file, fpga_inst):
 	                   
 	vpr_file.write("      <mode name=\"mem_1024x32_dp\">\n")
 	vpr_file.write("        <pb_type name=\"mem_1024x32_dp\" blif_model=\".subckt dual_port_ram\" class=\"memory\" num_pb=\"1\">\n")
-	vpr_file.write("          <input name=\"addr1\" num_pins=\"10\" port_class=\"address1\"/>\n")
-	vpr_file.write("          <input name=\"addr2\" num_pins=\"10\" port_class=\"address2\"/>\n")
+	vpr_file.write("          <input name=\"addr1\" num_pins=\"" + str(N) + "\" port_class=\"address1\"/>\n")
+	vpr_file.write("          <input name=\"addr2\" num_pins=\"" + str(N) + "\" port_class=\"address2\"/>\n")
 	vpr_file.write("          <input name=\"data1\" num_pins=\"32\" port_class=\"data_in1\"/>\n")
 	vpr_file.write("          <input name=\"data2\" num_pins=\"32\" port_class=\"data_in2\"/>\n")
 	vpr_file.write("          <input name=\"we1\" num_pins=\"1\" port_class=\"write_en1\"/>\n")
