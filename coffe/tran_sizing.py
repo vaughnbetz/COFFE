@@ -445,7 +445,6 @@ def erf_inverter_balance_trise_tfall(sp_path,
 
 		# This will increment the target transistor size by another 'inv_nm_size'
 		multiplication_factor += 1
-	# end while upper_bound_not_found and not self_loading
 
 	# At this point, we have found an upper bound for out target transistsor. If the 
 	# inverter is self-loaded, we are just going to use whatever transistor size we 
@@ -629,46 +628,29 @@ def erf_inverter(sp_path,
 	nmos_name = inv_name + "_nmos"
 
 	# Get the nm size of the inverter from the mininum transistor widths size
-	initial_inv_nm_size = inv_mtw_size*fpga_inst.specs.min_tran_width
-	inv_nm_size = initial_inv_nm_size
-
-
-	simulation_success = False
-	irt = 0 # number of iterations
-	while not simulation_success:
-		if irt == 10 :
-			print "ERROR: unable to find valid transistor sizes"
-			exit(1)
-
-		nmos_nm_size = inv_nm_size
-		pmos_nm_size = inv_nm_size
-	   
-		# Modify the parameter dict with the size of this inverter
-		parameter_dict[nmos_name][0] = 1e-9*inv_nm_size
-		parameter_dict[pmos_name][0] = 1e-9*inv_nm_size
-		
-		# The NMOS and PMOS sizes of this inverter are both equal to 'inv_nm_size' right now.
-		# That is, they are equal. We'll run HSPICE on the circuit to get initial rise and fall
-		# delays. Then, we'll use these delays to figure out if it's the NMOS we need to 
-		# make bigger to balance rise/fall or the PMOS.
-		spice_meas = spice_interface.run(sp_path, parameter_dict)
-		
-		# Get the rise and fall measurements for our inverter out of 'spice_meas'
-		# This was a single HSPICE run, so the value we want is at index 0
-		inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
-		inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
-		
-		# TODO: We should check if the HSPICE measurement failed before trying to convert
-		# to a float. If the measurement failed, float conversion will throw an exception.
-		if inv_tfall_str != "failed" and inv_trise_str != "failed":
-			inv_tfall = float(inv_tfall_str)
-			inv_trise = float(inv_trise_str)
-			simulation_success = True
-		else :
-			inv_nm_size = inv_nm_size + initial_inv_nm_size
-			irt = irt + 1
-
-	print "Found valid transistor sizes after " + str(irt) + " iterations"
+	inv_nm_size = inv_mtw_size*fpga_inst.specs.min_tran_width
+	nmos_nm_size = inv_nm_size
+	pmos_nm_size = inv_nm_size
+   
+	# Modify the parameter dict with the size of this inverter
+	parameter_dict[nmos_name][0] = 1e-9*inv_nm_size
+	parameter_dict[pmos_name][0] = 1e-9*inv_nm_size
+	
+	# The NMOS and PMOS sizes of this inverter are both equal to 'inv_nm_size' right now.
+	# That is, they are equal. We'll run HSPICE on the circuit to get initial rise and fall
+	# delays. Then, we'll use these delays to figure out if it's the NMOS we need to 
+	# make bigger to balance rise/fall or the PMOS.
+	spice_meas = spice_interface.run(sp_path, parameter_dict)
+	
+	# Get the rise and fall measurements for our inverter out of 'spice_meas'
+	# This was a single HSPICE run, so the value we want is at index 0
+	inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+	inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+	
+	# TODO: We should check if the HSPICE measurement failed before trying to convert
+	# to a float. If the measurement failed, float conversion will throw an exception.
+	inv_tfall = float(inv_tfall_str)
+	inv_trise = float(inv_trise_str)
 
 	# If the rise time is faster, nmos must be made bigger.
 	# If the fall time is faster, pmos must be made bigger. 
