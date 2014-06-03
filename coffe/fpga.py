@@ -484,18 +484,22 @@ class _LUTInputDriver(_SizableCircuit):
 		All subsequent processes (netlist generation, area calculations, etc.) will use this type attribute.
 		"""
 
-	def __init__(self, name, type):
+	def __init__(self, name, type, use_tgate):
 		self.name = "lut_" + name + "_driver"
 		# LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
 		self.type = type
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.031
+		# use pass transistor or transmission gate
+		self.use_tgate = use_tgate
 		
 		
 	def generate(self, subcircuit_filename, min_tran_width):
 		""" Generate SPICE netlist based on type of LUT input driver. """
-		
-		self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut_driver(subcircuit_filename, self.name, self.type)
+		if not self.use_tgate :
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut_driver(subcircuit_filename, self.name, self.type)
+		else :
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut_driver(subcircuit_filename, self.name, self.type)
 		
 		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
 		if self.type != "default":
@@ -529,17 +533,29 @@ class _LUTInputDriver(_SizableCircuit):
 			We also return the area of this driver, which is calculated based on driver type. """
 		
 		area = 0.0
-		 
-		# Calculate area based on input type
-		if self.type != "default":
-			area += area_dict["inv_" + self.name + "_0"]
-		if self.type == "reg_fb" or self.type == "reg_fb_rsel":
-			area += 2*area_dict["ptran_" + self.name + "_0"]
-			area += area_dict["rest_" + self.name]
-		if self.type != "default":
-			area += area_dict["inv_" + self.name + "_1"]
-		area += area_dict["inv_" + self.name + "_2"]
 		
+		if not self.use_tgate :	 
+			# Calculate area based on input type
+			if self.type != "default":
+				area += area_dict["inv_" + self.name + "_0"]
+			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
+				area += 2*area_dict["ptran_" + self.name + "_0"]
+				area += area_dict["rest_" + self.name]
+			if self.type != "default":
+				area += area_dict["inv_" + self.name + "_1"]
+			area += area_dict["inv_" + self.name + "_2"]
+		
+		else :
+			# Calculate area based on input type
+			if self.type != "default":
+				area += area_dict["inv_" + self.name + "_0"]
+			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
+				area += 2*area_dict["ptran_" + self.name + "_0"]
+				area += area_dict["rest_" + self.name]
+			if self.type != "default":
+				area += area_dict["inv_" + self.name + "_1"]
+			area += area_dict["inv_" + self.name + "_2"]
+
 		# Add SRAM cell if this is a register feedback input
 		if self.type == "reg_fb" or self.type == "ref_fb_rsel":
 			area += area_dict["sram"]
@@ -581,18 +597,22 @@ class _LUTInputDriver(_SizableCircuit):
 class _LUTInputNotDriver(_SizableCircuit):
 	""" LUT input not-driver. This is the complement driver. """
 
-	def __init__(self, name, type):
+	def __init__(self, name, type, use_tgate):
 		self.name = "lut_" + name + "_driver_not"
 		# LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
 		self.type = type
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.031
+		# use pass transistor or transmission gates
+		self.use_tgate = use_tgate
    
 	
 	def generate(self, subcircuit_filename, min_tran_width):
 		""" Generate not-driver SPICE netlist """
-	
-		self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut_not_driver(subcircuit_filename, self.name)
+		if not self.use_tgate :
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut_not_driver(subcircuit_filename, self.name)
+		else :
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut_not_driver(subcircuit_filename, self.name)
 		
 		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
 		self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
@@ -636,7 +656,7 @@ class _LUTInputNotDriver(_SizableCircuit):
 class _LUTInput(_CompoundCircuit):
 	""" LUT input. It contains a LUT input driver and a LUT input not driver (complement). """
 
-	def __init__(self, name, Rsel, Rfb):
+	def __init__(self, name, Rsel, Rfb, use_tgate):
 		# Subcircuit name (should be driver letter like a, b, c...)
 		self.name = name
 		# The type is either 'default': a normal input or 'reg_fb': a register feedback input 
@@ -653,9 +673,9 @@ class _LUTInput(_CompoundCircuit):
 			else:
 				self.type = "default"
 		# Create LUT input driver
-		self.driver = _LUTInputDriver(name, self.type)
+		self.driver = _LUTInputDriver(name, self.type, use_tgate)
 		# Create LUT input not driver
-		self.not_driver = _LUTInputNotDriver(name, self.type)
+		self.not_driver = _LUTInputNotDriver(name, self.type, use_tgate)
 		
 		# LUT input delays are the delays through the LUT for specific input (doesn't include input driver delay)
 		self.tfall = 1
@@ -719,8 +739,9 @@ class _LUTInputDriverLoad:
 	""" LUT input driver load. This load consists of a wire as well as the gates
 		of a particular level in the LUT. """
 
-	def __init__(self, name):
+	def __init__(self, name, use_tgate):
 		self.name = name
+		self.use_tgate = use_tgate
 	
 	
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
@@ -737,19 +758,34 @@ class _LUTInputDriverLoad:
 		
 		print "Generating LUT " + self.name + "-input driver load"
 		
-		# Call generation function based on input
-		if self.name == "a":
-			self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
-		elif self.name == "b":
-			self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
-		elif self.name == "c":
-			self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
-		elif self.name == "d":
-			self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
-		elif self.name == "e":
-			self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
-		elif self.name == "f":
-			self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+		if not self.use_tgate :
+			# Call generation function based on input
+			if self.name == "a":
+				self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "b":
+				self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "c":
+				self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "d":
+				self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "e":
+				self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "f":
+				self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K)
+		else :
+			# Call generation function based on input
+			if self.name == "a":
+				self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "b":
+				self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "c":
+				self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "d":
+				self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "e":
+				self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K)
+			elif self.name == "f":
+				self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K)
 		
 		
 	def print_details(self):
@@ -759,7 +795,7 @@ class _LUTInputDriverLoad:
 class _LUT(_SizableCircuit):
 	""" Lookup table. """
 
-	def __init__(self, K, Rsel, Rfb):
+	def __init__(self, K, Rsel, Rfb, use_tgate):
 		# Name of LUT 
 		self.name = "lut"
 		# Size of LUT
@@ -772,12 +808,13 @@ class _LUT(_SizableCircuit):
 		self.input_driver_loads = {}
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.1858
-		
+		# Boolean to use transmission gates 
+		self.use_tgate = use_tgate
 		# Create a LUT input driver and load for each LUT input
 		for i in range(K):
 			name = chr(i+97)
-			self.input_drivers[name] = _LUTInput(name, Rsel, Rfb)
-			self.input_driver_loads[name] = _LUTInputDriverLoad(name)
+			self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, use_tgate)
+			self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate)
 	
 		# Set delay weight, TODO: Need to find better way to do this.
 		self.input_drivers["a"].delay_weight = 0.0568
@@ -795,11 +832,11 @@ class _LUT(_SizableCircuit):
 		
 		# Generate LUT differently based on K
 		if self.K == 6:
-			init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width)
+			init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate)
 		elif self.K == 5:
-			init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width)
+			init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width, self.use_tgate)
 		elif self.K == 4:
-			init_tran_sizes = self._generate_4lut(subcircuit_filename, min_tran_width)
+			init_tran_sizes = self._generate_4lut(subcircuit_filename, min_tran_width, self.use_tgate)
    
 		return init_tran_sizes
 
@@ -825,50 +862,95 @@ class _LUT(_SizableCircuit):
 			We update the area of the LUT as well as the area of the LUT input drivers. """        
 		 
 		area = 0.0
-		 
-		# Calculate area (differs with different values of K)
-		if self.K == 6:    
-			area += (64*area_dict["inv_lut_0sram_driver_2"] + 
-					64*area_dict["ptran_lut_L1"] + 
-					32*area_dict["ptran_lut_L2"] + 
-					16*area_dict["ptran_lut_L3"] + 
-					8*area_dict["rest_lut_int_buffer"] + 
-					8*area_dict["inv_lut_int_buffer_1"] + 
-					8*area_dict["inv_lut_int_buffer_2"] + 
-					8*area_dict["ptran_lut_L4"] + 
-					4*area_dict["ptran_lut_L5"] + 
-					2*area_dict["ptran_lut_L6"] + 
-					area_dict["rest_lut_out_buffer"] + 
-					area_dict["inv_lut_out_buffer_1"] + 
-					area_dict["inv_lut_out_buffer_2"] +
-					64*area_dict["sram"])
-		elif self.K == 5:
-			area += (32*area_dict["inv_lut_0sram_driver_2"] + 
-					32*area_dict["ptran_lut_L1"] + 
-					16*area_dict["ptran_lut_L2"] + 
-					8*area_dict["ptran_lut_L3"] + 
-					4*area_dict["rest_lut_int_buffer"] + 
-					4*area_dict["inv_lut_int_buffer_1"] + 
-					4*area_dict["inv_lut_int_buffer_2"] + 
-					4*area_dict["ptran_lut_L4"] + 
-					2*area_dict["ptran_lut_L5"] +  
-					area_dict["rest_lut_out_buffer"] + 
-					area_dict["inv_lut_out_buffer_1"] + 
-					area_dict["inv_lut_out_buffer_2"] +
-					32*area_dict["sram"])
-		elif self.K == 4:
-			area += (16*area_dict["inv_lut_0sram_driver_2"] + 
-					16*area_dict["ptran_lut_L1"] + 
-					8*area_dict["ptran_lut_L2"] + 
-					4*area_dict["rest_lut_int_buffer"] + 
-					4*area_dict["inv_lut_int_buffer_1"] + 
-					4*area_dict["inv_lut_int_buffer_2"] +
-					4*area_dict["ptran_lut_L3"] + 
-					2*area_dict["ptran_lut_L4"] +   
-					area_dict["rest_lut_out_buffer"] + 
-					area_dict["inv_lut_out_buffer_1"] + 
-					area_dict["inv_lut_out_buffer_2"] +
-					16*area_dict["sram"])
+		
+		if not self.use_tgate :
+			# Calculate area (differs with different values of K)
+			if self.K == 6:    
+				area += (64*area_dict["inv_lut_0sram_driver_2"] + 
+						64*area_dict["ptran_lut_L1"] + 
+						32*area_dict["ptran_lut_L2"] + 
+						16*area_dict["ptran_lut_L3"] + 
+						8*area_dict["rest_lut_int_buffer"] + 
+						8*area_dict["inv_lut_int_buffer_1"] + 
+						8*area_dict["inv_lut_int_buffer_2"] + 
+						8*area_dict["ptran_lut_L4"] + 
+						4*area_dict["ptran_lut_L5"] + 
+						2*area_dict["ptran_lut_L6"] + 
+						area_dict["rest_lut_out_buffer"] + 
+						area_dict["inv_lut_out_buffer_1"] + 
+						area_dict["inv_lut_out_buffer_2"] +
+						64*area_dict["sram"])
+			elif self.K == 5:
+				area += (32*area_dict["inv_lut_0sram_driver_2"] + 
+						32*area_dict["ptran_lut_L1"] + 
+						16*area_dict["ptran_lut_L2"] + 
+						8*area_dict["ptran_lut_L3"] + 
+						4*area_dict["rest_lut_int_buffer"] + 
+						4*area_dict["inv_lut_int_buffer_1"] + 
+						4*area_dict["inv_lut_int_buffer_2"] + 
+						4*area_dict["ptran_lut_L4"] + 
+						2*area_dict["ptran_lut_L5"] +  
+						area_dict["rest_lut_out_buffer"] + 
+						area_dict["inv_lut_out_buffer_1"] + 
+						area_dict["inv_lut_out_buffer_2"] +
+						32*area_dict["sram"])
+			elif self.K == 4:
+				area += (16*area_dict["inv_lut_0sram_driver_2"] + 
+						16*area_dict["ptran_lut_L1"] + 
+						8*area_dict["ptran_lut_L2"] + 
+						4*area_dict["rest_lut_int_buffer"] + 
+						4*area_dict["inv_lut_int_buffer_1"] + 
+						4*area_dict["inv_lut_int_buffer_2"] +
+						4*area_dict["ptran_lut_L3"] + 
+						2*area_dict["ptran_lut_L4"] +   
+						area_dict["rest_lut_out_buffer"] + 
+						area_dict["inv_lut_out_buffer_1"] + 
+						area_dict["inv_lut_out_buffer_2"] +
+						16*area_dict["sram"])
+		else :
+			# Calculate area (differs with different values of K)
+			if self.K == 6:    
+				area += (64*area_dict["inv_lut_0sram_driver_2"] + 
+						64*area_dict["tgate_lut_L1"] + 
+						32*area_dict["tgate_lut_L2"] + 
+						16*area_dict["tgate_lut_L3"] + 
+						8*area_dict["rest_lut_int_buffer"] + 
+						8*area_dict["inv_lut_int_buffer_1"] + 
+						8*area_dict["inv_lut_int_buffer_2"] + 
+						8*area_dict["tgate_lut_L4"] + 
+						4*area_dict["tgate_lut_L5"] + 
+						2*area_dict["tgate_lut_L6"] + 
+						area_dict["rest_lut_out_buffer"] + 
+						area_dict["inv_lut_out_buffer_1"] + 
+						area_dict["inv_lut_out_buffer_2"] +
+						64*area_dict["sram"])
+			elif self.K == 5:
+				area += (32*area_dict["inv_lut_0sram_driver_2"] + 
+						32*area_dict["tgate_lut_L1"] + 
+						16*area_dict["tgate_lut_L2"] + 
+						8*area_dict["tgate_lut_L3"] + 
+						4*area_dict["rest_lut_int_buffer"] + 
+						4*area_dict["inv_lut_int_buffer_1"] + 
+						4*area_dict["inv_lut_int_buffer_2"] + 
+						4*area_dict["tgate_lut_L4"] + 
+						2*area_dict["tgate_lut_L5"] +  
+						area_dict["rest_lut_out_buffer"] + 
+						area_dict["inv_lut_out_buffer_1"] + 
+						area_dict["inv_lut_out_buffer_2"] +
+						32*area_dict["sram"])
+			elif self.K == 4:
+				area += (16*area_dict["inv_lut_0sram_driver_2"] + 
+						16*area_dict["tgate_lut_L1"] + 
+						8*area_dict["tgate_lut_L2"] + 
+						4*area_dict["rest_lut_int_buffer"] + 
+						4*area_dict["inv_lut_int_buffer_1"] + 
+						4*area_dict["inv_lut_int_buffer_2"] +
+						4*area_dict["tgate_lut_L3"] + 
+						2*area_dict["tgate_lut_L4"] +   
+						area_dict["rest_lut_out_buffer"] + 
+						area_dict["inv_lut_out_buffer_1"] + 
+						area_dict["inv_lut_out_buffer_2"] +
+						16*area_dict["sram"])
 		
 		width = math.sqrt(area)
 		area_dict["lut"] = area
@@ -892,81 +974,157 @@ class _LUT(_SizableCircuit):
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
 		""" Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
-		if self.K == 6:        
-			# Update wire lengths
-			wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
-			wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
-			wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
-			wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
-			wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L5"] = 16*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L6"] = 32*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+		if not self.use_tgate :
+			if self.K == 6:        
+				# Update wire lengths
+				wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+				wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
+				wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+				wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
+				wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L5"] = 16*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L6"] = 32*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
 
-			# Update wire layers
-			wire_layers["wire_lut_sram_driver"] = 0
-			wire_layers["wire_lut_sram_driver_out"] = 0
-			wire_layers["wire_lut_L1"] = 0
-			wire_layers["wire_lut_L2"] = 0
-			wire_layers["wire_lut_L3"] = 0
-			wire_layers["wire_lut_int_buffer"] = 0
-			wire_layers["wire_lut_int_buffer_out"] = 0
-			wire_layers["wire_lut_L4"] = 0
-			wire_layers["wire_lut_L5"] = 0
-			wire_layers["wire_lut_L6"] = 0
-			wire_layers["wire_lut_out_buffer"] = 0
-		  
-		elif self.K == 5:
-			# Update wire lengths
-			wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
-			wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
-			wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
-			wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
-			wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L5"] = 16*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+				# Update wire layers
+				wire_layers["wire_lut_sram_driver"] = 0
+				wire_layers["wire_lut_sram_driver_out"] = 0
+				wire_layers["wire_lut_L1"] = 0
+				wire_layers["wire_lut_L2"] = 0
+				wire_layers["wire_lut_L3"] = 0
+				wire_layers["wire_lut_int_buffer"] = 0
+				wire_layers["wire_lut_int_buffer_out"] = 0
+				wire_layers["wire_lut_L4"] = 0
+				wire_layers["wire_lut_L5"] = 0
+				wire_layers["wire_lut_L6"] = 0
+				wire_layers["wire_lut_out_buffer"] = 0
+			  
+			elif self.K == 5:
+				# Update wire lengths
+				wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+				wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
+				wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+				wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
+				wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L5"] = 16*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
 
-			# Update wire layers
-			wire_layers["wire_lut_sram_driver"] = 0
-			wire_layers["wire_lut_sram_driver_out"] = 0
-			wire_layers["wire_lut_L1"] = 0
-			wire_layers["wire_lut_L2"] = 0
-			wire_layers["wire_lut_L3"] = 0
-			wire_layers["wire_lut_int_buffer"] = 0
-			wire_layers["wire_lut_int_buffer_out"] = 0
-			wire_layers["wire_lut_L4"] = 0
-			wire_layers["wire_lut_L5"] = 0
-			wire_layers["wire_lut_out_buffer"] = 0
-			
-		elif self.K == 4:
-			# Update wire lengths
-			wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
-			wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
-			wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
-			wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
-			wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
-			wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+				# Update wire layers
+				wire_layers["wire_lut_sram_driver"] = 0
+				wire_layers["wire_lut_sram_driver_out"] = 0
+				wire_layers["wire_lut_L1"] = 0
+				wire_layers["wire_lut_L2"] = 0
+				wire_layers["wire_lut_L3"] = 0
+				wire_layers["wire_lut_int_buffer"] = 0
+				wire_layers["wire_lut_int_buffer_out"] = 0
+				wire_layers["wire_lut_L4"] = 0
+				wire_layers["wire_lut_L5"] = 0
+				wire_layers["wire_lut_out_buffer"] = 0
+				
+			elif self.K == 4:
+				# Update wire lengths
+				wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+				wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
+				wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+				wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
+				wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
+				wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
 
-			# Update wire layers
-			wire_layers["wire_lut_sram_driver"] = 0
-			wire_layers["wire_lut_sram_driver_out"] = 0
-			wire_layers["wire_lut_L1"] = 0
-			wire_layers["wire_lut_L2"] = 0
-			wire_layers["wire_lut_int_buffer"] = 0
-			wire_layers["wire_lut_int_buffer_out"] = 0
-			wire_layers["wire_lut_L3"] = 0
-			wire_layers["wire_lut_L4"] = 0
-			wire_layers["wire_lut_out_buffer"] = 0
-		  
+				# Update wire layers
+				wire_layers["wire_lut_sram_driver"] = 0
+				wire_layers["wire_lut_sram_driver_out"] = 0
+				wire_layers["wire_lut_L1"] = 0
+				wire_layers["wire_lut_L2"] = 0
+				wire_layers["wire_lut_int_buffer"] = 0
+				wire_layers["wire_lut_int_buffer_out"] = 0
+				wire_layers["wire_lut_L3"] = 0
+				wire_layers["wire_lut_L4"] = 0
+				wire_layers["wire_lut_out_buffer"] = 0
+
+		else :
+			if self.K == 6:        
+				# Update wire lengths
+				wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+				wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["tgate_lut_L1"])/4
+				wire_lengths["wire_lut_L1"] = width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L2"] = 2*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L3"] = 4*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+				wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["tgate_lut_L4"])/4
+				wire_lengths["wire_lut_L4"] = 8*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L5"] = 16*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L6"] = 32*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+
+				# Update wire layers
+				wire_layers["wire_lut_sram_driver"] = 0
+				wire_layers["wire_lut_sram_driver_out"] = 0
+				wire_layers["wire_lut_L1"] = 0
+				wire_layers["wire_lut_L2"] = 0
+				wire_layers["wire_lut_L3"] = 0
+				wire_layers["wire_lut_int_buffer"] = 0
+				wire_layers["wire_lut_int_buffer_out"] = 0
+				wire_layers["wire_lut_L4"] = 0
+				wire_layers["wire_lut_L5"] = 0
+				wire_layers["wire_lut_L6"] = 0
+				wire_layers["wire_lut_out_buffer"] = 0
+			  
+			elif self.K == 5:
+				# Update wire lengths
+				wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+				wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["tgate_lut_L1"])/4
+				wire_lengths["wire_lut_L1"] = width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L2"] = 2*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L3"] = 4*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+				wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["tgate_lut_L4"])/4
+				wire_lengths["wire_lut_L4"] = 8*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L5"] = 16*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+
+				# Update wire layers
+				wire_layers["wire_lut_sram_driver"] = 0
+				wire_layers["wire_lut_sram_driver_out"] = 0
+				wire_layers["wire_lut_L1"] = 0
+				wire_layers["wire_lut_L2"] = 0
+				wire_layers["wire_lut_L3"] = 0
+				wire_layers["wire_lut_int_buffer"] = 0
+				wire_layers["wire_lut_int_buffer_out"] = 0
+				wire_layers["wire_lut_L4"] = 0
+				wire_layers["wire_lut_L5"] = 0
+				wire_layers["wire_lut_out_buffer"] = 0
+				
+			elif self.K == 4:
+				# Update wire lengths
+				wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+				wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["tgate_lut_L1"])/4
+				wire_lengths["wire_lut_L1"] = width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L2"] = 2*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+				wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["tgate_lut_L4"])/4
+				wire_lengths["wire_lut_L3"] = 4*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_L4"] = 8*width_dict["tgate_lut_L1"]
+				wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+
+				# Update wire layers
+				wire_layers["wire_lut_sram_driver"] = 0
+				wire_layers["wire_lut_sram_driver_out"] = 0
+				wire_layers["wire_lut_L1"] = 0
+				wire_layers["wire_lut_L2"] = 0
+				wire_layers["wire_lut_int_buffer"] = 0
+				wire_layers["wire_lut_int_buffer_out"] = 0
+				wire_layers["wire_lut_L3"] = 0
+				wire_layers["wire_lut_L4"] = 0
+				wire_layers["wire_lut_out_buffer"] = 0
 		  
 		# Update input driver wires
 		for driver_name, input_driver in self.input_drivers.iteritems():
@@ -1015,31 +1173,64 @@ class _LUT(_SizableCircuit):
 			print ""
 
 	
-	def _generate_6lut(self, subcircuit_filename, min_tran_width):
+	def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate):
 		print "Generating 6-LUT"
 		
 		# Call the generation function
-		self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut6(subcircuit_filename, min_tran_width)
+		if not use_tgate :
+			# use pass transistors
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut6(subcircuit_filename, min_tran_width)
+
+			# Give initial transistor sizes
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+			self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
+			self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
+			self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
+			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+			self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
+			self.initial_transistor_sizes["ptran_lut_L5_nmos"] = 3
+			self.initial_transistor_sizes["ptran_lut_L6_nmos"] = 3
+			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+
+		else :
+			# use transmission gates
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut6(subcircuit_filename, min_tran_width)
+
+			# Give initial transistor sizes
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+			self.initial_transistor_sizes["tgate_lut_L1_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
+			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+			self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L5_nmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L6_nmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L6_pmos"] = 3
+			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
 		
-		# Give initial transistor sizes
-		self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
-		self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
-		self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
-		self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
-		self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
-		self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
-		self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
-		self.initial_transistor_sizes["ptran_lut_L5_nmos"] = 3
-		self.initial_transistor_sizes["ptran_lut_L6_nmos"] = 3
-		self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
-		self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
 		
 		# Generate input drivers (with register feedback if input is in Rfb)
 		self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
@@ -1060,30 +1251,58 @@ class _LUT(_SizableCircuit):
 		return self.initial_transistor_sizes
 
 		
-	def _generate_5lut(self, subcircuit_filename, min_tran_width):
+	def _generate_5lut(self, subcircuit_filename, min_tran_width, use_tgate):
 		print "Generating 5-LUT"
 		
 		# Call the generation function
-		self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut5(subcircuit_filename, min_tran_width)
-		
-		# Give initial transistor sizes
-		self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
-		self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
-		self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
-		self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
-		self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
-		self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
-		self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
-		self.initial_transistor_sizes["ptran_lut_L5_nmos"] = 3
-		self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
-		self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+		if not use_tgate :
+			# use pass transistor
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut5(subcircuit_filename, min_tran_width)
+			# Give initial transistor sizes
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+			self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
+			self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
+			self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
+			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+			self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
+			self.initial_transistor_sizes["ptran_lut_L5_nmos"] = 3
+			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+		else :
+			# use transmission gates
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut5(subcircuit_filename, min_tran_width)
+			# Give initial transistor sizes
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+			self.initial_transistor_sizes["tgate_lut_L1_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
+			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+			self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L5_nmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
+			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+
 	   
 		# Generate input drivers (with register feedback if input is in Rfb)
 		self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
@@ -1102,29 +1321,54 @@ class _LUT(_SizableCircuit):
 		return self.initial_transistor_sizes
 
   
-	def _generate_4lut(self, subcircuit_filename, min_tran_width):
+	def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate):
 		print "Generating 4-LUT"
 		
 		# Call the generation function
-		self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut4(subcircuit_filename, min_tran_width)
-		
-		# Give initial transistor sizes
-		self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
-		self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
-		self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
-		self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
-		self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
-		self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
-		self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
-		self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
-		self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+		if not use_tgate :
+			# use pass transistor
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut4(subcircuit_filename, min_tran_width)
+			# Give initial transistor sizes
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+			self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
+			self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
+			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+			self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
+			self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
+			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+		else :
+			# use transmission gates
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut4(subcircuit_filename, min_tran_width)
+			# Give initial transistor sizes
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+			self.initial_transistor_sizes["tgate_lut_L1_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
+			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+			self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
+			self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
+			self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
+			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
 	   
 		# Generate input drivers (with register feedback if input is in Rfb)
 		self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
@@ -1433,7 +1677,7 @@ class _LUTOutputLoad:
 		
 class _BLE(_CompoundCircuit):
 
-	def __init__(self, K, Or, Ofb, Rsel, Rfb):
+	def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate):
 		# BLE name
 		self.name = "ble"
 		# Size of LUT
@@ -1449,7 +1693,7 @@ class _BLE(_CompoundCircuit):
 		# Create BLE general output object
 		self.general_output = _GeneralBLEOutput()
 		# Create LUT object
-		self.lut = _LUT(K, Rsel, Rfb)
+		self.lut = _LUT(K, Rsel, Rfb, use_tgate)
 		# Create FF object
 		self.ff = _FlipFlop(Rsel)
 		# Create LUT output load object
@@ -1706,13 +1950,13 @@ class _LocalRoutingWireLoad:
 
 class _LogicCluster(_CompoundCircuit):
 	
-	def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile):
+	def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate):
 		# Name of logic cluster
 		self.name = "logic_cluster"
 		# Cluster size
 		self.N = N
 		# Create BLE object
-		self.ble = _BLE(K, Or, Ofb, Rsel, Rfb)
+		self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate)
 		# Create local mux object
 		self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile)
 		# Create local routing wire load object
@@ -2027,7 +2271,7 @@ class FPGA:
 		local_mux_size_required = int((I + Ofb*N) * Fclocal)
 		num_local_mux_per_tile = N*K
 		# Create the logic cluster object
-		self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile)
+		self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate)
 		
 		### CREATE LOAD OBJECTS
 		# Create cluster output load object
