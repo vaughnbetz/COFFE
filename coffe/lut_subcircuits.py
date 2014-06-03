@@ -459,7 +459,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K):
 
 
 def generate_tgate_lut6(spice_filename, min_tran_width):
-""" Generates a 6LUT SPICE deck """
+	""" Generates a 6LUT SPICE deck """
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -781,10 +781,10 @@ def generate_tgate_lut_driver(spice_filename, lut_input_name, lut_input_type):
 		if lut_input_type == "default_rsel":
 			spice_file.write("Xinv_" + lut_input_name + "_1 n_1_2 n_3_1 n_vdd n_gnd inv Wn=inv_" + lut_input_name + "_1_nmos Wp=inv_" + lut_input_name + "_1_pmos\n")
 		else:
-			spice_file.write("Xtgate_" + lut_input_name + "_0 n_1_2 n_2_1 n_gate n_gate_n n_vdd n_gnd tgate Wn=tgate_" + lut_input_name + "_0_nmos Wp=tgate_" + lut_input_name + "_0_pmos\n")
+			spice_file.write("Xtgate_" + lut_input_name + "_0 n_1_2 n_2_1 n_gate n_gate_n n_vdd n_gnd tgate Wn=ptran_" + lut_input_name + "_0_nmos Wp=ptran_" + lut_input_name + "_0_nmos\n")
 			spice_file.write("Xwire_" + lut_input_name + "_0 n_2_1 n_2_2 wire Rw='wire_" + lut_input_name + "_0_res/2' Cw='wire_" + lut_input_name + "_0_cap/2'\n")
 			spice_file.write("Xwire_" + lut_input_name + "_0h n_2_2 n_2_3 wire Rw='wire_" + lut_input_name + "_0_res/2' Cw='wire_" + lut_input_name + "_0_cap/2'\n")
-			spice_file.write("Xtgate_" + lut_input_name + "_0h n_gnd n_2_3 n_gate_n n_gate_n n_vdd n_gnd tgate Wn=tgate_" + lut_input_name + "_0_nmos Wp=tgate_" + lut_input_name + "_0_pmos\n")
+			spice_file.write("Xtgate_" + lut_input_name + "_0h n_gnd n_2_3 n_gate_n n_gate n_vdd n_gnd tgate Wn=ptran_" + lut_input_name + "_0_nmos Wp=ptran_" + lut_input_name + "_0_nmos\n")
 			spice_file.write("Xrest_" + lut_input_name + " n_2_2 n_3_1 n_vdd n_gnd rest Wp=rest_" + lut_input_name + "_pmos\n")
 			spice_file.write("Xinv_" + lut_input_name + "_1 n_2_2 n_3_1 n_vdd n_gnd inv Wn=inv_" + lut_input_name + "_1_nmos Wp=inv_" + lut_input_name + "_1_pmos\n")
 		# Now we add the wire that connects the sense inverter to the driving inverter
@@ -900,7 +900,7 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K):
 	for tgate in range(num_tgate_load):
 		tgate += 1
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_" + str(tgate) + " n_" + str(tgate+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_tgate_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_tgate_load) + "'\n")
-		spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + "n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 
+		spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Create a list of all wires used in this subcircuit
