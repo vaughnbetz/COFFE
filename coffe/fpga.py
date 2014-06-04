@@ -153,7 +153,7 @@ class _CompoundCircuit:
 class _SwitchBlockMUX(_SizableCircuit):
 	""" Switch Block MUX Class: Pass-transistor 2-level mux with output driver """
 	
-	def __init__(self, required_size, num_per_tile):
+	def __init__(self, required_size, num_per_tile, use_tgate):
 		# Subcircuit name
 		self.name = "sb_mux"
 		# How big should this mux be (dictated by architecture specs)
@@ -172,6 +172,8 @@ class _SwitchBlockMUX(_SizableCircuit):
 		self.level2_size = -1
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.3596
+		# use pass transistor or transmission gates
+		self.use_tgate = use_tgate
 		
 		
 	def generate(self, subcircuit_filename, min_tran_width):
@@ -190,16 +192,32 @@ class _SwitchBlockMUX(_SizableCircuit):
 		self.sram_per_mux = self.level1_size + self.level2_size
 		
 		# Call MUX generation function
-		self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+		if not self.use_tgate :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 3
+			self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 4
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 8
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 10
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 20
 
-		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-		self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 3
-		self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 4
-		self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 8
-		self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4
-		self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 10
-		self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 20
+		else :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["tgate_" + self.name + "_L1_nmos"] = 3
+			self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 3
+			self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 4
+			self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 4
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 8
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 10
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 20
+
+
+
 	   
 		return self.initial_transistor_sizes
 
@@ -217,12 +235,19 @@ class _SwitchBlockMUX(_SizableCircuit):
 			We update area_dict and width_dict with calculations performed in this function. """
 		
 		# MUX area
-		area = ((self.level1_size*self.level2_size)*area_dict["ptran_" + self.name + "_L1"] +
-				self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
-				area_dict["rest_" + self.name + ""] +
-				area_dict["inv_" + self.name + "_1"] +
-				area_dict["inv_" + self.name + "_2"])
-		
+		if not self.use_tgate :
+			area = ((self.level1_size*self.level2_size)*area_dict["ptran_" + self.name + "_L1"] +
+					self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
+					area_dict["rest_" + self.name + ""] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+		else :
+			area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
+					self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
+					area_dict["rest_" + self.name + ""] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+
 		# MUX area including SRAM
 		area_with_sram = (area + (self.level1_size + self.level2_size)*area_dict["sram"])
 		
@@ -234,7 +259,10 @@ class _SwitchBlockMUX(_SizableCircuit):
 		width_dict[self.name + "_sram"] = width_with_sram
 		
 		# Update VPR areas
-		area_dict["switch_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
+		if not self.use_tgate :
+			area_dict["switch_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
+		else :
+			area_dict["switch_mux_trans_size"] = area_dict["tgate_" + self.name + "_L1"]
 		area_dict["switch_buf_size"] = area_dict["rest_" + self.name + ""] + area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
 
 
@@ -270,7 +298,7 @@ class _SwitchBlockMUX(_SizableCircuit):
 class _ConnectionBlockMUX(_SizableCircuit):
 	""" Connection Block MUX Class: Pass-transistor 2-level mux """
 	
-	def __init__(self, required_size, num_per_tile):
+	def __init__(self, required_size, num_per_tile, use_tgate):
 		# Subcircuit name
 		self.name = "cb_mux"
 		# How big should this mux be (dictated by architecture specs)
@@ -289,6 +317,8 @@ class _ConnectionBlockMUX(_SizableCircuit):
 		self.level2_size = -1
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.176
+		# use pass transistor or transmission gates
+		self.use_tgate = use_tgate
 		
 	
 	def generate(self, subcircuit_filename, min_tran_width):
@@ -302,16 +332,28 @@ class _ConnectionBlockMUX(_SizableCircuit):
 		self.sram_per_mux = self.level1_size + self.level2_size
 		
 		# Call MUX generation function
-		self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
-		
-		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-		self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 2
-		self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 2
-		self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
-		self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 6
-		self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 12
+		if not self.use_tgate :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 2
+			self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 6
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 12
+		else :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["tgate_" + self.name + "_L1_nmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 6
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 12
 	   
 		return self.initial_transistor_sizes
 
@@ -327,11 +369,18 @@ class _ConnectionBlockMUX(_SizableCircuit):
 			We update area_dict and width_dict with calculations performed in this function. """
 			
 		# MUX area
-		area = ((self.level1_size*self.level2_size)*area_dict["ptran_" + self.name + "_L1"] +
-				self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
-				area_dict["rest_" + self.name + ""] +
-				area_dict["inv_" + self.name + "_1"] +
-				area_dict["inv_" + self.name + "_2"])
+		if not self.use_tgate :
+			area = ((self.level1_size*self.level2_size)*area_dict["ptran_" + self.name + "_L1"] +
+					self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
+					area_dict["rest_" + self.name + ""] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+		else :
+			area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
+					self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
+					area_dict["rest_" + self.name + ""] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
 		
 		# MUX area including SRAM
 		area_with_sram = (area + (self.level1_size + self.level2_size)*area_dict["sram"])
@@ -344,7 +393,10 @@ class _ConnectionBlockMUX(_SizableCircuit):
 		width_dict[self.name + "_sram"] = width_with_sram
 		
 		# Update VPR area numbers
-		area_dict["ipin_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
+		if not self.use_tgate :
+			area_dict["ipin_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
+		else :
+			area_dict["ipin_mux_trans_size"] = area_dict["tgate_" + self.name + "_L1"]
 		
 	
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
@@ -379,7 +431,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
 class _LocalMUX(_SizableCircuit):
 	""" Local MUX Class: Pass-transistor 2-level mux with no driver """
 	
-	def __init__(self, required_size, num_per_tile):
+	def __init__(self, required_size, num_per_tile, use_tgate):
 		# Subcircuit name
 		self.name = "local_mux"
 		# How big should this mux be (dictated by architecture specs)
@@ -398,6 +450,8 @@ class _LocalMUX(_SizableCircuit):
 		self.level2_size = -1
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.0862
+		# use pass transistor or transmission gates
+		self.use_tgate = use_tgate
 	
 	
 	def generate(self, subcircuit_filename, min_tran_width):
@@ -410,15 +464,28 @@ class _LocalMUX(_SizableCircuit):
 		self.num_unused_inputs = self.implemented_size - self.required_size
 		self.sram_per_mux = self.level1_size + self.level2_size
 		
-		# Call MUX generation function
-		self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux_no_driver(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
-		
-		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-		self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 2
-		self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 2
-		self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
-		self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
+		if not self.use_tgate :
+			# Call MUX generation function
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux_no_driver(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+			
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 2
+			self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
+		else :
+			# Call MUX generation function
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2lvl_mux_no_driver(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+			
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["tgate_" + self.name + "_L1_nmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
 	   
 		return self.initial_transistor_sizes
 
@@ -433,10 +500,16 @@ class _LocalMUX(_SizableCircuit):
 			We update area_dict and width_dict with calculations performed in this function. """        
 		
 		# MUX area
-		area = ((self.level1_size*self.level2_size)*area_dict["ptran_" + self.name + "_L1"] +
-				self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
-				area_dict["rest_" + self.name + ""] +
-				area_dict["inv_" + self.name + "_1"])
+		if not self.use_tgate :
+			area = ((self.level1_size*self.level2_size)*area_dict["ptran_" + self.name + "_L1"] +
+					self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
+					area_dict["rest_" + self.name + ""] +
+					area_dict["inv_" + self.name + "_1"])
+		else :
+			area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
+					self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
+					area_dict["rest_" + self.name + ""] +
+					area_dict["inv_" + self.name + "_1"])
 		  
 		# MUX area including SRAM
 		area_with_sram = (area + (self.level1_size + self.level2_size)*area_dict["sram"])
@@ -502,17 +575,31 @@ class _LUTInputDriver(_SizableCircuit):
 			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut_driver(subcircuit_filename, self.name, self.type)
 		
 		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-		if self.type != "default":
-			self.initial_transistor_sizes["inv_" + self.name + "_0_nmos"] = 2
-			self.initial_transistor_sizes["inv_" + self.name + "_0_pmos"] = 2
-		if self.type == "reg_fb" or self.type == "reg_fb_rsel":
-			self.initial_transistor_sizes["ptran_" + self.name + "_0_nmos"] = 2
-			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-		if self.type != "default":
-			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
-			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 2
-		self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 2
+		if not self.use_tgate :
+			if self.type != "default":
+				self.initial_transistor_sizes["inv_" + self.name + "_0_nmos"] = 2
+				self.initial_transistor_sizes["inv_" + self.name + "_0_pmos"] = 2
+			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
+				self.initial_transistor_sizes["ptran_" + self.name + "_0_nmos"] = 2
+				self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			if self.type != "default":
+				self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+				self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 2
+		else :
+			if self.type != "default":
+				self.initial_transistor_sizes["inv_" + self.name + "_0_nmos"] = 2
+				self.initial_transistor_sizes["inv_" + self.name + "_0_pmos"] = 2
+			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
+				self.initial_transistor_sizes["tgate_" + self.name + "_0_nmos"] = 2
+				self.initial_transistor_sizes["tgate_" + self.name + "_0_pmos"] = 2
+				self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			if self.type != "default":
+				self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+				self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 2
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 2
 			   
 		return self.initial_transistor_sizes
 
@@ -550,7 +637,7 @@ class _LUTInputDriver(_SizableCircuit):
 			if self.type != "default":
 				area += area_dict["inv_" + self.name + "_0"]
 			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
-				area += 2*area_dict["ptran_" + self.name + "_0"]
+				area += 2*area_dict["tgate_" + self.name + "_0"]
 				area += area_dict["rest_" + self.name]
 			if self.type != "default":
 				area += area_dict["inv_" + self.name + "_1"]
@@ -573,25 +660,46 @@ class _LUTInputDriver(_SizableCircuit):
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
 		""" Update wire lengths and wire layers based on the width of things, obtained from width_dict.
 			Wires differ based on input type. """
-		 
-		# Update wire lengths and wire layers
-		if self.type == "default_rsel" or self.type == "reg_fb_rsel":
-			wire_lengths["wire_" + self.name + "_0_rsel"] = width_dict[self.name]/4 + width_dict["lut"] + width_dict["ff"]/4 
-			wire_layers["wire_" + self.name + "_0_rsel"] = 0
-		if self.type == "default_rsel":
-			wire_lengths["wire_" + self.name + "_0_out"] = width_dict["inv_" + self.name + "_0"]/4 + width_dict["inv_" + self.name + "_2"]/4
-			wire_layers["wire_" + self.name + "_0_out"] = 0
-		if self.type == "reg_fb" or self.type == "reg_fb_rsel":
-			wire_lengths["wire_" + self.name + "_0_out"] = width_dict["inv_" + self.name + "_0"]/4 + width_dict["ptran_" + self.name + "_0"]/4
-			wire_layers["wire_" + self.name + "_0_out"] = 0
-			wire_lengths["wire_" + self.name + "_0"] = width_dict["ptran_" + self.name + "_0"]
-			wire_layers["wire_" + self.name + "_0"] = 0
-		if self.type == "default":
-			wire_lengths["wire_" + self.name] = width_dict["local_mux"]/4 + width_dict["inv_" + self.name + "_2"]/4
-			wire_layers["wire_" + self.name] = 0
-		else:
-			wire_lengths["wire_" + self.name] = width_dict["inv_" + self.name + "_1"]/4 + width_dict["inv_" + self.name + "_2"]/4
-			wire_layers["wire_" + self.name] = 0
+		
+		if not self.use_tgate :	 
+			# Update wire lengths and wire layers
+			if self.type == "default_rsel" or self.type == "reg_fb_rsel":
+				wire_lengths["wire_" + self.name + "_0_rsel"] = width_dict[self.name]/4 + width_dict["lut"] + width_dict["ff"]/4 
+				wire_layers["wire_" + self.name + "_0_rsel"] = 0
+			if self.type == "default_rsel":
+				wire_lengths["wire_" + self.name + "_0_out"] = width_dict["inv_" + self.name + "_0"]/4 + width_dict["inv_" + self.name + "_2"]/4
+				wire_layers["wire_" + self.name + "_0_out"] = 0
+			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
+				wire_lengths["wire_" + self.name + "_0_out"] = width_dict["inv_" + self.name + "_0"]/4 + width_dict["ptran_" + self.name + "_0"]/4
+				wire_layers["wire_" + self.name + "_0_out"] = 0
+				wire_lengths["wire_" + self.name + "_0"] = width_dict["ptran_" + self.name + "_0"]
+				wire_layers["wire_" + self.name + "_0"] = 0
+			if self.type == "default":
+				wire_lengths["wire_" + self.name] = width_dict["local_mux"]/4 + width_dict["inv_" + self.name + "_2"]/4
+				wire_layers["wire_" + self.name] = 0
+			else:
+				wire_lengths["wire_" + self.name] = width_dict["inv_" + self.name + "_1"]/4 + width_dict["inv_" + self.name + "_2"]/4
+				wire_layers["wire_" + self.name] = 0
+
+		else :
+			# Update wire lengths and wire layers
+			if self.type == "default_rsel" or self.type == "reg_fb_rsel":
+				wire_lengths["wire_" + self.name + "_0_rsel"] = width_dict[self.name]/4 + width_dict["lut"] + width_dict["ff"]/4 
+				wire_layers["wire_" + self.name + "_0_rsel"] = 0
+			if self.type == "default_rsel":
+				wire_lengths["wire_" + self.name + "_0_out"] = width_dict["inv_" + self.name + "_0"]/4 + width_dict["inv_" + self.name + "_2"]/4
+				wire_layers["wire_" + self.name + "_0_out"] = 0
+			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
+				wire_lengths["wire_" + self.name + "_0_out"] = width_dict["inv_" + self.name + "_0"]/4 + width_dict["tgate_" + self.name + "_0"]/4
+				wire_layers["wire_" + self.name + "_0_out"] = 0
+				wire_lengths["wire_" + self.name + "_0"] = width_dict["tgate_" + self.name + "_0"]
+				wire_layers["wire_" + self.name + "_0"] = 0
+			if self.type == "default":
+				wire_lengths["wire_" + self.name] = width_dict["local_mux"]/4 + width_dict["inv_" + self.name + "_2"]/4
+				wire_layers["wire_" + self.name] = 0
+			else:
+				wire_lengths["wire_" + self.name] = width_dict["inv_" + self.name + "_1"]/4 + width_dict["inv_" + self.name + "_2"]/4
+				wire_layers["wire_" + self.name] = 0
 			
 
 class _LUTInputNotDriver(_SizableCircuit):
@@ -1537,23 +1645,35 @@ class _FlipFlop:
 class _LocalBLEOutput(_SizableCircuit):
 	""" Local BLE Output class """
 	
-	def __init__(self):
+	def __init__(self, use_tgate):
 		self.name = "local_ble_output"
 		# Delay weight in a representative critical path
 		self.delay_weight = 0.0928
+		# use pass transistor or transmission gates
+		self.use_tgate = use_tgate
 		
 		
 	def generate(self, subcircuit_filename, min_tran_width):
 		print "Generating local BLE output"
-		self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
-		
-		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-		self.initial_transistor_sizes["ptran_" + self.name + "_nmos"] = 2
-		self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 4
-		self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 4
+		if not self.use_tgate :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["ptran_" + self.name + "_nmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 4
+		else :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2_to_1_mux(subcircuit_filename, self.name)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 4
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 4
 	  
 		return self.initial_transistor_sizes
 
@@ -1564,10 +1684,17 @@ class _LocalBLEOutput(_SizableCircuit):
 		
 		
 	def update_area(self, area_dict, width_dict):
-		area = (2*area_dict["ptran_" + self.name] +
-				area_dict["rest_" + self.name] +
-				area_dict["inv_" + self.name + "_1"] +
-				area_dict["inv_" + self.name + "_2"])
+		if not self.use_tgate :
+			area = (2*area_dict["ptran_" + self.name] +
+					area_dict["rest_" + self.name] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+		else :
+			area = (2*area_dict["tgate_" + self.name] +
+					area_dict["rest_" + self.name] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+
 		area = area + area_dict["sram"]
 		width = math.sqrt(area)
 		area_dict[self.name] = area
@@ -1580,7 +1707,11 @@ class _LocalBLEOutput(_SizableCircuit):
 		""" Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 	
 		# Update wire lengths
-		wire_lengths["wire_" + self.name] = width_dict["ptran_" + self.name]
+		if not self.use_tgate :
+			wire_lengths["wire_" + self.name] = width_dict["ptran_" + self.name]
+		else :
+			wire_lengths["wire_" + self.name] = width_dict["tgate_" + self.name]
+
 		wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
 		
 		# Update wire layers
@@ -1595,22 +1726,33 @@ class _LocalBLEOutput(_SizableCircuit):
 class _GeneralBLEOutput(_SizableCircuit):
 	""" General BLE Output """
 	
-	def __init__(self):
+	def __init__(self, use_tgate):
 		self.name = "general_ble_output"
 		self.delay_weight = 0.0502
+		self.use_tgate = use_tgate
 		
 		
 	def generate(self, subcircuit_filename, min_tran_width):
 		print "Generating general BLE output"
-		self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
-		
-		# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-		self.initial_transistor_sizes["ptran_" + self.name + "_nmos"] = 2
-		self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
-		self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
-		self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
+		if not self.use_tgate :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["ptran_" + self.name + "_nmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
+		else :
+			self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2_to_1_mux(subcircuit_filename, self.name)		
+			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
+			self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
+			self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
+			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
+			self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
 	   
 		return self.initial_transistor_sizes
 
@@ -1621,10 +1763,17 @@ class _GeneralBLEOutput(_SizableCircuit):
 		
 	 
 	def update_area(self, area_dict, width_dict):
-		area = (2*area_dict["ptran_" + self.name] +
-				area_dict["rest_" + self.name] +
-				area_dict["inv_" + self.name + "_1"] +
-				area_dict["inv_" + self.name + "_2"])
+		if not self.use_tgate :
+			area = (2*area_dict["ptran_" + self.name] +
+					area_dict["rest_" + self.name] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+		else :
+			area = (2*area_dict["tgate_" + self.name] +
+					area_dict["rest_" + self.name] +
+					area_dict["inv_" + self.name + "_1"] +
+					area_dict["inv_" + self.name + "_2"])
+
 		area = area + area_dict["sram"]
 		width = math.sqrt(area)
 		area_dict[self.name] = area
@@ -1637,7 +1786,11 @@ class _GeneralBLEOutput(_SizableCircuit):
 		""" Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 	
 		# Update wire lengths
-		wire_lengths["wire_" + self.name] = width_dict["ptran_" + self.name]
+		if not self.use_tgate :
+			wire_lengths["wire_" + self.name] = width_dict["ptran_" + self.name]
+		else :
+			wire_lengths["wire_" + self.name] = width_dict["tgate_" + self.name]
+
 		wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
 		
 		# Update wire layers
@@ -1689,9 +1842,9 @@ class _BLE(_CompoundCircuit):
 		# Number of general outputs
 		self.num_general_outputs = Or
 		# Create BLE local output object
-		self.local_output = _LocalBLEOutput()
+		self.local_output = _LocalBLEOutput(use_tgate)
 		# Create BLE general output object
-		self.general_output = _GeneralBLEOutput()
+		self.general_output = _GeneralBLEOutput(use_tgate)
 		# Create LUT object
 		self.lut = _LUT(K, Rsel, Rfb, use_tgate)
 		# Create FF object
@@ -1958,7 +2111,7 @@ class _LogicCluster(_CompoundCircuit):
 		# Create BLE object
 		self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate)
 		# Create local mux object
-		self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile)
+		self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, use_tgate)
 		# Create local routing wire load object
 		self.local_routing_wire_load = _LocalRoutingWireLoad()
 		# Create local BLE output load object
@@ -2253,7 +2406,7 @@ class FPGA:
 		# Calculate number of switch block muxes per tile
 		num_sb_mux_per_tile = 2*W/L
 		# Initialize the switch block
-		self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile)
+		self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, use_tgate)
 		
 		
 		### CREATE CONNECTION BLOCK OBJECT
@@ -2262,7 +2415,7 @@ class FPGA:
 		cb_mux_size_required = int(W*Fcin)
 		num_cb_mux_per_tile = I
 		# Initialize the connection block
-		self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile)
+		self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile, use_tgate)
 		
 		
 		### CREATE LOGIC CLUSTER OBJECT
