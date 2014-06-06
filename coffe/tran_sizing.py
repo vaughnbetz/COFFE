@@ -513,6 +513,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 				if tfall > trise:
 					nm_size_upper_bound = nm_size_list[i]
 					nm_size_lower_bound = nm_size_list[i-1]
+					print "i = " + str(i)
 					break
 			# We are making the NMOS bigger, that means that initially, trise was smaller 
 			# than tfall. At some point, making the NMOS larger will make tfall smaller
@@ -1140,6 +1141,10 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 		if "ptran_" in name:
 			best_combo_dict[name] = best_combo[i]
 			best_combo_detailed[name + "_nmos"] = best_combo[i]
+		elif "tgate_" in name:
+			best_combo_dict[name] = best_combo[i]
+			best_combo_detailed[name + "_nmos"] = best_combo[i]
+			best_combo_detailed[name + "_pmos"] = best_combo[i]
 		elif "rest_" in name:
 			best_combo_dict[name] = best_combo[i]
 			best_combo_detailed[name + "_pmos"] = best_combo[i]
