@@ -32,9 +32,17 @@ def print_vpr_file(vpr_file, fpga_inst):
 		
 	# get areas
 	grid_logic_tile_area = fpga_inst.area_dict["logic_cluster"]/fpga_inst.specs.min_width_tran_area
+	if grid_logic_tile_area < 1.00 :
+		grid_logic_tile_area = 1.00
 	ipin_mux_trans_size = fpga_inst.area_dict["ipin_mux_trans_size"]/fpga_inst.specs.min_width_tran_area
+	if ipin_mux_trans_size < 1.00 :
+		ipin_mux_trans_size = 1.00
 	mux_trans_size = fpga_inst.area_dict["switch_mux_trans_size"]/fpga_inst.specs.min_width_tran_area
+	if mux_trans_size < 1.00 :
+		mux_trans_size = 1.00
 	buf_size = fpga_inst.area_dict["switch_buf_size"]/fpga_inst.specs.min_width_tran_area
+	if buf_size < 1.00 :
+		buf_size = 1.00
 
 	vpr_file.write("<architecture>  \n")
 	vpr_file.write("<!-- ODIN II specific config -->\n")
@@ -110,7 +118,6 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("       <input name=\"outpad\" num_pins=\"1\"/>\n")
 	vpr_file.write("       <output name=\"inpad\" num_pins=\"1\"/>\n")
 	vpr_file.write("       <clock name=\"clock\" num_pins=\"1\"/>\n")
-
 	vpr_file.write("    <!-- IOs can operate as either inputs or outputs -->\n")
 	vpr_file.write("    <mode name=\"inpad\">\n")
 	vpr_file.write("      <pb_type name=\"inpad\" blif_model=\".input\" num_pb=\"1\">\n")
@@ -132,7 +139,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("        </direct>\n")
 	vpr_file.write("      </interconnect>\n")
 	vpr_file.write("    </mode>\n")
-	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"" + str(Fcin) + "\" default_out_type=\"frac\" default_out_val=\"" + str(Fcout) + "\"/>\n")
+	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <!-- IOs go on the periphery of the FPGA, for consistency, \n")
 	vpr_file.write("      make it physically equivalent on all sides so that only one definition of I/Os is needed.\n")
 	vpr_file.write("      If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA\n")
