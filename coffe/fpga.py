@@ -2994,6 +2994,10 @@ class FPGA:
 			# If it's a level-restorer, we just add the PMOS size
 			elif "rest_" in element_name:
 				new_sizes[element_name + "_pmos"] = combo[i]
+			# If it's a transmission gate, we just add the PMOS and NMOS sizes
+			elif "tgate_" in element_name:
+				new_sizes[element_name + "_pmos"] = combo[i]
+				new_sizes[element_name + "_nmos"] = combo[i]
 			# If it's an inverter, we have to add both NMOS and PMOS sizes
 			elif "inv_" in element_name:
 				if inv_ratios == None:
