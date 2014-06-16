@@ -210,7 +210,7 @@ class _SwitchBlockMUX(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 3
 			self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 4
 			self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 4
-			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			# self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 8
 			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4
 			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 10
@@ -244,7 +244,7 @@ class _SwitchBlockMUX(_SizableCircuit):
 		else :
 			area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
 					self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
-					area_dict["rest_" + self.name + ""] +
+					# area_dict["rest_" + self.name + ""] +
 					area_dict["inv_" + self.name + "_1"] +
 					area_dict["inv_" + self.name + "_2"])
 
@@ -263,7 +263,8 @@ class _SwitchBlockMUX(_SizableCircuit):
 			area_dict["switch_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
 		else :
 			area_dict["switch_mux_trans_size"] = area_dict["tgate_" + self.name + "_L1"]
-		area_dict["switch_buf_size"] = area_dict["rest_" + self.name + ""] + area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
+		# area_dict["switch_buf_size"] = area_dict["rest_" + self.name + ""] + area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
+		area_dict["switch_buf_size"] = area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
 
 
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
@@ -280,7 +281,7 @@ class _SwitchBlockMUX(_SizableCircuit):
 		wire_layers["wire_" + self.name + "_L2"] = 0
 	
 	
-	def print_details(self):
+	def print_details(self, report_file):
 		""" Print switch block details """
 
 		print "  SWITCH BLOCK DETAILS:"
@@ -349,7 +350,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
 			self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
 			self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
-			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			# self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 6
@@ -378,7 +379,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
 		else :
 			area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
 					self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
-					area_dict["rest_" + self.name + ""] +
+					# area_dict["rest_" + self.name + ""] +
 					area_dict["inv_" + self.name + "_1"] +
 					area_dict["inv_" + self.name + "_2"])
 		
@@ -483,7 +484,7 @@ class _LocalMUX(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
 			self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
 			self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
-			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			# self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
 	   
@@ -508,7 +509,7 @@ class _LocalMUX(_SizableCircuit):
 		else :
 			area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
 					self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
-					area_dict["rest_" + self.name + ""] +
+					# area_dict["rest_" + self.name + ""] +
 					area_dict["inv_" + self.name + "_1"])
 		  
 		# MUX area including SRAM
@@ -594,7 +595,7 @@ class _LUTInputDriver(_SizableCircuit):
 			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
 				self.initial_transistor_sizes["tgate_" + self.name + "_0_nmos"] = 2
 				self.initial_transistor_sizes["tgate_" + self.name + "_0_pmos"] = 2
-				self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+				# self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
 			if self.type != "default":
 				self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
 				self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
@@ -638,7 +639,7 @@ class _LUTInputDriver(_SizableCircuit):
 				area += area_dict["inv_" + self.name + "_0"]
 			if self.type == "reg_fb" or self.type == "reg_fb_rsel":
 				area += 2*area_dict["tgate_" + self.name + "_0"]
-				area += area_dict["rest_" + self.name]
+				# area += area_dict["rest_" + self.name]
 			if self.type != "default":
 				area += area_dict["inv_" + self.name + "_1"]
 			area += area_dict["inv_" + self.name + "_2"]
@@ -1022,13 +1023,13 @@ class _LUT(_SizableCircuit):
 						64*area_dict["tgate_lut_L1"] + 
 						32*area_dict["tgate_lut_L2"] + 
 						16*area_dict["tgate_lut_L3"] + 
-						8*area_dict["rest_lut_int_buffer"] + 
+						# 8*area_dict["rest_lut_int_buffer"] + 
 						8*area_dict["inv_lut_int_buffer_1"] + 
 						8*area_dict["inv_lut_int_buffer_2"] + 
 						8*area_dict["tgate_lut_L4"] + 
 						4*area_dict["tgate_lut_L5"] + 
 						2*area_dict["tgate_lut_L6"] + 
-						area_dict["rest_lut_out_buffer"] + 
+						# area_dict["rest_lut_out_buffer"] + 
 						area_dict["inv_lut_out_buffer_1"] + 
 						area_dict["inv_lut_out_buffer_2"] +
 						64*area_dict["sram"])
@@ -1037,12 +1038,12 @@ class _LUT(_SizableCircuit):
 						32*area_dict["tgate_lut_L1"] + 
 						16*area_dict["tgate_lut_L2"] + 
 						8*area_dict["tgate_lut_L3"] + 
-						4*area_dict["rest_lut_int_buffer"] + 
+						# 4*area_dict["rest_lut_int_buffer"] + 
 						4*area_dict["inv_lut_int_buffer_1"] + 
 						4*area_dict["inv_lut_int_buffer_2"] + 
 						4*area_dict["tgate_lut_L4"] + 
 						2*area_dict["tgate_lut_L5"] +  
-						area_dict["rest_lut_out_buffer"] + 
+						# area_dict["rest_lut_out_buffer"] + 
 						area_dict["inv_lut_out_buffer_1"] + 
 						area_dict["inv_lut_out_buffer_2"] +
 						32*area_dict["sram"])
@@ -1050,12 +1051,12 @@ class _LUT(_SizableCircuit):
 				area += (16*area_dict["inv_lut_0sram_driver_2"] + 
 						16*area_dict["tgate_lut_L1"] + 
 						8*area_dict["tgate_lut_L2"] + 
-						4*area_dict["rest_lut_int_buffer"] + 
+						# 4*area_dict["rest_lut_int_buffer"] + 
 						4*area_dict["inv_lut_int_buffer_1"] + 
 						4*area_dict["inv_lut_int_buffer_2"] +
 						4*area_dict["tgate_lut_L3"] + 
 						2*area_dict["tgate_lut_L4"] +   
-						area_dict["rest_lut_out_buffer"] + 
+						# area_dict["rest_lut_out_buffer"] + 
 						area_dict["inv_lut_out_buffer_1"] + 
 						area_dict["inv_lut_out_buffer_2"] +
 						16*area_dict["sram"])
@@ -1322,7 +1323,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
-			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			# self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
 			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
@@ -1333,7 +1334,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
 			self.initial_transistor_sizes["tgate_lut_L6_nmos"] = 3
 			self.initial_transistor_sizes["tgate_lut_L6_pmos"] = 3
-			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			# self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
 			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
@@ -1396,8 +1397,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
-			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
-			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			# self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
 			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
@@ -1405,7 +1405,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
 			self.initial_transistor_sizes["tgate_lut_L5_nmos"] = 3
 			self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
-			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			# self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
 			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
@@ -1463,7 +1463,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
-			self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+			# self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
 			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
@@ -1472,7 +1472,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
 			self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
-			self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+			# self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
 			self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
@@ -1669,7 +1669,7 @@ class _LocalBLEOutput(_SizableCircuit):
 			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
 			self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
 			self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
-			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			# self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 4
@@ -1691,7 +1691,7 @@ class _LocalBLEOutput(_SizableCircuit):
 					area_dict["inv_" + self.name + "_2"])
 		else :
 			area = (2*area_dict["tgate_" + self.name] +
-					area_dict["rest_" + self.name] +
+					# area_dict["rest_" + self.name] +
 					area_dict["inv_" + self.name + "_1"] +
 					area_dict["inv_" + self.name + "_2"])
 
@@ -1748,7 +1748,7 @@ class _GeneralBLEOutput(_SizableCircuit):
 			# Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
 			self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
 			self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
-			self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+			# self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
 			self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
@@ -1770,7 +1770,7 @@ class _GeneralBLEOutput(_SizableCircuit):
 					area_dict["inv_" + self.name + "_2"])
 		else :
 			area = (2*area_dict["tgate_" + self.name] +
-					area_dict["rest_" + self.name] +
+					# area_dict["rest_" + self.name] +
 					area_dict["inv_" + self.name + "_1"] +
 					area_dict["inv_" + self.name + "_2"])
 
@@ -2793,6 +2793,11 @@ class FPGA:
 			lut_input.tfall = tfall
 			lut_input.trise = trise
 			lut_input.delay = max(tfall, trise)
+
+			if lut_input.delay < 0 :
+				print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
+				exit(2)
+
 			self.delay_dict[lut_input.name] = lut_input.delay
 			
 			# Now, we want to get the delay and power for the driver
@@ -2805,6 +2810,10 @@ class FPGA:
 			driver.delay = max(tfall, trise)
 			self.delay_dict[driver.name] = driver.delay
 
+			if driver.delay < 0 :
+				print "*** Lut driver delay is negative : " + str(lut_input.delay) + " ***"
+				exit(2)
+
 			# ... and the not_driver
 			print "Updating delay for " + not_driver.name
 			spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
@@ -2814,8 +2823,16 @@ class FPGA:
 			not_driver.trise = trise
 			not_driver.delay = max(tfall, trise)
 			self.delay_dict[not_driver.name] = not_driver.delay
+			if not_driver.delay < 0 :
+				print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"
+				exit(2)
 			
 			lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
+
+			if lut_delay < 0 :
+				print "*** Lut delay is negative : " + str(lut_input.delay) + " ***"
+				exit(2)
+
 			crit_path_delay += lut_delay*lut_input.delay_weight
 		
 		self.delay_dict["rep_crit_path"] = crit_path_delay
@@ -2865,6 +2882,7 @@ class FPGA:
 		# If inverter or transmission gate, use larger area to account for N-well spacing
 		# If pass-transistor, use regular area because they don't need N-wells.
 		if "inv_" in tran_name or "tgate_" in tran_name:
+			# area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
 			area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
 		else:
 			area = 0.447 + 0.128*tran_size + 0.391*math.sqrt(tran_size)
@@ -2995,9 +3013,9 @@ class FPGA:
 			elif "rest_" in element_name:
 				new_sizes[element_name + "_pmos"] = combo[i]
 			# If it's a transmission gate, we just add the PMOS and NMOS sizes
-			elif "tgate_" in element_name:
-				new_sizes[element_name + "_pmos"] = combo[i]
-				new_sizes[element_name + "_nmos"] = combo[i]
+			# elif "tgate_" in element_name:
+			# 	new_sizes[element_name + "_pmos"] = combo[i]
+			# 	new_sizes[element_name + "_nmos"] = combo[i]
 			# If it's an inverter, we have to add both NMOS and PMOS sizes
 			elif "inv_" in element_name:
 				if inv_ratios == None:

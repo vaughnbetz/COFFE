@@ -208,6 +208,10 @@ class SpiceInterface(object):
 					# Append each measurement value to the right list.
 					# We use current_meas and meas_names to keep track of where we 
 					# need to add the measurement value.
+					if float(meas) < 0 :
+						print "negative measurements at: " + filepath
+						exit(1)
+						
 					measurements[meas_names[current_meas]].append(meas)
 					current_meas += 1
 					if current_meas == num_measurements:
