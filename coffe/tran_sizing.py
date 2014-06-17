@@ -294,6 +294,10 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
 		delay = tfall
 	else:
 		delay = trise
+
+	if delay < 0 :
+			print "***Negative delay: " + str(delay) + " in " + subcircuit.name + " ***"
+			exit(2)
 		
 	if opt_type == "local":
 		return delay
@@ -320,6 +324,10 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
 		path_delay += fpga_inst.logic_cluster.ble.local_output.delay*fpga_inst.logic_cluster.ble.local_output.delay_weight
 		# General BLE output
 		path_delay += fpga_inst.logic_cluster.ble.general_output.delay*fpga_inst.logic_cluster.ble.general_output.delay_weight
+
+		if path_delay < 0 :
+			print "***Negative path delay: " + str(path_delay) + " in " + subcircuit.name + " ***"
+			exit(2)
 		
 		return path_delay
 		
@@ -497,15 +505,21 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# Run HSPICE sweep
 		if ERF_MONITOR_VERBOSE:
 			print "Running HSPICE sweep..."
+
+		print "nmos: "
+		print parameter_dict[inv_name + "_nmos"]
+		print "pmos: "
+		print parameter_dict[inv_name + "_pmos"]
 		spice_meas = spice_interface.run(sp_path, sweep_parameter_dict)
 		
 		# Find the new interval where the tfall trise equality occurs.
 		for i in xrange(len(nm_size_list)):
 			tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
-			trise_str = spice_meas["meas_" + inv_name + "_trise"][i] 
+			trise_str = spice_meas["meas_" + inv_name + "_trise"][i]
 			tfall = float(tfall_str)
 			trise = float(trise_str)
 		 
+			print "i = " + str(i) + " tfall: " + tfall_str + " trise: " + trise_str
 			# We are making the PMOS bigger, that means that initially, tfall was smaller
 			# than trise. At some point, making the PMOS larger will make trise smaller 
 			# than tfall. That's what we use to identify our ERF transistor size interval. 
@@ -513,7 +527,6 @@ def erf_inverter_balance_trise_tfall(sp_path,
 				if tfall > trise:
 					nm_size_upper_bound = nm_size_list[i]
 					nm_size_lower_bound = nm_size_list[i-1]
-					print "i = " + str(i)
 					break
 			# We are making the NMOS bigger, that means that initially, trise was smaller 
 			# than tfall. At some point, making the NMOS larger will make tfall smaller
@@ -526,6 +539,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 			   
 		#checks to see if indicies are swapped
 		if nm_size_lower_bound > nm_size_upper_bound:
+			print "***Boundaries swapped***"
 			temp_size = nm_size_upper_bound
 			nm_size_upper_bound = nm_size_lower_bound
 			nm_size_lower_bound = temp_size
@@ -1342,6 +1356,7 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 	sizing_ranges = {}
 	for name in transistor_names:
 		# Current size of this transistor
+		print transistor_sizes
 		size = transistor_sizes[name]
 		if "rest_" in name:
 			max = 1
@@ -1844,6 +1859,7 @@ def size_fpga_transistors(fpga_inst,
 		## Size switch block mux transistors
 		############################################
 		name = fpga_inst.sb_mux.name
+		print "iteration: " + str(iteration)
 		# If this is the first iteration, use the 'initial_transistor_sizes' as the 
 		# starting sizes. If it's not the first iteration, we use the transistor sizes 
 		# of the previous iteration as the starting sizes.
