@@ -133,12 +133,24 @@ class SpiceInterface(object):
 		# Run the SPICE simulation and capture output listing
 		output_filename = sp_filename.rstrip(".sp") + ".lis"
 		output_file = open(output_filename, "w")
-		subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
-		output_file.close()
-		 
-		# Read spice measurements
-		mt0_path = output_filename.replace(".lis", ".mt0")
-		spice_measurements = self.parse_mt0(mt0_path)
+
+		hspice_success = False
+		hspice_runs = 0
+		while ( not hspice_success) :
+			subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
+			output_file.close()
+			 
+			# Read spice measurements
+			mt0_path = output_filename.replace(".lis", ".mt0")
+			if os.path.isfile(mt0_path) :
+				spice_measurements = self.parse_mt0(mt0_path)
+				os.remove(mt0_path)
+				hspice_success = True
+			else :
+				hspice_runs = hspice_runs + 1
+				if hspice_runs > 10 :
+					print "***hspice failed to run***"
+					exit(2)
   
 		# Update simulation counter
 		self.simulation_counter += len(parameter_dict.itervalues().next())
