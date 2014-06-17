@@ -127,7 +127,6 @@ fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rf
 					  model_library, 
 					  metal_stack,
 					  use_tgate)
-
 # Print basic FPGA specs                       
 fpga_inst.print_specs()
 
@@ -156,8 +155,18 @@ os.chdir(arch_folder)
 # Generate FPGA and associated SPICE files
 fpga_inst.generate(is_size_transistors) 
 
+current_dir = os.getcwd()
+os.chdir(default_dir)
+# Print report file
+report_file = open( arch_desc_words[0] + ".results", 'a')
+report_file.write( str(datetime.datetime.now()) + "\n")
+coffe.utils.print_architecture_params(report_file, arch_params_dict)
+
 # Print FPGA implementation details
-fpga_inst.print_details()  
+fpga_inst.print_details(report_file)  
+report_file.close()
+
+os.chdir(current_dir)
 
 ###############################################################
 ## TRANSISTOR SIZING
@@ -187,9 +196,7 @@ os.chdir(default_dir)
 # Also print report to a file
 report_file = open( arch_desc_words[0] + ".results", 'a')
 #prints archtecture parameters
-coffe.utils.print_architecture_params(report_file, arch_params_dict)
 
-report_file.write( str(datetime.datetime.now()) + "\n")
 report_file.write( "|------------------------------------------------------------------------------|\n")
 report_file.write( "|    Area and Delay Report                                                     |\n")
 report_file.write( "|------------------------------------------------------------------------------|\n")
