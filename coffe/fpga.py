@@ -644,7 +644,7 @@ class _LUTInputDriver(_SizableCircuit):
 		# Generate top level files based on what type of driver this is.
 		self.top_spice_path = top_level.generate_lut_driver_top(self.name, self.type)
 		# And, generate the LUT driver + LUT path top level file. We use this file to measure total delay through the LUT.
-		top_level.generate_lut_and_driver_top(self.name, self.type)       
+		top_level.generate_lut_and_driver_top(self.name, self.type, self.use_tgate)       
 	 
 	 
 	def update_area(self, area_dict, width_dict):
@@ -987,11 +987,11 @@ class _LUT(_SizableCircuit):
 	def generate_top(self):
 		print "Generating top-level lut"
 		if self.K == 6:
-			self.top_spice_path = top_level.generate_lut6_top(self.name)
+			self.top_spice_path = top_level.generate_lut6_top(self.name, self.use_tgate)
 		elif self.K == 5:
-			self.top_spice_path = top_level.generate_lut5_top(self.name)
+			self.top_spice_path = top_level.generate_lut5_top(self.name, self.use_tgate)
 		elif self.K == 4:
-			self.top_spice_path = top_level.generate_lut4_top(self.name)
+			self.top_spice_path = top_level.generate_lut4_top(self.name, self.use_tgate)
 			
 		# Generate top-level driver files
 		for input_driver_name, input_driver in self.input_drivers.iteritems():
@@ -1742,7 +1742,7 @@ class _LocalBLEOutput(_SizableCircuit):
 
 	def generate_top(self):
 		print "Generating top-level " + self.name
-		self.top_spice_path = top_level.generate_local_ble_output_top(self.name)
+		self.top_spice_path = top_level.generate_local_ble_output_top(self.name, self.use_tgate)
 		
 		
 	def update_area(self, area_dict, width_dict):
@@ -1821,7 +1821,7 @@ class _GeneralBLEOutput(_SizableCircuit):
 
 	def generate_top(self):
 		print "Generating top-level " + self.name
-		self.top_spice_path = top_level.generate_general_ble_output_top(self.name)
+		self.top_spice_path = top_level.generate_general_ble_output_top(self.name, self.use_tgate)
 		
 	 
 	def update_area(self, area_dict, width_dict):
@@ -3090,9 +3090,9 @@ class FPGA:
 			elif "rest_" in element_name:
 				new_sizes[element_name + "_pmos"] = combo[i]
 			# If it's a transmission gate, we just add the PMOS and NMOS sizes
-			# elif "tgate_" in element_name:
-			# 	new_sizes[element_name + "_pmos"] = combo[i]
-			# 	new_sizes[element_name + "_nmos"] = combo[i]
+			elif "tgate_" in element_name:
+				new_sizes[element_name + "_pmos"] = combo[i]
+				new_sizes[element_name + "_nmos"] = combo[i]
 			# If it's an inverter, we have to add both NMOS and PMOS sizes
 			elif "inv_" in element_name:
 				if inv_ratios == None:

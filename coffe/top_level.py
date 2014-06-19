@@ -177,7 +177,7 @@ def generate_local_mux_top(mux_name):
 	return (mux_name + "/" + mux_name + ".sp")
 	
 	
-def generate_lut6_top(lut_name):
+def generate_lut6_top(lut_name, use_tgate):
 	""" Generate the top level 6-LUT SPICE file """
 
 	# Create directory
@@ -246,8 +246,13 @@ def generate_lut6_top(lut_name):
 	lut_file.write("********************************************************************************\n")
 	lut_file.write("** Circuit\n")
 	lut_file.write("********************************************************************************\n\n")
-	lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-	lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+
+	if not use_tgate :
+		lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+		lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	else :
+		lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+		lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
 	
 	lut_file.write(".END")
 	lut_file.close()
@@ -258,7 +263,7 @@ def generate_lut6_top(lut_name):
 	return (lut_name + "/" + lut_name + ".sp")
  
 
-def generate_lut5_top(lut_name):
+def generate_lut5_top(lut_name, use_tgate):
 	""" Generate the top level 5-LUT SPICE file """
 
 	# Create directory
@@ -327,8 +332,12 @@ def generate_lut5_top(lut_name):
 	lut_file.write("********************************************************************************\n")
 	lut_file.write("** Circuit\n")
 	lut_file.write("********************************************************************************\n\n")
-	lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-	lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	if not use_tgate :
+		lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+		lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	else :
+		lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+		lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
 	
 	lut_file.write(".END")
 	lut_file.close()
@@ -339,7 +348,7 @@ def generate_lut5_top(lut_name):
 	return (lut_name + "/" + lut_name + ".sp") 
  
 
-def generate_lut4_top(lut_name):
+def generate_lut4_top(lut_name, use_tgate):
 	""" Generate the top level 4-LUT SPICE file """
 
 	# Create directory
@@ -408,9 +417,13 @@ def generate_lut4_top(lut_name):
 	lut_file.write("********************************************************************************\n")
 	lut_file.write("** Circuit\n")
 	lut_file.write("********************************************************************************\n\n")
-	lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-	lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
-	
+	if not use_tgate :
+		lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+		lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	else :
+		lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+		lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+
 	lut_file.write(".END")
 	lut_file.close()
 
@@ -560,7 +573,7 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
 	return (input_driver_name_no_not + "/" + input_driver_name + ".sp")    
    
   
-def generate_lut_and_driver_top(input_driver_name, input_driver_type):
+def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate):
 	""" Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
 	
 	# Create directories
@@ -577,6 +590,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type):
 	spice_file.write("** Include libraries, parameters and other\n")
 	spice_file.write("********************************************************************************\n\n")
 	spice_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
+	spice_file.write(".OPTIONS POST=2\n\n")
 	
 	spice_file.write("********************************************************************************\n")
 	spice_file.write("** Setup and input\n")
@@ -608,18 +622,32 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type):
 	spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
 	
 	# Connect the LUT driver to a different LUT input based on LUT driver name
-	if input_driver_name == "lut_a_driver":
-		spice_file.write("Xlut n_in_sram n_out n_3_1 vdd vdd vdd vdd vdd vdd gnd lut\n")
-	elif input_driver_name == "lut_b_driver":
-		spice_file.write("Xlut n_in_sram n_out vdd n_3_1 vdd vdd vdd vdd vdd gnd lut\n")
-	elif input_driver_name == "lut_c_driver":
-		spice_file.write("Xlut n_in_sram n_out vdd vdd n_3_1 vdd vdd vdd vdd gnd lut\n")
-	elif input_driver_name == "lut_d_driver":
-		spice_file.write("Xlut n_in_sram n_out vdd vdd vdd n_3_1 vdd vdd vdd gnd lut\n")
-	elif input_driver_name == "lut_e_driver":
-		spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd n_3_1 vdd vdd gnd lut\n")
-	elif input_driver_name == "lut_f_driver":
-		spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd vdd n_3_1 vdd gnd lut\n")
+	if not use_tgate :
+		if input_driver_name == "lut_a_driver":
+			spice_file.write("Xlut n_in_sram n_out n_3_1 vdd vdd vdd vdd vdd vdd gnd lut\n")
+		elif input_driver_name == "lut_b_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd n_3_1 vdd vdd vdd vdd vdd gnd lut\n")
+		elif input_driver_name == "lut_c_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd vdd n_3_1 vdd vdd vdd vdd gnd lut\n")
+		elif input_driver_name == "lut_d_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd vdd vdd n_3_1 vdd vdd vdd gnd lut\n")
+		elif input_driver_name == "lut_e_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd n_3_1 vdd vdd gnd lut\n")
+		elif input_driver_name == "lut_f_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd vdd n_3_1 vdd gnd lut\n")
+	else :
+		if input_driver_name == "lut_a_driver":
+			spice_file.write("Xlut n_in_sram n_out n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n")
+		elif input_driver_name == "lut_b_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n")
+		elif input_driver_name == "lut_c_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd lut\n")
+		elif input_driver_name == "lut_d_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd lut\n")
+		elif input_driver_name == "lut_e_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd lut\n")
+		elif input_driver_name == "lut_f_driver":
+			spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd lut\n")
 	
 	spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
 	
@@ -631,7 +659,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type):
 	os.chdir("../")  
   
 	
-def generate_local_ble_output_top(name):
+def generate_local_ble_output_top(name, use_tgate):
 	""" Generate the top level local ble output SPICE file """
 	
 	# Create directories
@@ -679,8 +707,13 @@ def generate_local_ble_output_top(name):
 	top_file.write("********************************************************************************\n")
 	top_file.write("** Circuit\n")
 	top_file.write("********************************************************************************\n\n")
-	top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-	top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	if not use_tgate :
+		top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+		top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	else :
+		top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+		top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+
 	top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n vdd gnd local_ble_output_load\n")
 	top_file.write(".END")
 	top_file.close()
@@ -691,7 +724,7 @@ def generate_local_ble_output_top(name):
 	return (name + "/" + name + ".sp")
 	
 	
-def generate_general_ble_output_top(name):
+def generate_general_ble_output_top(name, use_tgate):
 	""" """
 	
 	# Create directories
@@ -739,8 +772,13 @@ def generate_general_ble_output_top(name):
 	top_file.write("********************************************************************************\n")
 	top_file.write("** Circuit\n")
 	top_file.write("********************************************************************************\n\n")
-	top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-	top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	if not use_tgate :
+		top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+		top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+	else :
+		top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+		top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+
 	top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
 	top_file.write(".END")
 	top_file.close()
