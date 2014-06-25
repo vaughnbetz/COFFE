@@ -261,10 +261,10 @@ class _SwitchBlockMUX(_SizableCircuit):
 		# Update VPR areas
 		if not self.use_tgate :
 			area_dict["switch_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
+			area_dict["switch_buf_size"] = area_dict["rest_" + self.name + ""] + area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
 		else :
 			area_dict["switch_mux_trans_size"] = area_dict["tgate_" + self.name + "_L1"]
-		# area_dict["switch_buf_size"] = area_dict["rest_" + self.name + ""] + area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
-		area_dict["switch_buf_size"] = area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
+			area_dict["switch_buf_size"] = area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
 
 
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
