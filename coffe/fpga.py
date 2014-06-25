@@ -1459,7 +1459,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
 			self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
-			# self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+			self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
 			self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
 			self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
