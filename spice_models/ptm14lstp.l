@@ -2,11 +2,11 @@
 * The models are from PTM (http://ptm.asu.edu/)
 * Please don't forget to acknowledge/cite PTM if you use these models. 
 
-* PTM High Performance 22nm Metal Gate / High-K / Strained-Si
+* PTM High Performance 14nm
 * nominal Vdd = 0.8V
 
-* 22NM_HP is the COFFE 'model_library' parameter.
-.LIB 22NM_HP
+* 14NM_LSTP is the COFFE 'model_library' parameter.
+.LIB 14NM_LSTP
 .model nmos nmos level = 72 
 + bulkmod = 1 
 +lmin    = 1e-008          lmax    = 3e-008        
@@ -187,6 +187,4 @@
 +lintnoi = 0               em      = 41000000        noia    = 6.25e+039       noib    = 3.125e+024    
 +noic    = 87500000        ntnoi   = 1             
 
-
-
-.ENDL 22NM_HP
+.ENDL 14NM_LSTP
