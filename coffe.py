@@ -56,6 +56,7 @@ parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area o
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
 parser.add_argument('-t', '--use_tgate', help="flag to use transmission gates instead of pass transistors", action='store_true')
+parser.add_argument('-f', '--use_finfet', help="flag to use finFETs", action='store_true')
 
 args = parser.parse_args()
 arch_description_filename = args.arch_description
@@ -66,6 +67,7 @@ area_opt_weight = args.area_opt_weight
 delay_opt_weight = args.delay_opt_weight
 max_iterations = args.max_iterations
 use_tgate = args.use_tgate
+use_finfet = args.use_finfet
 
 # Print the options
 print "RUN OPTIONS:"
@@ -84,7 +86,7 @@ print "Maximum number of sizing iterations: " + str(max_iterations)
 print ""
 
 # Load the input architecture description file
-arch_params_dict = coffe.utils.load_arch_params(arch_description_filename)
+arch_params_dict = coffe.utils.load_arch_params(arch_description_filename, use_finfet)
 
 # Create some local variables
 N = arch_params_dict['N']

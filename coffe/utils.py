@@ -185,7 +185,7 @@ def print_vpr_areas(report_file, fpga_inst):
 	report_file.write( "\n")
 
 	
-def load_arch_params(filename):
+def load_arch_params(filename, use_finfet):
 	""" Parse the architecture description file and load values into dictionary. 
 		Returns this dictionary.
 		Will print error message and terminate program if an invalid parameter is found
@@ -217,7 +217,12 @@ def load_arch_params(filename):
 		'model_path': "",
 		'model_library': "",
 		'metal' : []
+
 	}
+	if use_finfet :
+		arch_params['fin_height'] = -1
+		arch_params['fin_width'] = -1
+		arch_params['lg'] = -1
 
 	params_file = open(filename, 'r')
 	for line in params_file:
@@ -306,6 +311,15 @@ def load_arch_params(filename):
 			c = c.replace('\t', '')
 			arch_params['metal'].append((float(r),float(c)))
 	
+		#finFET parameters
+		elif use_finfet :
+			if param == "fin_height" :
+				arch_params['fin_height'] = int(value)
+			elif param == "fin_width" :
+				arch_params['fin_width'] = int(value)
+			elif param == "lg" :
+				arch_params['lg'] = int(value)
+
 	params_file.close()
 	
 	# Check that we read everything
@@ -314,10 +328,10 @@ def load_arch_params(filename):
 			print "ERROR: Did not find architecture parameter " + param + " in " + filename
 			sys.exit()
 	
-	check_arch_params(arch_params, filename)
+	check_arch_params(arch_params, filename, use_finfet)
 	return arch_params 
 
-def check_arch_params (arch_params, filename):
+def check_arch_params (arch_params, filename, use_finfet):
 	if arch_params['W'] <= 0:
 		print_error (arch_params['W'], "W", filename)
 	if arch_params['L'] <= 0:
@@ -358,11 +372,7 @@ def check_arch_params (arch_params, filename):
 
 	#process technology parameters
 	if arch_params['vdd'] < 0 :
-		print_warning (arch_params['vdd'], "vdd", filename)            
-	# if arch_params['vsram'] < 0 :
-	#     print_error (arch_params['vsram'], "vsram", filename)            
-	# if arch_params['vsram_n'] < 0 :
-	#     print_error (arch_params['vsram_n'], "vsram_n", filename)            
+		print_warning (arch_params['vdd'], "vdd", filename)                     
 	if arch_params['gate_length'] < 0 :
 		print_error (arch_params['gate_length'], "gate_length", filename)            
 	if arch_params['min_tran_width'] < 0 :
@@ -371,7 +381,15 @@ def check_arch_params (arch_params, filename):
 		print_error (arch_params['min_width_tran_area'], "min_width_tran_area", filename)            
 	if arch_params['sram_cell_area'] < 0 :
 		print_error (arch_params['sram_cell_area'], "sram_cell_area", filename)            
-	
+
+	if use_finfet :
+		if arch_params['fin_width'] < 0 :
+			print_error (arch_params['fin_width'], "fin_width", filename)            
+		if arch_params['fin_height'] < 0 :
+			print_error (arch_params['fin_height'], "fin_height", filename)            
+		if arch_params['lg'] < 0 :
+			print_error (arch_params['lg'], "lg", filename)            
+
 def print_error(value, arguement, filename):
 	print "ERROR: Invalid value (" + value + ") for " + arguement + " in " + filename
 	sys.exit()
