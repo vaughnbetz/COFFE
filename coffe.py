@@ -113,22 +113,46 @@ model_path = arch_params_dict['model_path']
 model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
 
+if use_finfet:
+	fin_height = arch_params_dict['fin_height']
+	fin_width = arch_params_dict['fin_width']
+	lg = arch_params_dict['lg']
+
 default_dir = os.getcwd()
 
 # Record start time
 total_start_time = time.time()
 
 # Create an FPGA instance
-fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					  vdd, vsram, vsram_n, 
-					  gate_length, 
-					  min_tran_width, 
-					  min_width_tran_area, 
-					  sram_cell_area, 
-					  model_path, 
-					  model_library, 
-					  metal_stack,
-					  use_tgate)
+if not use_finfet :
+	fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
+						  vdd, vsram, vsram_n, 
+						  gate_length, 
+						  min_tran_width, 
+						  min_width_tran_area, 
+						  sram_cell_area, 
+						  model_path, 
+						  model_library, 
+						  metal_stack,
+						  use_tgate,
+						  use_finfet)
+else :
+	fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
+						  vdd, vsram, vsram_n, 
+						  gate_length, 
+						  min_tran_width, 
+						  min_width_tran_area, 
+						  sram_cell_area, 
+						  model_path, 
+						  model_library, 
+						  metal_stack,
+						  use_tgate,
+						  use_finfet,
+						  fin_width,
+						  fin_height,
+						  lg)
+
+
 # Print basic FPGA specs                       
 fpga_inst.print_specs()
 

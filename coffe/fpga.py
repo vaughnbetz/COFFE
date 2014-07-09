@@ -61,7 +61,8 @@ class _Specs:
 	""" General FPGA specs. """
  
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library):
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library,
+					 use_finfet, fin_width=0, fin_height=0, lg=0):
 		self.N = N
 		self.K = K
 		self.W = W
@@ -85,6 +86,11 @@ class _Specs:
 		self.sram_cell_area = sram_cell_area
 		self.model_path = model_path
 		self.model_library = model_library
+		self.use_finfet = use_finfet
+		self.fin_width = fin_width
+		self.fin_height = fin_height
+		self.lg = lg
+
 
 		
 class _SizableCircuit:
@@ -938,7 +944,7 @@ class _LUTInputDriverLoad:
 class _LUT(_SizableCircuit):
 	""" Lookup table. """
 
-	def __init__(self, K, Rsel, Rfb, use_tgate):
+	def __init__(self, K, Rsel, Rfb, use_tgate, use_finfet):
 		# Name of LUT 
 		self.name = "lut"
 		# Size of LUT
@@ -968,6 +974,7 @@ class _LUT(_SizableCircuit):
 			self.input_drivers["e"].delay_weight = 0.0289
 		if K >= 6:
 			self.input_drivers["f"].delay_weight = 0.0186
+		self.use_finfet = use_finfet
 		
 	
 	def generate(self, subcircuit_filename, min_tran_width):
@@ -975,7 +982,7 @@ class _LUT(_SizableCircuit):
 		
 		# Generate LUT differently based on K
 		if self.K == 6:
-			init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate)
+			init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet)
 		elif self.K == 5:
 			init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width, self.use_tgate)
 		elif self.K == 4:
@@ -1344,13 +1351,13 @@ class _LUT(_SizableCircuit):
 			print ""
 			report_file.write("\n")
 	
-	def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate):
+	def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet):
 		print "Generating 6-LUT"
 		
 		# Call the generation function
 		if not use_tgate :
 			# use pass transistors
-			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut6(subcircuit_filename, min_tran_width)
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut6(subcircuit_filename, min_tran_width, use_finfet)
 
 			# Give initial transistor sizes
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
@@ -1374,7 +1381,7 @@ class _LUT(_SizableCircuit):
 
 		else :
 			# use transmission gates
-			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut6(subcircuit_filename, min_tran_width)
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut6(subcircuit_filename, min_tran_width, use_finfet)
 
 			# Give initial transistor sizes
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
@@ -1564,7 +1571,7 @@ class _FlipFlop:
 		through manual design for PTM 22nm process technology. If you use a different process technology,
 		you may need to re-size the FF transistors. """
 	
-	def __init__(self, Rsel):
+	def __init__(self, Rsel, use_finfet):
 		# Flip-Flop name
 		self.name = "ff"
 		# Register select mux, Rsel = LUT input (e.g. 'a', 'b', etc.) or 'z' if no register select 
@@ -1583,6 +1590,7 @@ class _FlipFlop:
 		self.t_clk_to_q = 1
 		# Delay weight used to calculate delay of representative critical path
 		self.delay_weight = 1
+		self.use_finfet = use_finfet
 		
 		 
 	def generate(self, subcircuit_filename, min_tran_width):
@@ -1603,26 +1611,48 @@ class _FlipFlop:
 			self.initial_transistor_sizes["rest_ff_input_select_pmos"] = 1
 		
 		# These transistors always exists regardless of register select
-		self.initial_transistor_sizes["inv_ff_input_1_nmos"] = 3
-		self.initial_transistor_sizes["inv_ff_input_1_pmos"] = 8.2
-		self.initial_transistor_sizes["tgate_ff_1_nmos"] = 1
-		self.initial_transistor_sizes["tgate_ff_1_pmos"] = 1
-		self.initial_transistor_sizes["tran_ff_set_n_pmos"] = 1
-		self.initial_transistor_sizes["tran_ff_reset_nmos"] = 1
-		self.initial_transistor_sizes["inv_ff_cc1_1_nmos"] = 3
-		self.initial_transistor_sizes["inv_ff_cc1_1_pmos"] = 4
-		self.initial_transistor_sizes["inv_ff_cc1_2_nmos"] = 1
-		self.initial_transistor_sizes["inv_ff_cc1_2_pmos"] = 1.3
-		self.initial_transistor_sizes["tgate_ff_2_nmos"] = 1
-		self.initial_transistor_sizes["tgate_ff_2_pmos"] = 1
-		self.initial_transistor_sizes["tran_ff_reset_n_pmos"] = 1
-		self.initial_transistor_sizes["tran_ff_set_nmos"] = 1
-		self.initial_transistor_sizes["inv_ff_cc2_1_nmos"] = 1
-		self.initial_transistor_sizes["inv_ff_cc2_1_pmos"] = 1.3
-		self.initial_transistor_sizes["inv_ff_cc2_2_nmos"] = 1
-		self.initial_transistor_sizes["inv_ff_cc2_2_pmos"] = 1.3
-		self.initial_transistor_sizes["inv_ff_output_driver_nmos"] = 4
-		self.initial_transistor_sizes["inv_ff_output_driver_pmos"] = 9.7
+		if not self.use_finfet :
+			self.initial_transistor_sizes["inv_ff_input_1_nmos"] = 3
+			self.initial_transistor_sizes["inv_ff_input_1_pmos"] = 8.2
+			self.initial_transistor_sizes["tgate_ff_1_nmos"] = 1
+			self.initial_transistor_sizes["tgate_ff_1_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_set_n_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_reset_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc1_1_nmos"] = 3
+			self.initial_transistor_sizes["inv_ff_cc1_1_pmos"] = 4
+			self.initial_transistor_sizes["inv_ff_cc1_2_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc1_2_pmos"] = 1.3
+			self.initial_transistor_sizes["tgate_ff_2_nmos"] = 1
+			self.initial_transistor_sizes["tgate_ff_2_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_reset_n_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_set_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc2_1_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc2_1_pmos"] = 1.3
+			self.initial_transistor_sizes["inv_ff_cc2_2_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc2_2_pmos"] = 1.3
+			self.initial_transistor_sizes["inv_ff_output_driver_nmos"] = 4
+			self.initial_transistor_sizes["inv_ff_output_driver_pmos"] = 9.7
+		else :
+			self.initial_transistor_sizes["inv_ff_input_1_nmos"] = 3
+			self.initial_transistor_sizes["inv_ff_input_1_pmos"] = 9
+			self.initial_transistor_sizes["tgate_ff_1_nmos"] = 1
+			self.initial_transistor_sizes["tgate_ff_1_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_set_n_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_reset_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc1_1_nmos"] = 3
+			self.initial_transistor_sizes["inv_ff_cc1_1_pmos"] = 4
+			self.initial_transistor_sizes["inv_ff_cc1_2_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc1_2_pmos"] = 2
+			self.initial_transistor_sizes["tgate_ff_2_nmos"] = 1
+			self.initial_transistor_sizes["tgate_ff_2_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_reset_n_pmos"] = 1
+			self.initial_transistor_sizes["tran_ff_set_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc2_1_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc2_1_pmos"] = 2
+			self.initial_transistor_sizes["inv_ff_cc2_2_nmos"] = 1
+			self.initial_transistor_sizes["inv_ff_cc2_2_pmos"] = 2
+			self.initial_transistor_sizes["inv_ff_output_driver_nmos"] = 4
+			self.initial_transistor_sizes["inv_ff_output_driver_pmos"] = 10
 
 		return self.initial_transistor_sizes
 
@@ -1892,7 +1922,7 @@ class _LUTOutputLoad:
 		
 class _BLE(_CompoundCircuit):
 
-	def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate):
+	def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet):
 		# BLE name
 		self.name = "ble"
 		# Size of LUT
@@ -1908,9 +1938,9 @@ class _BLE(_CompoundCircuit):
 		# Create BLE general output object
 		self.general_output = _GeneralBLEOutput(use_tgate)
 		# Create LUT object
-		self.lut = _LUT(K, Rsel, Rfb, use_tgate)
+		self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet)
 		# Create FF object
-		self.ff = _FlipFlop(Rsel)
+		self.ff = _FlipFlop(Rsel, use_finfet)
 		# Create LUT output load object
 		self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs)
 		
@@ -2172,13 +2202,13 @@ class _LocalRoutingWireLoad:
 
 class _LogicCluster(_CompoundCircuit):
 	
-	def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate):
+	def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, use_finfet):
 		# Name of logic cluster
 		self.name = "logic_cluster"
 		# Cluster size
 		self.N = N
 		# Create BLE object
-		self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate)
+		self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet)
 		# Create local mux object
 		self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, use_tgate)
 		# Create local routing wire load object
@@ -2464,11 +2494,13 @@ class FPGA:
 	""" This class describes an FPGA. """
 		
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library, metal_stack, use_tgate):
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library, metal_stack, 
+						use_tgate, use_finfet, fin_width=0, fin_height=0, lg=0):
 		  
 		# Initialize the specs
 		self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-										vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library)
+										vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library,
+										 use_finfet, fin_width, fin_height, lg)
 
 										
 		### CREATE SWITCH BLOCK OBJECT
@@ -2501,7 +2533,7 @@ class FPGA:
 		local_mux_size_required = int((I + Ofb*N) * Fclocal)
 		num_local_mux_per_tile = N*K
 		# Create the logic cluster object
-		self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate)
+		self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, use_finfet)
 		
 		### CREATE LOAD OBJECTS
 		# Create cluster output load object
@@ -2773,7 +2805,13 @@ class FPGA:
 		# Create parameter dict of all current transistor sizes and wire rc
 		parameter_dict = {}
 		for tran_name, tran_size in self.transistor_sizes.iteritems():
-			parameter_dict[tran_name] = [1e-9*tran_size*self.specs.min_tran_width]
+			if not self.specs.use_finfet:
+				parameter_dict[tran_name] = [1e-9*tran_size*self.specs.min_tran_width]
+			else :
+				parameter_dict[tran_name] = [tran_size]
+
+		print parameter_dict
+
 		for wire_name, rc_data in self.wire_rc_dict.iteritems():
 			parameter_dict[wire_name + "_res"] = [rc_data[0]]
 			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
@@ -2820,6 +2858,7 @@ class FPGA:
 		
 		# Local BLE output
 		print "Updating delay for " + self.logic_cluster.ble.local_output.name 
+		print parameter_dict
 		spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
 										 parameter_dict) 
 		tfall = float(spice_meas["meas_total_tfall"][0])
@@ -3000,13 +3039,13 @@ class FPGA:
 		# Generate wire subcircuit
 		basic_subcircuits.wire_generate(self.basic_subcircuits_filename)
 		# Generate pass-transistor subcircuit
-		basic_subcircuits.ptran_generate(self.basic_subcircuits_filename)
+		basic_subcircuits.ptran_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
 		# Generate transmission gate subcircuit
-		basic_subcircuits.tgate_generate(self.basic_subcircuits_filename)
+		basic_subcircuits.tgate_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
 		# Generate level-restore subcircuit
-		basic_subcircuits.rest_generate(self.basic_subcircuits_filename)
+		basic_subcircuits.rest_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
 		# Generate inverter subcircuit
-		basic_subcircuits.inverter_generate(self.basic_subcircuits_filename)
+		basic_subcircuits.inverter_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
 
 		# Write footer
 		basic_sc_file = open(self.basic_subcircuits_filename, 'a')
@@ -3026,6 +3065,12 @@ class FPGA:
 		process_data_file.write(".PARAM supply_v = " + str(self.specs.vdd) + "\n")
 		process_data_file.write(".PARAM sram_v = " + str(self.specs.vsram) + "\n")
 		process_data_file.write(".PARAM sram_n_v = " + str(self.specs.vsram_n) + "\n\n")
+	
+		if self.specs.use_finfet :
+			process_data_file.write(".param fin_height=" + str(self.specs.fin_height) + "n \n")
+			process_data_file.write(".param fin_width=" + str(self.specs.fin_width) + "n \n")
+			process_data_file.write(".param lg=" + str(self.specs.lg) + "n\n")
+
 		process_data_file.write("* Gate length\n")
 		process_data_file.write(".PARAM gate_length = " + str(self.specs.gate_length) + "n\n\n")
 		process_data_file.write("* We have two supply rails, vdd and vdd_subckt.\n")
@@ -3103,13 +3148,15 @@ class FPGA:
 					# If there are inverter ratios, we use them to give different sizes to NMOS and PMOS
 					if inv_ratios[element_name] < 1:
 						# NMOS is larger than PMOS
-						new_sizes[element_name + "_nmos"] = combo[i]/inv_ratios[element_name]
+						# new_sizes[element_name + "_nmos"] = combo[i]/inv_ratios[element_name]
+						new_sizes[element_name + "_nmos"] = combo[i]
 						new_sizes[element_name + "_pmos"] = combo[i]
 					else:
 						# PMOS is larger than NMOS
 						new_sizes[element_name + "_nmos"] = combo[i]
-						new_sizes[element_name + "_pmos"] = combo[i]*inv_ratios[element_name]
-		
+						# new_sizes[element_name + "_pmos"] = combo[i]*inv_ratios[element_name]
+						new_sizes[element_name + "_pmos"] = combo[i]
+
 		# Now, update self.transistor_sizes with these new sizes
 		self.transistor_sizes.update(new_sizes)
 	  
