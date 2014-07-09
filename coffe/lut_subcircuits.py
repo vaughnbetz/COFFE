@@ -110,7 +110,7 @@ def generate_ptran_lut6(spice_filename, min_tran_width, use_finfet):
 	return tran_names_list, wire_names_list
 
 
-def generate_ptran_lut5(spice_filename, min_tran_width):
+def generate_ptran_lut5(spice_filename, min_tran_width, use_finfet):
 	""" Generates a 5LUT SPICE deck """
 	
 	# Open SPICE file for appending
@@ -124,7 +124,11 @@ def generate_ptran_lut5(spice_filename, min_tran_width):
 	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
 	Wn = min_tran_width
 	Wp = 1.667*min_tran_width
-	spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	if not use_finfet:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	else:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=1 Wp=1\n")
+
 	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
 	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
 	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
@@ -204,7 +208,7 @@ def generate_ptran_lut5(spice_filename, min_tran_width):
 	return tran_names_list, wire_names_list
 
 	
-def generate_ptran_lut4(spice_filename, min_tran_width):
+def generate_ptran_lut4(spice_filename, min_tran_width, use_finfet):
 	""" Generates a 4LUT SPICE deck """
 	
 	# Open SPICE file for appending
@@ -218,7 +222,11 @@ def generate_ptran_lut4(spice_filename, min_tran_width):
 	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
 	Wn = min_tran_width
 	Wp = 1.667*min_tran_width
-	spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	if not use_finfet:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	else:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=1 Wp=1\n")
+
 	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
 	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
 	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
@@ -572,7 +580,7 @@ def generate_tgate_lut6(spice_filename, min_tran_width, use_finfet):
 	return tran_names_list, wire_names_list
 
 
-def generate_tgate_lut5(spice_filename, min_tran_width):
+def generate_tgate_lut5(spice_filename, min_tran_width, use_finfet):
 	""" Generates a 5LUT SPICE deck """
 	
 	# Open SPICE file for appending
@@ -586,7 +594,11 @@ def generate_tgate_lut5(spice_filename, min_tran_width):
 	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
 	Wn = min_tran_width
 	Wp = 1.667*min_tran_width
-	spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	if not use_finfet :
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	else:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=1 Wp=2 \n")
+
 	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
 	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
 	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
@@ -671,7 +683,7 @@ def generate_tgate_lut5(spice_filename, min_tran_width):
 	return tran_names_list, wire_names_list
 
 	
-def generate_tgate_lut4(spice_filename, min_tran_width):
+def generate_tgate_lut4(spice_filename, min_tran_width, use_finfet):
 	""" Generates a 4LUT SPICE deck """
 	
 	# Open SPICE file for appending
@@ -685,7 +697,11 @@ def generate_tgate_lut4(spice_filename, min_tran_width):
 	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
 	Wn = min_tran_width
 	Wp = 1.667*min_tran_width
-	spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	if not use_finfet :
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	else:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=1 Wp=2 \n")
+
 	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
 	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
 	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")

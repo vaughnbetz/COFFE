@@ -984,9 +984,9 @@ class _LUT(_SizableCircuit):
 		if self.K == 6:
 			init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet)
 		elif self.K == 5:
-			init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width, self.use_tgate)
+			init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet)
 		elif self.K == 4:
-			init_tran_sizes = self._generate_4lut(subcircuit_filename, min_tran_width, self.use_tgate)
+			init_tran_sizes = self._generate_4lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet)
    
 		return init_tran_sizes
 
@@ -1429,13 +1429,13 @@ class _LUT(_SizableCircuit):
 		return self.initial_transistor_sizes
 
 		
-	def _generate_5lut(self, subcircuit_filename, min_tran_width, use_tgate):
+	def _generate_5lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet):
 		print "Generating 5-LUT"
 		
 		# Call the generation function
 		if not use_tgate :
 			# use pass transistor
-			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut5(subcircuit_filename, min_tran_width)
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut5(subcircuit_filename, min_tran_width, use_finfet)
 			# Give initial transistor sizes
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
@@ -1456,7 +1456,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
 		else :
 			# use transmission gates
-			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut5(subcircuit_filename, min_tran_width)
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut5(subcircuit_filename, min_tran_width, use_finfet)
 			# Give initial transistor sizes
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
@@ -1498,13 +1498,13 @@ class _LUT(_SizableCircuit):
 		return self.initial_transistor_sizes
 
   
-	def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate):
+	def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet):
 		print "Generating 4-LUT"
 		
 		# Call the generation function
 		if not use_tgate :
 			# use pass transistor
-			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut4(subcircuit_filename, min_tran_width)
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut4(subcircuit_filename, min_tran_width, use_finfet)
 			# Give initial transistor sizes
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
@@ -1524,7 +1524,7 @@ class _LUT(_SizableCircuit):
 			self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
 		else :
 			# use transmission gates
-			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut4(subcircuit_filename, min_tran_width)
+			self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut4(subcircuit_filename, min_tran_width, use_finfet)
 			# Give initial transistor sizes
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
 			self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
@@ -2810,8 +2810,6 @@ class FPGA:
 			else :
 				parameter_dict[tran_name] = [tran_size]
 
-		print parameter_dict
-
 		for wire_name, rc_data in self.wire_rc_dict.iteritems():
 			parameter_dict[wire_name + "_res"] = [rc_data[0]]
 			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
@@ -2858,7 +2856,6 @@ class FPGA:
 		
 		# Local BLE output
 		print "Updating delay for " + self.logic_cluster.ble.local_output.name 
-		print parameter_dict
 		spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
 										 parameter_dict) 
 		tfall = float(spice_meas["meas_total_tfall"][0])
