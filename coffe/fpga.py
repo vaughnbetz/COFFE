@@ -56,6 +56,9 @@ import top_level
 # HSPICE handling module
 import spice
 
+# Track-access locality constants
+OUTPUT_TRACK_ACCESS_SPAN = 0.25
+INPUT_TRACK_ACCESS_SPAN = 0.50
 
 class _Specs:
 	""" General FPGA specs. """
@@ -2065,9 +2068,11 @@ class _GeneralBLEOutputLoad:
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
 		""" Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 		
-		# Update wire lengths
-		wire_lengths["wire_general_ble_output"] = width_dict["tile"]/4
-		
+		# The BLE output wire is the wire that allows a BLE output to reach routing wires in
+        # the routing channels. This wire spans some fraction of a tile. We can set what that
+        # fraction is with the output track-access span (track-access locality).
+		wire_lengths["wire_general_ble_output"] = width_dict["tile"]*OUTPUT_TRACK_ACCESS_SPAN
+
 		# Update wire layers
 		wire_layers["wire_general_ble_output"] = 0
 	  
@@ -2299,15 +2304,22 @@ class _RoutingWireLoad:
 	def update_wires(self, width_dict, wire_lengths, wire_layers):
 		""" Calculate wire lengths and wire layers. """
 
-		# Update wire lengths
+        # This is the general routing wire that spans L tiles
 		wire_lengths["wire_gen_routing"] = self.wire_length*width_dict["tile"]
+
+        # These are the pieces of wire that are required to connect routing wires to switch 
+        # block inputs. We assume that on average, they span half a tile.
 		wire_lengths["wire_sb_load_on"] = width_dict["tile"]/2
 		wire_lengths["wire_sb_load_partial"] = width_dict["tile"]/2
 		wire_lengths["wire_sb_load_off"] = width_dict["tile"]/2 
-		wire_lengths["wire_cb_load_on"] = width_dict["tile"]/2
-		wire_lengths["wire_cb_load_partial"] = width_dict["tile"]/2
-		wire_lengths["wire_cb_load_off"] = width_dict["tile"]/2
-		
+
+        # These are the pieces of wire that are required to connect routing wires to 
+        # connection block multiplexer inputs. They span some fraction of a tile that is 
+        # given my the input track-access span (track-access locality). 
+		wire_lengths["wire_cb_load_on"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
+		wire_lengths["wire_cb_load_partial"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
+		wire_lengths["wire_cb_load_off"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
+
 		# Update wire layers
 		wire_layers["wire_gen_routing"] = 1 
 		wire_layers["wire_sb_load_on"] = 0 
