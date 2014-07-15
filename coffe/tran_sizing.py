@@ -375,9 +375,12 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		
 	# Update the parameter dict needed by the spice_interface. 
 	# The parameter dict contains the sizes of all transistors and RC of all wires.
-	parameter_dict[inv_name + "_nmos"] = [1e-9*inv_nm_size]
-	parameter_dict[inv_name + "_pmos"] = [1e-9*inv_nm_size]
-
+	if not fpga_inst.specs.use_finfet :
+		parameter_dict[inv_name + "_nmos"] = [1e-9*inv_nm_size]
+		parameter_dict[inv_name + "_pmos"] = [1e-9*inv_nm_size]
+	else :
+		parameter_dict[inv_name + "_nmos"] = [inv_nm_size]
+		parameter_dict[inv_name + "_pmos"] = [inv_nm_size]
 	# The first thing we are going to do is increase the PMOS size in fixed increments
 	# to get an upper bound on the PMOS size. We also monitor trise. We expect that 
 	# increasing the PMOS size will decrease trise and increase tfall (because we are making
@@ -387,14 +390,23 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		print "Looking for " + target_tran_name + " size upper bound"
 	upper_bound_not_found = True
 	self_loading = False
-	multiplication_factor = 1
+	if not fpga_inst.specs.use_finfet :
+		multiplication_factor = 1
+	else :
+		multiplication_factor = inv_nm_size
+
 	previous_tfall = 1
 	previous_trise = 1
 	while upper_bound_not_found and not self_loading:
 		# Increase the target transistor size, update parameter dict and run HSPICE
-		target_tran_nm_size = multiplication_factor*inv_nm_size
-		parameter_dict[target_tran_name][0] = 1e-9*target_tran_nm_size
-		spice_meas = spice_interface.run(sp_path, parameter_dict)
+		if not fpga_inst.specs.use_finfet :
+			target_tran_nm_size = multiplication_factor*inv_nm_size
+			parameter_dict[target_tran_name][0] = 1e-9*target_tran_nm_size
+			spice_meas = spice_interface.run(sp_path, parameter_dict)
+		else :
+			target_tran_nm_size = multiplication_factor
+			parameter_dict[target_tran_name][0] = target_tran_nm_size
+			spice_meas = spice_interface.run(sp_path, parameter_dict)
 		
 		# Get the rise and fall measurements for our inverter out of 'spice_meas'
 		# This was a single HSPICE run, so the value we want is at index 0
@@ -458,7 +470,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 	# inverter is self-loaded, we are just going to use whatever transistor size we 
 	# currently have as the target transistor size. But if the inverter is not self-loaded,
 	# we are going to find the precise transistor size that gives balanced rise/fall.
-	if not self_loading:      
+	if not self_loading and not fpga_inst.specs.use_finfet:      
 
 		# The trise/tfall equality occurs in [target_tran_size-inv_size, target_tran_size]
 		# To find it, we'll sweep this range in two steps. In the first step, we'll sweep
@@ -494,7 +506,11 @@ def erf_inverter_balance_trise_tfall(sp_path,
 				# target transistor.
 				value = parameter_dict[name][0]
 				if name == target_tran_name:
-					value = 1e-9*nm_size_list[i]
+					if not fpga_inst.specs.use_finfet :
+						value = 1e-9*nm_size_list[i]
+					else :
+						value = nm_size_list[i]
+
 				# On the first iteration, we have to add the lists themselves, but every 
 				# other iteration we can just append to the lists.
 				if i == 0:
@@ -572,7 +588,11 @@ def erf_inverter_balance_trise_tfall(sp_path,
 				# target transistor.
 				value = parameter_dict[name][0]
 				if name == target_tran_name:
-					value = 1e-9*nm_size_list[i]
+					if not fpga_inst.specs.use_finfet :
+						value = 1e-9*nm_size_list[i]
+					else :
+						value = nm_size_list[i]
+
 				# On the first iteration, we have to add the lists themselves, but every 
 				# other iteration we can just append to the lists.
 				if i == 0:
@@ -643,14 +663,25 @@ def erf_inverter(sp_path,
 	nmos_name = inv_name + "_nmos"
 
 	# Get the nm size of the inverter from the mininum transistor widths size
-	inv_nm_size = inv_mtw_size*fpga_inst.specs.min_tran_width
-	nmos_nm_size = inv_nm_size
-	pmos_nm_size = inv_nm_size
+	if not fpga_inst.specs.use_finfet :
+		inv_nm_size = inv_mtw_size*fpga_inst.specs.min_tran_width
+		nmos_nm_size = inv_nm_size
+		pmos_nm_size = inv_nm_size
+	else :
+		inv_nm_size = inv_mtw_size
+		nmos_nm_size = inv_mtw_size
+		pmos_nm_size = inv_mtw_size
+
+	print "nmos size: " + str(nmos_nm_size) + " pmos size: " + str(pmos_nm_size)
    
 	# Modify the parameter dict with the size of this inverter
-	parameter_dict[nmos_name][0] = 1e-9*inv_nm_size
-	parameter_dict[pmos_name][0] = 1e-9*inv_nm_size
-	
+	if not fpga_inst.specs.use_finfet :
+		parameter_dict[nmos_name][0] = 1e-9*inv_nm_size
+		parameter_dict[pmos_name][0] = 1e-9*inv_nm_size
+	else :
+		parameter_dict[nmos_name][0] = inv_nm_size
+		parameter_dict[pmos_name][0] = inv_nm_size
+
 	# The NMOS and PMOS sizes of this inverter are both equal to 'inv_nm_size' right now.
 	# That is, they are equal. We'll run HSPICE on the circuit to get initial rise and fall
 	# delays. Then, we'll use these delays to figure out if it's the NMOS we need to 
@@ -690,12 +721,20 @@ def erf_inverter(sp_path,
 														spice_interface)  
 	 
 	# Update the parameter dict
-	parameter_dict[nmos_name][0] = 1e-9*nmos_nm_size
-	parameter_dict[pmos_name][0] = 1e-9*pmos_nm_size
+	if not fpga_inst.specs.use_finfet :
+		parameter_dict[nmos_name][0] = 1e-9*nmos_nm_size
+		parameter_dict[pmos_name][0] = 1e-9*pmos_nm_size
+	else :
+		parameter_dict[nmos_name][0] = nmos_nm_size
+		parameter_dict[pmos_name][0] = pmos_nm_size
 
 	# Update fpga_inst transistor sizes with new NMOS & PMOS sizes
-	fpga_inst.transistor_sizes[nmos_name] = (nmos_nm_size/fpga_inst.specs.min_tran_width)
-	fpga_inst.transistor_sizes[pmos_name] = (pmos_nm_size/fpga_inst.specs.min_tran_width)
+	if not fpga_inst.specs.use_finfet :
+		fpga_inst.transistor_sizes[nmos_name] = (nmos_nm_size/fpga_inst.specs.min_tran_width)
+		fpga_inst.transistor_sizes[pmos_name] = (pmos_nm_size/fpga_inst.specs.min_tran_width)
+	else :
+		fpga_inst.transistor_sizes[nmos_name] = (nmos_nm_size)
+		fpga_inst.transistor_sizes[pmos_name] = (pmos_nm_size)
 		 
 	return 
    
@@ -720,11 +759,18 @@ def erf(sp_path,
 	# Generate the parameter dict needed by the spice_interface. 
 	# The parameter dict contains the sizes of all transistors and RC of all wires.
 	parameter_dict = {}
-	for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
-		parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
-	for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
-		parameter_dict[wire_name + "_res"] = [rc_data[0]]
-		parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+	if not fpga_inst.specs.use_finfet :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+			parameter_dict[wire_name + "_res"] = [rc_data[0]]
+			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+	else :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			parameter_dict[tran_name] = [tran_size]
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+			parameter_dict[wire_name + "_res"] = [rc_data[0]]
+			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 
 	# Set ERF tolerance flag to False so that we can enter the while loop
 	erf_tolerance_met = False
@@ -770,8 +816,12 @@ def erf(sp_path,
 			trise = float(spice_meas["meas_" + circuit_element + "_trise"][0])
 			erf_error = abs((tfall - trise)/tfall)
 	
-			nmos_nm_size = int(parameter_dict[circuit_element + "_nmos"][0]/1e-9)
-			pmos_nm_size = int(parameter_dict[circuit_element + "_pmos"][0]/1e-9)
+			if not fpga_inst.specs.use_finfet :
+				nmos_nm_size = int(parameter_dict[circuit_element + "_nmos"][0]/1e-9)
+				pmos_nm_size = int(parameter_dict[circuit_element + "_pmos"][0]/1e-9)
+			else :
+				nmos_nm_size = int(parameter_dict[circuit_element + "_nmos"][0])
+				pmos_nm_size = int(parameter_dict[circuit_element + "_pmos"][0])
    
 			# Check to see if the ERF tolerance is met for this inverter
 			if erf_error > ERF_ERROR_TOLERANCE:
@@ -859,11 +909,18 @@ def run_combo(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interf
 
 	# Make parameter dict
 	parameter_dict = {}
-	for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
-		parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
-	for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
-		parameter_dict[wire_name + "_res"] = [rc_data[0]]
-		parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+	if not fpga_inst.specs.use_finfet :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+			parameter_dict[wire_name + "_res"] = [rc_data[0]]
+			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+	else :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			parameter_dict[tran_name] = [tran_size]
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+			parameter_dict[wire_name + "_res"] = [rc_data[0]]
+			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 
 	# Run HSPICE with the current transistor size
 	spice_meas = spice_interface.run(sp_path, parameter_dict)                                           
@@ -945,8 +1002,13 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	
 	# We have to make a parameter dict for HSPICE
 	current_tran_sizes = {}
-	for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
-		current_tran_sizes[tran_name] = 1e-9*tran_size*fpga_inst.specs.min_tran_width
+	if not fpga_inst.specs.use_finfet :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			current_tran_sizes[tran_name] = 1e-9*tran_size*fpga_inst.specs.min_tran_width
+	else :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			current_tran_sizes[tran_name] = tran_size
+
 	# Initialize the parameter dict to all empty lists
 	parameter_dict = {}
 	for tran_name in current_tran_sizes.keys():
@@ -969,7 +1031,10 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 				element_id = element_names.index(tmp_tran_name)
 
 				# Let's calculate the size of this transistor
-				tran_size = 1e-9*(sizing_combos[i][element_id]*fpga_inst.specs.min_tran_width)
+				if not fpga_inst.specs.use_finfet :
+					tran_size = 1e-9*(sizing_combos[i][element_id]*fpga_inst.specs.min_tran_width)
+				else :
+					tran_size = (sizing_combos[i][element_id])
 
 				# If transistor is an inverter, we need to do some stuff to calc sizes for
 				# both the NMOS and PMOS, if it is anything else (eg. ptran), we can just add 
