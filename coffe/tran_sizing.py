@@ -873,7 +873,7 @@ def erf_combo(fpga_inst,
 
 	# We want to ERF a transistor sizing combination
 	# Update transistor sizes
-	fpga_inst._update_transistor_sizes(element_names, combo)
+	fpga_inst._update_transistor_sizes(element_names, combo, fpga_inst.specs.use_finfet)
 	# Calculate area of everything
 	fpga_inst.update_area()
 	# Re-calculate wire lengths
@@ -897,7 +897,7 @@ def run_combo(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interf
 		Returns tfall, trise """
 	
 	# Update transistor sizes
-	fpga_inst._update_transistor_sizes(element_names, combo, erf_ratios)
+	fpga_inst._update_transistor_sizes(element_names, combo, fpga_inst.specs.use_finfet, erf_ratios)
 	# Calculate area of everything
 	fpga_inst.update_area()
 	# Re-calculate wire lengths
@@ -987,7 +987,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 
 	for combo in sizing_combos:
 		# Update FPGA transistor sizes
-		fpga_inst._update_transistor_sizes(element_names, combo, erf_ratios)
+		fpga_inst._update_transistor_sizes(element_names, combo, fpga_inst.specs.use_finfet, erf_ratios)
 		# Calculate area of everything
 		fpga_inst.update_area()
 		# Get evaluation area
@@ -1204,7 +1204,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	best_combo = sizing_combos[best_results[0][1]]
 	best_combo_erf_ratios = best_results[0][6]
 	# Update transistor sizes
-	fpga_inst._update_transistor_sizes(element_names, best_combo, best_combo_erf_ratios)
+	fpga_inst._update_transistor_sizes(element_names, best_combo, fpga_inst.specs.use_finfet, best_combo_erf_ratios)
 	# Calculate area of everything
 	fpga_inst.update_area()
 	# Re-calculate wire lengths

@@ -1605,7 +1605,7 @@ class _FlipFlop:
 			self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_d_ff(subcircuit_filename)
 		else:
 			print "Generating FF with register select on BLE input " + self.register_select
-			self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_2_input_select_d_ff(subcircuit_filename)
+			self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
 		
 		# Give initial transistor sizes
 		if self.register_select:
@@ -3126,7 +3126,7 @@ class FPGA:
 		sweep_data_file.close()
 		
 
-	def _update_transistor_sizes(self, element_names, combo, inv_ratios=None):
+	def _update_transistor_sizes(self, element_names, combo, use_finfet, inv_ratios=None):
 		""" This function is used to update self.transistor_sizes for a particular transistor sizing combination.
 			'element_names' is a list of elements (ptran, inv, etc.) that need their sizes updated.
 			'combo' is a particular transistor sizing combination for the transistors in 'element_names'
@@ -3157,14 +3157,18 @@ class FPGA:
 					# If there are inverter ratios, we use them to give different sizes to NMOS and PMOS
 					if inv_ratios[element_name] < 1:
 						# NMOS is larger than PMOS
-						# new_sizes[element_name + "_nmos"] = combo[i]/inv_ratios[element_name]
-						new_sizes[element_name + "_nmos"] = combo[i]
+						if not use_finfet:
+							new_sizes[element_name + "_nmos"] = combo[i]/inv_ratios[element_name]
+						else :
+							new_sizes[element_name + "_nmos"] = combo[i]
 						new_sizes[element_name + "_pmos"] = combo[i]
 					else:
 						# PMOS is larger than NMOS
 						new_sizes[element_name + "_nmos"] = combo[i]
-						# new_sizes[element_name + "_pmos"] = combo[i]*inv_ratios[element_name]
-						new_sizes[element_name + "_pmos"] = combo[i]
+						if not use_finfet :
+							new_sizes[element_name + "_pmos"] = combo[i]*inv_ratios[element_name]
+						else :
+							new_sizes[element_name + "_pmos"] = combo[i]
 
 		# Now, update self.transistor_sizes with these new sizes
 		self.transistor_sizes.update(new_sizes)
