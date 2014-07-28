@@ -590,7 +590,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate)
 	spice_file.write("** Include libraries, parameters and other\n")
 	spice_file.write("********************************************************************************\n\n")
 	spice_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
-	spice_file.write(".OPTIONS POST=2\n\n")
+	# spice_file.write(".OPTIONS POST=2\n\n")
 	
 	spice_file.write("********************************************************************************\n")
 	spice_file.write("** Setup and input\n")
