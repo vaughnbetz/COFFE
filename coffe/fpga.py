@@ -3160,7 +3160,8 @@ class FPGA:
 						if not use_finfet:
 							new_sizes[element_name + "_nmos"] = combo[i]/inv_ratios[element_name]
 						else :
-							new_sizes[element_name + "_nmos"] = combo[i]
+							new_sizes[element_name + "_nmos"] = round(combo[i]/inv_ratios[element_name])
+							# new_sizes[element_name + "_nmos"] = combo[i]
 						new_sizes[element_name + "_pmos"] = combo[i]
 					else:
 						# PMOS is larger than NMOS
@@ -3168,7 +3169,8 @@ class FPGA:
 						if not use_finfet :
 							new_sizes[element_name + "_pmos"] = combo[i]*inv_ratios[element_name]
 						else :
-							new_sizes[element_name + "_pmos"] = combo[i]
+							new_sizes[element_name + "_pmos"] = round(combo[i]*inv_ratios[element_name])
+							# new_sizes[element_name + "_pmos"] = combo[i]
 
 		# Now, update self.transistor_sizes with these new sizes
 		self.transistor_sizes.update(new_sizes)
