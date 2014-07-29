@@ -3010,10 +3010,15 @@ class FPGA:
 			# area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
 			area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
 		else:
-			area = 0.447 + 0.128*tran_size + 0.391*math.sqrt(tran_size)
+			if not self.specs.use_finfet :
+				area = 0.447 + 0.128*tran_size + 0.391*math.sqrt(tran_size)
+			else :
+				area = 0.453 + 0.521*tran_size + 0.230*math.log(tran_size)
+
+
 	
 		return area    
-	 
+	
 	 
 	def _create_lib_files(self):
 		""" Create SPICE library files and add headers. """

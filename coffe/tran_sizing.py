@@ -1421,7 +1421,7 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 	sizing_ranges = {}
 	for name in transistor_names:
 		# Current size of this transistor
-		print transistor_sizes
+		# print transistor_sizes
 		size = transistor_sizes[name]
 		if "rest_" in name:
 			max = 1
