@@ -214,6 +214,7 @@ def load_arch_params(filename, use_finfet):
 		'min_tran_width': -1,
 		'min_width_tran_area': -1,
 		'sram_cell_area': -1,
+		'gate_extension' : -1,
 		'model_path': "",
 		'model_library': "",
 		'metal' : []
@@ -223,6 +224,7 @@ def load_arch_params(filename, use_finfet):
 		arch_params['fin_height'] = -1
 		arch_params['fin_width'] = -1
 		arch_params['lg'] = -1
+		arch_params['rest_length_factor'] = -1
 
 	params_file = open(filename, 'r')
 	for line in params_file:
@@ -293,6 +295,8 @@ def load_arch_params(filename, use_finfet):
 			arch_params['min_width_tran_area'] = int(value)
 		elif param == 'sram_cell_area':
 			arch_params['sram_cell_area'] = float(value)
+		elif param == 'gate_extension':
+			arch_params['gate_extension'] = int(value)
 		elif param == 'model_path':
 			arch_params['model_path'] = os.path.abspath(value)
 		elif param == 'model_library':
@@ -319,6 +323,8 @@ def load_arch_params(filename, use_finfet):
 				arch_params['fin_width'] = int(value)
 			elif param == "lg" :
 				arch_params['lg'] = int(value)
+			elif param == 'rest_length_factor':
+				arch_params['rest_length_factor'] = float(value)
 
 	params_file.close()
 	
@@ -380,7 +386,9 @@ def check_arch_params (arch_params, filename, use_finfet):
 	if arch_params['min_width_tran_area'] < 0 :
 		print_error (arch_params['min_width_tran_area'], "min_width_tran_area", filename)            
 	if arch_params['sram_cell_area'] < 0 :
-		print_error (arch_params['sram_cell_area'], "sram_cell_area", filename)            
+		print_error (arch_params['sram_cell_area'], "sram_cell_area", filename)
+	if arch_params['gate_extension'] < 0 :
+		print_error (arch_params['gate_extension'], "gate_extension", filename)           
 
 	if use_finfet :
 		if arch_params['fin_width'] < 0 :
@@ -389,6 +397,9 @@ def check_arch_params (arch_params, filename, use_finfet):
 			print_error (arch_params['fin_height'], "fin_height", filename)            
 		if arch_params['lg'] < 0 :
 			print_error (arch_params['lg'], "lg", filename)            
+		if arch_params['rest_length_factor'] < 0 :
+			print_error (arch_params['rest_length_factor'], "rest_length_factor", filename) 
+
 
 def print_error(value, arguement, filename):
 	print "ERROR: Invalid value (" + value + ") for " + arguement + " in " + filename

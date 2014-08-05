@@ -64,8 +64,8 @@ class _Specs:
 	""" General FPGA specs. """
  
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library,
-					 use_finfet, fin_width=0, fin_height=0, lg=0):
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, gate_extension, model_path, model_library,
+					 use_finfet, fin_width=0, fin_height=0, lg=0, rest_length_factor=0):
 		self.N = N
 		self.K = K
 		self.W = W
@@ -87,12 +87,15 @@ class _Specs:
 		self.min_tran_width = min_tran_width
 		self.min_width_tran_area = min_width_tran_area
 		self.sram_cell_area = sram_cell_area
+		self.gate_extension = gate_extension
 		self.model_path = model_path
 		self.model_library = model_library
 		self.use_finfet = use_finfet
 		self.fin_width = fin_width
 		self.fin_height = fin_height
 		self.lg = lg
+		self.rest_length_factor = rest_length_factor
+
 
 
 		
@@ -2506,13 +2509,13 @@ class FPGA:
 	""" This class describes an FPGA. """
 		
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library, metal_stack, 
-						use_tgate, use_finfet, fin_width=0, fin_height=0, lg=0):
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, gate_extension, model_path, model_library, metal_stack, 
+						use_tgate, use_finfet, fin_width=0, fin_height=0, lg=0, rest_length_factor=0):
 		  
 		# Initialize the specs
 		self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-										vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, model_path, model_library,
-										 use_finfet, fin_width, fin_height, lg)
+										vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, gate_extension, model_path, model_library,
+										 use_finfet, fin_width, fin_height, lg, rest_length_factor)
 
 										
 		### CREATE SWITCH BLOCK OBJECT
@@ -3053,7 +3056,7 @@ class FPGA:
 		# Generate wire subcircuit
 		basic_subcircuits.wire_generate(self.basic_subcircuits_filename)
 		# Generate pass-transistor subcircuit
-		basic_subcircuits.ptran_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
+		basic_subcircuits.ptran_generate(self.basic_subcircuits_filename, self.specs.use_finfet) 
 		# Generate transmission gate subcircuit
 		basic_subcircuits.tgate_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
 		# Generate level-restore subcircuit
@@ -3084,9 +3087,12 @@ class FPGA:
 			process_data_file.write(".param fin_height=" + str(self.specs.fin_height) + "n \n")
 			process_data_file.write(".param fin_width=" + str(self.specs.fin_width) + "n \n")
 			process_data_file.write(".param lg=" + str(self.specs.lg) + "n\n")
+			process_data_file.write(".param rest_length_factor=" + str(self.specs.rest_length_factor) + "\n")
 
 		process_data_file.write("* Gate length\n")
-		process_data_file.write(".PARAM gate_length = " + str(self.specs.gate_length) + "n\n\n")
+		process_data_file.write(".PARAM gate_length = " + str(self.specs.gate_length) + "n\n")
+		process_data_file.write(".PARAM gate_extension = " + str(self.specs.gate_extension) + "n\n\n")
+		process_data_file.write(".PARAM min_tran_width = " + str(self.specs.min_tran_width) + "n\n\n")
 		process_data_file.write("* We have two supply rails, vdd and vdd_subckt.\n")
 		process_data_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry\n")
 		process_data_file.write("VSUPPLY vdd gnd supply_v\n")

@@ -78,6 +78,8 @@ min_width_tran_area = 28851
 # SRAM area (in number of minimum width transistor areas)
 sram_cell_area = 4
 
+gate_extension = 47
+
 # Path to SPICE device models file and library to use
 model_path=spice_models/ptm22hp.l
 model_library=22NM_HP

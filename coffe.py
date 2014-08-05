@@ -109,6 +109,7 @@ gate_length = arch_params_dict['gate_length']
 min_tran_width = arch_params_dict['min_tran_width']
 min_width_tran_area = arch_params_dict['min_width_tran_area']
 sram_cell_area = arch_params_dict['sram_cell_area']
+gate_extension = arch_params_dict['gate_extension']
 model_path = arch_params_dict['model_path']
 model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
@@ -117,6 +118,7 @@ if use_finfet:
 	fin_height = arch_params_dict['fin_height']
 	fin_width = arch_params_dict['fin_width']
 	lg = arch_params_dict['lg']
+	rest_length_factor = arch_params_dict['rest_length_factor']
 
 default_dir = os.getcwd()
 
@@ -130,7 +132,8 @@ if not use_finfet :
 						  gate_length, 
 						  min_tran_width, 
 						  min_width_tran_area, 
-						  sram_cell_area, 
+						  sram_cell_area,
+						  gate_extension,
 						  model_path, 
 						  model_library, 
 						  metal_stack,
@@ -142,7 +145,8 @@ else :
 						  gate_length, 
 						  min_tran_width, 
 						  min_width_tran_area, 
-						  sram_cell_area, 
+						  sram_cell_area,
+						  gate_extension, 
 						  model_path, 
 						  model_library, 
 						  metal_stack,
@@ -150,7 +154,8 @@ else :
 						  use_finfet,
 						  fin_width,
 						  fin_height,
-						  lg)
+						  lg,
+						  rest_length_factor)
 
 
 # Print basic FPGA specs                       
