@@ -51,6 +51,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('arch_description')
 parser.add_argument('-n', '--no_sizing', help="don't perform transistor sizing", action='store_true')
 parser.add_argument('-o', '--opt_type', type=str, choices=["global", "local"], default="global", help="choose optimization type")
+parser.add_argument('-s', '--initial_sizes', type=str, default="default", help="path to initial transistor sizes")
 parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many sizing combos to re-erf")
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
@@ -68,6 +69,7 @@ delay_opt_weight = args.delay_opt_weight
 max_iterations = args.max_iterations
 use_tgate = args.use_tgate
 use_finfet = args.use_finfet
+initial_sizes = args.initial_sizes
 
 # Print the options
 print "RUN OPTIONS:"
@@ -120,6 +122,7 @@ if use_finfet:
 	lg = arch_params_dict['lg']
 	rest_length_factor = arch_params_dict['rest_length_factor']
 
+
 default_dir = os.getcwd()
 
 # Record start time
@@ -157,9 +160,10 @@ else :
 						  lg,
 						  rest_length_factor)
 
-
 # Print basic FPGA specs                       
 fpga_inst.print_specs()
+
+	
 
 ###############################################################
 ## GENERATE FILES
@@ -197,6 +201,15 @@ coffe.utils.print_architecture_params(report_file, arch_params_dict)
 fpga_inst.print_details(report_file)  
 report_file.close()
 
+
+if initial_sizes != "default" :
+	print "extracting initial transistor sizes from: " + initial_sizes
+	initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
+	print "overriding transistor sizes"
+	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
+	# print initial_tran_size
+	# exit(0)
+	
 os.chdir(current_dir)
 
 ###############################################################

@@ -419,6 +419,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		tfall = float(tfall_str)
 		trise = float(trise_str)
 
+
 		if ERF_MONITOR_VERBOSE:
 			if "_pmos" in target_tran_name:
 				sizing_bounds_str = ("NMOS=" + str(inv_nm_size) + 
@@ -428,6 +429,10 @@ def erf_inverter_balance_trise_tfall(sp_path,
 									 "  PMOS=" + str(inv_nm_size))
 			print (sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
 				   " diff=" + str(tfall-trise))
+
+		if tfall < 0 or trise < 0 :
+			print "got negative value"
+			exit(1)
 
 		# Figure out if we have found the upper bound by looking at tfall and trise. 
 		# For a PMOS, upper bound is found if tfall > trise
@@ -2085,3 +2090,54 @@ def size_fpga_transistors(fpga_inst,
 	fpga_inst.update_wire_rc()
 		   
 	return 0
+
+def override_transistor_sizes(fpga_inst, initial_sizes) :
+	# switch block mux transistors
+	for trans in fpga_inst.sb_mux.initial_transistor_sizes :
+		if trans in fpga_inst.sb_mux.initial_transistor_sizes and trans in initial_sizes:
+			fpga_inst.sb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+
+	# connection block mux transistors
+	for trans in fpga_inst.cb_mux.initial_transistor_sizes :
+		if trans in fpga_inst.cb_mux.initial_transistor_sizes and trans in initial_sizes:
+			fpga_inst.cb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+
+	# local routing mux transistors
+	for trans in fpga_inst.logic_cluster.local_mux.initial_transistor_sizes :
+		if trans in fpga_inst.logic_cluster.local_mux.initial_transistor_sizes and trans in initial_sizes:
+			fpga_inst.logic_cluster.local_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+	# LUT
+	for trans in fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes :
+		if trans in fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes and trans in initial_sizes:
+			fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+	# LUT input drivers
+	for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+
+		for trans in input_driver.driver.initial_transistor_sizes :
+			if trans in input_driver.driver.initial_transistor_sizes and trans in initial_sizes:
+				input_driver.driver.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+
+		for trans in input_driver.not_driver.initial_transistor_sizes :
+			if trans in input_driver.not_driver.initial_transistor_sizes and trans in initial_sizes:
+				input_driver.not_driver.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+	# local ble output transistors
+	for trans in fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes :
+		if trans in fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes and trans in initial_sizes:
+			fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes[trans] = initial_sizes[trans]
+	
+	# general ble output transistors
+	for trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes :
+		if trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes and trans in initial_sizes:
+			fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+
+	return 0
+
+
+		

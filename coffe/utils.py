@@ -435,3 +435,43 @@ def print_architecture_params(report_file, arch_params_dict):
 	report_file.write ( "model_path = " + str( arch_params_dict['model_path']) + "\n" )
 	report_file.write ( "model_library = " + str( arch_params_dict['model_library']) + "\n" )
 	report_file.write ( "metal = " + str( arch_params_dict['metal']) + "\n" )
+
+
+def extract_initial_tran_size(filename, use_tgate):
+	""" Parse the initial sizes file and load values into dictionary. 
+		Returns this dictionary.
+		"""
+	
+	transistor_sizes = {}
+
+	sizes_file = open(filename, 'r')
+	for line in sizes_file:
+	
+		# Ignore comment lines
+		if line.startswith('#'):
+			continue
+		
+		# Remove line feeds and spaces
+		line = line.replace('\n', '')
+		line = line.replace('\r', '')
+		line = line.replace('\t', '')
+		line = line.replace(' ', '')
+		
+		# Ignore empty lines
+		if line == "":
+			continue
+		
+		# Split lines at '='
+		words = line.split('=')
+		trans = words[0]
+		size = words[1]
+
+		transistor_sizes[trans + "_nmos"] = size
+		transistor_sizes[trans + "_pmos"] = size
+		 
+
+
+
+	sizes_file.close()
+
+	return  transistor_sizes
