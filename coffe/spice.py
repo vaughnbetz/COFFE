@@ -7,6 +7,7 @@ import subprocess
 
 # All .sp files should be created to use sweep_data.l to set parameters.
 HSPICE_DATA_SWEEP_PATH = "sweep_data.l"
+DATA_SWEEP_PATH = "data.txt"
 
 
 class SpiceInterface(object):
@@ -36,22 +37,35 @@ class SpiceInterface(object):
 		Create an HSPICE .DATA statement with the data from parameter_dict.
 		"""
 		
-		data_file = open(HSPICE_DATA_SWEEP_PATH, 'w')
+		hspice_data_file = open(HSPICE_DATA_SWEEP_PATH, 'w')
+		data_file = open(DATA_SWEEP_PATH, 'w')
 	
 		max_items_per_line = 4
 
 		# Write the header
 		param_list = parameter_dict.keys()
-		data_file.write(".DATA sweep_data")
+
+		data_file.write("param            value\n")
+		data_file.write("----------------------\n")
+		for param in param_list :
+			data_file.write( param )
+			for i in range(len(parameter_dict[param])) :
+				data_file.write( "    " + str(parameter_dict[param][i]))
+
+			data_file.write("\n")
+
+		data_file.close()
+
+		hspice_data_file.write(".DATA sweep_data")
 		item_counter = 0
 		for param_name in param_list:
 			if item_counter >= max_items_per_line:
-				data_file.write("\n" + param_name)
+				hspice_data_file.write("\n" + param_name)
 				item_counter = 0
 			else:
-				data_file.write(" " + param_name)
+				hspice_data_file.write(" " + param_name)
 			item_counter += 1
-		data_file.write("\n")
+		hspice_data_file.write("\n")
 	
 		# Add data for each elements in the lists.
 		num_settings = len(parameter_dict[param_list[0]])
@@ -59,17 +73,17 @@ class SpiceInterface(object):
 			item_counter = 0
 			for param_name in param_list:
 				if item_counter >= max_items_per_line:
-					data_file.write(str(parameter_dict[param_name][i]) + "\n")
+					hspice_data_file.write(str(parameter_dict[param_name][i]) + "\n")
 					item_counter = 0
 				else:
-					data_file.write(str(parameter_dict[param_name][i]) + " ")
+					hspice_data_file.write(str(parameter_dict[param_name][i]) + " ")
 				item_counter += 1
-			data_file.write ("\n")
+			hspice_data_file.write ("\n")
 	
 		# Add the footer
-		data_file.write(".ENDDATA")
+		hspice_data_file.write(".ENDDATA")
 	
-		data_file.close()
+		hspice_data_file.close()
 	
 		return
 	
