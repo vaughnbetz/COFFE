@@ -111,7 +111,7 @@ gate_length = arch_params_dict['gate_length']
 min_tran_width = arch_params_dict['min_tran_width']
 min_width_tran_area = arch_params_dict['min_width_tran_area']
 sram_cell_area = arch_params_dict['sram_cell_area']
-gate_extension = arch_params_dict['gate_extension']
+trans_diffusion_length = arch_params_dict['trans_diffusion_length']
 model_path = arch_params_dict['model_path']
 model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
@@ -136,7 +136,7 @@ if not use_finfet :
 						  min_tran_width, 
 						  min_width_tran_area, 
 						  sram_cell_area,
-						  gate_extension,
+						  trans_diffusion_length,
 						  model_path, 
 						  model_library, 
 						  metal_stack,
@@ -149,7 +149,7 @@ else :
 						  min_tran_width, 
 						  min_width_tran_area, 
 						  sram_cell_area,
-						  gate_extension, 
+						  trans_diffusion_length, 
 						  model_path, 
 						  model_library, 
 						  metal_stack,

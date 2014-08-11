@@ -64,7 +64,7 @@ class _Specs:
 	""" General FPGA specs. """
  
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, gate_extension, model_path, model_library,
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
 					 use_finfet, fin_width=0, fin_height=0, lg=0, rest_length_factor=0):
 		self.N = N
 		self.K = K
@@ -87,7 +87,7 @@ class _Specs:
 		self.min_tran_width = min_tran_width
 		self.min_width_tran_area = min_width_tran_area
 		self.sram_cell_area = sram_cell_area
-		self.gate_extension = gate_extension
+		self.trans_diffusion_length = trans_diffusion_length
 		self.model_path = model_path
 		self.model_library = model_library
 		self.use_finfet = use_finfet
@@ -2509,12 +2509,12 @@ class FPGA:
 	""" This class describes an FPGA. """
 		
 	def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, gate_extension, model_path, model_library, metal_stack, 
+					vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library, metal_stack, 
 						use_tgate, use_finfet, fin_width=0, fin_height=0, lg=0, rest_length_factor=0):
 		  
 		# Initialize the specs
 		self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-										vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, gate_extension, model_path, model_library,
+										vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
 										 use_finfet, fin_width, fin_height, lg, rest_length_factor)
 
 										
@@ -3091,7 +3091,7 @@ class FPGA:
 
 		process_data_file.write("* Gate length\n")
 		process_data_file.write(".PARAM gate_length = " + str(self.specs.gate_length) + "n\n")
-		process_data_file.write(".PARAM gate_extension = " + str(self.specs.gate_extension) + "n\n\n")
+		process_data_file.write(".PARAM trans_diffusion_length = " + str(self.specs.trans_diffusion_length) + "n\n\n")
 		process_data_file.write(".PARAM min_tran_width = " + str(self.specs.min_tran_width) + "n\n\n")
 		process_data_file.write("* We have two supply rails, vdd and vdd_subckt.\n")
 		process_data_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry\n")

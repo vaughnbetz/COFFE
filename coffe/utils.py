@@ -214,7 +214,7 @@ def load_arch_params(filename, use_finfet):
 		'min_tran_width': -1,
 		'min_width_tran_area': -1,
 		'sram_cell_area': -1,
-		'gate_extension' : -1,
+		'trans_diffusion_length' : -1,
 		'model_path': "",
 		'model_library': "",
 		'metal' : []
@@ -295,8 +295,8 @@ def load_arch_params(filename, use_finfet):
 			arch_params['min_width_tran_area'] = int(value)
 		elif param == 'sram_cell_area':
 			arch_params['sram_cell_area'] = float(value)
-		elif param == 'gate_extension':
-			arch_params['gate_extension'] = int(value)
+		elif param == 'trans_diffusion_length':
+			arch_params['trans_diffusion_length'] = int(value)
 		elif param == 'model_path':
 			arch_params['model_path'] = os.path.abspath(value)
 		elif param == 'model_library':
@@ -387,8 +387,8 @@ def check_arch_params (arch_params, filename, use_finfet):
 		print_error (arch_params['min_width_tran_area'], "min_width_tran_area", filename)            
 	if arch_params['sram_cell_area'] < 0 :
 		print_error (arch_params['sram_cell_area'], "sram_cell_area", filename)
-	if arch_params['gate_extension'] < 0 :
-		print_error (arch_params['gate_extension'], "gate_extension", filename)           
+	if arch_params['trans_diffusion_length'] < 0 :
+		print_error (arch_params['trans_diffusion_length'], "trans_diffusion_length", filename)           
 
 	if use_finfet :
 		if arch_params['fin_width'] < 0 :
