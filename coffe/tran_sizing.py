@@ -2092,6 +2092,11 @@ def size_fpga_transistors(fpga_inst,
 	# Update wire resistance and capacitance
 	fpga_inst.update_wire_rc()
 		   
+
+	final_report_file = open("sizing_results/sizing_results_final.txt", final)
+	print_final_transistor_size(fpga_inst, final_report_file)
+	final_report_file.close()
+
 	return 0
 
 def override_transistor_sizes(fpga_inst, initial_sizes) :
@@ -2139,6 +2144,15 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 		if trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes[trans] = initial_sizes[trans]
 
+
+	return 0
+
+
+def print_final_transistor_size(fpga_inst, report_file) :
+
+	report_file.write("#final sizes\n")
+	for tran_name, tran_size in self.transistor_sizes.iteritems():
+		print tran_name + "  =  " + str(tran_size) + "\n"
 
 	return 0
 

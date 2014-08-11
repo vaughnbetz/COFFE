@@ -3011,14 +3011,16 @@ class FPGA:
 		# If pass-transistor, use regular area because they don't need N-wells.
 		if "inv_" in tran_name or "tgate_" in tran_name:
 			# area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
-			area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
+			if not self.specs.use_finfet :
+				area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
+			else :
+				area = 0.345*tran_size + 0.753*math.sqrt(tran_size) -0.0256
+
 		else:
 			if not self.specs.use_finfet :
 				area = 0.447 + 0.128*tran_size + 0.391*math.sqrt(tran_size)
 			else :
-				area = 0.453 + 0.521*tran_size + 0.230*math.log(tran_size)
-
-
+				area = 0.083 + 0.476*tran_size + 0.431*math.sqrt(tran_size)
 	
 		return area    
 	

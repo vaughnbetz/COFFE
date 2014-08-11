@@ -466,8 +466,11 @@ def extract_initial_tran_size(filename, use_tgate):
 		trans = words[0]
 		size = words[1]
 
-		transistor_sizes[trans + "_nmos"] = size
-		transistor_sizes[trans + "_pmos"] = size
+		if "pmos" in trans or "nmos" in trans: 
+			transistor_sizes[trans] = size
+		else :
+			transistor_sizes[trans + "_nmos"] = size
+			transistor_sizes[trans + "_pmos"] = size
 		 
 
 
