@@ -250,6 +250,9 @@ def get_final_area(fpga_inst, opt_type, subcircuit):
 	
 def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
 
+	if tfall < 0 or trise < 0 :
+		return 1
+
 	# Use average delay for evaluation
 	delay = (tfall + trise)/2
 				
