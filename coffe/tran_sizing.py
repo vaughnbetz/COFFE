@@ -435,7 +435,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 					print "got negative delay, don't know what to do..."
 					exit(0)
 				fpga_inst._generate_process_data()
-				
+
 				continue
 
 		if ERF_MONITOR_VERBOSE:
@@ -1982,6 +1982,9 @@ def size_fpga_transistors(fpga_inst,
 											fpga_inst.sb_mux.initial_transistor_sizes)
 		else:
 			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+
+		# print starting_transistor_sizes
+		# exit(0)
 		
 		# Size the transistors of this subcircuit        
 		sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
@@ -2145,9 +2148,11 @@ def size_fpga_transistors(fpga_inst,
 
 def override_transistor_sizes(fpga_inst, initial_sizes) :
 	# switch block mux transistors
+	i = 0 
 	for trans in fpga_inst.sb_mux.initial_transistor_sizes :
 		if trans in fpga_inst.sb_mux.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.sb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
+			i = i+1
 
 
 	# connection block mux transistors
@@ -2187,7 +2192,6 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 	for trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes :
 		if trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes[trans] = initial_sizes[trans]
-
 
 	return 0
 

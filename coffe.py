@@ -160,6 +160,21 @@ else :
 						  lg,
 						  rest_length_factor)
 
+
+if initial_sizes != "default" :
+	print "extracting initial transistor sizes from: " + initial_sizes
+	initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
+	print "overriding transistor sizes"
+	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
+	for tran in fpga_inst.transistor_sizes:
+
+		fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
+		fpga_inst.update_area()
+		fpga_inst.update_wires()
+		fpga_inst.update_wire_rc()
+	# print initial_tran_size
+	# exit(0)
+
 # Print basic FPGA specs                       
 fpga_inst.print_specs()
 
@@ -202,13 +217,6 @@ fpga_inst.print_details(report_file)
 report_file.close()
 
 
-if initial_sizes != "default" :
-	print "extracting initial transistor sizes from: " + initial_sizes
-	initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
-	print "overriding transistor sizes"
-	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
-	# print initial_tran_size
-	# exit(0)
 	
 os.chdir(current_dir)
 

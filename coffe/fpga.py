@@ -2739,7 +2739,7 @@ class FPGA:
 		print "Calculating wire resistance and capacitance..."
 		self.update_wire_rc()
 		#print "Updating wire RC file..."
-		#self.update_wire_rc_file()
+		# self.update_wire_rc_file()
 	
 		print ""
 		
