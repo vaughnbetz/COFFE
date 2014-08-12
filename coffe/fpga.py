@@ -1025,7 +1025,7 @@ class _LUT(_SizableCircuit):
 				area += (64*area_dict["inv_lut_0sram_driver_2"] + 
 						64*area_dict["ptran_lut_L1"] + 
 						32*area_dict["ptran_lut_L2"] + 
-						16*area_dict["ptran_lut_L3"] + 
+						16*area_dict["ptran_lut_L3"] +  	
 						8*area_dict["rest_lut_int_buffer"] + 
 						8*area_dict["inv_lut_int_buffer_1"] + 
 						8*area_dict["inv_lut_int_buffer_2"] + 
@@ -1577,7 +1577,7 @@ class _FlipFlop:
 		through manual design for PTM 22nm process technology. If you use a different process technology,
 		you may need to re-size the FF transistors. """
 	
-	def __init__(self, Rsel, use_finfet):
+	def __init__(self, Rsel, use_tgate, use_finfet):
 		# Flip-Flop name
 		self.name = "ff"
 		# Register select mux, Rsel = LUT input (e.g. 'a', 'b', etc.) or 'z' if no register select 
@@ -1597,6 +1597,7 @@ class _FlipFlop:
 		# Delay weight used to calculate delay of representative critical path
 		self.delay_weight = 1
 		self.use_finfet = use_finfet
+		self.use_tgate = use_tgate
 		
 		 
 	def generate(self, subcircuit_filename, min_tran_width):
@@ -1605,16 +1606,27 @@ class _FlipFlop:
 		# Generate FF with optional register select
 		if self.register_select == 'z':
 			print "Generating FF"
-			self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_d_ff(subcircuit_filename)
+			if not self.use_tgate :
+				self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_d_ff(subcircuit_filename, self.use_finfet)
+			else :
+				self.transistor_names, self.wire_names = ff_subcircuits.generate_tgate_d_ff(subcircuit_filename, self.use_finfet)
+
 		else:
 			print "Generating FF with register select on BLE input " + self.register_select
-			self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
+			if not self.use_tgate :
+				self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
+			else :
+				self.transistor_names, self.wire_names = ff_subcircuits.generate_tgate_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
 		
 		# Give initial transistor sizes
 		if self.register_select:
 			# These only exist if there is a register select MUX
-			self.initial_transistor_sizes["ptran_ff_input_select_nmos"] = 4
-			self.initial_transistor_sizes["rest_ff_input_select_pmos"] = 1
+			if not self.use_tgate :
+				self.initial_transistor_sizes["ptran_ff_input_select_nmos"] = 4
+				self.initial_transistor_sizes["rest_ff_input_select_pmos"] = 1
+			else :
+				self.initial_transistor_sizes["tgate_ff_input_select_nmos"] = 4
+				self.initial_transistor_sizes["tgate_ff_input_select_pmos"] = 4
 		
 		# These transistors always exists regardless of register select
 		if not self.use_finfet :
@@ -1677,9 +1689,14 @@ class _FlipFlop:
 		# Calculates area of the FF input select if applicable (we add the SRAM bit later)
 		# If there is no input select, we just add the area of the input inverter
 		if self.register_select != 'z':
-			area += (2*area_dict["ptran_ff_input_select"] +
-					area_dict["rest_ff_input_select"] +
-					area_dict["inv_ff_input_1"])
+			if not self.use_tgate :
+				area += (2*area_dict["ptran_ff_input_select"] +
+						area_dict["rest_ff_input_select"] +
+						area_dict["inv_ff_input_1"])
+			else :
+				area += (2*area_dict["tgate_ff_input_select"] +
+						# area_dict["rest_ff_input_select"] +
+						area_dict["inv_ff_input_1"])
 		else:
 			area += area_dict["inv_ff_input_1"]
 
@@ -1713,7 +1730,10 @@ class _FlipFlop:
 		
 		# Update wire lengths
 		if self.register_select != 'z':
-			wire_lengths["wire_ff_input_select"] = width_dict["ptran_ff_input_select"]
+			if not self.use_tgate :
+				wire_lengths["wire_ff_input_select"] = width_dict["ptran_ff_input_select"]
+			else :
+				wire_lengths["wire_ff_input_select"] = width_dict["tgate_ff_input_select"]
 			
 		wire_lengths["wire_ff_input_out"] = (width_dict["inv_ff_input_1"] + width_dict["tgate_ff_1"])/4
 		wire_lengths["wire_ff_tgate_1_out"] = (width_dict["tgate_ff_1"] + width_dict["inv_ff_cc1_1"])/4
@@ -1946,7 +1966,7 @@ class _BLE(_CompoundCircuit):
 		# Create LUT object
 		self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet)
 		# Create FF object
-		self.ff = _FlipFlop(Rsel, use_finfet)
+		self.ff = _FlipFlop(Rsel, use_tgate, use_finfet)
 		# Create LUT output load object
 		self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs)
 		
