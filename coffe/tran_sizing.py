@@ -419,9 +419,24 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# TODO: We should check if the HSPICE measurement failed before trying to convert
 		# to a float. If the measurement failed, float conversion will throw an exception.
 		# (we do this at multiple places in this function)
+		if fpga_inst.specs.use_finfet :
+			if tfall_str == "failed" or trise_str == "failed" :
+				fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor + 1
+				fpga_inst._generate_process_data()
+				continue
+
 		tfall = float(tfall_str)
 		trise = float(trise_str)
 
+		if fpga_inst.specs.use_finfet :
+			if tfall < 0 or trise < 0 :
+				fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor - 1
+				if fpga_inst.specs.rest_length_factor < 1 :
+					print "got negative delay, don't know what to do..."
+					exit(0)
+				fpga_inst._generate_process_data()
+				
+				continue
 
 		if ERF_MONITOR_VERBOSE:
 			if "_pmos" in target_tran_name:
@@ -703,8 +718,34 @@ def erf_inverter(sp_path,
 	
 	# TODO: We should check if the HSPICE measurement failed before trying to convert
 	# to a float. If the measurement failed, float conversion will throw an exception.
+
+
+
+	if fpga_inst.specs.use_finfet :
+		if inv_tfall_str == "failed" or inv_trise_str == "failed" :
+			fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor + 1
+			fpga_inst._generate_process_data()
+			spice_meas = spice_interface.run(sp_path, parameter_dict)
+			inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+			inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+
+
 	inv_tfall = float(inv_tfall_str)
 	inv_trise = float(inv_trise_str)
+
+	if fpga_inst.specs.use_finfet :
+		if inv_tfall < 0 or inv_trise < 0 :
+			fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor - 1
+			if fpga_inst.specs.rest_length_factor < 1 :
+				print "got negative delay, don't know what to do..."
+				exit(0)
+			fpga_inst._generate_process_data()
+			spice_meas = spice_interface.run(sp_path, parameter_dict)
+			inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+			inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+			inv_tfall = float(inv_tfall_str)
+			inv_trise = float(inv_trise_str)
+
 
 	# If the rise time is faster, nmos must be made bigger.
 	# If the fall time is faster, pmos must be made bigger. 
@@ -1945,6 +1986,7 @@ def size_fpga_transistors(fpga_inst,
 		# Size the transistors of this subcircuit        
 		sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
 		
+
 		############################################
 		## Size connection block mux transistors
 		############################################
