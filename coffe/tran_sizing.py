@@ -2073,6 +2073,11 @@ def size_fpga_transistors(fpga_inst,
 		
 	
 	print "FPGA transistor sizing complete!\n"
+	final_report_file = open("sizing_results/sizing_results_final.txt", 'w')
+	print_final_transistor_size(fpga_inst, final_report_file)
+	final_report_file.close()
+
+	# exit(0)
 	
 	# final_result_index are the results we need to use
 	final_transistor_sizes = sizing_results_list[final_result_index]
@@ -2093,9 +2098,6 @@ def size_fpga_transistors(fpga_inst,
 	fpga_inst.update_wire_rc()
 		   
 
-	final_report_file = open("sizing_results/sizing_results_final.txt", final)
-	print_final_transistor_size(fpga_inst, final_report_file)
-	final_report_file.close()
 
 	return 0
 
@@ -2151,8 +2153,8 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 def print_final_transistor_size(fpga_inst, report_file) :
 
 	report_file.write("#final sizes\n")
-	for tran_name, tran_size in self.transistor_sizes.iteritems():
-		print tran_name + "  =  " + str(tran_size) + "\n"
+	for trans in fpga_inst.transistor_sizes:
+		report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
 
 	return 0
 
