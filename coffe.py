@@ -160,20 +160,10 @@ else :
 						  lg,
 						  rest_length_factor)
 
-
 if initial_sizes != "default" :
 	print "extracting initial transistor sizes from: " + initial_sizes
 	initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
-	print "overriding transistor sizes"
-	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
-	for tran in fpga_inst.transistor_sizes:
 
-		fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
-		fpga_inst.update_area()
-		fpga_inst.update_wires()
-		fpga_inst.update_wire_rc()
-	# print initial_tran_size
-	# exit(0)
 
 # Print basic FPGA specs                       
 fpga_inst.print_specs()
@@ -204,6 +194,17 @@ os.chdir(arch_folder)
 
 # Generate FPGA and associated SPICE files
 fpga_inst.generate(is_size_transistors) 
+
+if initial_sizes != "default" :
+	print "overriding transistor sizes"
+	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
+	for tran in initial_tran_size :
+		fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
+	
+	fpga_inst.update_area()
+	fpga_inst.update_wires()
+	fpga_inst.update_wire_rc()
+
 
 current_dir = os.getcwd()
 os.chdir(default_dir)
