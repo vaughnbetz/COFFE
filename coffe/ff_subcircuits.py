@@ -236,6 +236,7 @@ def generate_tgate_2_input_select_d_ff(spice_filename, use_finfet):
 	# Create a list of all transistors used in this subcircuit
 	tran_names_list = []
 	tran_names_list.append("tgate_ff_input_select_nmos")
+	tran_names_list.append("tgate_ff_input_select_pmos")
 	# tran_names_list.append("rest_ff_input_select_pmos")
 	tran_names_list.append("inv_ff_input_1_nmos")
 	tran_names_list.append("inv_ff_input_1_pmos")
