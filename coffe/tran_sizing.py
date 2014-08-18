@@ -430,13 +430,25 @@ def erf_inverter_balance_trise_tfall(sp_path,
 
 		if fpga_inst.specs.use_finfet :
 			if tfall < 0 or trise < 0 :
-				fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor - 1
-				if fpga_inst.specs.rest_length_factor < 1 :
-					print "got negative delay, don't know what to do..."
-					exit(0)
-				fpga_inst._generate_process_data()
+				rf_pass = False
+				for i in range(1,10) :
+					fpga_inst.specs.rest_length_factor = i
+					fpga_inst._generate_process_data()
+					spice_meas = spice_interface.run(sp_path, parameter_dict)
+					tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+					trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
 
-				continue
+					if tfall_str != "failed" and trise_str != "failed" :
+						tfall = float(tfall_str)
+						trise = float(trise_str)
+						if tfall > 0 and trise > 0 :
+							rf_pass = True
+							break
+
+				if rf_pass == False :				
+					print "can't find useable rest length, don't know what to do..."
+					exit(0)
+
 
 		if ERF_MONITOR_VERBOSE:
 			if "_pmos" in target_tran_name:
@@ -723,28 +735,45 @@ def erf_inverter(sp_path,
 
 	if fpga_inst.specs.use_finfet :
 		if inv_tfall_str == "failed" or inv_trise_str == "failed" :
-			fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor + 1
-			fpga_inst._generate_process_data()
-			spice_meas = spice_interface.run(sp_path, parameter_dict)
-			inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
-			inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+			rf_pass = False
 
+			for i in range(1,10) :
+				fpga_inst.specs.rest_length_factor = i
+				fpga_inst._generate_process_data()
+				spice_meas = spice_interface.run(sp_path, parameter_dict)
+				inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+				inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+
+				if inv_tfall_str != "failed" and inv_trise_str != "failed" :
+					inv_tfall = float(inv_tfall_str)
+					inv_trise = float(inv_trise_str)
+					if inv_tfall > 0 and inv_trise > 0 :
+						rf_pass = True
+						break
 
 	inv_tfall = float(inv_tfall_str)
 	inv_trise = float(inv_trise_str)
 
 	if fpga_inst.specs.use_finfet :
 		if inv_tfall < 0 or inv_trise < 0 :
-			fpga_inst.specs.rest_length_factor = fpga_inst.specs.rest_length_factor - 1
-			if fpga_inst.specs.rest_length_factor < 1 :
-				print "got negative delay, don't know what to do..."
+			rf_pass = False
+			for i in range(1,10) :
+				fpga_inst.specs.rest_length_factor = i
+				fpga_inst._generate_process_data()
+				spice_meas = spice_interface.run(sp_path, parameter_dict)
+				inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+				inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+
+				if inv_tfall_str != "failed" and inv_trise_str != "failed" :
+					inv_tfall = float(inv_tfall_str)
+					inv_trise = float(inv_trise_str)
+					if inv_tfall > 0 and inv_trise > 0 :
+						rf_pass = True
+						break
+
+			if rf_pass == False :				
+				print "can't find useable rest length factor, don't know what to do..."
 				exit(0)
-			fpga_inst._generate_process_data()
-			spice_meas = spice_interface.run(sp_path, parameter_dict)
-			inv_tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
-			inv_trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
-			inv_tfall = float(inv_tfall_str)
-			inv_trise = float(inv_trise_str)
 
 
 	# If the rise time is faster, nmos must be made bigger.
