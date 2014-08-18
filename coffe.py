@@ -227,6 +227,7 @@ os.chdir(current_dir)
 # Create an HSPICE interface
 spice_interface = spice.SpiceInterface()
 
+sys.stdout.flush()
 # Size FPGA transistors
 if is_size_transistors:
 	tran_sizing.size_fpga_transistors(fpga_inst, 

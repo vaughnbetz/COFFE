@@ -11,6 +11,7 @@ import math
 import time
 import spice
 from itertools import product
+import sys
 
 # This flag controls whether or not to print a bunch of ERF messages to the terminal
 ERF_MONITOR_VERBOSE = True
@@ -660,6 +661,8 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		if ERF_MONITOR_VERBOSE:
 			print "ERF PMOS size is " + str(target_tran_nm_size) + "\n"
 	#end if not self_loading
+
+	sys.stdout.flush()
 	return target_tran_nm_size
 
 
@@ -813,6 +816,8 @@ def erf_inverter(sp_path,
 	else :
 		fpga_inst.transistor_sizes[nmos_name] = (nmos_nm_size)
 		fpga_inst.transistor_sizes[pmos_name] = (pmos_nm_size)
+
+	sys.stdout.flush()
 		 
 	return 
    
@@ -1726,6 +1731,7 @@ def size_subcircuit_transistors(fpga_inst,
 			
 			inner_iter += 1
 
+	sys.stdout.flush()
 	return sizing_results, sizing_results_detailed
 
 	
@@ -2144,6 +2150,7 @@ def size_fpga_transistors(fpga_inst,
 		is_done, final_result_index = check_if_done(sizing_results_list, area_results_list, delay_results_list, area_opt_weight, delay_opt_weight)
 			 
 		iteration += 1
+		sys.stdout.flush()
 		
 	
 	print "FPGA transistor sizing complete!\n"
