@@ -216,7 +216,9 @@ def load_arch_params(filename, use_finfet):
 		'sram_cell_area': -1,
 		'trans_diffusion_length' : -1,
 		'model_path': "",
+		'finfet_model_path': "123",
 		'model_library': "",
+		'finfet_model_library': "123",
 		'metal' : []
 
 	}
@@ -225,6 +227,11 @@ def load_arch_params(filename, use_finfet):
 		arch_params['fin_width'] = -1
 		arch_params['lg'] = -1
 		arch_params['rest_length_factor'] = -1
+	else :
+		arch_params['fin_height'] = 1
+		arch_params['fin_width'] = 1
+		arch_params['lg'] = 1
+		arch_params['rest_length_factor'] = 1
 
 	params_file = open(filename, 'r')
 	for line in params_file:
@@ -298,9 +305,15 @@ def load_arch_params(filename, use_finfet):
 		elif param == 'trans_diffusion_length':
 			arch_params['trans_diffusion_length'] = int(value)
 		elif param == 'model_path':
-			arch_params['model_path'] = os.path.abspath(value)
+				arch_params['model_path'] = os.path.abspath(value)
+		elif param == 'finfet_model_path':
+			if use_finfet :
+				arch_params['model_path'] = os.path.abspath(value)
 		elif param == 'model_library':
 			arch_params['model_library'] = value
+		elif param == 'finfet_model_library':
+			if use_finfet :
+				arch_params['model_library'] = value
 		elif param == 'metal':
 			value_words = value.split(',')
 			r = value_words[0].replace(' ', '')
@@ -316,15 +329,14 @@ def load_arch_params(filename, use_finfet):
 			arch_params['metal'].append((float(r),float(c)))
 	
 		#finFET parameters
-		elif use_finfet :
-			if param == "fin_height" :
-				arch_params['fin_height'] = int(value)
-			elif param == "fin_width" :
-				arch_params['fin_width'] = int(value)
-			elif param == "lg" :
-				arch_params['lg'] = int(value)
-			elif param == 'rest_length_factor':
-				arch_params['rest_length_factor'] = float(value)
+		elif param == "fin_height" :
+			arch_params['fin_height'] = int(value)
+		elif param == "fin_width" :
+			arch_params['fin_width'] = int(value)
+		elif param == "lg" :
+			arch_params['lg'] = int(value)
+		elif param == 'rest_length_factor':
+			arch_params['rest_length_factor'] = float(value)
 
 	params_file.close()
 	

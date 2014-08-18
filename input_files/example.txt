@@ -84,6 +84,9 @@ trans_diffusion_length = 47
 model_path=spice_models/ptm22hp.l
 model_library=22NM_HP
 
+finfet_model_path=spice_models/ptm20hp.l
+finfet_model_library=20NM_HP
+
 ##############################
 ##### Metal data
 ##### R in ohms/nm
@@ -108,3 +111,8 @@ metal=0.007862,0.000215
 # The functionality of being able to add any number of metal layers is here to allow
 # you to investigate the use of more than 2 metal layers if you wanted to. However,
 # making use of more metal layers would require changes to the COFFE source code.
+
+fin_height=28
+fin_width=15
+lg=24
+rest_length_factor = 4
