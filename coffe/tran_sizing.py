@@ -2151,6 +2151,11 @@ def size_fpga_transistors(fpga_inst,
 			 
 		iteration += 1
 		sys.stdout.flush()
+		final_report_file = open("sizing_results/sizes_interation_" + str(iteration) + ".txt", 'w')
+		print_final_transistor_size(fpga_inst, final_report_file)
+		final_report_file.close()
+
+
 		
 	
 	print "FPGA transistor sizing complete!\n"
