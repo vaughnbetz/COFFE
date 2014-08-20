@@ -44,6 +44,8 @@ def generate_switch_block_top(mux_name):
 	sb_file.write("+    TARG V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) VAL='supply_v/2' FALL=1\n")
 	sb_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xrouting_wire_load_1.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) VAL='supply_v/2' RISE=1\n")
 	sb_file.write("+    TARG V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) VAL='supply_v/2' RISE=1\n\n")
+
+	sb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) AT=3n\n\n")
 	
 	sb_file.write("********************************************************************************\n")
 	sb_file.write("** Circuit\n")
@@ -104,6 +106,8 @@ def generate_connection_block_top(mux_name):
 	cb_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
 	cb_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xrouting_wire_load_1.Xrouting_wire_load_tile_1.Xcb_load_on_1.n_in) VAL='supply_v/2' RISE=1\n")
 	cb_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n\n")
+
+	cb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) AT=3n\n\n")
 	
 	cb_file.write("********************************************************************************\n")
 	cb_file.write("** Circuit\n")
@@ -160,6 +164,9 @@ def generate_local_mux_top(mux_name):
 	local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' FALL=1\n")
 	local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
 	local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' RISE=1\n\n")
+
+	local_mux_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_1_1) AT=3n\n\n")
+
 	
 	local_mux_file.write("********************************************************************************\n")
 	local_mux_file.write("** Circuit\n")
@@ -484,6 +491,9 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
 	input_driver_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
 	input_driver_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
 	input_driver_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+
+	input_driver_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
+
 	
 	input_driver_file.write("********************************************************************************\n")
 	input_driver_file.write("** Circuit\n")
@@ -551,6 +561,8 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
 	input_driver_file.write("+    TARG V(n_out_n) VAL='supply_v/2' FALL=1\n")
 	input_driver_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
 	input_driver_file.write("+    TARG V(n_out_n) VAL='supply_v/2' RISE=1\n\n")
+
+	input_driver_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 	
 	input_driver_file.write("********************************************************************************\n")
 	input_driver_file.write("** Circuit\n")
@@ -610,6 +622,8 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate)
 	spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
 	spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
 	
+	spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
+
 	spice_file.write("********************************************************************************\n")
 	spice_file.write("** Circuit\n")
 	spice_file.write("********************************************************************************\n\n")    
@@ -620,6 +634,8 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate)
 		# Connect a load to n_rsel node
 		spice_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
 	spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
+
+
 	
 	# Connect the LUT driver to a different LUT input based on LUT driver name
 	if not use_tgate :
@@ -703,6 +719,9 @@ def generate_local_ble_output_top(name, use_tgate):
 	top_file.write("+    TARG V(Xlocal_ble_output_load.n_1_2) VAL='supply_v/2' RISE=1\n")
 	top_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
 	top_file.write("+    TARG V(Xlocal_ble_output_load.n_1_2) VAL='supply_v/2' FALL=1\n\n")
+
+	top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_local_out) AT=3n\n\n")
+
 	
 	top_file.write("********************************************************************************\n")
 	top_file.write("** Circuit\n")
@@ -768,6 +787,9 @@ def generate_general_ble_output_top(name, use_tgate):
 	top_file.write("+    TARG V(Xgeneral_ble_output_load.n_1_9) VAL='supply_v/2' FALL=1\n")
 	top_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
 	top_file.write("+    TARG V(Xgeneral_ble_output_load.n_1_9) VAL='supply_v/2' RISE=1\n\n")
+
+	top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
+
 	
 	top_file.write("********************************************************************************\n")
 	top_file.write("** Circuit\n")

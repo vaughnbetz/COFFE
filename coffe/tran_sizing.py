@@ -249,10 +249,13 @@ def get_final_area(fpga_inst, opt_type, subcircuit):
 	return get_eval_area(fpga_inst, opt_type, subcircuit)
 	
 	
-def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
+def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage):
 
-	if tfall < 0 or trise < 0 :
+	# print "*** low voltage: " + str(low_voltage) + "***"
+
+	if tfall < 0 or trise < 0 or low_voltage > 1.0e-3:
 		return 1
+
 
 	# Use average delay for evaluation
 	delay = (tfall + trise)/2
@@ -1157,9 +1160,15 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 
 	# Now we need to create a list of tfall_trise to be compatible with old code
 	tfall_trise_list = []
+	meas_logic_low_voltage = []
 	for i in xrange(len(sizing_combos)):
 		tfall_str = spice_meas["meas_total_tfall"][i]
 		trise_str = spice_meas["meas_total_trise"][i]
+		if spice_meas["meas_logic_low_voltage"][i] == "failed" :
+			meas_logic_low_voltage.append(1)
+		else :
+			meas_logic_low_voltage.append(float(spice_meas["meas_logic_low_voltage"][i]))
+
 		if tfall_str == "failed":
 			tfall = 1
 		else:
@@ -1176,7 +1185,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 		# Calculate evaluation delay
 		tfall_trise = tfall_trise_list[i]
 		delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, 
-							   tfall_trise[0], tfall_trise[1])
+							   tfall_trise[0], tfall_trise[1], meas_logic_low_voltage[i])
 		eval_delay_list.append(delay)
 		
 	# len(area_list) should be equal to len(delay_list), make sure...
