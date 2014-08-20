@@ -244,6 +244,6 @@ class SpiceInterface(object):
 						current_meas = 0
 				 
 		mt0_file.close()
-		print "*** low voltage: " + str(measurements["meas_logic_low_voltage"]) + "***"
+		# print "*** low voltage: " + str(measurements["meas_logic_low_voltage"]) + "***"
 	
 		return measurements         
