@@ -2975,7 +2975,8 @@ class FPGA:
 				print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"
 				exit(2)
 			
-			lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
+			# lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
+			lut_delay = driver.delay + not_driver.delay
 
 			if lut_delay < 0 :
 				print "*** Lut delay is negative : " + str(lut_input.delay) + " ***"

@@ -256,6 +256,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage):
 	if tfall < 0 or trise < 0 or low_voltage > 1.0e-3:
 		return 1
 
+	if tfall > 1e-9 or trise > 1e-9 :
+		return 1
+
 
 	# Use average delay for evaluation
 	delay = (tfall + trise)/2
