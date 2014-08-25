@@ -1926,7 +1926,7 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 		
 		# If we are moving to a higher cost solution,
 		# Stop, and choose the one with smaller cost (the previous one)
-		if total_cost > previous_cost:
+		if total_cost >= previous_cost:
 			print "Algorithm is terminating: cost has stopped decreasing\n"
 			best_iteration = i - 1
 			return True, best_iteration
@@ -1990,7 +1990,8 @@ def size_fpga_transistors(fpga_inst,
 	sizing_results_detailed_list = []
 	area_results_list = []
 	delay_results_list = []
-	
+	restorers_length_list = []
+
 	# Keep performing FPGA sizing iterations until algorithm terminates
 	# Two conditions can make it terminate:
 	# 1 - Cost stops improving ('is_done')
@@ -2008,6 +2009,7 @@ def size_fpga_transistors(fpga_inst,
 
 		sizing_results_dict = {}
 		sizing_results_detailed_dict = {}
+
 		
 		# Now we are going to size the transistors of each subcircuit.
 		# The order we do this has an importance due to rise-fall balancing. 
@@ -2050,6 +2052,7 @@ def size_fpga_transistors(fpga_inst,
 			
 		# Size the transistors of this subcircuit
 		sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
+
 		
 		############################################
 		## Size local routing mux transistors
@@ -2134,16 +2137,36 @@ def size_fpga_transistors(fpga_inst,
 		
 		# Size the transistors of this subcircuit
 		sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
-		
-		
+
+		############################################
+		## Size restorers for finFETs
+		############################################
+		if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
+			print "looking for best restorer length"
+			rest_size = 1
+			min_cost = 1
+			for i in range(1,10) :
+				fpga_inst.specs.rest_length_factor = i
+				fpga_inst._generate_process_data()
+				valid_delay = fpga_inst.update_delays(spice_interface)
+				if fpga_inst.delay_dict["rep_crit_path"] < min_cost and valid_delay:
+					min_cost = fpga_inst.delay_dict["rep_crit_path"]
+					rest_size = i
+				sys.stdout.flush()
+			
+			print "best restorer length is  :" + str(rest_size)
+			restorers_length_list.append(rest_size)
+
 		############################################
 		## Done sizing, update results lists
 		############################################
-		
+
 		print "FPGA transistor sizing iteration complete!\n"
 		
 		sizing_results_list.append(sizing_results_dict.copy())
 		sizing_results_detailed_list.append(sizing_results_detailed_dict.copy())
+
+
 		
 		fpga_inst.update_delays(spice_interface)
 		
@@ -2160,7 +2183,7 @@ def size_fpga_transistors(fpga_inst,
 		
 		# Check if transistor sizing is done
 		is_done, final_result_index = check_if_done(sizing_results_list, area_results_list, delay_results_list, area_opt_weight, delay_opt_weight)
-			 
+
 		iteration += 1
 		sys.stdout.flush()
 		final_report_file = open("sizing_results/sizes_interation_" + str(iteration) + ".txt", 'w')
@@ -2170,17 +2193,16 @@ def size_fpga_transistors(fpga_inst,
 
 		
 	
-	print "FPGA transistor sizing complete!\n"
-	final_report_file = open("sizing_results/sizing_results_final.txt", 'w')
-	print_final_transistor_size(fpga_inst, final_report_file)
-	final_report_file.close()
 
 	# exit(0)
 	
 	# final_result_index are the results we need to use
 	final_transistor_sizes = sizing_results_list[final_result_index]
 	final_transistor_sizes_detailed = sizing_results_detailed_list[final_result_index]
-	
+	if fpga_inst.specs.use_finfet and not fpga_inst.tuse_gate :
+		fpga_inst.specs.rest_length_factor = restorers_length_list[final_result_index]
+		fpga_inst._generate_process_data()
+
 	# Make a dictionary that contains all transistor sizes (instead of a dictionary of dictionaries for each subcircuit)
 	final_transistor_sizes_detailed_full = {}
 	for subcircuit_name, subcircuit_sizes in final_transistor_sizes_detailed.iteritems():
@@ -2195,6 +2217,10 @@ def size_fpga_transistors(fpga_inst,
 	# Update wire resistance and capacitance
 	fpga_inst.update_wire_rc()
 		   
+	print "FPGA transistor sizing complete!\n"
+	final_report_file = open("sizing_results/sizing_results_final.txt", 'w')
+	print_final_transistor_size(fpga_inst, final_report_file)
+	final_report_file.close()
 
 
 	return 0
@@ -2254,6 +2280,8 @@ def print_final_transistor_size(fpga_inst, report_file) :
 	report_file.write("#final sizes\n")
 	for trans in fpga_inst.transistor_sizes:
 		report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
+	if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
+		print "rest_length_factor = " + str(fpga_inst.specs.rest_length_factor)
 
 	return 0
 

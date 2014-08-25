@@ -303,7 +303,7 @@ def load_arch_params(filename, use_finfet):
 		elif param == 'sram_cell_area':
 			arch_params['sram_cell_area'] = float(value)
 		elif param == 'trans_diffusion_length':
-			arch_params['trans_diffusion_length'] = int(value)
+			arch_params['trans_diffusion_length'] = float(value)
 		elif param == 'model_path':
 				arch_params['model_path'] = os.path.abspath(value)
 		elif param == 'finfet_model_path':
