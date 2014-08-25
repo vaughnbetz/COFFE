@@ -2835,8 +2835,12 @@ class FPGA:
 	def update_delays(self, spice_interface):
 		""" Extract HSPICE delays for each subcircuit. """
 		
+		print "*** UPDATING DELAYS ***"
 		crit_path_delay = 0
-	   
+		valid_delay = True
+
+		# print "*** crit_path_delay : " + str(crit_path_delay) + " ***"
+
 		# Create parameter dict of all current transistor sizes and wire rc
 		parameter_dict = {}
 		for tran_name, tran_size in self.transistor_sizes.iteritems():
@@ -2856,9 +2860,16 @@ class FPGA:
 
 		# Switch Block MUX 
 		print "Updating delay for " + self.sb_mux.name
-		spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict) 
-		tfall = float(spice_meas["meas_total_tfall"][0])
-		trise = float(spice_meas["meas_total_trise"][0])
+		spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict)
+		if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+			valid_delay = False
+			tfall = 1
+			trise = 1
+		else :	
+			tfall = float(spice_meas["meas_total_tfall"][0])
+			trise = float(spice_meas["meas_total_trise"][0])
+		if tfall < 0 or trise < 0 :
+			valid_delay = False
 		self.sb_mux.tfall = tfall
 		self.sb_mux.trise = trise
 		self.sb_mux.delay = max(tfall, trise)
@@ -2868,8 +2879,15 @@ class FPGA:
 		# Connection Block MUX
 		print "Updating delay for " + self.cb_mux.name
 		spice_meas = spice_interface.run(self.cb_mux.top_spice_path, parameter_dict) 
-		tfall = float(spice_meas["meas_total_tfall"][0])
-		trise = float(spice_meas["meas_total_trise"][0])
+		if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+			valid_delay = False
+			tfall = 1
+			trise = 1
+		else :	
+			tfall = float(spice_meas["meas_total_tfall"][0])
+			trise = float(spice_meas["meas_total_trise"][0])
+		if tfall < 0 or trise < 0 :
+			valid_delay = False
 		self.cb_mux.tfall = tfall
 		self.cb_mux.trise = trise
 		self.cb_mux.delay = max(tfall, trise)
@@ -2880,8 +2898,15 @@ class FPGA:
 		print "Updating delay for " + self.logic_cluster.local_mux.name
 		spice_meas = spice_interface.run(self.logic_cluster.local_mux.top_spice_path, 
 										 parameter_dict) 
-		tfall = float(spice_meas["meas_total_tfall"][0])
-		trise = float(spice_meas["meas_total_trise"][0])
+		if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+			valid_delay = False
+			tfall = 1
+			trise = 1
+		else :	
+			tfall = float(spice_meas["meas_total_tfall"][0])
+			trise = float(spice_meas["meas_total_trise"][0])
+		if tfall < 0 or trise < 0 :
+			valid_delay = False
 		self.logic_cluster.local_mux.tfall = tfall
 		self.logic_cluster.local_mux.trise = trise
 		self.logic_cluster.local_mux.delay = max(tfall, trise)
@@ -2893,8 +2918,16 @@ class FPGA:
 		print "Updating delay for " + self.logic_cluster.ble.local_output.name 
 		spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
 										 parameter_dict) 
-		tfall = float(spice_meas["meas_total_tfall"][0])
+		if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+			valid_delay = False
+			tfall = 1
+			trise = 1
+		else :	
+	
+			tfall = float(spice_meas["meas_total_tfall"][0])
 		trise = float(spice_meas["meas_total_trise"][0])
+		if tfall < 0 or trise < 0 :
+			valid_delay = False
 		self.logic_cluster.ble.local_output.tfall = tfall
 		self.logic_cluster.ble.local_output.trise = trise
 		self.logic_cluster.ble.local_output.delay = max(tfall, trise)
@@ -2906,8 +2939,15 @@ class FPGA:
 		print "Updating delay for " + self.logic_cluster.ble.general_output.name
 		spice_meas = spice_interface.run(self.logic_cluster.ble.general_output.top_spice_path, 
 										 parameter_dict) 
-		tfall = float(spice_meas["meas_total_tfall"][0])
-		trise = float(spice_meas["meas_total_trise"][0])
+		if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+			valid_delay = False
+			tfall = 1
+			trise = 1
+		else :	
+			tfall = float(spice_meas["meas_total_tfall"][0])
+			trise = float(spice_meas["meas_total_trise"][0])
+		if tfall < 0 or trise < 0 :
+			valid_delay = False
 		self.logic_cluster.ble.general_output.tfall = tfall
 		self.logic_cluster.ble.general_output.trise = trise
 		self.logic_cluster.ble.general_output.delay = max(tfall, trise)
@@ -2915,12 +2955,20 @@ class FPGA:
 							self.logic_cluster.ble.general_output.delay_weight)
 		self.delay_dict[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output.delay
 		
+
 		# LUT delay
 		print "Updating delay for " + self.logic_cluster.ble.lut.name
 		spice_meas = spice_interface.run(self.logic_cluster.ble.lut.top_spice_path, 
 										 parameter_dict) 
-		tfall = float(spice_meas["meas_total_tfall"][0])
-		trise = float(spice_meas["meas_total_trise"][0])
+		if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+			valid_delay = False
+			tfall = 1
+			trise = 1
+		else :	
+			tfall = float(spice_meas["meas_total_tfall"][0])
+			trise = float(spice_meas["meas_total_trise"][0])
+		if tfall < 0 or trise < 0 :
+			valid_delay = False
 		self.logic_cluster.ble.lut.tfall = tfall
 		self.logic_cluster.ble.lut.trise = trise
 		self.logic_cluster.ble.lut.delay = max(tfall, trise)
@@ -2936,8 +2984,15 @@ class FPGA:
 			print "Updating delay for " + driver.name.replace("_driver", "")
 			driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
 			spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
-			tfall = float(spice_meas["meas_total_tfall"][0])
-			trise = float(spice_meas["meas_total_trise"][0])
+			if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+				valid_delay = False
+				tfall = 1
+				trise = 1
+			else :	
+				tfall = float(spice_meas["meas_total_tfall"][0])
+				trise = float(spice_meas["meas_total_trise"][0])
+			if tfall < 0 or trise < 0 :
+				valid_delay = False
 			lut_input.tfall = tfall
 			lut_input.trise = trise
 			lut_input.delay = max(tfall, trise)
@@ -2951,8 +3006,15 @@ class FPGA:
 			# Now, we want to get the delay and power for the driver
 			print "Updating delay for " + driver.name 
 			spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
-			tfall = float(spice_meas["meas_total_tfall"][0])
-			trise = float(spice_meas["meas_total_trise"][0])
+			if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+				valid_delay = False
+				tfall = 1
+				trise = 1
+			else :	
+				tfall = float(spice_meas["meas_total_tfall"][0])
+				trise = float(spice_meas["meas_total_trise"][0])
+			if tfall < 0 or trise < 0 :
+				valid_delay = False
 			driver.tfall = tfall
 			driver.trise = trise
 			driver.delay = max(tfall, trise)
@@ -2965,8 +3027,15 @@ class FPGA:
 			# ... and the not_driver
 			print "Updating delay for " + not_driver.name
 			spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
-			tfall = float(spice_meas["meas_total_tfall"][0])
-			trise = float(spice_meas["meas_total_trise"][0])
+			if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+				valid_delay = False
+				tfall = 1
+				trise = 1
+			else :	
+				tfall = float(spice_meas["meas_total_tfall"][0])
+				trise = float(spice_meas["meas_total_trise"][0])
+			if tfall < 0 or trise < 0 :
+				valid_delay = False
 			not_driver.tfall = tfall
 			not_driver.trise = trise
 			not_driver.delay = max(tfall, trise)
@@ -2975,20 +3044,22 @@ class FPGA:
 				print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"
 				exit(2)
 			
-			# lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
-			lut_delay = driver.delay + not_driver.delay
+			lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
+			# lut_delay = driver.delay + not_driver.delay
 
 			if lut_delay < 0 :
 				print "*** Lut delay is negative : " + str(lut_input.delay) + " ***"
 				exit(2)
 
 			crit_path_delay += lut_delay*lut_input.delay_weight
+			# print "*** lut input : " + str(lut_input.delay) + " ***"
+	
 		
 		self.delay_dict["rep_crit_path"] = crit_path_delay
 		
 		print ""
 		
-		return
+		return valid_delay
 				  
 				  
 	def print_specs(self):
