@@ -2199,7 +2199,7 @@ def size_fpga_transistors(fpga_inst,
 	# final_result_index are the results we need to use
 	final_transistor_sizes = sizing_results_list[final_result_index]
 	final_transistor_sizes_detailed = sizing_results_detailed_list[final_result_index]
-	if fpga_inst.specs.use_finfet and not fpga_inst.tuse_gate :
+	if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate :
 		fpga_inst.specs.rest_length_factor = restorers_length_list[final_result_index]
 		fpga_inst._generate_process_data()
 
