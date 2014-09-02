@@ -95,6 +95,7 @@ class _Specs:
 		self.fin_height = fin_height
 		self.lg = lg
 		self.rest_length_factor = rest_length_factor
+		self.default_rest_length_factor = rest_length_factor
 
 
 

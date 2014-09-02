@@ -435,8 +435,11 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		tfall = float(tfall_str)
 		trise = float(trise_str)
 
+		
 		if fpga_inst.specs.use_finfet :
 			if tfall < 0 or trise < 0 :
+				# target_tran_nm_size = target_tran_nm_size - 1
+				# upper_bound_not_found = False
 				rf_pass = False
 				for i in range(1,10) :
 					fpga_inst.specs.rest_length_factor = i
@@ -2010,6 +2013,10 @@ def size_fpga_transistors(fpga_inst,
 		sizing_results_dict = {}
 		sizing_results_detailed_dict = {}
 
+		#reset restorer length
+		if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate :
+			fpga_inst.specs.rest_length_factor = fpga_inst.specs.default_rest_length_factor
+			fpga_inst._generate_process_data()
 		
 		# Now we are going to size the transistors of each subcircuit.
 		# The order we do this has an importance due to rise-fall balancing. 
@@ -2281,7 +2288,7 @@ def print_final_transistor_size(fpga_inst, report_file) :
 	for trans in fpga_inst.transistor_sizes:
 		report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
 	if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
-		print "rest_length_factor = " + str(fpga_inst.specs.rest_length_factor)
+		report_file.write("rest_length_factor = " + str(fpga_inst.specs.rest_length_factor))
 
 	return 0
 
