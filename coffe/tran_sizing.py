@@ -438,26 +438,28 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		
 		if fpga_inst.specs.use_finfet :
 			if tfall < 0 or trise < 0 :
-				# target_tran_nm_size = target_tran_nm_size - 1
-				# upper_bound_not_found = False
-				rf_pass = False
-				for i in range(1,10) :
-					fpga_inst.specs.rest_length_factor = i
-					fpga_inst._generate_process_data()
-					spice_meas = spice_interface.run(sp_path, parameter_dict)
-					tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
-					trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
+				target_tran_nm_size = target_tran_nm_size - 1
+				upper_bound_not_found = False
 
-					if tfall_str != "failed" and trise_str != "failed" :
-						tfall = float(tfall_str)
-						trise = float(trise_str)
-						if tfall > 0 and trise > 0 :
-							rf_pass = True
-							break
+				continue
+				# rf_pass = False
+				# for i in range(1,10) :
+				# 	fpga_inst.specs.rest_length_factor = i
+				# 	fpga_inst._generate_process_data()
+				# 	spice_meas = spice_interface.run(sp_path, parameter_dict)
+				# 	tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
+				# 	trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
 
-				if rf_pass == False :				
-					print "can't find useable rest length, don't know what to do..."
-					exit(0)
+				# 	if tfall_str != "failed" and trise_str != "failed" :
+				# 		tfall = float(tfall_str)
+				# 		trise = float(trise_str)
+				# 		if tfall > 0 and trise > 0 :
+				# 			rf_pass = True
+				# 			break
+
+				# if rf_pass == False :				
+				# 	print "can't find useable rest length, don't know what to do..."
+				# 	exit(0)
 
 
 		if ERF_MONITOR_VERBOSE:
