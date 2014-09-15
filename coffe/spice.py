@@ -150,16 +150,25 @@ class SpiceInterface(object):
 
 		hspice_success = False
 		hspice_runs = 0
+
+		# there are many cases when then hspice similation will fail
+		# most often, it is because the input file is incorresct (which would be a bug with in COFFE)
+		# or hpice fails to checheck out the license, assuming the license exists, it is likely due
+		# to many instances checking out the license at the same time. In this case, we check if the
+		# ".mt0" exists, if not, we run hspice again. After we read the results, we delete it to make
+		# sure we are not reading previou results
 		while ( not hspice_success) :
 			subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
 			output_file.close()
 			 
 			# Read spice measurements
 			mt0_path = output_filename.replace(".lis", ".mt0")
+			# check that the ".mt0" file is there
 			if os.path.isfile(mt0_path) :
 				spice_measurements = self.parse_mt0(mt0_path)
 				os.remove(mt0_path)
 				hspice_success = True
+			# something else is likely to be the problem
 			else :
 				hspice_runs = hspice_runs + 1
 				if hspice_runs > 10 :
@@ -231,10 +240,7 @@ class SpiceInterface(object):
 				line = line.replace("\n", "")
 				words = line.split()
 				for meas in words:
-					# if float(meas) < 0 :
-					# 	print "negative measurements at: " + filepath
-					# 	exit(1)
-						
+
 					# Append each measurement value to the right list.
 					# We use current_meas and meas_names to keep track of where we 
 					# need to add the measurement value.

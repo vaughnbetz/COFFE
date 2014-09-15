@@ -253,20 +253,17 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage):
 
 	# print "*** low voltage: " + str(low_voltage) + "***"
 
+	# omit measurements that are negative or doesn't reach Vgnd
 	if tfall < 0 or trise < 0 or low_voltage > 1.0e-3:
 		return 1
 
+	# omit measurements that are too large
 	if tfall > 1e-9 or trise > 1e-9 :
 		return 1
 
 
 	# Use average delay for evaluation
 	delay = (tfall + trise)/2
-				
-	# if tfall > trise:
-		# delay = tfall
-	# else:
-		# delay = trise
 		
 	if opt_type == "local":
 		return delay
@@ -305,7 +302,9 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
 	else:
 		delay = trise
 
+	# final delay should not be negative, something went wrong :(
 	if delay < 0 :
+			print "ERROR: final delat is negative"
 			print "***Negative delay: " + str(delay) + " in " + subcircuit.name + " ***"
 			exit(2)
 		
@@ -335,6 +334,7 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
 		# General BLE output
 		path_delay += fpga_inst.logic_cluster.ble.general_output.delay*fpga_inst.logic_cluster.ble.general_output.delay_weight
 
+		# final delay should not be negative, something went wrong :(
 		if path_delay < 0 :
 			print "***Negative path delay: " + str(path_delay) + " in " + subcircuit.name + " ***"
 			exit(2)
@@ -435,31 +435,12 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		tfall = float(tfall_str)
 		trise = float(trise_str)
 
-		
+		# when we use finFETs, sometimes we increase the transistor to a point where the delay
+		# would be negative. In this case, we take the previous sizes
 		if fpga_inst.specs.use_finfet :
 			if tfall < 0 or trise < 0 :
 				target_tran_nm_size = target_tran_nm_size - 1
 				upper_bound_not_found = False
-
-				continue
-				# rf_pass = False
-				# for i in range(1,10) :
-				# 	fpga_inst.specs.rest_length_factor = i
-				# 	fpga_inst._generate_process_data()
-				# 	spice_meas = spice_interface.run(sp_path, parameter_dict)
-				# 	tfall_str = spice_meas["meas_" + inv_name + "_tfall"][0]
-				# 	trise_str = spice_meas["meas_" + inv_name + "_trise"][0]
-
-				# 	if tfall_str != "failed" and trise_str != "failed" :
-				# 		tfall = float(tfall_str)
-				# 		trise = float(trise_str)
-				# 		if tfall > 0 and trise > 0 :
-				# 			rf_pass = True
-				# 			break
-
-				# if rf_pass == False :				
-				# 	print "can't find useable rest length, don't know what to do..."
-				# 	exit(0)
 
 
 		if ERF_MONITOR_VERBOSE:
@@ -472,6 +453,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 			print (sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
 				   " diff=" + str(tfall-trise))
 
+		# delay should not be negative at this point
 		if tfall < 0 or trise < 0 :
 			print "got negative value"
 			exit(1)
@@ -600,7 +582,11 @@ def erf_inverter_balance_trise_tfall(sp_path,
 					nm_size_lower_bound = nm_size_list[i-1]
 					break
 			   
-		#checks to see if indicies are swapped
+		# checks to see if indicies are swapped
+		# this was a work around when there was bug and was not too clear as to what was happening 
+		# it should no longer be nessisary, but there's not harm in checking anyways
+		# if the lower bound is larger than the upper bound, the lower bound becomes the upper bound
+		# and vice versa
 		if nm_size_lower_bound > nm_size_upper_bound:
 			print "***Boundaries swapped***"
 			temp_size = nm_size_upper_bound
@@ -655,8 +641,6 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# between trise and tfall as small as possible. (we know that the minimum
 		# was in the interval we just swept)
 		current_best_tfall_trise_balance = 1
-
-		
 		best_index = 0
 		for i in xrange(len(nm_size_list)):
 			tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
@@ -671,6 +655,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 
 		if ERF_MONITOR_VERBOSE:
 			print "ERF PMOS size is " + str(target_tran_nm_size) + "\n"
+			
 	#end if not self_loading
 
 	sys.stdout.flush()
@@ -746,7 +731,9 @@ def erf_inverter(sp_path,
 	# to a float. If the measurement failed, float conversion will throw an exception.
 
 
-
+	# when we sue finFETs, sometimes the restorer is too strong and will pull up lows,
+	# in this case, we do a sweep of restorer lengths to find one that will operate 
+	# correctly
 	if fpga_inst.specs.use_finfet :
 		if inv_tfall_str == "failed" or inv_trise_str == "failed" :
 			rf_pass = False
@@ -768,6 +755,9 @@ def erf_inverter(sp_path,
 	inv_tfall = float(inv_tfall_str)
 	inv_trise = float(inv_trise_str)
 
+	# since this is the first time we are measuring rise fall time, then it must not be negative
+	# this is also a problem due to incorrect restorer lenghts. We sweep through restorer lengths
+	# to find the shortest length that will obtain a correct measurement
 	if fpga_inst.specs.use_finfet :
 		if inv_tfall < 0 or inv_trise < 0 :
 			rf_pass = False
@@ -2227,6 +2217,7 @@ def size_fpga_transistors(fpga_inst,
 	fpga_inst.update_wire_rc()
 		   
 	print "FPGA transistor sizing complete!\n"
+	# print final sizes
 	final_report_file = open("sizing_results/sizing_results_final.txt", 'w')
 	print_final_transistor_size(fpga_inst, final_report_file)
 	final_report_file.close()

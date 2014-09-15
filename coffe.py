@@ -160,6 +160,7 @@ else :
 						  lg,
 						  rest_length_factor)
 
+#extract initial sizes
 if initial_sizes != "default" :
 	print "extracting initial transistor sizes from: " + initial_sizes
 	initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
@@ -195,6 +196,7 @@ os.chdir(arch_folder)
 # Generate FPGA and associated SPICE files
 fpga_inst.generate(is_size_transistors) 
 
+# over writes default initial sizes if initial sizes are specified
 if initial_sizes != "default" :
 	print "overriding transistor sizes"
 	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
