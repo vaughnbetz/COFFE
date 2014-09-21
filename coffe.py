@@ -36,7 +36,6 @@ import time
 import coffe.fpga as fpga
 import coffe.spice as spice
 import coffe.tran_sizing as tran_sizing
-#import coffe.hspice_extract as hspice_extract
 import coffe.utils
 import coffe.vpr
 import datetime
@@ -249,14 +248,13 @@ print "|------------------------------------------------------------------------
 print ""
 
 os.chdir(default_dir)
-# Also print report to a file
-report_file = open( arch_desc_words[0] + ".results", 'a')
-#prints archtecture parameters
 
-report_file.write( "|------------------------------------------------------------------------------|\n")
-report_file.write( "|    Area and Delay Report                                                     |\n")
-report_file.write( "|------------------------------------------------------------------------------|\n")
-report_file.write( "\n")
+# Also print report to a file
+report_file = open(arch_desc_words[0] + ".results", 'w')
+report_file.write("|------------------------------------------------------------------------------|\n")
+report_file.write("|    Area and Delay Report                                                     |\n")
+report_file.write("|------------------------------------------------------------------------------|\n")
+report_file.write("\n")
 
 
 # Print area and delay per subcircuit
@@ -285,16 +283,16 @@ print "|------------------------------------------------------------------------
 print ""
 
 
-report_file.write( "  SUMMARY\n")
-report_file.write( "  -------\n")
-report_file.write( "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2\n")
-report_file.write( "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps\n")
-report_file.write ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
+report_file.write("  SUMMARY\n")
+report_file.write("  -------\n")
+report_file.write("  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2\n")
+report_file.write("  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps\n")
+report_file.write("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
 	   + str(round(final_cost,5)) + "\n")
 
-report_file.write( "\n")
-report_file.write( "|------------------------------------------------------------------------------|\n")
-report_file.write( "\n")
+report_file.write("\n")
+report_file.write("|------------------------------------------------------------------------------|\n")
+report_file.write("\n")
 
 # Come back to top level directory
 os.chdir("../")
