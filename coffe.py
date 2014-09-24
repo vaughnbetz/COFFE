@@ -2,7 +2,7 @@
 # Created by: Charles Chiasson (charles.chiasson@gmail.com)
 #         at: University of Toronto
 #         in: 2013        
-		   
+           
 #
 # The big picture:
 #
@@ -24,7 +24,7 @@
 # we pass the FPGA object to COFFE's transistor sizing engine. The following paper 
 # explains COFFE's transistor sizing algorithm in detail.
 #
-# [1] C. Chiasson and V.Betz, "COFFE: Fully-Automated Transistor Sizing for FPGAs", FPT2013
+# [1] C. Chiasson and V. Betz, "COFFE: Fully-Automated Transistor Sizing for FPGAs", FPT2013
 #
  
 
@@ -70,24 +70,56 @@ use_tgate = args.use_tgate
 use_finfet = args.use_finfet
 initial_sizes = args.initial_sizes
 
-# Print the options
-print "RUN OPTIONS:"
+# Make the top-level spice folder if it doesn't already exist
+arch_desc_words = arch_description_filename.split('.')
+arch_folder = arch_desc_words[0]
+if not os.path.exists(arch_folder):
+    os.mkdir(arch_folder)
+else:
+    # Delete contents of sub-directories
+    # COFFE generates several 'intermediate results' files during sizing
+    # so we delete them to avoid from having them pile up if we run COFFE
+    # more than once.
+    dir_contents = os.listdir(arch_folder)
+    for content in dir_contents:
+        if os.path.isdir(arch_folder + "/" + content):
+            shutil.rmtree(arch_folder + "/" + content)
+
+# Print the options to both terminal and report file
+report_file_path = os.path.join(arch_folder, "report.txt") 
+report_file = open(report_file_path, 'w')
+report_file.write("Created " + str(datetime.datetime.now()) + "\n\n")
+print "----------RUN OPTIONS----------"
+report_file.write("----------RUN OPTIONS----------\n")
 if is_size_transistors:
-	print "Transistor sizing: on"
+    print "Transistor sizing: on"
+    report_file.write("Transistor sizing: on\n")
 else:
-	print "Transistor sizing: off"
+    print "Transistor sizing: off"
+    report_file.write("Transistor sizing: off\n")
 if opt_type == "global":
-	print "Optimization type: global"
+    print "Optimization type: global"
+    report_file.write("Optimization type: global\n")
 else:
-	print "Optimization type: local"
+    print "Optimization type: local"
+    report_file.write("Optimization type: local\n")
 print "Number of top combos to re-ERF: " + str(re_erf)
 print "Area optimization weight: " + str(area_opt_weight)
 print "Delay optimization weight: " + str(delay_opt_weight)
 print "Maximum number of sizing iterations: " + str(max_iterations)
 print ""
+report_file.write("Number of top combos to re-ERF: " + str(re_erf) + "\n")
+report_file.write("Area optimization weight: " + str(area_opt_weight) + "\n")
+report_file.write("Delay optimization weight: " + str(delay_opt_weight) + "\n")
+report_file.write("Maximum number of sizing iterations: " + str(max_iterations) + "\n")
+report_file.write("\n")
+report_file.close()
 
 # Load the input architecture description file
 arch_params_dict = coffe.utils.load_arch_params(arch_description_filename, use_finfet)
+
+# Print architecture and process details to terminal and report file
+coffe.utils.print_architecture_params(arch_params_dict, report_file_path)
 
 # Create some local variables
 N = arch_params_dict['N']
@@ -116,10 +148,10 @@ model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
 
 if use_finfet:
-	fin_height = arch_params_dict['fin_height']
-	fin_width = arch_params_dict['fin_width']
-	lg = arch_params_dict['lg']
-	rest_length_factor = arch_params_dict['rest_length_factor']
+    fin_height = arch_params_dict['fin_height']
+    fin_width = arch_params_dict['fin_width']
+    rest_length_factor = arch_params_dict['rest_length_factor']
+    lg=0
 
 
 default_dir = os.getcwd()
@@ -129,65 +161,45 @@ total_start_time = time.time()
 
 # Create an FPGA instance
 if not use_finfet :
-	fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-						  vdd, vsram, vsram_n, 
-						  gate_length, 
-						  min_tran_width, 
-						  min_width_tran_area, 
-						  sram_cell_area,
-						  trans_diffusion_length,
-						  model_path, 
-						  model_library, 
-						  metal_stack,
-						  use_tgate,
-						  use_finfet)
+    fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
+                          vdd, vsram, vsram_n, 
+                          gate_length, 
+                          min_tran_width, 
+                          min_width_tran_area, 
+                          sram_cell_area,
+                          trans_diffusion_length,
+                          model_path, 
+                          model_library, 
+                          metal_stack,
+                          use_tgate,
+                          use_finfet)
 else :
-	fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-						  vdd, vsram, vsram_n, 
-						  gate_length, 
-						  min_tran_width, 
-						  min_width_tran_area, 
-						  sram_cell_area,
-						  trans_diffusion_length, 
-						  model_path, 
-						  model_library, 
-						  metal_stack,
-						  use_tgate,
-						  use_finfet,
-						  fin_width,
-						  fin_height,
-						  lg,
-						  rest_length_factor)
+    fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
+                          vdd, vsram, vsram_n, 
+                          gate_length, 
+                          min_tran_width, 
+                          min_width_tran_area, 
+                          sram_cell_area,
+                          trans_diffusion_length, 
+                          model_path, 
+                          model_library, 
+                          metal_stack,
+                          use_tgate,
+                          use_finfet,
+                          fin_width,
+                          fin_height,
+                          lg,
+                          rest_length_factor)
 
 #extract initial sizes
 if initial_sizes != "default" :
-	print "extracting initial transistor sizes from: " + initial_sizes
-	initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
+    print "extracting initial transistor sizes from: " + initial_sizes
+    initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
 
-
-# Print basic FPGA specs                       
-fpga_inst.print_specs()
-
-	
 
 ###############################################################
 ## GENERATE FILES
 ###############################################################
-
-# Make the top-level spice folder if it doesn't already exist
-arch_desc_words = arch_description_filename.split('.')
-arch_folder = arch_desc_words[0]
-if not os.path.exists(arch_folder):
-	os.mkdir(arch_folder)
-else:
-	# Delete contents of sub-directories
-	# COFFE generates several 'intermediate results' files during sizing
-	# so we delete them to avoid from having them pile up if we run COFFE
-	# more than once.
-	dir_contents = os.listdir(arch_folder)
-	for content in dir_contents:
-		if os.path.isdir(arch_folder + "/" + content):
-			shutil.rmtree(arch_folder + "/" + content)
 
 # Change to the architecture directory
 os.chdir(arch_folder)  
@@ -197,29 +209,25 @@ fpga_inst.generate(is_size_transistors)
 
 # over writes default initial sizes if initial sizes are specified
 if initial_sizes != "default" :
-	print "overriding transistor sizes"
-	tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
-	for tran in initial_tran_size :
-		fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
-	
-	fpga_inst.update_area()
-	fpga_inst.update_wires()
-	fpga_inst.update_wire_rc()
-
+    print "overriding transistor sizes"
+    tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
+    for tran in initial_tran_size :
+        fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
+    
+    fpga_inst.update_area()
+    fpga_inst.update_wires()
+    fpga_inst.update_wire_rc()
 
 current_dir = os.getcwd()
 os.chdir(default_dir)
-# Print report file
-report_file = open( arch_desc_words[0] + "/report.txt", 'w')
-report_file.write( str(datetime.datetime.now()) + "\n")
-coffe.utils.print_architecture_params(report_file, arch_params_dict)
 
 # Print FPGA implementation details
+report_file = open(report_file_path, 'a')
 fpga_inst.print_details(report_file)  
 report_file.close()
 
 
-	
+    
 os.chdir(current_dir)
 
 ###############################################################
@@ -231,31 +239,31 @@ spice_interface = spice.SpiceInterface()
 sys.stdout.flush()
 # Size FPGA transistors
 if is_size_transistors:
-	tran_sizing.size_fpga_transistors(fpga_inst, 
-									  opt_type, 
-									  re_erf, 
-									  max_iterations, 
-									  area_opt_weight, 
-									  delay_opt_weight, 
-									  spice_interface)    
-	
+    tran_sizing.size_fpga_transistors(fpga_inst, 
+                                      opt_type, 
+                                      re_erf, 
+                                      max_iterations, 
+                                      area_opt_weight, 
+                                      delay_opt_weight, 
+                                      spice_interface)    
+    
 # Update subcircuit delays (these are the final values)
 fpga_inst.update_delays(spice_interface)
+
+os.chdir(default_dir)
 
 print "|------------------------------------------------------------------------------|"
 print "|    Area and Delay Report                                                     |"
 print "|------------------------------------------------------------------------------|"
 print ""
 
-os.chdir(default_dir)
-
-# Also print report to a file
-report_file = open(arch_desc_words[0] + ".results", 'w')
+# Print out final COFFE report to file
+report_file = open(arch_folder + "/report.txt", 'a')
+report_file.write("\n")
 report_file.write("|------------------------------------------------------------------------------|\n")
 report_file.write("|    Area and Delay Report                                                     |\n")
 report_file.write("|------------------------------------------------------------------------------|\n")
 report_file.write("\n")
-
 
 # Print area and delay per subcircuit
 coffe.utils.print_area_and_delay(report_file, fpga_inst)
@@ -268,7 +276,7 @@ coffe.utils.print_vpr_delays(report_file, fpga_inst)
 
 # Print VPR areas (to be used to make architecture file)
 coffe.utils.print_vpr_areas(report_file, fpga_inst)
-	  
+      
 # Print area and delay summary
 final_cost = fpga_inst.area_dict["tile"]*fpga_inst.delay_dict["rep_crit_path"]
 print "  SUMMARY"
@@ -276,19 +284,18 @@ print "  -------"
 print "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2"
 print "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps"
 print ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
-	   + str(round(final_cost,5)))
+       + str(round(final_cost,5)))
 
 print ""
 print "|------------------------------------------------------------------------------|"
 print ""
-
 
 report_file.write("  SUMMARY\n")
 report_file.write("  -------\n")
 report_file.write("  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2\n")
 report_file.write("  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps\n")
 report_file.write("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
-	   + str(round(final_cost,5)) + "\n")
+       + str(round(final_cost,5)) + "\n")
 
 report_file.write("\n")
 report_file.write("|------------------------------------------------------------------------------|\n")

@@ -114,5 +114,4 @@ metal=0.007862,0.000215
 
 fin_height=28
 fin_width=15
-lg=24
 rest_length_factor = 4
