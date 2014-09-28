@@ -441,8 +441,8 @@ def print_error(value, argument, filename):
 def print_architecture_params(arch_params_dict, report_file_path):
 
     report_file = open(report_file_path, 'a')
-    print "----------ARCHITECTURE PARAMETERS----------"
-    report_file.write("----------ARCHITECTURE PARAMETERS----------\n")
+    print "ARCHITECTURE PARAMETERS:"
+    report_file.write("ARCHITECTURE PARAMETERS:\n")
     print "Number of BLEs per cluster (N): " + str(arch_params_dict['N'])
     print "LUT size (K): " + str(arch_params_dict['K'])
     print "Channel width (W): " + str(arch_params_dict['W'])
@@ -474,8 +474,8 @@ def print_architecture_params(arch_params_dict, report_file_path):
     report_file.write("LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb']) + "\n")
     report_file.write("\n")
 
-    print "----------PROCESS TECHNOLOGY PARAMETERS----------"
-    report_file.write("----------PROCESS TECHNOLOGY PARAMETERS----------\n")
+    print "PROCESS TECHNOLOGY PARAMETERS:"
+    report_file.write("PROCESS TECHNOLOGY PARAMETERS:\n")
     print "vdd = " + str( arch_params_dict['vdd'])
     print "vsram = " + str( arch_params_dict['vsram']) 
     print "vsram_n = " + str( arch_params_dict['vsram_n']) 

@@ -89,8 +89,8 @@ else:
 report_file_path = os.path.join(arch_folder, "report.txt") 
 report_file = open(report_file_path, 'w')
 report_file.write("Created " + str(datetime.datetime.now()) + "\n\n")
-print "----------RUN OPTIONS----------"
-report_file.write("----------RUN OPTIONS----------\n")
+print "RUN OPTIONS:"
+report_file.write("RUN OPTIONS:\n")
 if is_size_transistors:
     print "Transistor sizing: on"
     report_file.write("Transistor sizing: on\n")
@@ -153,8 +153,10 @@ if use_finfet:
     rest_length_factor = arch_params_dict['rest_length_factor']
     lg=0
 
-
+# Default_dir is the dir you ran COFFE from. COFFE will be switching directories 
+# while running HSPICE, this variable is so that we can get back to our starting point
 default_dir = os.getcwd()
+
 
 # Record start time
 total_start_time = time.time()
@@ -191,15 +193,12 @@ else :
                           lg,
                           rest_length_factor)
 
-#extract initial sizes
-if initial_sizes != "default" :
-    print "extracting initial transistor sizes from: " + initial_sizes
-    initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
 
 
 ###############################################################
 ## GENERATE FILES
 ###############################################################
+
 
 # Change to the architecture directory
 os.chdir(arch_folder)  
@@ -207,28 +206,36 @@ os.chdir(arch_folder)
 # Generate FPGA and associated SPICE files
 fpga_inst.generate(is_size_transistors) 
 
+# Go back to the base directory
+os.chdir(default_dir)
+
+# Extract initial transistor sizes from file if this option was used.
+if initial_sizes != "default" :
+    print "Extracting initial transistor sizes from: " + initial_sizes
+    initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
+
 # over writes default initial sizes if initial sizes are specified
 if initial_sizes != "default" :
-    print "overriding transistor sizes"
+    print "Setting transistor sizes to extracted values"
     tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
     for tran in initial_tran_size :
         fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
     
+    print "Re-calculating area..."
     fpga_inst.update_area()
+    print "Re-calculating wire lengths..."
     fpga_inst.update_wires()
+    print "Re-calculating resistance and capacitance..."
     fpga_inst.update_wire_rc()
-
-current_dir = os.getcwd()
-os.chdir(default_dir)
+    print ""
 
 # Print FPGA implementation details
 report_file = open(report_file_path, 'a')
 fpga_inst.print_details(report_file)  
 report_file.close()
 
-
-    
-os.chdir(current_dir)
+# Go to architecture directory
+os.chdir(arch_folder)
 
 ###############################################################
 ## TRANSISTOR SIZING
@@ -250,6 +257,7 @@ if is_size_transistors:
 # Update subcircuit delays (these are the final values)
 fpga_inst.update_delays(spice_interface)
 
+# Go back to the base directory
 os.chdir(default_dir)
 
 print "|------------------------------------------------------------------------------|"
@@ -301,9 +309,6 @@ report_file.write("\n")
 report_file.write("|------------------------------------------------------------------------------|\n")
 report_file.write("\n")
 
-# Come back to top level directory
-os.chdir("../")
-
 # Record end time
 total_end_time = time.time()
 total_time_elapsed = total_end_time - total_start_time
@@ -320,7 +325,6 @@ report_file.write( "\n")
 
 report_file.close()
 
-os.chdir(default_dir)
-vpr_file = open( arch_desc_words[0] + ".xml", 'w')
+vpr_file = open(arch_desc_words[0] + ".xml", 'w')
 coffe.vpr.print_vpr_file(vpr_file, fpga_inst)
 vpr_file.close()

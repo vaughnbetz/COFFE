@@ -2217,28 +2217,24 @@ def size_fpga_transistors(fpga_inst,
 	fpga_inst.update_wire_rc()
 		   
 	print "FPGA transistor sizing complete!\n"
-	# print final sizes
-	final_report_file = open("sizing_results/sizing_results_final.txt", 'w')
+	
+	final_report_file = open("sizing_results_final.txt", 'w')
 	print_final_transistor_size(fpga_inst, final_report_file)
 	final_report_file.close()
 
+	return 
 
-	return 0
 
 def override_transistor_sizes(fpga_inst, initial_sizes) :
 	# switch block mux transistors
-	i = 0 
 	for trans in fpga_inst.sb_mux.initial_transistor_sizes :
 		if trans in fpga_inst.sb_mux.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.sb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
-			i = i+1
-
 
 	# connection block mux transistors
 	for trans in fpga_inst.cb_mux.initial_transistor_sizes :
 		if trans in fpga_inst.cb_mux.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.cb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
-
 
 	# local routing mux transistors
 	for trans in fpga_inst.logic_cluster.local_mux.initial_transistor_sizes :
@@ -2257,7 +2253,6 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 			if trans in input_driver.driver.initial_transistor_sizes and trans in initial_sizes:
 				input_driver.driver.initial_transistor_sizes[trans] = initial_sizes[trans]
 
-
 		for trans in input_driver.not_driver.initial_transistor_sizes :
 			if trans in input_driver.not_driver.initial_transistor_sizes and trans in initial_sizes:
 				input_driver.not_driver.initial_transistor_sizes[trans] = initial_sizes[trans]
@@ -2272,18 +2267,21 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 		if trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes[trans] = initial_sizes[trans]
 
-	return 0
+	return 
 
 
-def print_final_transistor_size(fpga_inst, report_file) :
+def print_final_transistor_size(fpga_inst, report_file):
+    """
+    Dump FPGA transistor sizes to a file.
+    """
 
-	report_file.write("#final sizes\n")
-	for trans in fpga_inst.transistor_sizes:
-		report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
-	if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
-		report_file.write("rest_length_factor = " + str(fpga_inst.specs.rest_length_factor))
+    report_file.write("#final sizes\n")
+    for trans in fpga_inst.transistor_sizes:
+        report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
+    if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
+        report_file.write("rest_length_factor = " + str(fpga_inst.specs.rest_length_factor))
 
-	return 0
+	return 
 
 
 		
