@@ -148,10 +148,7 @@ model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
 
 if use_finfet:
-    fin_height = arch_params_dict['fin_height']
-    fin_width = arch_params_dict['fin_width']
     rest_length_factor = arch_params_dict['rest_length_factor']
-    lg=0
 
 # Default_dir is the dir you ran COFFE from. COFFE will be switching directories 
 # while running HSPICE, this variable is so that we can get back to our starting point
@@ -188,9 +185,6 @@ else :
                           metal_stack,
                           use_tgate,
                           use_finfet,
-                          fin_width,
-                          fin_height,
-                          lg,
                           rest_length_factor)
 
 

@@ -223,12 +223,8 @@ def load_arch_params(filename, use_finfet):
 
     }
     if use_finfet :
-        arch_params['fin_height'] = -1
-        arch_params['fin_width'] = -1
         arch_params['rest_length_factor'] = -1
     else :
-        arch_params['fin_height'] = 1
-        arch_params['fin_width'] = 1
         arch_params['rest_length_factor'] = 1
 
     params_file = open(filename, 'r')
@@ -327,10 +323,6 @@ def load_arch_params(filename, use_finfet):
             arch_params['metal'].append((float(r),float(c)))
     
         #finFET parameters
-        elif param == "fin_height" :
-            arch_params['fin_height'] = int(value)
-        elif param == "fin_width" :
-            arch_params['fin_width'] = int(value)
         elif param == 'rest_length_factor':
             arch_params['rest_length_factor'] = float(value)
 
@@ -422,10 +414,6 @@ def check_arch_params (arch_params, filename, use_finfet):
         print_error (str(arch_params['trans_diffusion_length']), "trans_diffusion_length", filename)           
 
     if use_finfet :
-        if arch_params['fin_width'] <= 0 :
-            print_error (str(arch_params['fin_width']), "fin_width", filename)            
-        if arch_params['fin_height'] <= 0 :
-            print_error (str(arch_params['fin_height']), "fin_height", filename)            
         if arch_params['rest_length_factor'] <= 0 :
             print_error (str(arch_params['rest_length_factor']), "rest_length_factor", filename) 
 
