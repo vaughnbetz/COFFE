@@ -58,16 +58,16 @@ Rfb=c
 #######################################
 
 # Supply voltage
-vdd=0.8
+vdd=0.9
 
 # SRAM Vdd
-vsram=1.0
+vsram=1.1
 
 # SRAM Vss
 vsram_n=0
 
 # Gate length (nm)
-gate_length=22
+gate_length=20
 
 # This parameter controls the gate length of PMOS level-restorers. For example, setting this paramater 
 # to 4 sets the gate length to 4x the value of 'gate_legnth'. Increasing the gate length weakens the 

@@ -2831,13 +2831,14 @@ class FPGA:
 
 
     def update_delays(self, spice_interface):
-        """ Extract HSPICE delays for each subcircuit. """
+        """ 
+        Get the HSPICE delays for each subcircuit. 
+        This function returns "False" if any of the HSPICE simulations failed.
+        """
         
         print "*** UPDATING DELAYS ***"
         crit_path_delay = 0
         valid_delay = True
-
-        # print "*** crit_path_delay : " + str(crit_path_delay) + " ***"
 
         # Create parameter dict of all current transistor sizes and wire rc
         parameter_dict = {}
@@ -2853,8 +2854,10 @@ class FPGA:
 
         # Run HSPICE on all subcircuits and collect the total tfall and trise for that 
         # subcircuit. We are only doing a single run on HSPICE so we expect the result
-        # to be in [0] of the spice_meas dictionary. We should probably check for
-        # measurements that "failed" before converting to float... 
+        # to be in [0] of the spice_meas dictionary. We check to make sure that the 
+        # HSPICE simulation was successful by checking if any of the SPICE measurements
+        # were "failed". If that is the case, we set the delay of that subcircuit to 1
+        # second and set our valid_delay flag to False.
 
         # Switch Block MUX 
         print "Updating delay for " + self.sb_mux.name
