@@ -66,8 +66,6 @@ re_erf = args.re_erf
 area_opt_weight = args.area_opt_weight
 delay_opt_weight = args.delay_opt_weight
 max_iterations = args.max_iterations
-use_tgate = args.use_tgate
-use_finfet = args.use_finfet
 initial_sizes = args.initial_sizes
 
 # Make the top-level spice folder if it doesn't already exist
@@ -116,7 +114,7 @@ report_file.write("\n")
 report_file.close()
 
 # Load the input architecture description file
-arch_params_dict = coffe.utils.load_arch_params(arch_description_filename, use_finfet)
+arch_params_dict = coffe.utils.load_arch_params(arch_description_filename)
 
 # Print architecture and process details to terminal and report file
 coffe.utils.print_architecture_params(arch_params_dict, report_file_path)
@@ -139,6 +137,7 @@ vdd = arch_params_dict['vdd']
 vsram = arch_params_dict['vsram']
 vsram_n = arch_params_dict['vsram_n']
 gate_length = arch_params_dict['gate_length']
+rest_length_factor = arch_params_dict['rest_length_factor']
 min_tran_width = arch_params_dict['min_tran_width']
 min_width_tran_area = arch_params_dict['min_width_tran_area']
 sram_cell_area = arch_params_dict['sram_cell_area']
@@ -147,8 +146,13 @@ model_path = arch_params_dict['model_path']
 model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
 
-if use_finfet:
-    rest_length_factor = arch_params_dict['rest_length_factor']
+use_tgate = False
+use_finfet = False
+
+if arch_params_dict['transistor_type'] == "finfet":
+    use_finfet = True
+if arch_params_dict['switch_type'] == "transmission_gate":
+    use_tgate = True
 
 # Default_dir is the dir you ran COFFE from. COFFE will be switching directories 
 # while running HSPICE, this variable is so that we can get back to our starting point

@@ -185,7 +185,7 @@ def print_vpr_areas(report_file, fpga_inst):
     report_file.write( "\n")
 
     
-def load_arch_params(filename, use_finfet):
+def load_arch_params(filename):
     """ Parse the architecture description file and load values into dictionary. 
         Returns this dictionary.
         Will print error message and terminate program if an invalid parameter is found
@@ -207,25 +207,22 @@ def load_arch_params(filename, use_finfet):
         'Fclocal': -1.0,
         'Rsel': "",
         'Rfb': "",
+        'transistor_type': "",
+        'switch_type': "",
         'vdd': -1,
         'vsram': -1,
         'vsram_n': -1,
         'gate_length': -1,
+        'rest_length_factor': -1,
         'min_tran_width': -1,
         'min_width_tran_area': -1,
         'sram_cell_area': -1,
         'trans_diffusion_length' : -1,
         'model_path': "",
-        'finfet_model_path': "123",
         'model_library': "",
-        'finfet_model_library': "123",
         'metal' : []
 
     }
-    if use_finfet :
-        arch_params['rest_length_factor'] = -1
-    else :
-        arch_params['rest_length_factor'] = 1
 
     params_file = open(filename, 'r')
     for line in params_file:
@@ -282,6 +279,10 @@ def load_arch_params(filename, use_finfet):
             arch_params['Rfb'] = value
         
         #process technology parameters
+        elif param == 'transistor_type':
+            arch_params['transistor_type'] = value
+        elif param == 'switch_type':
+            arch_params['switch_type'] = value
         elif param == 'vdd':
             arch_params['vdd'] = float(value)
         elif param == 'vsram':
@@ -290,6 +291,8 @@ def load_arch_params(filename, use_finfet):
             arch_params['vsram_n'] = float(value)
         elif param == 'gate_length':
             arch_params['gate_length'] = int(value)
+        elif param == 'rest_length_factor':
+            arch_params['rest_length_factor'] = int(value)
         elif param == 'min_tran_width':
             arch_params['min_tran_width'] = int(value)
         elif param == 'min_width_tran_area':
@@ -299,15 +302,9 @@ def load_arch_params(filename, use_finfet):
         elif param == 'trans_diffusion_length':
             arch_params['trans_diffusion_length'] = float(value)
         elif param == 'model_path':
-                arch_params['model_path'] = os.path.abspath(value)
-        elif param == 'finfet_model_path':
-            if use_finfet :
-                arch_params['model_path'] = os.path.abspath(value)
+            arch_params['model_path'] = os.path.abspath(value)
         elif param == 'model_library':
             arch_params['model_library'] = value
-        elif param == 'finfet_model_library':
-            if use_finfet :
-                arch_params['model_library'] = value
         elif param == 'metal':
             value_words = value.split(',')
             r = value_words[0].replace(' ', '')
@@ -321,26 +318,25 @@ def load_arch_params(filename, use_finfet):
             c = c.replace('\r', '')
             c = c.replace('\t', '')
             arch_params['metal'].append((float(r),float(c)))
-    
-        #finFET parameters
-        elif param == 'rest_length_factor':
-            arch_params['rest_length_factor'] = float(value)
 
     params_file.close()
     
     # Check that we read everything
     for param, value in arch_params.iteritems():
+        if param == "min_tran_width" and arch_params['transistor_type'] == "finfet":
+            continue
+            
         if value == -1 or value == "":
             print "ERROR: Did not find architecture parameter " + param + " in " + filename
             sys.exit()
     
     # Check architecture parameters to make sure that they are valid
-    check_arch_params(arch_params, filename, use_finfet)
+    check_arch_params(arch_params, filename)
 
     return arch_params 
 
 
-def check_arch_params (arch_params, filename, use_finfet):
+def check_arch_params (arch_params, filename):
     """
     This function checks the architecture parameters to make sure that all the parameters specified 
     are compatible with COFFE. Right now, this functions just checks really basic stuff like 
@@ -400,22 +396,25 @@ def check_arch_params (arch_params, filename, use_finfet):
                 sys.exit()
 
     # Check process technology parameters
+    if arch_params['transistor_type'] != 'bulk' and arch_params['transistor_type'] != 'finfet':
+        print_error (arch_params['transistor_type'], "transistor_type", filename)
+    if arch_params['switch_type'] != 'pass_transistor' and arch_params['switch_type'] != 'transmission_gate':
+        print_error (arch_params['switch_type'], "switch_type", filename)
     if arch_params['vdd'] <= 0 :
         print_error (str(arch_params['vdd']), "vdd", filename)                     
     if arch_params['gate_length'] <= 0 :
         print_error (str(arch_params['gate_length']), "gate_length", filename)            
-    if arch_params['min_tran_width'] <= 0 :
-        print_error (str(arch_params['min_tran_width']), "min_tran_width", filename)            
+    if arch_params['rest_length_factor'] <= 0 :
+        print_error (str(arch_params['rest_length_factor']), "rest_length_factor", filename) 
+    if arch_params['transistor_type'] == "bulk":
+        if arch_params['min_tran_width'] <= 0 :
+            print_error (str(arch_params['min_tran_width']), "min_tran_width", filename)            
     if arch_params['min_width_tran_area'] <= 0 :
         print_error (str(arch_params['min_width_tran_area']), "min_width_tran_area", filename)            
     if arch_params['sram_cell_area'] <= 0 :
         print_error (str(arch_params['sram_cell_area']), "sram_cell_area", filename)
     if arch_params['trans_diffusion_length'] <= 0 :
         print_error (str(arch_params['trans_diffusion_length']), "trans_diffusion_length", filename)           
-
-    if use_finfet :
-        if arch_params['rest_length_factor'] <= 0 :
-            print_error (str(arch_params['rest_length_factor']), "rest_length_factor", filename) 
 
     return
 
@@ -464,6 +463,8 @@ def print_architecture_params(arch_params_dict, report_file_path):
 
     print "PROCESS TECHNOLOGY PARAMETERS:"
     report_file.write("PROCESS TECHNOLOGY PARAMETERS:\n")
+    print "transistor_type = " + arch_params_dict['transistor_type']
+    print "switch_type = " + arch_params_dict['switch_type']
     print "vdd = " + str( arch_params_dict['vdd'])
     print "vsram = " + str( arch_params_dict['vsram']) 
     print "vsram_n = " + str( arch_params_dict['vsram_n']) 
@@ -475,6 +476,8 @@ def print_architecture_params(arch_params_dict, report_file_path):
     print "model_library = " + str( arch_params_dict['model_library']) 
     print "metal = " + str( arch_params_dict['metal']) 
     print ""
+    report_file.write("transistor_type = " + arch_params_dict['transistor_type'] + "\n")
+    report_file.write("switch_type = " + arch_params_dict['switch_type'] + "\n")
     report_file.write("vdd = " + str( arch_params_dict['vdd']) + "\n")
     report_file.write("vsram = " + str( arch_params_dict['vsram']) + "\n")
     report_file.write("vsram_n = " + str( arch_params_dict['vsram_n']) + "\n")
