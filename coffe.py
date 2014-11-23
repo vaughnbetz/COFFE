@@ -55,8 +55,6 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
-parser.add_argument('-t', '--use_tgate', help="flag to use transmission gates instead of pass transistors", action='store_true')
-parser.add_argument('-f', '--use_finfet', help="flag to use finFETs", action='store_true')
 
 args = parser.parse_args()
 arch_description_filename = args.arch_description
