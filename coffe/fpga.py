@@ -92,7 +92,6 @@ class _Specs:
         self.model_library = model_library
         self.use_finfet = use_finfet
         self.rest_length_factor = rest_length_factor
-        self.default_rest_length_factor = rest_length_factor
 
 
 
@@ -2528,7 +2527,7 @@ class FPGA:
         
     def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                     vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library, metal_stack, 
-                        use_tgate, use_finfet, rest_length_factor=0):
+                        use_tgate, use_finfet, rest_length_factor):
           
         # Initialize the specs
         self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
@@ -3198,8 +3197,7 @@ class FPGA:
         process_data_file.write(".PARAM gate_length = " + str(self.specs.gate_length) + "n\n")
         process_data_file.write(".PARAM trans_diffusion_length = " + str(self.specs.trans_diffusion_length) + "n\n")
         process_data_file.write(".PARAM min_tran_width = " + str(self.specs.min_tran_width) + "n\n")
-        if self.specs.use_finfet :
-            process_data_file.write(".param rest_length_factor=" + str(self.specs.rest_length_factor) + "\n")
+        process_data_file.write(".param rest_length_factor=" + str(self.specs.rest_length_factor) + "\n")
         process_data_file.write("\n")
 
         process_data_file.write("* We have two supply rails, vdd and vdd_subckt.\n")

@@ -81,8 +81,12 @@ gate_length=20
 # PMOS level-restorer, which is sometimes necessary to ensure proper switching.
 rest_length_factor = 10
 
-# Length of diffusion from gate to the edge of the transistor (nm)
-# We use this for calculating the diffusion capacitance of transistors
+# For FinFETs, minimum transistor refers to the contact width of a single-fin transistor (nm). 
+# COFFE uses this when it calculates source/drain parasitic capacitances.
+min_tran_width = 47
+
+# Length of diffusion for a single-finger transistor (nm).
+# COFFE uses this when it calculates source/drain parasitic capacitances.
 trans_diffusion_length = 47
 
 # Minimum-width transistor area (nm^2)

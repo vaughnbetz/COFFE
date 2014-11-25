@@ -1944,7 +1944,6 @@ def size_fpga_transistors(fpga_inst,
     sizing_results_detailed_list = []
     area_results_list = []
     delay_results_list = []
-    restorers_length_list = []
 
     # Keep performing FPGA sizing iterations until algorithm terminates
     # Two conditions can make it terminate:
@@ -1964,11 +1963,6 @@ def size_fpga_transistors(fpga_inst,
         sizing_results_dict = {}
         sizing_results_detailed_dict = {}
 
-        #reset restorer length
-        if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate :
-            fpga_inst.specs.rest_length_factor = fpga_inst.specs.default_rest_length_factor
-            fpga_inst._generate_process_data()
-        
         # Now we are going to size the transistors of each subcircuit.
         # The order we do this has an importance due to rise-fall balancing. 
         # We want the input signal to be rise-fall balanced as much as possible. 
@@ -2093,25 +2087,6 @@ def size_fpga_transistors(fpga_inst,
         sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
 
         ############################################
-        ## Size restorers for finFETs
-        ############################################
-        if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
-            print "looking for best restorer length"
-            rest_size = 1
-            min_cost = 1
-            for i in range(1,10) :
-                fpga_inst.specs.rest_length_factor = i
-                fpga_inst._generate_process_data()
-                valid_delay = fpga_inst.update_delays(spice_interface)
-                if fpga_inst.delay_dict["rep_crit_path"] < min_cost and valid_delay:
-                    min_cost = fpga_inst.delay_dict["rep_crit_path"]
-                    rest_size = i
-                sys.stdout.flush()
-            
-            print "best restorer length is  :" + str(rest_size)
-            restorers_length_list.append(rest_size)
-
-        ############################################
         ## Done sizing, update results lists
         ############################################
 
@@ -2153,9 +2128,6 @@ def size_fpga_transistors(fpga_inst,
     # final_result_index are the results we need to use
     final_transistor_sizes = sizing_results_list[final_result_index]
     final_transistor_sizes_detailed = sizing_results_detailed_list[final_result_index]
-    if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate :
-        fpga_inst.specs.rest_length_factor = restorers_length_list[final_result_index]
-        fpga_inst._generate_process_data()
 
     # Make a dictionary that contains all transistor sizes (instead of a dictionary of dictionaries for each subcircuit)
     final_transistor_sizes_detailed_full = {}
@@ -2233,8 +2205,6 @@ def print_final_transistor_size(fpga_inst, report_file):
     report_file.write("#final sizes\n")
     for trans in fpga_inst.transistor_sizes:
         report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
-    if fpga_inst.specs.use_finfet and not fpga_inst.use_tgate:
-        report_file.write("rest_length_factor = " + str(fpga_inst.specs.rest_length_factor))
 
     return 
 

@@ -173,7 +173,8 @@ if not use_finfet :
                           model_library, 
                           metal_stack,
                           use_tgate,
-                          use_finfet)
+                          use_finfet,
+                          rest_length_factor)
 else :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 

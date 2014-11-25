@@ -323,9 +323,6 @@ def load_arch_params(filename):
     
     # Check that we read everything
     for param, value in arch_params.iteritems():
-        if param == "min_tran_width" and arch_params['transistor_type'] == "finfet":
-            continue
-            
         if value == -1 or value == "":
             print "ERROR: Did not find architecture parameter " + param + " in " + filename
             sys.exit()
@@ -406,9 +403,8 @@ def check_arch_params (arch_params, filename):
         print_error (str(arch_params['gate_length']), "gate_length", filename)            
     if arch_params['rest_length_factor'] <= 0 :
         print_error (str(arch_params['rest_length_factor']), "rest_length_factor", filename) 
-    if arch_params['transistor_type'] == "bulk":
-        if arch_params['min_tran_width'] <= 0 :
-            print_error (str(arch_params['min_tran_width']), "min_tran_width", filename)            
+    if arch_params['min_tran_width'] <= 0 :
+        print_error (str(arch_params['min_tran_width']), "min_tran_width", filename)            
     if arch_params['min_width_tran_area'] <= 0 :
         print_error (str(arch_params['min_width_tran_area']), "min_width_tran_area", filename)            
     if arch_params['sram_cell_area'] <= 0 :
