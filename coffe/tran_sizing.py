@@ -77,7 +77,7 @@ def get_middle_value_config(param_names, spice_ranges):
         range = spice_ranges[name]
         min = range[0]
         max = range[1]
-        mid = (max-min)/2 + min
+        mid = math.ceil((max-min)/2 + min)
         config = config + (mid,)
         
     return config
@@ -406,6 +406,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
     self_loading = False
     bulk_multiplication_factor = 1
     finfet_num_fins = inv_size
+    valid_delays = True
 
     previous_tfall = 1
     previous_trise = 1
@@ -441,14 +442,11 @@ def erf_inverter_balance_trise_tfall(sp_path,
         # Sometimes we increase the transistor to a point where the delay
         # would be negative. I.e. the transition at the output is faster than the transition
         # at the input. This can cause COFFE to measure a 'negative' delay.
-        # In this case, we take the previous sizes
+        # In this case, we stop ERF attempt.
         if tfall < 0 or trise < 0 :
-            print "Negative delay detected during ERF. Using last good transistor sizes."
-            if fpga_inst.specs.use_finfet :
-                target_tran_size = target_tran_size - 1
-                upper_bound_not_found = False
-            else:
-                target_tran_size = target_tran_size - inv_size
+            print "Negative delay detected during ERF. Output transition may be faster than input transition. Stopping upper bound search."
+            upper_bound_not_found = False
+            valid_delays = False
 
 
         if ERF_MONITOR_VERBOSE:
@@ -461,10 +459,11 @@ def erf_inverter_balance_trise_tfall(sp_path,
             print (sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
                    " diff=" + str(tfall-trise))
 
-        # delay should not be negative at this point
-        if tfall < 0 or trise < 0 :
-            print "ERROR: Unexpected negative delay."
-            exit(1)
+        # We only accept negative delays on the first inverter in a driver.
+        if "_1_" not in target_tran_name:
+            if tfall < 0 or trise < 0 :
+                print "ERROR: Unexpected negative delay."
+                exit(1)
 
         # Figure out if we have found the upper bound by looking at tfall and trise. 
         # For a PMOS, upper bound is found if tfall > trise
@@ -513,7 +512,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
     # That is, once we find the upper bound, there isn't much more we can do to balance
     # the rise and fall for FinFETs (we are limited by number of fins). With bulk on the 
     # other hand, we have "nanometer granularity" so we can refine the ERF more.
-    if not self_loading and not fpga_inst.specs.use_finfet:      
+    if valid_delays and not self_loading and not fpga_inst.specs.use_finfet:      
 
         # The trise/tfall equality occurs in [target_tran_size-inv_size, target_tran_size]
         # To find it, we'll sweep this range in two steps. In the first step, we'll sweep
