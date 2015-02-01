@@ -60,6 +60,19 @@ import spice
 OUTPUT_TRACK_ACCESS_SPAN = 0.25
 INPUT_TRACK_ACCESS_SPAN = 0.50
 
+# Delay weight constants:
+DELAY_WEIGHT_SB_MUX = 0.3596
+DELAY_WEIGHT_CB_MUX = 0.176
+DELAY_WEIGHT_LOCAL_MUX = 0.0862
+DELAY_WEIGHT_LUT_A = 0.0568
+DELAY_WEIGHT_LUT_B = 0.0508
+DELAY_WEIGHT_LUT_C = 0.0094 # This one is lower because we had register-feedback coming into this mux (i.e. an extra mux, making it a less-used input)
+DELAY_WEIGHT_LUT_D = 0.0213
+DELAY_WEIGHT_LUT_E = 0.0289
+DELAY_WEIGHT_LUT_F = 0.0186
+DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0928
+DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0502
+
 class _Specs:
     """ General FPGA specs. """
  
@@ -180,7 +193,7 @@ class _SwitchBlockMUX(_SizableCircuit):
         # Size of the second level of muxing
         self.level2_size = -1
         # Delay weight in a representative critical path
-        self.delay_weight = 0.3596
+        self.delay_weight = DELAY_WEIGHT_SB_MUX
         # use pass transistor or transmission gates
         self.use_tgate = use_tgate
         
@@ -219,7 +232,6 @@ class _SwitchBlockMUX(_SizableCircuit):
             self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 3
             self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 4
             self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 4
-            # self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 8
             self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4
             self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 10
@@ -253,7 +265,6 @@ class _SwitchBlockMUX(_SizableCircuit):
         else :
             area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
                     self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
-                    # area_dict["rest_" + self.name + ""] +
                     area_dict["inv_" + self.name + "_1"] +
                     area_dict["inv_" + self.name + "_2"])
 
@@ -337,7 +348,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
         # Size of the second level of muxing
         self.level2_size = -1
         # Delay weight in a representative critical path
-        self.delay_weight = 0.176
+        self.delay_weight = DELAY_WEIGHT_CB_MUX
         # use pass transistor or transmission gates
         self.use_tgate = use_tgate
         
@@ -370,7 +381,6 @@ class _ConnectionBlockMUX(_SizableCircuit):
             self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
             self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
             self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
-            # self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
             self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
             self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 6
@@ -481,7 +491,7 @@ class _LocalMUX(_SizableCircuit):
         # Size of the second level of muxing
         self.level2_size = -1
         # Delay weight in a representative critical path
-        self.delay_weight = 0.0862
+        self.delay_weight = DELAY_WEIGHT_LOCAL_MUX
         # use pass transistor or transmission gates
         self.use_tgate = use_tgate
     
@@ -515,7 +525,6 @@ class _LocalMUX(_SizableCircuit):
             self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
             self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
             self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
-            # self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
             self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
        
@@ -600,12 +609,12 @@ class _LUTInputDriver(_SizableCircuit):
         All subsequent processes (netlist generation, area calculations, etc.) will use this type attribute.
         """
 
-    def __init__(self, name, type, use_tgate):
+    def __init__(self, name, type, delay_weight, use_tgate):
         self.name = "lut_" + name + "_driver"
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
         # Delay weight in a representative critical path
-        self.delay_weight = 0.031
+        self.delay_weight = delay_weight
         # use pass transistor or transmission gate
         self.use_tgate = use_tgate
         
@@ -637,7 +646,6 @@ class _LUTInputDriver(_SizableCircuit):
             if self.type == "reg_fb" or self.type == "reg_fb_rsel":
                 self.initial_transistor_sizes["tgate_" + self.name + "_0_nmos"] = 2
                 self.initial_transistor_sizes["tgate_" + self.name + "_0_pmos"] = 2
-                # self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
             if self.type != "default":
                 self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
                 self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
@@ -681,7 +689,6 @@ class _LUTInputDriver(_SizableCircuit):
                 area += area_dict["inv_" + self.name + "_0"]
             if self.type == "reg_fb" or self.type == "reg_fb_rsel":
                 area += 2*area_dict["tgate_" + self.name + "_0"]
-                # area += area_dict["rest_" + self.name]
             if self.type != "default":
                 area += area_dict["inv_" + self.name + "_1"]
             area += area_dict["inv_" + self.name + "_2"]
@@ -748,12 +755,12 @@ class _LUTInputDriver(_SizableCircuit):
 class _LUTInputNotDriver(_SizableCircuit):
     """ LUT input not-driver. This is the complement driver. """
 
-    def __init__(self, name, type, use_tgate):
+    def __init__(self, name, type, delay_weight, use_tgate):
         self.name = "lut_" + name + "_driver_not"
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
         # Delay weight in a representative critical path
-        self.delay_weight = 0.031
+        self.delay_weight = delay_weight
         # use pass transistor or transmission gates
         self.use_tgate = use_tgate
    
@@ -807,7 +814,7 @@ class _LUTInputNotDriver(_SizableCircuit):
 class _LUTInput(_CompoundCircuit):
     """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). """
 
-    def __init__(self, name, Rsel, Rfb, use_tgate):
+    def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate):
         # Subcircuit name (should be driver letter like a, b, c...)
         self.name = name
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
@@ -824,15 +831,15 @@ class _LUTInput(_CompoundCircuit):
             else:
                 self.type = "default"
         # Create LUT input driver
-        self.driver = _LUTInputDriver(name, self.type, use_tgate)
+        self.driver = _LUTInputDriver(name, self.type, delay_weight, use_tgate)
         # Create LUT input not driver
-        self.not_driver = _LUTInputNotDriver(name, self.type, use_tgate)
+        self.not_driver = _LUTInputNotDriver(name, self.type, delay_weight, use_tgate)
         
         # LUT input delays are the delays through the LUT for specific input (doesn't include input driver delay)
         self.tfall = 1
         self.trise = 1
         self.delay = 1
-        self.delay_weight = 1
+        self.delay_weight = delay_weight
         
         
     def generate(self, subcircuit_filename, min_tran_width):
@@ -959,24 +966,35 @@ class _LUT(_SizableCircuit):
         # Dictionary of input driver loads
         self.input_driver_loads = {}
         # Delay weight in a representative critical path
-        self.delay_weight = 0.1858
+        self.delay_weight = DELAY_WEIGHT_LUT_A + DELAY_WEIGHT_LUT_B + DELAY_WEIGHT_LUT_C + DELAY_WEIGHT_LUT_D
+        if K >= 5:
+            self.delay_weight += DELAY_WEIGHT_LUT_E
+        if K >= 6:
+            self.delay_weight += DELAY_WEIGHT_LUT_F
+        
         # Boolean to use transmission gates 
         self.use_tgate = use_tgate
+
         # Create a LUT input driver and load for each LUT input
         for i in range(K):
             name = chr(i+97)
-            self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, use_tgate)
+            if name == "a":
+                delay_weight = DELAY_WEIGHT_LUT_A
+            elif name == "b":
+                delay_weight = DELAY_WEIGHT_LUT_B
+            elif name == "c":
+                delay_weight = DELAY_WEIGHT_LUT_C
+            elif name == "d":
+                delay_weight = DELAY_WEIGHT_LUT_D
+            elif name == "e":
+                delay_weight = DELAY_WEIGHT_LUT_E
+            elif name == "f":
+                delay_weight = DELAY_WEIGHT_LUT_F
+            else:
+                raise Exception("No delay weight definition for LUT input " + name)
+            self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, use_tgate)
             self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate)
     
-        # Set delay weight, TODO: Need to find better way to do this.
-        self.input_drivers["a"].delay_weight = 0.0568
-        self.input_drivers["b"].delay_weight = 0.0508
-        self.input_drivers["c"].delay_weight = 0.0094
-        self.input_drivers["d"].delay_weight = 0.0213
-        if K >= 5:
-            self.input_drivers["e"].delay_weight = 0.0289
-        if K >= 6:
-            self.input_drivers["f"].delay_weight = 0.0186
         self.use_finfet = use_finfet
         
     
@@ -1067,13 +1085,11 @@ class _LUT(_SizableCircuit):
                         64*area_dict["tgate_lut_L1"] + 
                         32*area_dict["tgate_lut_L2"] + 
                         16*area_dict["tgate_lut_L3"] + 
-                        # 8*area_dict["rest_lut_int_buffer"] + 
                         8*area_dict["inv_lut_int_buffer_1"] + 
                         8*area_dict["inv_lut_int_buffer_2"] + 
                         8*area_dict["tgate_lut_L4"] + 
                         4*area_dict["tgate_lut_L5"] + 
                         2*area_dict["tgate_lut_L6"] + 
-                        # area_dict["rest_lut_out_buffer"] + 
                         area_dict["inv_lut_out_buffer_1"] + 
                         area_dict["inv_lut_out_buffer_2"] +
                         64*area_dict["sram"])
@@ -1082,12 +1098,10 @@ class _LUT(_SizableCircuit):
                         32*area_dict["tgate_lut_L1"] + 
                         16*area_dict["tgate_lut_L2"] + 
                         8*area_dict["tgate_lut_L3"] + 
-                        # 4*area_dict["rest_lut_int_buffer"] + 
                         4*area_dict["inv_lut_int_buffer_1"] + 
                         4*area_dict["inv_lut_int_buffer_2"] + 
                         4*area_dict["tgate_lut_L4"] + 
                         2*area_dict["tgate_lut_L5"] +  
-                        # area_dict["rest_lut_out_buffer"] + 
                         area_dict["inv_lut_out_buffer_1"] + 
                         area_dict["inv_lut_out_buffer_2"] +
                         32*area_dict["sram"])
@@ -1095,12 +1109,10 @@ class _LUT(_SizableCircuit):
                 area += (16*area_dict["inv_lut_0sram_driver_2"] + 
                         16*area_dict["tgate_lut_L1"] + 
                         8*area_dict["tgate_lut_L2"] + 
-                        # 4*area_dict["rest_lut_int_buffer"] + 
                         4*area_dict["inv_lut_int_buffer_1"] + 
                         4*area_dict["inv_lut_int_buffer_2"] +
                         4*area_dict["tgate_lut_L3"] + 
                         2*area_dict["tgate_lut_L4"] +   
-                        # area_dict["rest_lut_out_buffer"] + 
                         area_dict["inv_lut_out_buffer_1"] + 
                         area_dict["inv_lut_out_buffer_2"] +
                         16*area_dict["sram"])
@@ -1395,7 +1407,6 @@ class _LUT(_SizableCircuit):
             self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
             self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
             self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
-            # self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
             self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
             self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
             self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
@@ -1406,7 +1417,6 @@ class _LUT(_SizableCircuit):
             self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
             self.initial_transistor_sizes["tgate_lut_L6_nmos"] = 3
             self.initial_transistor_sizes["tgate_lut_L6_pmos"] = 3
-            # self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
             self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
             self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
             self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
@@ -1477,7 +1487,6 @@ class _LUT(_SizableCircuit):
             self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
             self.initial_transistor_sizes["tgate_lut_L5_nmos"] = 3
             self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
-            # self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
             self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
             self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
             self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
@@ -1535,7 +1544,6 @@ class _LUT(_SizableCircuit):
             self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
             self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
             self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
-            # self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
             self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
             self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
             self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
@@ -1544,7 +1552,6 @@ class _LUT(_SizableCircuit):
             self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
             self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
             self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
-            # self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
             self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
             self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
             self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
@@ -1692,7 +1699,6 @@ class _FlipFlop:
                         area_dict["inv_ff_input_1"])
             else :
                 area += (2*area_dict["tgate_ff_input_select"] +
-                        # area_dict["rest_ff_input_select"] +
                         area_dict["inv_ff_input_1"])
         else:
             area += area_dict["inv_ff_input_1"]
@@ -1763,7 +1769,7 @@ class _LocalBLEOutput(_SizableCircuit):
     def __init__(self, use_tgate):
         self.name = "local_ble_output"
         # Delay weight in a representative critical path
-        self.delay_weight = 0.0928
+        self.delay_weight = DELAY_WEIGHT_LOCAL_BLE_OUTPUT
         # use pass transistor or transmission gates
         self.use_tgate = use_tgate
         
@@ -1784,7 +1790,6 @@ class _LocalBLEOutput(_SizableCircuit):
             # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
             self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
             self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
-            # self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 4
@@ -1806,7 +1811,6 @@ class _LocalBLEOutput(_SizableCircuit):
                     area_dict["inv_" + self.name + "_2"])
         else :
             area = (2*area_dict["tgate_" + self.name] +
-                    # area_dict["rest_" + self.name] +
                     area_dict["inv_" + self.name + "_1"] +
                     area_dict["inv_" + self.name + "_2"])
 
@@ -1843,7 +1847,7 @@ class _GeneralBLEOutput(_SizableCircuit):
     
     def __init__(self, use_tgate):
         self.name = "general_ble_output"
-        self.delay_weight = 0.0502
+        self.delay_weight = DELAY_WEIGHT_GENERAL_BLE_OUTPUT
         self.use_tgate = use_tgate
         
         
@@ -1863,7 +1867,6 @@ class _GeneralBLEOutput(_SizableCircuit):
             # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
             self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
             self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
-            # self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
             self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
@@ -1885,7 +1888,6 @@ class _GeneralBLEOutput(_SizableCircuit):
                     area_dict["inv_" + self.name + "_2"])
         else :
             area = (2*area_dict["tgate_" + self.name] +
-                    # area_dict["rest_" + self.name] +
                     area_dict["inv_" + self.name + "_1"] +
                     area_dict["inv_" + self.name + "_2"])
 
@@ -2719,14 +2721,6 @@ class FPGA:
         self.cb_mux.generate_top()
         self.logic_cluster.generate_top()
         
-        # Delete new transistor sizes file if transistor sizing is turned off
-        # and replace with our copy.
-        # TODO: WE don't use the tran sizes file anymore
-        #if not is_size_transistors:
-        #    print "Restoring transistor sizes..."
-        #    os.remove("transistor_sizes.l")
-        #    os.rename("transistor_sizes_hold.l", "transistor_sizes.l")
-        
         # Calculate area, and wire data.
         print "Calculating area..."
         # Update area values
@@ -2735,8 +2729,6 @@ class FPGA:
         self.update_wires()
         print "Calculating wire resistance and capacitance..."
         self.update_wire_rc()
-        #print "Updating wire RC file..."
-        # self.update_wire_rc_file()
     
         print ""
         
@@ -3045,14 +3037,12 @@ class FPGA:
                 exit(2)
             
             lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
-            # lut_delay = driver.delay + not_driver.delay
 
             if lut_delay < 0 :
                 print "*** Lut delay is negative : " + str(lut_input.delay) + " ***"
                 exit(2)
 
             crit_path_delay += lut_delay*lut_input.delay_weight
-            # print "*** lut input : " + str(lut_input.delay) + " ***"
     
         
         self.delay_dict["rep_crit_path"] = crit_path_delay
