@@ -50,7 +50,7 @@ def print_area_and_delay(report_file, fpga_inst):
     # not work as well. The 'ljust' constants would have to be adjusted accordingly.
     
     # Print the header
-    print "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "trise (ps)".ljust(13) + "tfall (ps)".ljust(13)
+    print "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "trise (ps)".ljust(13) + "tfall (ps)".ljust(13) 
     report_file.write("  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "trise (ps)".ljust(13) + "tfall (ps)".ljust(13) + "\n")
     
     # Switch block mux
@@ -93,6 +93,17 @@ def print_area_and_delay(report_file, fpga_inst):
     
     print ""
     report_file.write( "\n" )
+
+
+def print_power(report_file, fpga_inst):
+    """ Print power per subcircuit """
+    
+    print "  SUBCIRCUIT POWER AT 250MHz"
+    print "  --------------------------"
+
+    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power) 
+
+    print ""
 
     
 def print_block_area(report_file, fpga_inst):

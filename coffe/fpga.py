@@ -131,6 +131,8 @@ class _SizableCircuit:
     delay = 1
     # Delay weight used to calculate delay of representative critical path
     delay_weight = 1
+    # Dynamic power for this subcircuit
+    power = 1
 
     
     def generate(self):
@@ -2867,6 +2869,7 @@ class FPGA:
         self.sb_mux.delay = max(tfall, trise)
         crit_path_delay += self.sb_mux.delay*self.sb_mux.delay_weight
         self.delay_dict[self.sb_mux.name] = self.sb_mux.delay 
+        self.sb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Connection Block MUX
         print "Updating delay for " + self.cb_mux.name
@@ -3190,10 +3193,8 @@ class FPGA:
         process_data_file.write(".param rest_length_factor=" + str(self.specs.rest_length_factor) + "\n")
         process_data_file.write("\n")
 
-        process_data_file.write("* We have two supply rails, vdd and vdd_subckt.\n")
-        process_data_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry\n")
+        process_data_file.write("* Supply voltage.\n")
         process_data_file.write("VSUPPLY vdd gnd supply_v\n")
-        process_data_file.write("VSUBCKT vdd_subckt gnd supply_v\n\n")
         process_data_file.write("* SRAM voltages connecting to gates\n")
         process_data_file.write("VSRAM vsram gnd sram_v\n")
         process_data_file.write("VSRAM_N vsram_n gnd sram_n_v\n\n")

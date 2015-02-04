@@ -273,6 +273,9 @@ report_file.write("\n")
 # Print area and delay per subcircuit
 coffe.utils.print_area_and_delay(report_file, fpga_inst)
 
+# Print power per subcircuit
+coffe.utils.print_power(report_file, fpga_inst)
+
 # Print block areas
 coffe.utils.print_block_area(report_file, fpga_inst)
 
