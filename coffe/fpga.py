@@ -2888,6 +2888,7 @@ class FPGA:
         self.cb_mux.delay = max(tfall, trise)
         crit_path_delay += self.cb_mux.delay*self.cb_mux.delay_weight
         self.delay_dict[self.cb_mux.name] = self.cb_mux.delay
+        self.cb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local MUX
         print "Updating delay for " + self.logic_cluster.local_mux.name
@@ -2908,6 +2909,7 @@ class FPGA:
         crit_path_delay += (self.logic_cluster.local_mux.delay*
                             self.logic_cluster.local_mux.delay_weight)
         self.delay_dict[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux.delay
+        self.logic_cluster.local_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local BLE output
         print "Updating delay for " + self.logic_cluster.ble.local_output.name 
@@ -2929,6 +2931,7 @@ class FPGA:
         crit_path_delay += (self.logic_cluster.ble.local_output.delay*
                             self.logic_cluster.ble.local_output.delay_weight)
         self.delay_dict[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output.delay
+        self.logic_cluster.ble.local_output.power = float(spice_meas["meas_avg_power"][0])
         
         # General BLE output
         print "Updating delay for " + self.logic_cluster.ble.general_output.name
@@ -2949,6 +2952,7 @@ class FPGA:
         crit_path_delay += (self.logic_cluster.ble.general_output.delay*
                             self.logic_cluster.ble.general_output.delay_weight)
         self.delay_dict[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output.delay
+        self.logic_cluster.ble.general_output.power = float(spice_meas["meas_avg_power"][0])
         
 
         # LUT delay
@@ -2991,6 +2995,7 @@ class FPGA:
             lut_input.tfall = tfall
             lut_input.trise = trise
             lut_input.delay = max(tfall, trise)
+            lut_input.power = float(spice_meas["meas_avg_power"][0])
 
             if lut_input.delay < 0 :
                 print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
@@ -3013,6 +3018,7 @@ class FPGA:
             driver.tfall = tfall
             driver.trise = trise
             driver.delay = max(tfall, trise)
+            driver.power = float(spice_meas["meas_avg_power"][0])
             self.delay_dict[driver.name] = driver.delay
 
             if driver.delay < 0 :
@@ -3034,6 +3040,7 @@ class FPGA:
             not_driver.tfall = tfall
             not_driver.trise = trise
             not_driver.delay = max(tfall, trise)
+            not_driver.power = float(spice_meas["meas_avg_power"][0])
             self.delay_dict[not_driver.name] = not_driver.delay
             if not_driver.delay < 0 :
                 print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"

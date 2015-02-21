@@ -97,6 +97,10 @@ def generate_connection_block_top(mux_name):
     cb_file.write("* Input signal\n")
     cb_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
+    cb_file.write("* Power rail for the circuit under test.\n")
+    cb_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    cb_file.write("V_CB_MUX vdd_cb_mux gnd supply_v\n\n")
+    
     cb_file.write("********************************************************************************\n")
     cb_file.write("** Measurement\n")
     cb_file.write("********************************************************************************\n\n")
@@ -118,12 +122,16 @@ def generate_connection_block_top(mux_name):
 
     cb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) AT=3n\n\n")
     
+    cb_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    cb_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_CB_MUX) FROM=0ns TO=4ns\n")
+    cb_file.write(".MEASURE TRAN meas_avg_power PARAM = '-(meas_current/4n)*supply_v'\n\n")
+
     cb_file.write("********************************************************************************\n")
     cb_file.write("** Circuit\n")
     cb_file.write("********************************************************************************\n\n")
     cb_file.write("Xsb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd sb_mux_on\n")
-    cb_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd routing_wire_load\n")
-    cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd local_routing_wire_load\n")
+    cb_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd_cb_mux routing_wire_load\n")
+    cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
     cb_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 vdd gnd lut_a_driver\n\n")
     cb_file.write(".END")
     cb_file.close()
@@ -160,6 +168,10 @@ def generate_local_mux_top(mux_name):
     local_mux_file.write("* Input signal\n")
     local_mux_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
+    local_mux_file.write("* Power rail for the circuit under test.\n")
+    local_mux_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd supply_v\n\n")
+
     local_mux_file.write("********************************************************************************\n")
     local_mux_file.write("** Measurement\n")
     local_mux_file.write("********************************************************************************\n\n")
@@ -176,13 +188,16 @@ def generate_local_mux_top(mux_name):
 
     local_mux_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_1_1) AT=3n\n\n")
 
+    local_mux_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    local_mux_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LOCAL_MUX) FROM=0ns TO=4ns\n")
+    local_mux_file.write(".MEASURE TRAN meas_avg_power PARAM = '-(meas_current/4n)*supply_v'\n\n")
     
     local_mux_file.write("********************************************************************************\n")
     local_mux_file.write("** Circuit\n")
     local_mux_file.write("********************************************************************************\n\n")
     local_mux_file.write("Xsb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd sb_mux_on\n")
     local_mux_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd routing_wire_load\n")
-    local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd local_routing_wire_load\n")
+    local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n")
     local_mux_file.write("Xlut_A_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 vdd gnd lut_A_driver\n\n")
     local_mux_file.write(".END")
     local_mux_file.close()
@@ -265,10 +280,10 @@ def generate_lut6_top(lut_name, use_tgate):
 
     if not use_tgate :
         lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else :
         lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     lut_file.write(".END")
     lut_file.close()
@@ -350,10 +365,10 @@ def generate_lut5_top(lut_name, use_tgate):
     lut_file.write("********************************************************************************\n\n")
     if not use_tgate :
         lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else :
         lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     lut_file.write(".END")
     lut_file.close()
@@ -435,10 +450,10 @@ def generate_lut4_top(lut_name, use_tgate):
     lut_file.write("********************************************************************************\n\n")
     if not use_tgate :
         lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else :
         lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
 
     lut_file.write(".END")
     lut_file.close()
@@ -474,7 +489,10 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
     input_driver_file.write(".OPTIONS BRIEF=1\n\n")
     input_driver_file.write("* Input signal\n")
     input_driver_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
-    
+    input_driver_file.write("* Power rail for the circuit under test.\n")
+    input_driver_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    input_driver_file.write("V_LUT_DRIVER vdd_lut_driver gnd supply_v\n\n")
+
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Measurement\n")
     input_driver_file.write("********************************************************************************\n\n")
@@ -503,13 +521,16 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
 
     input_driver_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 
-    
+    input_driver_file.write("* Measure the power required to propagate a rise and a fall transition through the lut driver at 250MHz.\n")
+    input_driver_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LUT_DRIVER) FROM=0ns TO=4ns\n")
+    input_driver_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Circuit\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd local_routing_wire_load\n")
-    input_driver_file.write("X" + input_driver_name + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n")
+    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
+    input_driver_file.write("X" + input_driver_name + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd_lut_driver gnd " + input_driver_name + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
@@ -551,6 +572,9 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
     input_driver_file.write(".OPTIONS BRIEF=1\n\n")
     input_driver_file.write("* Input signal\n")
     input_driver_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    input_driver_file.write("* Power rail for the circuit under test.\n")
+    input_driver_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    input_driver_file.write("V_LUT_DRIVER vdd_lut_driver gnd supply_v\n\n")
     
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Measurement\n")
@@ -573,16 +597,20 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
 
     input_driver_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
     
+    input_driver_file.write("* Measure the power required to propagate a rise and a fall transition through the lut driver at 250MHz.\n")
+    input_driver_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LUT_DRIVER) FROM=0ns TO=4ns\n")
+    input_driver_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Circuit\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd local_routing_wire_load\n")
+    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name_no_not + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
-    input_driver_file.write("X" + input_driver_name + "_1 n_2_1 n_out_n vdd gnd " + input_driver_name + "\n")
+    input_driver_file.write("X" + input_driver_name + "_1 n_2_1 n_out_n vdd_lut_driver gnd " + input_driver_name + "\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out n_vdd n_gnd " + input_driver_name_no_not + "_load\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
     input_driver_file.write(".END")
@@ -621,7 +649,10 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate)
     spice_file.write("* Input signal\n")
     spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 supply_v 4n 0 0 4n 8n)\n")
     spice_file.write("VIN_GATE n_in_gate gnd PULSE (supply_v 0 3n 0 0 2n 4n)\n\n")
-    
+    spice_file.write("* Power rail for the circuit under test.\n")
+    spice_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    spice_file.write("V_LUT vdd_lut gnd supply_v\n\n")
+
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Measurement\n")
     spice_file.write("********************************************************************************\n\n")
@@ -633,48 +664,51 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate)
     
     spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 
+    spice_file.write("* Measure the power required to propagate a rise and a fall transition through the lut at 250MHz.\n")
+    spice_file.write(".MEASURE TRAN meas_current1 INTEGRAL I(V_LUT) FROM=5ns TO=7ns\n")
+    spice_file.write(".MEASURE TRAN meas_current2 INTEGRAL I(V_LUT) FROM=9ns TO=11ns\n")
+    spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current1 + meas_current2)/4n)*supply_v'\n\n")
+
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Circuit\n")
     spice_file.write("********************************************************************************\n\n")    
     spice_file.write("Xcb_mux_on_1 n_in_gate n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd local_routing_wire_load\n")
+    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
     spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         spice_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
     spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
 
-
-    
     # Connect the LUT driver to a different LUT input based on LUT driver name
     if not use_tgate :
         if input_driver_name == "lut_a_driver":
-            spice_file.write("Xlut n_in_sram n_out n_3_1 vdd vdd vdd vdd vdd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out n_3_1 vdd vdd vdd vdd vdd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_b_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd n_3_1 vdd vdd vdd vdd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd n_3_1 vdd vdd vdd vdd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_c_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd n_3_1 vdd vdd vdd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd vdd n_3_1 vdd vdd vdd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_d_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd n_3_1 vdd vdd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd n_3_1 vdd vdd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_e_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd n_3_1 vdd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd n_3_1 vdd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_f_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd vdd n_3_1 vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd vdd n_3_1 vdd_lut gnd lut\n")
     else :
         if input_driver_name == "lut_a_driver":
-            spice_file.write("Xlut n_in_sram n_out n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_b_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_c_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_d_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_e_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd_lut gnd lut\n")
         elif input_driver_name == "lut_f_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd lut\n")
+            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd_lut gnd lut\n")
     
-    spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+    spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     
     spice_file.write(".END")
@@ -709,7 +743,10 @@ def generate_local_ble_output_top(name, use_tgate):
     top_file.write(".OPTIONS BRIEF=1\n\n")
     top_file.write("* Input signal\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
-    
+    top_file.write("* Power rail for the circuit under test.\n")
+    top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    top_file.write("V_LOCAL_OUTPUT vdd_local_output gnd supply_v\n\n")
+
     top_file.write("********************************************************************************\n")
     top_file.write("** Measurement\n")
     top_file.write("********************************************************************************\n\n")
@@ -731,16 +768,19 @@ def generate_local_ble_output_top(name, use_tgate):
 
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_local_out) AT=3n\n\n")
 
-    
+    top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LOCAL_OUTPUT) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     if not use_tgate :
         top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
     else :
         top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
 
     top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n vdd gnd local_ble_output_load\n")
     top_file.write(".END")
@@ -777,7 +817,10 @@ def generate_general_ble_output_top(name, use_tgate):
     top_file.write(".OPTIONS BRIEF=1\n\n")
     top_file.write("* Input signal\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
-    
+    top_file.write("* Power rail for the circuit under test.\n")
+    top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    top_file.write("V_GENERAL_OUTPUT vdd_general_output gnd supply_v\n\n")
+
     top_file.write("********************************************************************************\n")
     top_file.write("** Measurement\n")
     top_file.write("********************************************************************************\n\n")
@@ -799,16 +842,19 @@ def generate_general_ble_output_top(name, use_tgate):
 
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
 
-    
+    top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_GENERAL_OUTPUT) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     if not use_tgate :
         top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
     else :
         top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd lut_output_load\n\n")
+        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
 
     top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     top_file.write(".END")

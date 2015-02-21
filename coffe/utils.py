@@ -98,10 +98,27 @@ def print_area_and_delay(report_file, fpga_inst):
 def print_power(report_file, fpga_inst):
     """ Print power per subcircuit """
     
-    print "  SUBCIRCUIT POWER AT 250MHz"
+    print "  SUBCIRCUIT POWER AT 250MHz (uW)"
     print "  --------------------------"
 
-    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power) 
+    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power/1e-6) 
+    print "  " + fpga_inst.cb_mux.name.ljust(22) + str(fpga_inst.cb_mux.power/1e-6) 
+    print "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(fpga_inst.logic_cluster.local_mux.power/1e-6) 
+    print "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6) 
+    print "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6) 
+
+    # Figure out LUT power
+    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names.sort()
+    for input_name in lut_input_names:
+        lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
+        path_power = lut_input.power
+        driver_power = lut_input.driver.power
+        not_driver_power = lut_input.not_driver.power
+        print "  " + ("lut_" + input_name).ljust(22) + str((path_power + driver_power + not_driver_power)/1e-6)
+        print "  " + ("  lut_" + input_name + "_data_path").ljust(22) + str(path_power/1e-6)
+        print "  " + ("  lut_" + input_name + "_driver").ljust(22) + str(driver_power/1e-6)
+        print "  " + ("  lut_" + input_name + "_driver_not").ljust(22) + str(not_driver_power/1e-6)
 
     print ""
 

@@ -121,7 +121,7 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* Local routing wire load\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
+    spice_file.write(".SUBCKT local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on\n")
     
     num_total = num_on + num_partial + num_off
     interval_counter_partial = 0
@@ -142,7 +142,7 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
                 on_counter = on_counter + 1
                 if on_counter == num_on:
                     spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
-                    spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd n_gnd local_mux_on\n")
+                    spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd_local_mux_on n_gnd local_mux_on\n")
                 else:
                     spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
                     spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_hang_" + str(on_counter) + " n_gate n_gate_n n_vdd n_gnd local_mux_on\n")    
@@ -187,19 +187,19 @@ def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* BLE outputs\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT ble_outputs n_1_" + str((total_outputs + 1)/2+1) + " n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd\n")
+    spice_file.write(".SUBCKT ble_outputs n_1_" + str((total_outputs + 1)/2+1) + " n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on\n")
     # Create the BLE output bar
     current_node = 2
     for i in range(num_local_out):
         if i == 0:
-            spice_file.write("Xlocal_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_local_out n_gate n_gate_n n_vdd n_gnd local_ble_output\n")
+            spice_file.write("Xlocal_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_local_out n_gate n_gate_n n_vdd_local_output_on n_gnd local_ble_output\n")
         else:
             spice_file.write("Xlocal_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_hang_" + str(current_node) + " n_gate n_gate_n n_vdd n_gnd local_ble_output\n")
         spice_file.write("Xwire_ble_outputs_" + str(i+1) + " n_1_" + str(current_node) + " n_1_" + str(current_node + 1) + " wire Rw='wire_ble_outputs_res/" + str(total_outputs-1) + "' Cw='wire_ble_outputs_cap/" + str(total_outputs-1) + "'\n")
         current_node = current_node + 1
     for i in range(num_gen_out):
         if i == 0:
-            spice_file.write("Xgeneral_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_general_out n_gate n_gate_n n_vdd n_gnd general_ble_output\n")
+            spice_file.write("Xgeneral_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_general_out n_gate n_gate_n n_vdd_general_output_on n_gnd general_ble_output\n")
         else:
             spice_file.write("Xgeneral_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_hang_" + str(current_node) + " n_gate n_gate_n n_vdd n_gnd general_ble_output\n")
         # Only add wire if this is not the last ble output.
@@ -229,11 +229,11 @@ def generate_lut_output_load(spice_filename, num_local_out, num_gen_out):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* LUT output load\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT lut_output_load n_in n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd\n")
+    spice_file.write(".SUBCKT lut_output_load n_in n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on\n")
     spice_file.write("Xwire_lut_output_load_1 n_in n_1_1 wire Rw='wire_lut_output_load_1_res' Cw='wire_lut_output_load_1_cap'\n")
     spice_file.write("Xff n_1_1 n_hang1 n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff\n")
     spice_file.write("Xwire_lut_output_load_2 n_1_1 n_1_2 wire Rw='wire_lut_output_load_2_res' Cw='wire_lut_output_load_2_cap'\n")
-    spice_file.write("Xble_outputs n_1_2 n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd ble_outputs\n")
+    spice_file.write("Xble_outputs n_1_2 n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on ble_outputs\n")
     spice_file.write(".ENDS\n\n\n")
 
     spice_file.close()
@@ -257,7 +257,7 @@ def generate_local_ble_output_load(spice_filename):
     spice_file.write("******************************************************************************************\n")
     spice_file.write(".SUBCKT local_ble_output_load n_in n_gate n_gate_n n_vdd n_gnd\n")
     spice_file.write("Xwire_local_ble_output_feedback n_in n_1_1 wire Rw='wire_local_ble_output_feedback_res' Cw='wire_local_ble_output_feedback_cap'\n")
-    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 n_gate n_gate_n n_vdd n_gnd local_routing_wire_load\n")
+    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 n_gate n_gate_n n_vdd n_gnd n_vdd local_routing_wire_load\n")
     spice_file.write("Xlut_a_driver_1 n_1_2 n_hang1 vsram vsram_n n_hang2 n_hang3 n_vdd n_gnd lut_a_driver\n\n")
     spice_file.write(".ENDS\n\n\n")
     
