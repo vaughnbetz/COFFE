@@ -257,24 +257,21 @@ fpga_inst.update_delays(spice_interface)
 # Go back to the base directory
 os.chdir(default_dir)
 
-print "|------------------------------------------------------------------------------|"
-print "|    Area and Delay Report                                                     |"
-print "|------------------------------------------------------------------------------|"
+print "|--------------------------------------------------------------------------------------------------|"
+print "|    Area and Delay Report                                                                         |"
+print "|--------------------------------------------------------------------------------------------------|"
 print ""
 
 # Print out final COFFE report to file
 report_file = open(arch_folder + "/report.txt", 'a')
 report_file.write("\n")
-report_file.write("|------------------------------------------------------------------------------|\n")
-report_file.write("|    Area and Delay Report                                                     |\n")
-report_file.write("|------------------------------------------------------------------------------|\n")
+report_file.write("|--------------------------------------------------------------------------------------------------|\n")
+report_file.write("|    Area and Delay Report                                                                         |\n")
+report_file.write("|--------------------------------------------------------------------------------------------------|\n")
 report_file.write("\n")
 
 # Print area and delay per subcircuit
 coffe.utils.print_area_and_delay(report_file, fpga_inst)
-
-# Print power per subcircuit
-coffe.utils.print_power(report_file, fpga_inst)
 
 # Print block areas
 coffe.utils.print_block_area(report_file, fpga_inst)
@@ -295,7 +292,7 @@ print ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weig
        + str(round(final_cost,5)))
 
 print ""
-print "|------------------------------------------------------------------------------|"
+print "|--------------------------------------------------------------------------------------------------|"
 print ""
 
 report_file.write("  SUMMARY\n")
@@ -306,7 +303,7 @@ report_file.write("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(del
        + str(round(final_cost,5)) + "\n")
 
 report_file.write("\n")
-report_file.write("|------------------------------------------------------------------------------|\n")
+report_file.write("|--------------------------------------------------------------------------------------------------|\n")
 report_file.write("\n")
 
 # Record end time
