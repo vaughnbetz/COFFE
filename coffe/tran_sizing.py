@@ -459,11 +459,17 @@ def erf_inverter_balance_trise_tfall(sp_path,
             print (sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
                    " diff=" + str(tfall-trise))
 
-        # We only accept negative delays on the first inverter in a driver.
+        # We accept negative delays on the first inverter in a driver.
         if "_1_" not in target_tran_name:
             if tfall < 0 or trise < 0 :
                 print "ERROR: Unexpected negative delay."
-                exit(1)
+                if not fpga_inst.specs.use_finfet:
+                    exit(1)
+                else:
+                    # Hack to fix finfets becoming to strong (weird things were happening to the waveforms)
+                    if finfet_num_fins != inv_size:
+                        finfet_num_fins -= 1
+                        
 
         # Figure out if we have found the upper bound by looking at tfall and trise. 
         # For a PMOS, upper bound is found if tfall > trise
