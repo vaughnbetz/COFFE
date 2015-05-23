@@ -256,7 +256,7 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage):
         return 1
 
     # omit measurements that are too large
-    if tfall > 1e-9 or trise > 1e-9 :
+    if tfall > 5e-9 or trise > 5e-9 :
         return 1
 
 

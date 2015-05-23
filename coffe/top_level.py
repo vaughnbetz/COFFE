@@ -21,10 +21,10 @@ def generate_switch_block_top(mux_name):
     sb_file.write("********************************************************************************\n")
     sb_file.write("** Setup and input\n")
     sb_file.write("********************************************************************************\n\n")
-    sb_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
+    sb_file.write(".TRAN 1p 8n SWEEP DATA=sweep_data\n")
     sb_file.write(".OPTIONS BRIEF=1\n\n")
     sb_file.write("* Input signal\n")
-    sb_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    sb_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 8n)\n\n")
 
     sb_file.write("* Power rail for the circuit under test.\n")
     sb_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -50,7 +50,7 @@ def generate_switch_block_top(mux_name):
     sb_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xrouting_wire_load_1.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) VAL='supply_v/2' RISE=1\n")
     sb_file.write("+    TARG V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) VAL='supply_v/2' RISE=1\n\n")
 
-    sb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) AT=3n\n\n")
+    sb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) AT=7nn\n\n")
 
     sb_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
     sb_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_SB_MUX) FROM=0ns TO=4ns\n")
