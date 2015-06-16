@@ -299,10 +299,15 @@ def generate_general_ble_output_load(spice_filename, num_sb_mux_off, num_sb_mux_
         current_node = next_node
         next_node = "n_1_" + str(i+num_sb_mux_off+3)
     for i in range(num_sb_mux_on):
-        spice_file.write("Xwire_general_ble_output_" + str(i+num_sb_mux_off+num_sb_mux_partial+1) + " " + current_node + " " + next_node + " wire Rw='wire_general_ble_output_res/" + str(sb_mux_total) + "' Cw='wire_general_ble_output_cap/" + str(sb_mux_total) + "'\n")
+        
+        # The last 'on' sb_mux needs to have special node names to be able to connect it to the output and also for measurements.
         if i == (num_sb_mux_on-1):
-            spice_file.write("Xsb_mux_on_" + str(i+1) + " " + next_node + " n_out n_gate n_gate_n n_vdd n_gnd sb_mux_on\n")
+            spice_file.write("Xwire_general_ble_output_" + str(i+num_sb_mux_off+num_sb_mux_partial+1) + " " + current_node + " n_meas_point" 
+                             + " wire Rw='wire_general_ble_output_res/" + str(sb_mux_total) + "' Cw='wire_general_ble_output_cap/" + str(sb_mux_total) + "'\n")
+            spice_file.write("Xsb_mux_on_" + str(i+1) + " n_meas_point n_out n_gate n_gate_n n_vdd n_gnd sb_mux_on\n")
         else:
+            spice_file.write("Xwire_general_ble_output_" + str(i+num_sb_mux_off+num_sb_mux_partial+1) + " " + current_node + " " + next_node 
+                             + " wire Rw='wire_general_ble_output_res/" + str(sb_mux_total) + "' Cw='wire_general_ble_output_cap/" + str(sb_mux_total) + "'\n")
             spice_file.write("Xsb_mux_on_" + str(i+1) + " " + next_node + " n_hang_" + str(i) + " n_gate n_gate_n n_vdd n_gnd sb_mux_on\n")
         current_node = next_node
         next_node = "n_1_" + str(i+num_sb_mux_off+num_sb_mux_partial+3)

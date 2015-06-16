@@ -831,14 +831,14 @@ def generate_general_ble_output_top(name, use_tgate):
     top_file.write("+    TARG V(Xlut_output_load.Xble_outputs.Xgeneral_ble_output_1.n_2_1) VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* inv_general_ble_output_2 delays\n")
     top_file.write(".MEASURE TRAN meas_inv_general_ble_output_2_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_1_9) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' FALL=1\n")
     top_file.write(".MEASURE TRAN meas_inv_general_ble_output_2_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_1_9) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* Total delays\n")
     top_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_1_9) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' FALL=1\n")
     top_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_1_9) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' RISE=1\n\n")
 
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
 
