@@ -61,17 +61,18 @@ OUTPUT_TRACK_ACCESS_SPAN = 0.25
 INPUT_TRACK_ACCESS_SPAN = 0.50
 
 # Delay weight constants:
-DELAY_WEIGHT_SB_MUX = 0.3596
-DELAY_WEIGHT_CB_MUX = 0.176
-DELAY_WEIGHT_LOCAL_MUX = 0.0862
-DELAY_WEIGHT_LUT_A = 0.0568
-DELAY_WEIGHT_LUT_B = 0.0508
-DELAY_WEIGHT_LUT_C = 0.0094 # This one is lower because we had register-feedback coming into this mux (i.e. an extra mux, making it a less-used input)
-DELAY_WEIGHT_LUT_D = 0.0213
-DELAY_WEIGHT_LUT_E = 0.0289
+DELAY_WEIGHT_SB_MUX = 0.4107
+DELAY_WEIGHT_CB_MUX = 0.0989
+DELAY_WEIGHT_LOCAL_MUX = 0.0736
+DELAY_WEIGHT_LUT_A = 0.0396
+DELAY_WEIGHT_LUT_B = 0.0379
+DELAY_WEIGHT_LUT_C = 0.0704 # This one is higher because we had register-feedback coming into this mux.
+DELAY_WEIGHT_LUT_D = 0.0202
+DELAY_WEIGHT_LUT_E = 0.0121
 DELAY_WEIGHT_LUT_F = 0.0186
-DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0928
-DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0502
+DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0267
+DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0326
+# The res of the ~15% came from memory, DSP, IO and FF based on my delay profiling experiments.
 
 class _Specs:
     """ General FPGA specs. """
