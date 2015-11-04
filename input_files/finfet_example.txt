@@ -79,7 +79,7 @@ gate_length=20
 # This parameter controls the gate length of PMOS level-restorers. For example, setting this paramater 
 # to 4 sets the gate length to 4x the value of 'gate_legnth'. Increasing the gate length weakens the 
 # PMOS level-restorer, which is sometimes necessary to ensure proper switching.
-rest_length_factor = 10
+rest_length_factor = 1
 
 # For FinFETs, minimum transistor refers to the contact width of a single-fin transistor (nm). 
 # COFFE uses this when it calculates source/drain parasitic capacitances.

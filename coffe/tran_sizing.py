@@ -460,7 +460,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
                    " diff=" + str(tfall-trise))
 
         # We accept negative delays on the first inverter in a driver.
-        if "_1_" not in target_tran_name:
+        if "_1_" not in target_tran_name and "_0_" not in target_tran_name:
             if tfall < 0 or trise < 0 :
                 print "ERROR: Unexpected negative delay."
                 if not fpga_inst.specs.use_finfet:
