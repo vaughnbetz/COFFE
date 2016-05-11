@@ -3119,17 +3119,16 @@ class FPGA:
         # If inverter or transmission gate, use larger area to account for N-well spacing
         # If pass-transistor, use regular area because they don't need N-wells.
         if "inv_" in tran_name or "tgate_" in tran_name:
-            # area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
             if not self.specs.use_finfet :
                 area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
             else :
-                area = 0.345*tran_size + 0.753*math.sqrt(tran_size) -0.0256
+                area = 0.034 + 0.414*tran_size + 0.735*math.sqrt(tran_size)
 
         else:
             if not self.specs.use_finfet :
                 area = 0.447 + 0.128*tran_size + 0.391*math.sqrt(tran_size)
             else :
-                area = 0.083 + 0.476*tran_size + 0.431*math.sqrt(tran_size)
+                area = -0.013 + 0.414*tran_size + 0.665*math.sqrt(tran_size)
     
         return area    
     
