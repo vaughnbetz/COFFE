@@ -173,6 +173,75 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
     wire_names_list.append("wire_local_routing")
     
     return wire_names_list
+
+
+def RAM_local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
+    """ """
+    
+    # The first thing we want to figure out is the interval between each on load and each partially on load
+    # Number of partially on muxes between each on mux
+    interval_partial = int(num_partial/num_on)
+    # Number of off muxes between each partially on mux
+    interval_off = int(num_off/num_partial)
+
+    # Open SPICE file for appending
+    spice_file = open(spice_filename, 'a')
+    
+    spice_file.write("******************************************************************************************\n")
+    spice_file.write("* RAM local routing wire load\n")
+    spice_file.write("******************************************************************************************\n")
+    spice_file.write(".SUBCKT RAM_local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_RAM_local_mux_on\n")
+    
+    num_total = num_on + num_partial + num_off
+    interval_counter_partial = 0
+    interval_counter_off = 0
+    on_counter = 0
+    partial_counter = 0
+    off_counter = 0
+    
+    # Initialize nodes
+    current_node = "n_in"
+    next_node = "n_1"
+    
+    # Write SPICE file while keeping correct intervals between partial and on muxes
+    for i in range(num_total):
+        if interval_counter_partial == interval_partial and on_counter < num_on:
+                # Add an on mux
+                interval_counter_partial = 0
+                on_counter = on_counter + 1
+                if on_counter == num_on:
+                    spice_file.write("Xwire_RAM_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_RAM_local_routing_res/" + str(num_total) + "' Cw='wire_RAM_local_routing_cap/" + str(num_total) + "'\n")
+                    spice_file.write("XRAM_local_mux_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd_RAM_local_mux_on n_gnd RAM_local_mux_on\n")
+                else:
+                    spice_file.write("Xwire_RAM_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_RAM_local_routing_res/" + str(num_total) + "' Cw='wire_RAM_local_routing_cap/" + str(num_total) + "'\n")
+                    spice_file.write("XRAM_local_mux_on_" + str(on_counter) + " " + next_node + " n_hang_" + str(on_counter) + " n_gate n_gate_n n_vdd n_gnd RAM_local_mux_on\n")    
+        else:
+            if interval_counter_off == interval_off and partial_counter < num_partial:
+                # Add a partially on mux
+                interval_counter_off = 0
+                interval_counter_partial = interval_counter_partial + 1
+                partial_counter = partial_counter + 1
+                spice_file.write("Xwire_RAM_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_RAM_local_routing_res/" + str(num_total) + "' Cw='wire_RAM_local_routing_cap/" + str(num_total) + "'\n")
+                spice_file.write("XRAM_local_mux_partial_" + str(partial_counter) + " " + next_node + " n_gate n_gate_n n_vdd n_gnd RAM_local_mux_partial\n")
+            else:
+                # Add an off mux
+                interval_counter_off = interval_counter_off + 1
+                off_counter = off_counter + 1
+                spice_file.write("Xwire_RAM_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_RAM_local_routing_res/" + str(num_total) + "' Cw='wire_RAM_local_routing_cap/" + str(num_total) + "'\n")
+                spice_file.write("XRAM_local_mux_off_" + str(off_counter) + " " + next_node + " n_gate n_gate_n n_vdd n_gnd RAM_local_mux_off\n")
+        # Update current and next nodes        
+        current_node = next_node
+        next_node = "n_" + str(i+2)
+    spice_file.write(".ENDS\n\n\n")
+
+    spice_file.close()
+    
+    
+    # Create a list of all wires used in this subcircuit
+    wire_names_list = []
+    wire_names_list.append("wire_RAM_local_routing")
+    
+    return wire_names_list   
  
  
 def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):

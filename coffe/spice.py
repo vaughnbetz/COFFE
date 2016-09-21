@@ -156,11 +156,11 @@ class SpiceInterface(object):
         hspice_runs = 0
 
         # there are many cases when then hspice similation will fail
-        # most often, it is because the input file is incorresct (which would be a bug with in COFFE)
+        # most often, it is because the input file is incorrect (which would be a bug with in COFFE)
         # or hpice fails to checheck out the license, assuming the license exists, it is likely due
         # to many instances checking out the license at the same time. In this case, we check if the
         # ".mt0" exists, if not, we run hspice again. After we read the results, we delete it to make
-        # sure we are not reading previou results
+        # sure we are not reading previous results
         while ( not hspice_success) :
             subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
             output_file.close()
@@ -214,6 +214,12 @@ class SpiceInterface(object):
         #                 etc...}
         measurements = {}
         meas_names = []
+
+        #parse should be changed for ram block
+        meaz1_names = []
+        meaz2_names = []
+        meaz1counter = 0
+        meaz2counter = 0
     
         # Open the file for reading
         mt0_file = open(filepath, 'r')
@@ -235,12 +241,17 @@ class SpiceInterface(object):
                 for meas_name in words:
                     meas_names.append(meas_name)
                     measurements[meas_name] = []
+                    if "meaz1" in meas_name:
+                        meaz1counter += 1
+                        meaz1_names.append(meas_name)
+                    if "meaz2" in meas_name:
+                        meaz2counter += 1
+                        meaz2_names.append(meas_name)
                     # When we find 'alter#' we are done parsing measurement names.
                     if meas_name.startswith("alter#"):
                         num_measurements = len(meas_names)
                         current_meas = 0
                         parsing_names = False
-
             else:
                 line = line.replace("\n", "")
                 words = line.split()
@@ -252,7 +263,27 @@ class SpiceInterface(object):
                     current_meas += 1
                     if current_meas == num_measurements:
                         current_meas = 0
-                 
+
+
+        
         mt0_file.close()
-    
+
+        # This part is added to support having tow different fanins (e.g. ram rowdecoder)
+        # If this happens to any other circuit, you should name the delays with mez1 and meaz2
+        # the rest is simply the same.
+        if len(meaz1_names) !=0 and len(meaz2_names) != 0:
+            if len(meaz1_names) != len(meaz2_names):
+                    sys.exit(-1)
+            for x in range(0,len(meaz1_names)):
+                newname = meaz1_names[x].replace("meaz1_", "meas_")
+                measurements[newname] = max(measurements[meaz1_names[x]],measurements[meaz2_names[x]])
+        elif len(meaz1_names) !=0:
+            for x in range(0,len(meaz1_names)):
+                newname = meaz1_names[x].replace("meaz1_", "meas_")
+                measurements[newname] = measurements[meaz1_names[x]]
+        elif len(meaz2_names) !=0:
+            for x in range(0,len(meaz2_names)):
+                newname = meaz2_names[x].replace("meaz2_", "meas_")
+                measurements[newname] = measurements[meaz2_names[x]]
+
         return measurements         

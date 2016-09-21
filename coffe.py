@@ -3,7 +3,8 @@
 #         at: University of Toronto
 #         in: 2013        
            
-#
+# BRAM simulation added by Sadegh Yazdanshenas in 2016
+# MTJ and SRAM designs by Kosuke Tatsumura
 # The big picture:
 #
 # COFFE will size the transistors of an FPGA based on some input architecture 
@@ -56,6 +57,13 @@ parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area o
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
 
+# quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
+parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
+
+#RAM parameters
+parser.add_argument('-e', '--ram_enable', type=int, default=0, help="include a RAM block in simulations")
+
+
 args = parser.parse_args()
 arch_description_filename = args.arch_description
 is_size_transistors = not args.no_sizing
@@ -65,6 +73,8 @@ area_opt_weight = args.area_opt_weight
 delay_opt_weight = args.delay_opt_weight
 max_iterations = args.max_iterations
 initial_sizes = args.initial_sizes
+ram_enable = args.ram_enable
+quick_mode_threshold = args.quick_mode
 
 # Make the top-level spice folder if it doesn't already exist
 arch_desc_words = arch_description_filename.split('.')
@@ -143,12 +153,34 @@ trans_diffusion_length = arch_params_dict['trans_diffusion_length']
 model_path = arch_params_dict['model_path']
 model_library = arch_params_dict['model_library']
 metal_stack = arch_params_dict['metal']
+row_decoder_bits = arch_params_dict['row_decoder_bits']
+col_decoder_bits = arch_params_dict['col_decoder_bits']
+conf_decoder_bits = arch_params_dict['conf_decoder_bits']
+sense_dv = arch_params_dict['sense_dv']
+worst_read_current = arch_params_dict['worst_read_current']
 
+vdd_low_power = arch_params_dict['vdd_low_power']
+number_of_banks = arch_params_dict['number_of_banks']
+memory_technology = arch_params_dict['memory_technology']
+SRAM_nominal_current = arch_params_dict['SRAM_nominal_current']
+MTJ_Rlow_nominal = arch_params_dict['MTJ_Rlow_nominal']
+MTJ_Rhigh_nominal = arch_params_dict['MTJ_Rhigh_nominal']
+MTJ_Rlow_worstcase = arch_params_dict['MTJ_Rlow_worstcase']
+MTJ_Rhigh_worstcase = arch_params_dict['MTJ_Rhigh_worstcase']
+
+vref = arch_params_dict['vref']
+vclmp = arch_params_dict['vclmp']
+enable_bram_module = arch_params_dict['enable_bram_module']
+read_to_write_ratio = arch_params_dict['read_to_write_ratio']
+ram_local_mux_size = arch_params_dict['ram_local_mux_size']
 use_tgate = False
 use_finfet = False
 
 if arch_params_dict['transistor_type'] == "finfet":
     use_finfet = True
+    if enable_bram_module == 1:
+      print "finfet and BRAM simulations are not compatible"
+      sys.exit()
 if arch_params_dict['switch_type'] == "transmission_gate":
     use_tgate = True
 
@@ -174,7 +206,9 @@ if not use_finfet :
                           metal_stack,
                           use_tgate,
                           use_finfet,
-                          rest_length_factor)
+                          rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
+                          memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold)
 else :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 
@@ -188,7 +222,9 @@ else :
                           metal_stack,
                           use_tgate,
                           use_finfet,
-                          rest_length_factor)
+                          rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
+                          memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold)
 
 
 
@@ -253,6 +289,10 @@ if is_size_transistors:
     
 # Update subcircuit delays (these are the final values)
 fpga_inst.update_delays(spice_interface)
+
+# Obtain Memory core power
+if enable_bram_module == 1:
+  fpga_inst.update_power(spice_interface)
 
 # Go back to the base directory
 os.chdir(default_dir)
@@ -323,5 +363,8 @@ report_file.write( "\n")
 report_file.close()
 
 vpr_file = open(arch_desc_words[0] + ".xml", 'w')
-coffe.vpr.print_vpr_file(vpr_file, fpga_inst)
+if enable_bram_module == 1:
+  coffe.vpr.print_vpr_file_memory(vpr_file, fpga_inst)
+else:
+  coffe.vpr.print_vpr_file(vpr_file, fpga_inst)
 vpr_file.close()
