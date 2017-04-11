@@ -299,7 +299,7 @@ def ptran_generate(filename, use_finfet):
 		spice_file.write("* Pass-transistor\n")
 		spice_file.write("******************************************************************************************\n")
 		spice_file.write(".SUBCKT ptran n_in n_out n_gate n_gnd Wn=45n \n")
-		spice_file.write("MNPASS n_in n_gate n_out n_gnd nmos L=gate_length ")
+		spice_file.write("MNPASS n_in n_gate n_out n_gnd nmos L=gate_length W=Wn ")
 		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
 		spice_file.write(".ENDS\n\n\n")   
 	else :
@@ -313,7 +313,31 @@ def ptran_generate(filename, use_finfet):
 
 	spice_file.close()
 	
-	
+def ptran_pmos_generate(filename, use_finfet):
+	""" Generates the SPICE subcircuit for a PMOS pass-transistor. Appends it to file 'filename'. """
+
+	# Open the file for appending
+	spice_file = open(filename, 'a')  
+
+	if not use_finfet :
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write("* PMOS Pass-transistor\n")
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write(".SUBCKT ptranp n_in n_out n_gate n_vdd Wn=45n \n")
+		spice_file.write("MPPASS n_in n_gate n_out n_vdd pmos L=gate_length W=Wn ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write(".ENDS\n\n\n")   
+	else :
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write("* PMOS Pass-transistor\n")
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write(".SUBCKT ptranp n_in n_out n_gate n_vdd Wn=1\n")
+		spice_file.write("MPPASS n_in n_gate n_out n_vdd pmos L=gate_length nfin=Wn ")
+		spice_file.write("ASEO=Wn*min_tran_width*trans_diffusion_length ADEO=Wn*min_tran_width*trans_diffusion_length PSEO=Wn*min_tran_width+2*trans_diffusion_length PDEO=Wn*min_tran_width+2*trans_diffusion_length\n")
+		spice_file.write(".ENDS\n\n\n")   
+
+	spice_file.close()
+
 def tgate_generate(filename, use_finfet):
 	""" Generates the SPICE subcircuit for a transmission gate. Appends it to file 'filename'. """
 
