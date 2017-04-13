@@ -175,6 +175,11 @@ read_to_write_ratio = arch_params_dict['read_to_write_ratio']
 ram_local_mux_size = arch_params_dict['ram_local_mux_size']
 use_tgate = False
 use_finfet = False
+use_fluts = False
+independent_inputs = arch_params_dict['independent_inputs']
+use_fluts = arch_params_dict['use_fluts']
+
+
 
 if arch_params_dict['transistor_type'] == "finfet":
     use_finfet = True
@@ -208,7 +213,7 @@ if not use_finfet :
                           use_finfet,
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold)
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs)
 else :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 
@@ -224,7 +229,7 @@ else :
                           use_finfet,
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold)
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs)
 
 
 

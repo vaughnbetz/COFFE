@@ -408,7 +408,7 @@ def generate_ptran_lut_not_driver(spice_filename, lut_input_name):
 	return tran_names_list, wire_names_list
    
    
-def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K):
+def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts):
 	""" Generates LUT input load SPICE deck """
 	
 	# Calculate number of pass-transistors loading this input
@@ -443,7 +443,10 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K):
 	for ptran in range(num_ptran_load):
 		ptran += 1
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
-		spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n") 
+		if use_fluts and num_ptran_load == 1:
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n") 
+		else:
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n") 
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Create a list of all wires used in this subcircuit
@@ -890,7 +893,7 @@ def generate_tgate_lut_not_driver(spice_filename, lut_input_name):
 	return tran_names_list, wire_names_list
 
 
-def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K):
+def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts):
 	""" Generates LUT input load SPICE deck """
 	
 	# Calculate number of pass-transistors loading this input
@@ -925,7 +928,11 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K):
 	for tgate in range(num_tgate_load):
 		tgate += 1
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_" + str(tgate) + " n_" + str(tgate+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_tgate_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_tgate_load) + "'\n")
-		spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 
+		if use_fluts and num_ptran_load == 1:
+			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_flut_mux_nmos Wp=tgate_flut_mux_pmos\n") 
+		else:
+			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 
+		
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Create a list of all wires used in this subcircuit
@@ -933,3 +940,4 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K):
 	wire_names_list.append("wire_lut_" + lut_input_name + "_driver_load")
 	
 	return wire_names_list
+

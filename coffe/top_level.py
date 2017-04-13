@@ -4307,7 +4307,7 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
     return (input_driver_name_no_not + "/" + input_driver_name + ".sp")    
    
   
-def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate):
+def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate, use_fluts):
     """ Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
     
     # Create directories
@@ -4393,7 +4393,11 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate)
         elif input_driver_name == "lut_f_driver":
             spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd_lut gnd lut\n")
     
-    spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
+    if use_fluts:
+        spice_file.write("Xwireflut n_out n_out2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
+        spice_file.write("Xthemux n_out2 n_out3 vdd gnd vdd gnd flut_mux\n") 
+    else:
+        spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     
     spice_file.write(".END")
@@ -4565,4 +4569,84 @@ def generate_general_ble_output_top(name, use_tgate):
     
     return (name + "/" + name + ".sp")
     
+
+
+def generate_flut_mux_top(name, use_tgate):
+    """ """
     
+    # Create directories
+    if not os.path.exists(name):
+        os.makedirs(name)  
+    # Change to directory    
+    os.chdir(name)  
+    
+    filename = name + ".sp"
+    top_file = open(filename, 'w')
+    top_file.write(".TITLE General BLE output\n\n") 
+    
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Include libraries, parameters and other\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
+    
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Setup and input\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
+    top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* Input signal\n")
+    top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    top_file.write("* Power rail for the circuit under test.\n")
+    top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    top_file.write("V_FLUT vdd_f gnd supply_v\n\n")
+
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Measurement\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write("* inv_"+ name +"_1 delay\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_1_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V(Xthemux.n_2_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_1_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(Xthemux.n_2_1) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("* inv_"+ name +"_2 delays\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_2_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_2_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("* Total delays\n")
+    top_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
+    #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
+    #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
+
+    top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_FLUT) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Circuit\n")
+    top_file.write("********************************************************************************\n\n")
+    # lut, wire from lut to the mux, the mux, and the load same output load as before
+    if not use_tgate :
+        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
+        top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n")  
+        top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")       
+        top_file.write("Xlut_output_load n_1_3 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_f lut_output_load\n\n")
+    else :
+        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
+        top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")  
+        top_file.write("Xlut_output_load n_1_3 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_f lut_output_load\n\n")
+
+    top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
+    top_file.write(".END")
+    top_file.close()
+
+    # Come out of top-level directory
+    os.chdir("../")
+    
+    return (name + "/" + name + ".sp")
+

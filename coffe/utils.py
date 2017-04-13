@@ -449,7 +449,9 @@ def load_arch_params(filename):
         'MTJ_Rlow_nominal': 2500,
         'MTJ_Rhigh_nominal': 6250,
         'MTJ_Rlow_worstcase': 3060,
-        'MTJ_Rhigh_worstcase': 4840
+        'MTJ_Rhigh_worstcase': 4840,
+        'use_fluts': False,
+        'independent_inputs': 0
     }
 
     params_file = open(filename, 'r')
@@ -540,6 +542,10 @@ def load_arch_params(filename):
             arch_params['enable_bram_module'] = int(value)
         elif param == 'ram_local_mux_size':
             arch_params['ram_local_mux_size'] = int(value)
+        elif param == 'use_fluts':
+            arch_params['use_fluts'] = (value == 'True')
+        elif param == 'independent_inputs':
+            arch_params['independent_inputs'] = int(value)
         elif param == 'vref':
             arch_params['ref'] = float(value)
         elif param == 'worst_read_current':
