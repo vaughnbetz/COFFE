@@ -220,6 +220,16 @@ class SpiceInterface(object):
         meaz2_names = []
         meaz1counter = 0
         meaz2counter = 0
+
+        #I'll need an aittional 4 to test carry chains:
+        meaz3_names = []
+        meaz4_names = []
+        meaz5_names = []
+        meaz6_names = []
+        meaz3counter = 0
+        meaz4counter = 0
+        meaz5counter = 0
+        meaz6counter = 0
     
         # Open the file for reading
         mt0_file = open(filepath, 'r')
@@ -247,6 +257,18 @@ class SpiceInterface(object):
                     if "meaz2" in meas_name:
                         meaz2counter += 1
                         meaz2_names.append(meas_name)
+                    if "meaz3" in meas_name:
+                        meaz3counter += 1
+                        meaz3_names.append(meas_name)
+                    if "meaz4" in meas_name:
+                        meaz4counter += 1
+                        meaz4_names.append(meas_name)
+                    if "meaz5" in meas_name:
+                        meaz5counter += 1
+                        meaz5_names.append(meas_name)
+                    if "meaz6" in meas_name:
+                        meaz6counter += 1
+                        meaz6_names.append(meas_name)
                     # When we find 'alter#' we are done parsing measurement names.
                     if meas_name.startswith("alter#"):
                         num_measurements = len(meas_names)
@@ -271,6 +293,11 @@ class SpiceInterface(object):
         # This part is added to support having tow different fanins (e.g. ram rowdecoder)
         # If this happens to any other circuit, you should name the delays with mez1 and meaz2
         # the rest is simply the same.
+        if meaz3counter != 0:
+            for x in range(0,len(meaz1_names)):
+                newname = meaz3_names[x].replace("meaz3_", "meas_")
+                measurements[newname] = max(measurements[meaz1_names[x]],measurements[meaz2_names[x]],measurements[meaz3_names[x]])
+            return measurements             
         if len(meaz1_names) !=0 and len(meaz2_names) != 0:
             if len(meaz1_names) != len(meaz2_names):
                     sys.exit(-1)

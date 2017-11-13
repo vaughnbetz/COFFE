@@ -941,3 +941,239 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	
 	return wire_names_list
 
+
+def generate_full_adder(spice_filename, circuit_name, use_finfet):
+	""" Generates full adder SPICE deck """
+
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* Full adder subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT FA_" + circuit_name + " n_a n_b n_cin n_cout n_sum_out n_p n_vdd n_gnd\n")
+	# The core of the FA consists of 3 inveters, 6 Transmission gates and 4 pass transistors.
+	# There should be a wire for all inputs and outputs, I'll assume the following for the wires:
+	# Cin and cout take half of the wire that is as long as the square root of the LUT + adder + the additional muxes
+	# sum takes the square root of the area of the adder (same for b)
+	# n_a takes the square root of the area of the LUT (This should be changed if this input comes from elsewhere, like another lut)
+
+	spice_file.write("Xinv_" + circuit_name + "_1 n_a_in n_a_in_bar n_vdd n_gnd inv Wn=inv_" + circuit_name + "_1_nmos Wp=inv_" + circuit_name + "_1_pmos\n")
+	spice_file.write("Xinv_" + circuit_name + "_2 n_cin_in n_cin_in_bar n_vdd n_gnd inv Wn=inv_" + circuit_name + "_2_nmos Wp=inv_" + circuit_name + "_2_pmos\n")
+
+	spice_file.write("Xtgate_" + circuit_name + "_1 n_cin_in n_sum_internal n_p n_p_bar n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_1_nmos Wp=tgate_" + circuit_name + "_1_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_2 n_cin_in_bar n_sum_internal n_p_bar n_p n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_2_nmos Wp=tgate_" + circuit_name + "_2_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_3 n_b_in n_p n_a_in_bar n_a_in n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_3_nmos Wp=tgate_" + circuit_name + "_3_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_4 n_b_in n_p_bar n_a_in n_a_in_bar n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_4_nmos Wp=tgate_" + circuit_name + "_4_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_5 n_a_in_bar n_sum_internal n_p_bar n_p n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_5_nmos Wp=tgate_" + circuit_name + "_5_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_6 n_cin_in_bar n_sum_internal n_p n_p_bar n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_6_nmos Wp=tgate_" + circuit_name + "_6_pmos\n") 
+
+	spice_file.write("Xptran_" + circuit_name + "_1 n_p n_b_in n_a_in_bar n_gnd ptran Wn=ptran_" + circuit_name + "_1_nmos\n")
+	spice_file.write("Xptran_" + circuit_name + "_2 n_p_bar n_b_in n_a_in n_gnd ptran Wn=ptran_" + circuit_name + "_2_nmos\n")
+	spice_file.write("Xptran_" + circuit_name + "_3 n_p_bar n_b_in n_a_in_bar n_vdd ptranp Wn=ptran_" + circuit_name + "_3_nmos\n")
+	spice_file.write("Xptran_" + circuit_name + "_4 n_p n_b_in n_a_in n_vdd ptranp Wn=ptran_" + circuit_name + "_4_nmos\n")
+
+	spice_file.write("Xwire_" + circuit_name + "_1 n_a n_a_in wire Rw='wire_fa_a_res' Cw='wire_fa_a_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_2 n_b n_b_in wire Rw='wire_fa_b_res' Cw='wire_fa_b_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_3 n_cin n_cin_in wire Rw='wire_fa_cin_res' Cw='wire_fa_cin_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_4 n_cout n_cout_in wire Rw='wire_fa_cout_res' Cw='wire_fa_cout_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_5 n_sum_out n_sum_in wire Rw='wire_fa_cout_res' Cw='wire_fa_cout_cap' \n")
+
+	spice_file.write("Xinv_" + circuit_name + "_3 n_sum_internal n_sum_in n_vdd n_gnd inv Wn=inv_" + circuit_name + "_3_nmos Wp=inv_" + circuit_name + "_3_pmos\n")
+	spice_file.write(".ENDS\n\n\n")
+
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	tran_names_list.append("inv_" + circuit_name + "_1_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_1_pmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_pmos")
+	tran_names_list.append("inv_" + circuit_name + "_3_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_3_pmos")	
+	tran_names_list.append("tgate_" + circuit_name + "_1_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_1_pmos")
+	tran_names_list.append("tgate_" + circuit_name + "_2_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_2_pmos")
+	tran_names_list.append("tgate_" + circuit_name + "_3_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_3_pmos")
+	tran_names_list.append("tgate_" + circuit_name + "_4_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_4_pmos")
+	tran_names_list.append("tgate_" + circuit_name + "_5_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_5_pmos")
+	tran_names_list.append("tgate_" + circuit_name + "_6_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_6_pmos")
+	tran_names_list.append("ptran_" + circuit_name + "_1_nmos")
+	tran_names_list.append("ptran_" + circuit_name + "_2_nmos")
+	tran_names_list.append("ptran_" + circuit_name + "_3_nmos")
+	tran_names_list.append("ptran_" + circuit_name + "_4_nmos")
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	wire_names_list.append("wire_" + circuit_name + "_1")
+	wire_names_list.append("wire_" + circuit_name + "_2")
+	wire_names_list.append("wire_" + circuit_name + "_3")
+	wire_names_list.append("wire_" + circuit_name + "_4")
+	wire_names_list.append("wire_" + circuit_name + "_5")	
+
+	return tran_names_list, wire_names_list
+	
+
+# Simplified version of the above FA, much faster to size
+def generate_full_adder_simplified(spice_filename, circuit_name, use_finfet):
+	""" Generates full adder SPICE deck """
+
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* Full adder subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT FA_" + circuit_name + " n_a n_b n_cin n_cout n_sum_out n_p n_vdd n_gnd\n")
+	# The core of the FA consists of 3 inveters, 6 Transmission gates and 4 pass transistors.
+	# There should be a wire for all inputs and outputs, I'll assume the following for the wires:
+	# Cin and cout take half of the wire that is as long as the square root of the LUT + adder + the additional muxes
+	# sum takes the square root of the area of the adder (same for b)
+	# n_a takes the square root of the area of the LUT (This should be changed if this input comes from elsewhere, like another lut)
+
+	spice_file.write("Xinv_" + circuit_name + "_1 n_a_in n_a_in_bar n_vdd n_gnd inv Wn=inv_" + circuit_name + "_1_nmos Wp=inv_" + circuit_name + "_1_pmos\n")
+	spice_file.write("Xinv_" + circuit_name + "_2 n_cin_in n_cin_in_bar n_vdd n_gnd inv Wn=inv_" + circuit_name + "_2_nmos Wp=inv_" + circuit_name + "_1_pmos\n")
+
+	spice_file.write("Xtgate_" + circuit_name + "_1 n_cin_in n_sum_internal n_p n_p_bar n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_2_nmos Wp=tgate_" + circuit_name + "_2_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_2 n_cin_in_bar n_sum_internal n_p_bar n_p n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_2_nmos Wp=tgate_" + circuit_name + "_2_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_3 n_b_in n_p n_a_in_bar n_a_in n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_1_nmos Wp=tgate_" + circuit_name + "_1_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_4 n_b_in n_p_bar n_a_in n_a_in_bar n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_1_nmos Wp=tgate_" + circuit_name + "_1_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_5 n_a_in_bar n_cout_in n_p_bar n_p n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_2_nmos Wp=tgate_" + circuit_name + "_2_pmos\n") 
+	spice_file.write("Xtgate_" + circuit_name + "_6 n_cin_in_bar n_cout_in n_p n_p_bar n_vdd n_gnd tgate Wn=tgate_" + circuit_name + "_2_nmos Wp=tgate_" + circuit_name + "_2_pmos\n") 
+
+	spice_file.write("Xptran_" + circuit_name + "_1 n_p n_a_in_bar n_b_in n_gnd ptran Wn=tgate_" + circuit_name + "_1_nmos\n")
+	spice_file.write("Xptran_" + circuit_name + "_2 n_p_bar n_a_in n_b_in n_gnd ptran Wn=tgate_" + circuit_name + "_1_nmos\n")
+	spice_file.write("Xptran_" + circuit_name + "_3 n_p_bar n_a_in_bar n_b_in n_vdd ptranp Wn=tgate_" + circuit_name + "_1_pmos\n")
+	spice_file.write("Xptran_" + circuit_name + "_4 n_p n_a_in n_b_in n_vdd ptranp Wn=tgate_" + circuit_name + "_1_pmos\n")
+
+	spice_file.write("Xwire_" + circuit_name + "_1 n_a n_a_in wire Rw='wire_" + circuit_name + "_1_res' Cw='wire_" + circuit_name + "_1_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_2 n_b n_b_in wire Rw='wire_" + circuit_name + "_2_res' Cw='wire_" + circuit_name + "_2_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_3 n_cin n_cin_in wire Rw='wire_" + circuit_name + "_3_res' Cw='wire_" + circuit_name + "_3_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_4 n_cout n_cout_in wire Rw='wire_" + circuit_name + "_4_res' Cw='wire_" + circuit_name + "_4_cap' \n")
+	spice_file.write("Xwire_" + circuit_name + "_5 n_sum_out n_sum_in wire Rw='wire_" + circuit_name + "_5_res' Cw='wire_" + circuit_name + "_5_cap' \n")
+
+	spice_file.write("Xinv_" + circuit_name + "_3 n_sum_internal n_sum_in n_vdd n_gnd inv Wn=inv_" + circuit_name + "_2_nmos Wp=inv_" + circuit_name + "_2_pmos\n")
+
+	spice_file.write(".ENDS\n\n\n")
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	tran_names_list.append("inv_" + circuit_name + "_1_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_1_pmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_pmos")
+
+	tran_names_list.append("tgate_" + circuit_name + "_1_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_1_pmos")
+	tran_names_list.append("tgate_" + circuit_name + "_2_nmos")
+	tran_names_list.append("tgate_" + circuit_name + "_2_pmos")
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	wire_names_list.append("wire_" + circuit_name + "_1")
+	wire_names_list.append("wire_" + circuit_name + "_2")
+	wire_names_list.append("wire_" + circuit_name + "_3")
+	wire_names_list.append("wire_" + circuit_name + "_4")
+	wire_names_list.append("wire_" + circuit_name + "_5")	
+
+	return tran_names_list, wire_names_list
+	
+
+def generate_carry_chain_perf_ripple(spice_filename, circuit_name, use_finfet):
+	""" Generates carry chain inverters for sum SPICE deck """
+
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* carry chain periphery subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT " + circuit_name + " n_in n_out n_vdd n_gnd\n")
+	spice_file.write("Xinv_lut_int_buffer_1 n_in n_out n_vdd n_gnd inv Wn=inv_" + circuit_name + "_1_nmos Wp=inv_" + circuit_name + "_1_pmos\n")
+	spice_file.write(".ENDS\n\n\n")
+
+	tran_names_list = []
+	tran_names_list.append("inv_" + circuit_name + "_1_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_1_pmos")
+	wire_names_list = []
+	return tran_names_list, wire_names_list
+
+
+def generate_skip_and_tree(spice_filename, circuit_name, use_finfet, nand1_size, nand2_size):
+
+	""" Generates carry chain skip and tree for sum SPICE deck """
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* carry chain and tree subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT " + circuit_name + " n_in n_out n_vdd n_gnd\n")
+
+
+	spice_file.write("Xwire_" + circuit_name + "_1 n_in n_1_1 wire Rw='wire_"+circuit_name+"_1_res' Cw='wire_"+circuit_name+"_1_cap' \n")
+	spice_file.write("Xnand1 n_1_1 n_1_2 n_vdd n_gnd nand"+str(nand1_size)+" Wn=inv_nand"+str(nand1_size)+"_" + circuit_name + "_1_nmos Wp=inv_nand"+str(nand1_size)+"_" + circuit_name + "_1_pmos\n")
+	spice_file.write("Xinv1 n_1_2 n_1_3 n_vdd n_gnd inv Wn=inv_" + circuit_name + "_2_nmos Wp=inv_" + circuit_name + "_2_pmos\n")
+
+	spice_file.write("Xwire_" + circuit_name + "_2 n_1_3 n_1_4 wire Rw='wire_"+circuit_name+"_2_res' Cw='wire_"+circuit_name+"_2_cap' \n")
+	spice_file.write("Xnand2 n_1_4 n_1_5 n_vdd n_gnd nand"+str(nand2_size)+" Wn=inv_nand"+str(nand2_size)+"_" + circuit_name + "_3_nmos Wp=inv_nand"+str(nand2_size)+"_" + circuit_name + "_3_pmos\n")
+	spice_file.write("Xinv2 n_1_5 n_out n_vdd n_gnd inv Wn=inv_" + circuit_name + "_4_nmos Wp=inv_" + circuit_name + "_4_pmos\n")
+	spice_file.write(".ENDS\n\n\n")
+
+	tran_names_list = []
+	tran_names_list.append("inv_nand"+str(nand1_size)+"_" + circuit_name + "_1_nmos")
+	tran_names_list.append("inv_nand"+str(nand1_size)+"_" + circuit_name + "_1_pmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_pmos")	
+	tran_names_list.append("inv_nand"+str(nand2_size)+"_" + circuit_name + "_3_nmos")
+	tran_names_list.append("inv_nand"+str(nand2_size)+"_" + circuit_name + "_3_pmos")
+	tran_names_list.append("inv_" + circuit_name + "_4_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_4_pmos")
+	wire_names_list = []
+	wire_names_list.append("wire_"+circuit_name+"_1")
+	wire_names_list.append("wire_"+circuit_name+"_2")
+	
+	return tran_names_list, wire_names_list
+
+
+def generate_carry_inter(spice_filename, circuit_name, use_finfet):
+
+	""" Generates the driver to load "cin" of the next cluster """
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	
+	# Create the circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* carry chain and tree subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT " + circuit_name + " n_in n_out n_vdd n_gnd\n")
+
+	spice_file.write("Xinv1 n_in n_1_1 n_vdd n_gnd inv Wn=inv_" + circuit_name + "_1_nmos Wp=inv_" + circuit_name + "_1_pmos\n")
+	spice_file.write("Xinv2 n_1_1 n_1_2 n_vdd n_gnd inv Wn=inv_" + circuit_name + "_2_nmos Wp=inv_" + circuit_name + "_2_pmos\n")
+	spice_file.write("Xwire_" + circuit_name + "_1 n_1_2 n_out wire Rw='wire_"+circuit_name+"_1_res' Cw='wire_"+circuit_name+"_1_cap' \n")
+
+	spice_file.write(".ENDS\n\n\n")
+
+	tran_names_list = []
+
+	tran_names_list.append("inv_" + circuit_name + "_1_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_1_pmos")	
+	tran_names_list.append("inv_" + circuit_name + "_2_nmos")
+	tran_names_list.append("inv_" + circuit_name + "_2_pmos")
+	wire_names_list = []
+	wire_names_list.append("wire_"+circuit_name+"_1")
+
+	return tran_names_list, wire_names_list
+
+

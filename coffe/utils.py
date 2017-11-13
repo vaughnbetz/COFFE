@@ -94,10 +94,63 @@ def print_area_and_delay(report_file, fpga_inst):
 
         report_file.write( "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22) + "\n")
         report_file.write( "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22) + "\n")
+
+    # Carry chain
     
+    if fpga_inst.specs.enable_carry_chain == 1:
+        #carry path
+        print "  " + (fpga_inst.carrychain.name).ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
+        report_file.write( "  " + fpga_inst.carrychain.name.ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        # Sum inverter
+        print "  " + (fpga_inst.carrychainperf.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
+        report_file.write( "  " + fpga_inst.carrychainperf.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        # mux
+        print "  " + (fpga_inst.carrychainmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
+        report_file.write( "  " + fpga_inst.carrychainmux.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        # Intercluster
+        print "  " + (fpga_inst.carrychaininter.name).ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
+        report_file.write( "  " + fpga_inst.carrychaininter.name.ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        # total carry chain area
+        print "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13) 
+        report_file.write( "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13))
+
+        if fpga_inst.specs.carry_chain_type == "skip":
+            # skip and
+            print "  " + (fpga_inst.carrychainand.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
+            report_file.write( "  " + fpga_inst.carrychainand.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+            # skip mux
+            print "  " + (fpga_inst.carrychainskipmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
+            report_file.write( "  " + fpga_inst.carrychainskipmux.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+
+
+
+    for hardblock in fpga_inst.hardblocklist:
+        ############################################
+        ## Size dedicated routing links
+        ############################################
+        if hardblock.parameters['num_dedicated_outputs'] > 0:
+            print "  dedicated link ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.trise/1e-12,4)).ljust(13) + str(hardblock.dedicated.power/1e-6).ljust(22)
+            report_file.write( "  dedicated ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.trise/1e-12,4)).ljust(13) + str(hardblock.dedicated.power/1e-6).ljust(22) + "\n")
+        
+        print "  mux " + str(hardblock.parameters['name']).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + str(hardblock.mux.power/1e-6).ljust(22)
+        report_file.write( "  mux " + str(hardblock.mux.name).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + str(hardblock.mux.power/1e-6).ljust(22) + "\n")
+        
+    # Connection block mux
+    print "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6)
+    report_file.write( "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6) + "\n")
+    
+    # Switch block mux
+    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22)
+    report_file.write( "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22) + "\n")
+    
+
     if fpga_inst.specs.enable_bram_block == 0:
         report_file.write( "\n" )
         return
+
+    
+
+
     # RAM
 
     # RAM local input mux
@@ -188,6 +241,9 @@ def print_area_and_delay(report_file, fpga_inst):
     print "  Level Shifter".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22)
     report_file.write( " Level Shifter ".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22) + "\n")
     
+
+
+
 
     report_file.write( "\n" )
 
@@ -451,7 +507,10 @@ def load_arch_params(filename):
         'MTJ_Rlow_worstcase': 3060,
         'MTJ_Rhigh_worstcase': 4840,
         'use_fluts': False,
-        'independent_inputs': 0
+        'independent_inputs': 0,
+        'enable_carry_chain': 0,
+        'carry_chain_type': "ripple",
+        'FAs_per_flut':2
     }
 
     params_file = open(filename, 'r')
@@ -546,6 +605,12 @@ def load_arch_params(filename):
             arch_params['use_fluts'] = (value == 'True')
         elif param == 'independent_inputs':
             arch_params['independent_inputs'] = int(value)
+        elif param == 'enable_carry_chain':
+            arch_params['enable_carry_chain'] = int(value)
+        elif param == 'carry_chain_type':
+            arch_params['carry_chain_type'] = value
+        elif param == 'FAs_per_flut':
+            arch_params['FAs_per_flut'] = int(value)
         elif param == 'vref':
             arch_params['ref'] = float(value)
         elif param == 'worst_read_current':
@@ -600,6 +665,182 @@ def load_arch_params(filename):
     check_arch_params(arch_params, filename)
 
     return arch_params 
+
+
+
+
+def load_hard_params(filename):
+    """ Parse the hard block description file and load values into dictionary. 
+        Returns this dictionary.
+    """
+    
+    # This is the dictionary of parameters we expect to find
+    hard_params = {
+        'name': "",
+        'num_gen_inputs': -1,
+        'crossbar_population': -1.0,
+        'height': -1,
+        'num_gen_outputs': -1,
+        'num_crossbars': -1,
+        'crossbar_modelling': "",
+        'num_dedicated_outputs': -1,
+        'soft_logic_per_block': -1.0,
+        'area_scale_factor': -1.0,
+        'freq_scale_factor': -1.0,
+        'power_scale_factor': -1.0,
+        'input_usage': -1.0,
+        # Flow Settings:
+        'design_folder': "",
+        'design_language': '',
+        'clock_pin_name': "",
+        'clock_period': [],
+        'top_level': "",
+        'synth_folder': "",
+        'show_warnings': False,
+        'synthesis_only': False,
+        'read_saif_file': False,
+        'static_probability': -1.0,
+        'toggle_rate': -1,
+        'link_libraries': '',
+        'target_libraries': '',
+        'lef_files': '',
+        'best_case_libs': '',
+        'standard_libs': '',
+        'worst_case_libs': '',
+        'power_ring_width': -1,
+        'power_ring_spacing': -1,
+        'height_to_width_ratio': -1.0,
+        'core_utilization': [],
+        'space_around_core': -1,
+        'pr_folder': "",
+        'primetime_lib_path': '',
+        'primetime_folder': "" ,
+        'delay_cost_exp': 1.0,
+        'area_cost_exp': 1.0,
+        'wire_selection': [],
+        'metal_layers': [],
+        'mode_signal': []
+
+    }
+
+
+
+    hard_file = open(filename, 'r')
+    for line in hard_file:
+    
+        # Ignore comment lines
+        if line.startswith('#'):
+            continue
+        
+        # Remove line feeds and spaces
+        line = line.replace('\n', '')
+        line = line.replace('\r', '')
+        line = line.replace('\t', '')
+        
+        # Ignore empty lines
+        if line == "":
+            continue
+        
+        # Split lines at '='
+        words = line.split('=')
+        if words[0] not in hard_params.keys():
+            print "ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename
+            sys.exit()
+         
+        param = words[0]
+        value = words[1]
+
+        #architecture parameters 
+        if param == 'name':
+            hard_params['name'] = value
+        elif param == 'num_gen_inputs':
+            hard_params['num_gen_inputs'] = int(value)
+        elif param == 'crossbar_population':
+            hard_params['crossbar_population'] = float(value)
+        elif param == 'height':
+            hard_params['height'] = int(value)
+        elif param == 'num_gen_outputs':
+            hard_params['num_gen_outputs'] = int(value)
+        elif param == 'num_dedicated_outputs':
+            hard_params['num_dedicated_outputs'] = int(value)
+        elif param == 'soft_logic_per_block':
+            hard_params['soft_logic_per_block'] = float(value)
+        elif param == 'area_scale_factor':
+            hard_params['area_scale_factor'] = float(value)
+        elif param == 'freq_scale_factor':
+            hard_params['freq_scale_factor'] = float(value)
+        elif param == 'power_scale_factor':
+            hard_params['power_scale_factor'] = float(value)  
+        elif param == 'input_usage':
+            hard_params['input_usage'] = float(value)  
+        elif param == 'delay_cost_exp':
+            hard_params['delay_cost_exp'] = float(value)  
+        elif param == 'area_cost_exp':
+            hard_params['area_cost_exp'] = float(value)              
+            #flow parameters:
+        elif param == 'design_folder':
+            hard_params['design_folder'] = value
+        elif param == 'design_language':
+            hard_params['design_language'] = value
+        elif param == 'clock_pin_name':
+            hard_params['clock_pin_name'] = value
+        elif param == 'clock_period':
+            hard_params['clock_period'].append(value)
+        elif param == 'wire_selection':
+            hard_params['wire_selection'].append(value)
+        elif param == 'core_utilization':
+            hard_params['core_utilization'].append(value)
+        elif param == 'metal_layers':
+            hard_params['metal_layers'].append(value)
+        elif param == 'crossbar_modelling':
+            hard_params['crossbar_modelling'] = value
+        elif param == 'num_crossbars':
+            hard_params['num_crossbars'] = int(value)
+        elif param == 'top_level':
+            hard_params['top_level'] = value
+        elif param == 'synth_folder':
+            hard_params['synth_folder'] = value
+        elif param == 'show_warnings':
+            hard_params['show_warnings'] = (value == "True")
+        elif param == 'synthesis_only':
+            hard_params['synthesis_only'] = (value == "True")
+        elif param == 'read_saif_file':
+            hard_params['read_saif_file'] = (value == "True")
+        elif param == 'static_probability':
+            hard_params['static_probability'] = value
+        elif param == 'toggle_rate':
+            hard_params['toggle_rate'] = value
+        elif param == 'link_libraries':
+            hard_params['link_libraries'] = value
+        elif param == 'target_libraries':
+            hard_params['target_libraries'] = value
+        elif param == 'lef_files':
+            hard_params['lef_files'] = value
+        elif param == 'best_case_libs':
+            hard_params['best_case_libs'] = value
+        elif param == 'standard_libs':
+            hard_params['standard_libs'] = value
+        elif param == 'worst_case_libs':
+            hard_params['worst_case_libs'] = value
+        elif param == 'power_ring_width':
+            hard_params['power_ring_width'] = value
+        elif param == 'power_ring_spacing':
+            hard_params['power_ring_spacing'] = value
+        elif param == 'height_to_width_ratio':
+            hard_params['height_to_width_ratio'] = value
+        elif param == 'space_around_core':
+            hard_params['space_around_core'] = value
+        elif param == 'pr_folder':
+            hard_params['pr_folder'] = value
+        elif param == 'primetime_lib_path':
+            hard_params['primetime_lib_path'] = value
+        elif param == 'primetime_folder':
+            hard_params['primetime_folder'] = value
+
+    hard_file.close()
+    
+    
+    return hard_params
 
 
 def check_arch_params (arch_params, filename):

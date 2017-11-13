@@ -1,0 +1,120 @@
+#This is a sample settings file for the hard block flow
+
+#############################################
+########## General Design Settings ##########
+#############################################
+# The folder in which all the design files are located:
+design_folder=../router/
+
+# The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+design_language=verilog
+
+delay_cost_exp=1.0
+area_cost_exp=1.0
+
+########################################
+########## Synthesis Settings ##########
+########################################
+
+# Name of the clock pin in the design
+clock_pin_name=clk
+
+# Desired clock period in ns
+clock_period=10.0
+
+# Name of the top-level entity in the design
+#top_level=ASU_conv
+top_level=router_wrap
+
+# The name of the folder in which post-synthesis files and synthesis reports are to be stored
+synth_folder=~/COFFE-master/input_files/BRAM/synth/
+
+# Do you want to be informed of warnings during synthesis?
+
+show_warnings=True
+
+# Should the flow terminate after synthesis?
+# A value of "False" will continue into placement and routing
+synthesis_only=False
+
+# Do you want to provide a saif file for power analysis?
+# In case of setting this to "True" a saif.saif file should be provided
+read_saif_file=False
+
+# If you don't want to provide a saif file, specify the switching activity parameters below:
+static_probability=0.5
+toggle_rate=25
+
+
+# Location of the library files.
+# if you have more than one library, please provide them similiar to the example below.
+
+link_libraries="**ADDRESS TO LINK LIBRARIES**.db"
+
+target_libraries="*ADDRESS TO TARGET LIBRARIES**.db"
+
+##############################################
+########## Place and Route Settings ##########
+##############################################
+
+# Libraries required in EDI:
+
+metal_layers=9
+
+#wire_selection=WireAreaLowkCon
+#wire_selection=WireAreaLowkAgr
+wire_selection=WireAreaForZero
+
+
+
+core_utilization=0.85
+
+lef_files="*ADDRESS TO LEF FILES.lef**"
+
+
+best_case_libs="*ADDRESS TO LIBRARIES**"
+
+standard_libs="*ADDRESS TO LIBRARIES**"
+
+worst_case_libs="*ADDRESS TO LIBRARIES**"
+
+
+
+# EDI settings:
+power_ring_width=3
+power_ring_spacing=3
+height_to_width_ratio=1.0
+
+space_around_core=5
+
+
+# The folder in which place and route reports and post-routing netlists and spef files will be stored
+pr_folder=~/COFFE-master/input_files/BRAM/pr/
+
+
+##############################################
+########## Prime Time Settings ###############
+##############################################
+
+#mode_signal=mode_0
+#mode_signal=mode_1
+
+primetime_lib_path=".*paths for primetime*"
+
+
+primetime_folder=~/COFFE-master/input_files/BRAM/final_analysis/
+
+# COFFE parameters:
+name=hard_block
+num_gen_inputs=288
+crossbar_population=0.5
+height=1
+num_gen_outputs=288
+num_dedicated_outputs=0
+soft_logic_per_block=0.1
+area_scale_factor=0.12
+freq_scale_factor=1.35
+power_scale_factor=0.3
+input_usage=0.8
+num_crossbars=1
+crossbar_modelling=optimistic

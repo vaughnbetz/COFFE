@@ -179,6 +179,9 @@ use_fluts = False
 independent_inputs = arch_params_dict['independent_inputs']
 use_fluts = arch_params_dict['use_fluts']
 
+enable_carry_chain = arch_params_dict['enable_carry_chain']
+carry_chain_type = arch_params_dict['carry_chain_type']
+FAs_per_flut = arch_params_dict['FAs_per_flut']
 
 
 if arch_params_dict['transistor_type'] == "finfet":
@@ -213,7 +216,7 @@ if not use_finfet :
                           use_finfet,
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs)
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut)
 else :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 
@@ -229,7 +232,7 @@ else :
                           use_finfet,
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs)
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut)
 
 
 
@@ -291,9 +294,8 @@ if is_size_transistors:
                                       area_opt_weight, 
                                       delay_opt_weight, 
                                       spice_interface)    
-    
-# Update subcircuit delays (these are the final values)
-fpga_inst.update_delays(spice_interface)
+else:
+  fpga_inst.update_delays(spice_interface)
 
 # Obtain Memory core power
 if enable_bram_module == 1:
@@ -371,5 +373,5 @@ vpr_file = open(arch_desc_words[0] + ".xml", 'w')
 if enable_bram_module == 1:
   coffe.vpr.print_vpr_file_memory(vpr_file, fpga_inst)
 else:
-  coffe.vpr.print_vpr_file(vpr_file, fpga_inst)
+  coffe.vpr.print_vpr_file_flut_hard(vpr_file, fpga_inst)
 vpr_file.close()

@@ -19,7 +19,7 @@ ERF_MONITOR_VERBOSE = True
 # This is the ERF error tolerance. E.g. 0.01 means 1%.
 ERF_ERROR_TOLERANCE = 0.1
 # Maximum number of times the algorithm will try to meet ERF_ERROR_TOLERANCE before quitting.
-ERF_MAX_ITERATIONS = 3
+ERF_MAX_ITERATIONS = 4
 
 
 
@@ -234,29 +234,40 @@ def export_erf_results(results_filename, element_names, sizing_combos, best_resu
 	results_file.close()
 	
 	
-def get_eval_area(fpga_inst, opt_type, subcircuit, is_ram_component):
+def get_eval_area(fpga_inst, opt_type, subcircuit, is_ram_component, is_cc_component):
 
 	# Get area based on optimization type (subcircuit if local optimization, tile if global)
 	if opt_type == "local":
 		area = fpga_inst.area_dict[subcircuit.name]
 	# If the block being sized is part of the memory component, return ram size
 	# Otherwise, the block size is returned
-
+	elif "hard_block" in subcircuit.name:
+		return subcircuit.area
+	elif is_cc_component == 1:
+		return fpga_inst.area_dict["total_carry_chain"]
 	elif is_ram_component == 0 or fpga_inst.specs.enable_bram_block == 0:
 		return fpga_inst.area_dict["tile"] 
 	else:
 		return fpga_inst.area_dict["ram_core"]
 		
 	
-def get_final_area(fpga_inst, opt_type, subcircuit):
-
+def get_final_area(fpga_inst, opt_type, subcircuit, is_ram_component, is_cc_component):
+	# Get area based on optimization type (subcircuit if local optimization, tile if global)
 	if opt_type == "local":
-		return fpga_inst.area_dict[subcircuit.name]
+		area = fpga_inst.area_dict[subcircuit.name]
+	# If the block being sized is part of the memory component, return ram size
+	# Otherwise, the block size is returned
+	elif "hard_block" in subcircuit.name:
+		return subcircuit.area
+	elif is_cc_component == 1:
+		return fpga_inst.area_dict["total_carry_chain"]
+	elif is_ram_component == 0 or fpga_inst.specs.enable_bram_block == 0:
+		return fpga_inst.area_dict["tile"] 
 	else:
-		return fpga_inst.area_dict["tile"]
+		return fpga_inst.area_dict["ram_core"]
 		
 	
-def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, is_ram_component):
+def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, is_ram_component, is_cc_component):
 
 	# omit measurements that are negative or doesn't reach Vgnd
 	if tfall < 0 or trise < 0 or low_voltage > 2.0e-1:
@@ -268,6 +279,35 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 
 	# Use average delay for evaluation
 	delay = (tfall + trise)/2
+
+	skip_size = 5
+
+	if "hard_block" in subcircuit.name:
+		delaywrost = 0.0
+		if tfall > trise:
+			delayworst = tfall
+		else:
+			delayworst = trise
+
+		subcircuit.delay = delay
+		subcircuit.trise = trise
+		subcircuit.tfall = tfall
+
+		if delayworst > subcircuit.lowerbounddelay:
+			return subcircuit.delay + 10* (delayworst - subcircuit.lowerbounddelay)
+		else:
+			return subcircuit.delay
+
+	if is_cc_component:
+		subcircuit.delay = delay
+		if fpga_inst.specs.carry_chain_type == "ripple":
+			path_delay =  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain.delay + fpga_inst.carrychainperf.delay + fpga_inst.carrychaininter.delay
+			# The skip is pretty much dependent on size, I'll just assume 4 skip stages for now. However, it should work for any number of bits.
+		elif fpga_inst.specs.carry_chain_type == "skip":
+			# The critical path is the ripple path and the skip of the first one + the skip path of blocks in between, and the ripple and sum of the last block + the time it takes to load the wire in between
+			path_delay = (fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay
+		return path_delay
+
 		
 	if opt_type == "local":
 		return delay
@@ -297,6 +337,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		path_delay += fpga_inst.logic_cluster.ble.general_output.delay*fpga_inst.logic_cluster.ble.general_output.delay_weight
 		if fpga_inst.specs.use_fluts:
 			path_delay += fpga_inst.logic_cluster.ble.fmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
+
+		if fpga_inst.specs.enable_carry_chain == 1:
+			path_delay += fpga_inst.carrychainmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
 
 		#print path_delay
 		#path_delay +=fpga_inst.carrychain.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
@@ -442,7 +485,9 @@ def get_current_delay(fpga_inst, is_ram_component):
 	else:
 		return ram_delay
 
-def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
+def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_component, is_cc_component):
+
+
 
 	# Use largest delay for final results
 	if tfall > trise:
@@ -455,7 +500,23 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise):
 			print "ERROR: final delat is negative"
 			print "***Negative delay: " + str(delay) + " in " + subcircuit.name + " ***"
 			exit(2)
-		
+	subcircuit.delay = delay
+	subcircuit.trise = trise
+	subcircuit.tfall = tfall
+	if "hard_block" in subcircuit.name:
+		return subcircuit.delay
+
+	skip_size = 5
+	if is_cc_component:
+		if fpga_inst.specs.carry_chain_type == "ripple":
+			path_delay =  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain.delay + fpga_inst.carrychainperf.delay + fpga_inst.carrychaininter.delay
+			# The skip is pretty much dependent on size, I'll just assume 4 skip stages for now. However, it should work for any number of bits.
+		elif fpga_inst.specs.carry_chain_type == "skip":
+			# The critical path is the ripple path and the skip of the first one + the skip path of blocks in between, and the ripple and sum of the last block + the time it takes to load the wire in between
+			path_delay = (fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay
+		return path_delay
+
+
 	if opt_type == "local":
 		return delay
 	else:
@@ -1143,7 +1204,7 @@ def run_combo(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interf
 
 	
 def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, area_opt_weight, 
-				  delay_opt_weight, outer_iter, inner_iter, bunch_num, spice_interface, is_ram_component):
+				  delay_opt_weight, outer_iter, inner_iter, bunch_num, spice_interface, is_ram_component, is_cc_component):
 	""" 
 		Function for searching a range of transistor sizes. 
 		The first thing we do is determine P/N ratios to use for these size ranges.
@@ -1199,7 +1260,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 		# Calculate area of everything
 		fpga_inst.update_area()
 		# Get evaluation area
-		area_list.append(get_eval_area(fpga_inst, opt_type, sizable_circuit, is_ram_component))
+		area_list.append(get_eval_area(fpga_inst, opt_type, sizable_circuit, is_ram_component, is_cc_component))
 		# Re-calculate wire lengths
 		fpga_inst.update_wires()
 		# Update wire resistance and capacitance
@@ -1307,7 +1368,8 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 		# Calculate evaluation delay
 		tfall_trise = tfall_trise_list[i]
 
-		delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, tfall_trise[0], tfall_trise[1], meas_logic_low_voltage[i], is_ram_component)
+
+		delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, tfall_trise[0], tfall_trise[1], meas_logic_low_voltage[i], is_ram_component, is_cc_component)
 
 
 		eval_delay_list.append(delay)
@@ -1381,10 +1443,10 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 								 spice_interface)
 
 		# Get final delay (we use final because ERFing is done for each combo)
-		delay = get_final_delay(fpga_inst, opt_type, sizable_circuit, tfall, trise)
+		delay = get_final_delay(fpga_inst, opt_type, sizable_circuit, tfall, trise, is_ram_component, is_cc_component)
 		# Get area (run_combo will have updated the area numbers for us so we can get it 
 		# directly)
-		area = get_final_area(fpga_inst, opt_type, sizable_circuit)
+		area = get_final_area(fpga_inst, opt_type, sizable_circuit, is_ram_component, is_cc_component)
 		# Calculate cost
 		cost = cost_function(area, delay, area_opt_weight, delay_opt_weight)
 		# Add to best results (cost, combo_index, area, delay, tfall, trise, erf_ratios)
@@ -1777,7 +1839,8 @@ def size_subcircuit_transistors(fpga_inst,
 								outer_iter, 
 								initial_transistor_sizes, 
 								spice_interface,
-								is_ram_component):
+								is_ram_component,
+								is_cc_component):
 	"""
 		Size transistors for one subcircuit.
 	"""
@@ -1859,7 +1922,8 @@ def size_subcircuit_transistors(fpga_inst,
 												 inner_iter, 
 												 set_num, 
 												 spice_interface,
-												 is_ram_component)
+												 is_ram_component,
+												 is_cc_component)
 										 
 			sizing_results_set = search_ranges_return[0]
 			sizing_results_set_detailed = search_ranges_return[1]
@@ -2163,7 +2227,7 @@ def size_fpga_transistors(fpga_inst,
 
 		
 		print "Sizing will begin now."
-		current_cost = cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)
+		current_cost = cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)
 		print "Current Cost: " + str(current_cost)
 		time_before_sizing = time.time()
 
@@ -2174,8 +2238,49 @@ def size_fpga_transistors(fpga_inst,
 		# Note: Please enable quick mode only for global optimization
 		# Also, note that quickmode may slightly degrade (~3-4%) logic optimization while it will not have much of an impact on BRAM (>1%)
 		# hence, after figuring out the best architecture or changing the code, consider running without quicmode for a better logic result. (if needed)
-		
 
+		for hardblock in fpga_inst.hardblocklist:
+			############################################
+			## Size hard block custom components
+			############################################
+			if hardblock.parameters['num_dedicated_outputs'] > 0:
+				name = hardblock.dedicated.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(hardblock.dedicated.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, hardblock.dedicated, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			name = hardblock.mux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(hardblock.mux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, hardblock.mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			time_before_sizing = time.time()
+
+
+
+		
 		############################################
 		## Size switch block mux transistors
 		############################################
@@ -2192,7 +2297,7 @@ def size_fpga_transistors(fpga_inst,
 
 		# Size the transistors of this subcircuit
 		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 		else:
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
@@ -2202,7 +2307,7 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
@@ -2225,7 +2330,7 @@ def size_fpga_transistors(fpga_inst,
 			
 		# Size the transistors of this subcircuit
 		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 		else:
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
@@ -2235,7 +2340,7 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
@@ -2259,7 +2364,7 @@ def size_fpga_transistors(fpga_inst,
 		
 		# Size the transistors of this subcircuit
 		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 		else:
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]        
@@ -2269,7 +2374,7 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
@@ -2295,7 +2400,7 @@ def size_fpga_transistors(fpga_inst,
 		
 		# Size the transistors of this subcircuit
 		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.lut, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.lut, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 		else:
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]      
@@ -2305,7 +2410,7 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
@@ -2329,7 +2434,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.fmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.fmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]      
@@ -2339,7 +2444,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 				
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
@@ -2363,7 +2468,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict["input_drivers"] == 1:
-				sizing_results_dict[input_driver.driver.name], sizing_results_detailed_dict[input_driver.driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+				sizing_results_dict[input_driver.driver.name], sizing_results_detailed_dict[input_driver.driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[input_driver.driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
 				sizing_results_detailed_dict[input_driver.driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.driver.name]   
@@ -2378,7 +2483,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict["input_drivers"] == 1:
-				sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+				sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[input_driver.not_driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
 				sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name]      
@@ -2387,7 +2492,7 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict["input_drivers"] = 0
 
@@ -2410,7 +2515,7 @@ def size_fpga_transistors(fpga_inst,
 		
 		# Size the transistors of this subcircuit
 		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.local_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.local_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 		else:
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2419,7 +2524,7 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
@@ -2442,7 +2547,7 @@ def size_fpga_transistors(fpga_inst,
 		
 		# Size the transistors of this subcircuit
 		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0)
+			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 		else:
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2451,16 +2556,228 @@ def size_fpga_transistors(fpga_inst,
 			time_after_sizing = time.time()
 			
 			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
 			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
 			print "Duration: " + str(time_after_sizing - time_before_sizing)
 			print "Current Cost: " + str(current_cost)
 
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
 		time_before_sizing = time.time()
+
+		
+		if fpga_inst.specs.enable_carry_chain == 1:
+			############################################
+			## Size Carry Chain
+			############################################
+			name = fpga_inst.carrychain.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychain.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychain, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size Carry Chain Sum Path
+			############################################
+			name = fpga_inst.carrychainperf.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainperf.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainperf, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size Carry Inter Cluster Path
+			############################################
+			name = fpga_inst.carrychaininter.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychaininter.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychaininter, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size Carry Chain (SKIP) components
+			############################################
+			if fpga_inst.specs.carry_chain_type == "skip":
+				name = fpga_inst.carrychainand.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainand.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainand, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+					
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print "Duration: " + str(time_after_sizing - time_before_sizing)
+					print "Current Cost: " + str(current_cost)
+
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+				time_before_sizing = time.time()
+
+			if fpga_inst.specs.carry_chain_type == "skip":
+				name = fpga_inst.carrychainskipmux.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainskipmux.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainskipmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+					
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print "Duration: " + str(time_after_sizing - time_before_sizing)
+					print "Current Cost: " + str(current_cost)
+
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+				time_before_sizing = time.time()
+
+
+			############################################
+			## Size Carry Chain Additional Mux
+			############################################
+			name = fpga_inst.carrychainmux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainmux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
+
+
 
 		if fpga_inst.specs.enable_bram_block == 1:
 			############################################
@@ -2478,7 +2795,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.pgateoutputcrossbar, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.pgateoutputcrossbar, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2487,7 +2804,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
@@ -2511,7 +2828,7 @@ def size_fpga_transistors(fpga_inst,
 				
 			# Size the transistors of this subcircuit
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.wordlinedriver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.wordlinedriver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2520,7 +2837,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
@@ -2546,7 +2863,7 @@ def size_fpga_transistors(fpga_inst,
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict[name] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.precharge, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.precharge, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2563,7 +2880,7 @@ def size_fpga_transistors(fpga_inst,
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict[name] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.bldischarging, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.bldischarging, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2572,7 +2889,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
@@ -2596,7 +2913,7 @@ def size_fpga_transistors(fpga_inst,
 				
 			# Size the transistors of this subcircuit
 			if quick_mode_dict["rowdecoder"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2612,7 +2929,7 @@ def size_fpga_transistors(fpga_inst,
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict["rowdecoder"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2628,7 +2945,7 @@ def size_fpga_transistors(fpga_inst,
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict["rowdecoder"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2643,7 +2960,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict["rowdecoder"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage0, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage0, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2654,7 +2971,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict["rowdecoder"] = 0
 
@@ -2695,7 +3012,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.RAM_local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.RAM_local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
@@ -2704,7 +3021,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
@@ -2728,7 +3045,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict["confdec"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderiii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderiii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
@@ -2745,7 +3062,7 @@ def size_fpga_transistors(fpga_inst,
 			
 				# Size the transistors of this subcircuit
 				if quick_mode_dict["confdec"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder3ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder3ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
@@ -2761,7 +3078,7 @@ def size_fpga_transistors(fpga_inst,
 			
 				# Size the transistors of this subcircuit
 				if quick_mode_dict["confdec"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder2ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder2ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
@@ -2776,7 +3093,7 @@ def size_fpga_transistors(fpga_inst,
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict["confdec"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderi, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderi, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
@@ -2785,7 +3102,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict["confdec"] = 0
 
@@ -2808,7 +3125,7 @@ def size_fpga_transistors(fpga_inst,
 				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 			
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.columndecoder, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.columndecoder, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
@@ -2817,7 +3134,7 @@ def size_fpga_transistors(fpga_inst,
 				time_after_sizing = time.time()
 			
 				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
@@ -2829,7 +3146,6 @@ def size_fpga_transistors(fpga_inst,
 			############################################
 			## Done sizing, update results lists
 			############################################
-		
 
 		print "FPGA transistor sizing iteration complete!\n"
 		

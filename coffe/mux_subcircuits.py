@@ -146,7 +146,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		current_node = new_node  
 	spice_file.write(".ENDS\n\n\n")
 
-	
+
 def generate_ptran_2lvl_mux(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
 	""" 
 	Creates two-level MUX circuits
@@ -584,5 +584,42 @@ def generate_tgate_2_to_1_mux(spice_filename, mux_name):
 	wire_names_list = []
 	wire_names_list.append("wire_" + mux_name)
 	wire_names_list.append("wire_" + mux_name + "_driver")
+	
+	return tran_names_list, wire_names_list  
+
+
+def generate_dedicated_driver(spice_filename, driver_name, num_bufs, top_name):
+	""" Generate a driver for the dedicated routing links """
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+	# Create the driver
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* " + driver_name + " subcircuit (2:1)\n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT " + driver_name + " n_in n_out n_vdd n_gnd\n")
+	count = 1
+	spice_file.write("Xinv_" + driver_name + "_"+str(count)+" n_in n_1_"+str(count)+" n_vdd n_gnd inv Wn=inv_" + driver_name + "_"+str(1)+"_nmos Wp=inv_" + driver_name + "_"+str(1)+"_pmos\n")
+	spice_file.write("Xwirer_edi_"+str(count)+" n_1_"+str(count)+" n_1_"+str(count+1)+" wire Rw=wire_"+top_name+"_2_res/"+str(num_bufs*2)+" Cw=wire_"+top_name+"_2_cap/"+str(num_bufs*2)+" \n")
+	count += 1
+	for i in range(2, num_bufs * 2):
+		spice_file.write("Xinv_" + driver_name + "_"+str(i)+" n_1_"+str(count)+" n_1_"+str(count + 1)+" n_vdd n_gnd inv Wn=inv_" + driver_name + "_"+str(i)+"_nmos Wp=inv_" + driver_name + "_"+str(i)+"_pmos\n")
+		spice_file.write("Xwirer_edi_"+str(i)+" n_1_"+str(count + 1)+" n_1_"+str(count + 2)+" wire Rw=wire_"+top_name+"_2_res/"+str(num_bufs*2)+" Cw=wire_"+top_name+"_2_cap/"+str(num_bufs*2)+" \n")
+		count += 2
+
+	spice_file.write("Xinv_" + driver_name + "_"+str(num_bufs * 2)+" n_1_"+str(count)+" n_1_"+str(count + 1)+" n_vdd n_gnd inv Wn=inv_" + driver_name + "_"+str(num_bufs * 2)+"_nmos Wp=inv_" + driver_name + "_"+str(num_bufs * 2)+"_pmos\n")
+	spice_file.write("Xwirer_edi_"+str(num_bufs * 2 + 1)+" n_1_"+str(count + 1)+" n_out wire Rw=wire_"+top_name+"_2_res/"+str(num_bufs*2)+" Cw=wire_"+top_name+"_2_cap/"+str(num_bufs*2)+" \n")
+
+	spice_file.write(".ENDS\n\n\n")
+	spice_file.close()
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	for i in range(1, num_bufs * 2 + 1):
+		tran_names_list.append("inv_" + driver_name + "_"+str(i)+"_nmos")
+		tran_names_list.append("inv_" + driver_name + "_"+str(i)+"_pmos")
+		
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
 	
 	return tran_names_list, wire_names_list  
