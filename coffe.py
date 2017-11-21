@@ -60,9 +60,6 @@ parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPG
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
 
-#RAM parameters
-parser.add_argument('-e', '--ram_enable', type=int, default=0, help="include a RAM block in simulations")
-
 
 args = parser.parse_args()
 arch_description_filename = args.arch_description
@@ -73,8 +70,8 @@ area_opt_weight = args.area_opt_weight
 delay_opt_weight = args.delay_opt_weight
 max_iterations = args.max_iterations
 initial_sizes = args.initial_sizes
-ram_enable = args.ram_enable
 quick_mode_threshold = args.quick_mode
+
 
 # Make the top-level spice folder if it doesn't already exist
 arch_desc_words = arch_description_filename.split('.')
@@ -183,6 +180,7 @@ enable_carry_chain = arch_params_dict['enable_carry_chain']
 carry_chain_type = arch_params_dict['carry_chain_type']
 FAs_per_flut = arch_params_dict['FAs_per_flut']
 
+hb_files = arch_params_dict['hb_files']
 
 if arch_params_dict['transistor_type'] == "finfet":
     use_finfet = True
@@ -216,7 +214,8 @@ if not use_finfet :
                           use_finfet,
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut)
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
+                          hb_files)
 else :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 
@@ -232,7 +231,8 @@ else :
                           use_finfet,
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut)
+                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
+                          hb_files)
 
 
 

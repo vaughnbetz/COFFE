@@ -15,7 +15,6 @@ import math
 def hardblock_flow(flow_settings):
 
 	# Enter all the signals that change modes
-	already_synthesized = False
 	lowest_cost = sys.float_info.max
 	lowest_cost_area = 1.0
 	lowest_cost_delay = 1.0

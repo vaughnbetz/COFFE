@@ -95,7 +95,7 @@ class _Specs:
                     vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
                      use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                      memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                     enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut):
+                     enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
         self.N = N
         self.K = K
         self.W = W
@@ -1600,7 +1600,7 @@ class _LUT(_SizableCircuit):
         return self.initial_transistor_sizes
 
   
-    def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet):
+    def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         print "Generating 4-LUT"
         
         # Call the generation function
@@ -5270,14 +5270,14 @@ class FPGA:
                     vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library, metal_stack, 
                         use_tgate, use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                         memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                        enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut):
+                        enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
           
         # Initialize the specs
         self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                                         vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
                                          use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                                          memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                                         enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut)
+                                         enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files)
 
                                         
         ### CREATE SWITCH BLOCK OBJECT
@@ -5358,7 +5358,7 @@ class FPGA:
 
         # Hard blocks
         self.hardblocklist = []
-        self.hard_block_files = {"input_files/BRAM/hb1.txt"}
+        self.hard_block_files = hb_files
         #self.hard_block_files = {}
         for name in self.hard_block_files:
             hard_block = _hard_block(name, use_tgate)

@@ -510,7 +510,8 @@ def load_arch_params(filename):
         'independent_inputs': 0,
         'enable_carry_chain': 0,
         'carry_chain_type': "ripple",
-        'FAs_per_flut':2
+        'FAs_per_flut':2,
+        'hb_files' : []
     }
 
     params_file = open(filename, 'r')
@@ -652,6 +653,8 @@ def load_arch_params(filename):
             c = c.replace('\r', '')
             c = c.replace('\t', '')
             arch_params['metal'].append((float(r),float(c)))
+        elif param == 'hb_files':
+            arch_params['hb_files'].append(value)
 
     params_file.close()
     
