@@ -70,9 +70,7 @@ def hardblock_flow(flow_settings):
 			file.write("if { $find_clock != [list] } { \n")
 			file.write("set clk_name $my_clock_pin \n")
 			file.write("create_clock -period $my_period $clk_name} \n\n")
-			file.write("compile_ultra -no_autoungroup -no_boundary_optimization\n")
-			#file.write("compile_ultra\n")
-			#file.write("compile\n")
+			file.write("compile_ultra\n")
 			file.write("check_design >  "+os.path.expanduser(flow_settings['synth_folder'])+"check.rpt\n")
 			file.write("link \n")
 			file.write("write_file -format ddc -hierarchy -output "+os.path.expanduser(flow_settings['synth_folder'])+""+ flow_settings['top_level'] +".ddc \n")
@@ -82,12 +80,13 @@ def hardblock_flow(flow_settings):
 			else:
 				file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [all_nets] \n")
 
-			#file.write("ungroup -all -flatten \n")
+			file.write("ungroup -all -flatten \n")
 			file.write("report_power > "+os.path.expanduser(flow_settings['synth_folder'])+"power.rpt\n")
 			file.write("report_area -nosplit -hierarchy > "+os.path.expanduser(flow_settings['synth_folder'])+"area.rpt\n")
 			file.write("report_resources -nosplit -hierarchy > "+os.path.expanduser(flow_settings['synth_folder'])+"resources.rpt\n")			
 			file.write("report_timing > "+os.path.expanduser(flow_settings['synth_folder'])+"timing.rpt\n")
 			file.write("change_names -hier -rule verilog \n") 
+			
 			file.write("write -f verilog -output "+os.path.expanduser(flow_settings['synth_folder'])+"synthesized.v\n")
 			file.write("write_sdf "+os.path.expanduser(flow_settings['synth_folder'])+"synthsized.sdf \n")
 			file.write("write_parasitics -output "+os.path.expanduser(flow_settings['synth_folder'])+"synthesized.spef \n")
@@ -95,7 +94,6 @@ def hardblock_flow(flow_settings):
 
 			file.write("quit \n")
 			file.close()
-
 
 			# Run the scrip in design compiler shell
 			subprocess.call('dc_shell-t -f dc_script.tcl', shell=True, executable='/bin/tcsh') 
@@ -281,14 +279,41 @@ def hardblock_flow(flow_settings):
 					else:
 						mode_enabled = False
 					the_power = 0.0
-			
+
+					# Optional: use modelsim to generate an activity file for the design:
+
+					# Create a modelsim folder
+					#subprocess.call("mkdir "+os.path.expanduser("./modelsim_dir")+"\n", shell=True)
+					# Create a modelsim .do file:
+					#subprocess.call("vlib modelsim_dir/libraries"+"\n",shell=True)
+					# todo: change the address and take it from the user as input
+					#subprocess.call("vlog -work modelsim_dir/libraries /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/verilog/tcbn65gplus_140b/tcbn65gplus.v /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/verilog/tpzn65gpgv2_140c/tpzn65gpgv2.v"+"\n",shell=True)
+					
+					
+					file = open("modelsim.do", "w")
+					file.write("cd "+os.path.expanduser("./modelsim_dir")+"\n")
+					file.write("vlib work \n")
+					file.write("vlog -work work ../../test/testbench.v \n")
+					file.write("vlog -work work ../../pr/netlist.v \n")
+					file.write("vsim -L work -L libraries testbench\n")
+					file.write("vcd file vcd.vcd \n")
+					file.write("vcd add -r testbench/uut/* \n")
+					file.write("run 1000 ns \n")
+					file.write("quit \n")
+					file.close()			
+
+					subprocess.call('vsim -c -do modelsim.do', shell=True) 					
+					subprocess.call('rm -rf modelsim.do', shell=True)
+					subprocess.call('vcd2wlf ./modelsim_dir/vcd.vcd out.wlf', shell=True)
+					subprocess.call('wlf2vcd -o test.vcd out.wlf', shell=True)
+					subprocess.call('vcd2saif -input test.vcd -o saif.saif', shell=True)
+					
 
 					for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
 						if not mode_enabled:
 							x = 2**len(flow_settings['mode_signal'])
 						# backannotate into primetime
 						# This part should be reported for all the modes in the design.
-						# This script supports two modes at the moment but can be easily changed to support more.
 						subprocess.call("mkdir "+os.path.expanduser(flow_settings['primetime_folder'])+"\n", shell=True)
 						file = open("primetime.tcl", "w")
 						file.write("set sh_enable_page_mode true \n")
@@ -342,11 +367,14 @@ def hardblock_flow(flow_settings):
 								file.write("set_case_analysis "+str((x >> y) & 1)+" "+ flow_settings['mode_signal'][y]+ " \n")
 						file.write("set power_enable_analysis TRUE \n")
 						file.write(r'set power_analysis_mode "averaged"'+"\n")
-						if flow_settings['read_saif_file']:
-							file.write("read_saif saif.saif \n")
-						else:
-							file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [all_nets] \n")
+						#if flow_settings['read_saif_file']:
+						#	file.write("read_saif saif.saif \n")
+						#else:
+						#	file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [all_nets] \n")
+						file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
+						#file.write("read_vcd -input ./modelsim_dir/vcd.vcd \n")
 						file.write(r'read_parasitics -increment '+os.path.expanduser(flow_settings['pr_folder'])+r'spef.spef'+"\n")
+						#file.write("update_power \n")
 						file.write(r'report_power > '+os.path.expanduser(flow_settings['primetime_folder'])+r'power.rpt'+" \n")
 						file.write("quit\n")
 						file.close()

@@ -2,9 +2,11 @@
 # Created by: Charles Chiasson (charles.chiasson@gmail.com)
 #         at: University of Toronto
 #         in: 2013        
-           
+      
 # BRAM simulation added by Sadegh Yazdanshenas in 2016
 # MTJ and SRAM designs by Kosuke Tatsumura
+# COFFE 2.0 by Sadegh Yazdanshenas 2015-2018     
+
 # The big picture:
 #
 # COFFE will size the transistors of an FPGA based on some input architecture 
@@ -40,8 +42,9 @@ import coffe.tran_sizing as tran_sizing
 import coffe.utils
 import coffe.vpr
 import datetime
+import math
 
-print "\nCOFFE 1.1\n"
+print "\nCOFFE 2.0\n"
 print "Man is a tool-using animal."
 print "Without tools he is nothing, with tools he is all."
 print "                           - Thomas Carlyle\n\n"
@@ -194,6 +197,9 @@ if arch_params_dict['switch_type'] == "transmission_gate":
 # while running HSPICE, this variable is so that we can get back to our starting point
 default_dir = os.getcwd()
 
+# Create an HSPICE interface
+spice_interface = spice.SpiceInterface()
+
 
 # Record start time
 total_start_time = time.time()
@@ -215,7 +221,8 @@ if not use_finfet :
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
                           read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
-                          hb_files)
+                          hb_files, area_opt_weight, delay_opt_weight,
+                          spice_interface)
 else :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 
@@ -232,7 +239,8 @@ else :
                           rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                           memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
                           read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
-                          hb_files)
+                          hb_files, area_opt_weight, delay_opt_weight,
+                          spice_interface)
 
 
 
@@ -281,8 +289,7 @@ os.chdir(arch_folder)
 ###############################################################
 ## TRANSISTOR SIZING
 ###############################################################
-# Create an HSPICE interface
-spice_interface = spice.SpiceInterface()
+
 
 sys.stdout.flush()
 # Size FPGA transistors
@@ -296,13 +303,32 @@ if is_size_transistors:
                                       spice_interface)    
 else:
   fpga_inst.update_delays(spice_interface)
-
+  fpga_inst.update_area()
+  fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
+  fpga_inst.update_area()
+  fpga_inst.compute_distance()
+  fpga_inst.update_wires()
+  fpga_inst.update_wire_rc()
+  fpga_inst.determine_height()
+  fpga_inst.update_delays(spice_interface)
 # Obtain Memory core power
 if enable_bram_module == 1:
   fpga_inst.update_power(spice_interface)
 
 # Go back to the base directory
 os.chdir(default_dir)
+
+print str(fpga_inst.dict_real_widths["sb_sram"])
+print str(fpga_inst.dict_real_widths["sb"])
+print str(fpga_inst.dict_real_widths["cb_sram"])
+print str(fpga_inst.dict_real_widths["cb"])
+print str(fpga_inst.dict_real_widths["ic_sram"])
+print str(fpga_inst.dict_real_widths["ic"])
+print str(fpga_inst.dict_real_widths["lut_sram"])
+print str(fpga_inst.dict_real_widths["lut"])
+print str(fpga_inst.dict_real_widths["cc"])
+print str(fpga_inst.dict_real_widths["ffble"])
+print str(fpga_inst.lb_height)
 
 print "|--------------------------------------------------------------------------------------------------|"
 print "|    Area and Delay Report                                                                         |"

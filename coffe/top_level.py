@@ -4033,7 +4033,32 @@ def generate_lut6_top(lut_name, use_tgate):
     lut_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
     lut_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
     lut_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
-    
+	
+    lut_file.write(".MEASURE TRAN info_node1_lut_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_3_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN info_node1_lut_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_3_1) VAL='supply_v/2' RISE=1\n\n") 
+
+    lut_file.write(".MEASURE TRAN info_node2_lut_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_4_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN info_node2_lut_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_4_1) VAL='supply_v/2' RISE=1\n\n")     
+
+    lut_file.write(".MEASURE TRAN info_node3_lut_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_7_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN info_node3_lut_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_7_1) VAL='supply_v/2' RISE=1\n\n")   
+
+    lut_file.write(".MEASURE TRAN info_node4_lut_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_8_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN info_node4_lut_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_8_1) VAL='supply_v/2' RISE=1\n\n")   
+
+
+    lut_file.write(".MEASURE TRAN info_node5_lut_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_9_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN info_node5_lut_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_9_1) VAL='supply_v/2' RISE=1\n\n")   
     lut_file.write("********************************************************************************\n")
     lut_file.write("** Circuit\n")
     lut_file.write("********************************************************************************\n\n")
@@ -4531,21 +4556,6 @@ def generate_local_ble_output_top(name, use_tgate):
     top_file.write("+    TARG V(Xlocal_ble_output_load.n_1_2) VAL='supply_v/2' FALL=1\n\n")
 
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_local_out) AT=3n\n\n")
-
-    top_file.write(".MEASURE TRAN debug1 FIND V(n_in) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debug2 FIND V(Xlut.n_1_1) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debug3 FIND V(Xlut.n_2_2) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debug4 FIND V(Xlut.n_3_1) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debug5 FIND V(Xlut.n_4_1) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debug6 FIND V(Xlut.n_5_1) AT=1.99n\n\n")
-
-    top_file.write(".MEASURE TRAN debugm1 FIND V(Xlut.n_10_2) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debugn FIND V(Xlut.n_10_3) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debugn22 FIND V(Xlut.n_out) AT=1.99n\n\n")
-
-    top_file.write(".MEASURE TRAN debugst20 FIND V(Xlut.n_11_1) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debugst21 FIND V(Xlut.n_11_2) AT=1.99n\n\n")
-    top_file.write(".MEASURE TRAN debugst22 FIND V(Xlut.n_out) AT=1.99n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
     top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LOCAL_OUTPUT) FROM=0ns TO=4ns\n")

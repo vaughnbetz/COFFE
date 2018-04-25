@@ -52,6 +52,7 @@ import load_subcircuits
 import memory_subcircuits
 import utils
 import hardblock_functions
+import tran_sizing
 
 # Top level file generation module
 import top_level
@@ -78,6 +79,7 @@ DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0267
 DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0326
 # The res of the ~15% came from memory, DSP, IO and FF based on my delay profiling experiments.
 DELAY_WEIGHT_RAM = 0.15
+HEIGHT_SPAN = 0.5
 
 # This parameter determines if RAM core uses the low power transistor technology
 # It is strongly suggested to keep it this way since our
@@ -328,13 +330,13 @@ class _SwitchBlockMUX(_SizableCircuit):
             area_dict["switch_buf_size"] = area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
 
 
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
         # Update wire lengths
         wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_2"])/4
-        wire_lengths["wire_" + self.name + "_L1"] = width_dict[self.name]
-        wire_lengths["wire_" + self.name + "_L2"] = width_dict[self.name]
+        wire_lengths["wire_" + self.name + "_L1"] = width_dict[self.name] * ratio
+        wire_lengths["wire_" + self.name + "_L2"] = width_dict[self.name] * ratio
         
         # Update set wire layers
         wire_layers["wire_" + self.name + "_driver"] = 0
@@ -467,17 +469,18 @@ class _ConnectionBlockMUX(_SizableCircuit):
         # Update VPR area numbers
         if not self.use_tgate :
             area_dict["ipin_mux_trans_size"] = area_dict["ptran_" + self.name + "_L1"]
+            area_dict["cb_buf_size"] = area_dict["rest_" + self.name + ""] + area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]
         else :
             area_dict["ipin_mux_trans_size"] = area_dict["tgate_" + self.name + "_L1"]
-        
+            area_dict["cb_buf_size"] = area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"]  
     
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
         # Update wire lengths
         wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_2"])/4
-        wire_lengths["wire_" + self.name + "_L1"] = width_dict[self.name]
-        wire_lengths["wire_" + self.name + "_L2"] = width_dict[self.name]
+        wire_lengths["wire_" + self.name + "_L1"] = width_dict[self.name] * ratio
+        wire_lengths["wire_" + self.name + "_L2"] = width_dict[self.name] * ratio
         
         # Update set wire layers
         wire_layers["wire_" + self.name + "_driver"] = 0
@@ -606,12 +609,12 @@ class _LocalMUX(_SizableCircuit):
 
 
     
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
         # Update wire lengths
-        wire_lengths["wire_" + self.name + "_L1"] = width_dict[self.name]
-        wire_lengths["wire_" + self.name + "_L2"] = width_dict[self.name]
+        wire_lengths["wire_" + self.name + "_L1"] = width_dict[self.name] * ratio
+        wire_lengths["wire_" + self.name + "_L2"] = width_dict[self.name] * ratio
         # Update wire layers
         wire_layers["wire_" + self.name + "_L1"] = 0
         wire_layers["wire_" + self.name + "_L2"] = 0  
@@ -948,11 +951,11 @@ class _LUTInputDriverLoad:
         self.use_fluts = use_fluts
     
     
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
         # Update wire lengths
-        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"]
+        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio
         
         # Update set wire layers
         wire_layers["wire_lut_" + self.name + "_driver_load"] = 0
@@ -1217,7 +1220,7 @@ class _LUT(_SizableCircuit):
         return total_lut_area
     
 
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, lut_ratio):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
         if not self.use_tgate :
@@ -1378,7 +1381,7 @@ class _LUT(_SizableCircuit):
             
         # Update input driver load wires
         for driver_load_name, input_driver_load in self.input_driver_loads.iteritems():
-            input_driver_load.update_wires(width_dict, wire_lengths, wire_layers)
+            input_driver_load.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
     
         
     def print_details(self, report_file):
@@ -2503,15 +2506,15 @@ class _flut_mux(_CompoundCircuit):
         return area
                 
 
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, lut_ratio):
         """ Update wire of member objects. """
         # Update wire lengths
         if not self.use_tgate :
             wire_lengths["wire_" + self.name] = width_dict["ptran_" + self.name]
-            wire_lengths["wire_lut_to_flut_mux"] = width_dict["lut"]/2
+            wire_lengths["wire_lut_to_flut_mux"] = width_dict["lut"]/2 * lut_ratio
         else :
             wire_lengths["wire_" + self.name] = width_dict["tgate_" + self.name]
-            wire_lengths["wire_lut_to_flut_mux"] = width_dict["lut"]/2
+            wire_lengths["wire_lut_to_flut_mux"] = width_dict["lut"]/2 * lut_ratio
 
         wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
         
@@ -2633,11 +2636,11 @@ class _BLE(_CompoundCircuit):
 
         
         
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, lut_ratio):
         """ Update wire of member objects. """
         
         # Update lut and ff wires.
-        self.lut.update_wires(width_dict, wire_lengths, wire_layers)
+        self.lut.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
         self.ff.update_wires(width_dict, wire_lengths, wire_layers)
         
         # Update BLE output wires
@@ -2653,7 +2656,7 @@ class _BLE(_CompoundCircuit):
 
         # Fracturable luts:
         if self.use_fluts:
-            self.fmux.update_wires(width_dict, wire_lengths, wire_layers)
+            self.fmux.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
         
         
     def print_details(self, report_file):
@@ -2671,14 +2674,17 @@ class _LocalBLEOutputLoad:
         load_subcircuits.generate_local_ble_output_load(subcircuit_filename)
      
      
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ble_ic_dis):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         
         # Update wire lengths
         wire_lengths["wire_local_ble_output_feedback"] = width_dict["logic_cluster"]
-        
+        if ble_ic_dis !=0:
+            wire_lengths["wire_local_ble_output_feedback"] = ble_ic_dis
         # Update wire layers
         wire_layers["wire_local_ble_output_feedback"] = 0
+
+
         
 
 class _GeneralBLEOutputLoad:
@@ -2707,13 +2713,15 @@ class _GeneralBLEOutputLoad:
         self.wire_names = load_subcircuits.generate_general_ble_output_load(subcircuit_filename, self.num_sb_mux_off, self.num_sb_mux_partial, self.num_sb_mux_on_assumption)
         
         
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, h_dist, height):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         
         # The BLE output wire is the wire that allows a BLE output to reach routing wires in
         # the routing channels. This wire spans some fraction of a tile. We can set what that
         # fraction is with the output track-access span (track-access locality).
         wire_lengths["wire_general_ble_output"] = width_dict["tile"]*OUTPUT_TRACK_ACCESS_SPAN
+        if height != 0.0:
+            wire_lengths["wire_general_ble_output"] = (h_dist)
 
         # Update wire layers
         wire_layers["wire_general_ble_output"] = 0
@@ -2804,12 +2812,13 @@ class _LocalRoutingWireLoad:
         self.wire_names = load_subcircuits.local_routing_load_generate(subcircuit_filename, self.on_inputs_per_wire, self.partial_inputs_per_wire, self.off_inputs_per_wire)
     
     
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, local_routing_wire_load_length):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         
         # Update wire lengths
         wire_lengths["wire_local_routing"] = width_dict["logic_cluster"]
-        
+        if local_routing_wire_load_length !=0:
+            wire_lengths["wire_local_routing"] = local_routing_wire_load_length
         # Update wire layers
         wire_layers["wire_local_routing"] = 0
     
@@ -2887,14 +2896,14 @@ class _LogicCluster(_CompoundCircuit):
         self.local_mux.update_area(area_dict, width_dict)       
         
     
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ic_ratio, lut_ratio, ble_ic_dis, local_routing_wire_load_length):
         """ Update wires of things inside the logic cluster. """
         
         # Call wire update functions of member objects.
-        self.ble.update_wires(width_dict, wire_lengths, wire_layers)
-        self.local_mux.update_wires(width_dict, wire_lengths, wire_layers)
-        self.local_routing_wire_load.update_wires(width_dict, wire_lengths, wire_layers)
-        self.local_ble_output_load.update_wires(width_dict, wire_lengths, wire_layers)
+        self.ble.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
+        self.local_mux.update_wires(width_dict, wire_lengths, wire_layers, ic_ratio)
+        self.local_routing_wire_load.update_wires(width_dict, wire_lengths, wire_layers, local_routing_wire_load_length)
+        self.local_ble_output_load.update_wires(width_dict, wire_lengths, wire_layers, ble_ic_dis)
         
         
     def print_details(self, report_file):
@@ -2945,26 +2954,48 @@ class _RoutingWireLoad:
         self.wire_names = load_subcircuits.general_routing_load_generate(subcircuit_filename, self.wire_length, self.tile_sb_on, self.tile_sb_partial, self.tile_sb_off, self.tile_cb_on, self.tile_cb_partial, self.tile_cb_off)
     
     
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
+    def update_wires(self, width_dict, wire_lengths, wire_layers, height, num_sb_stripes, num_cb_stripes):
         """ Calculate wire lengths and wire layers. """
 
         # This is the general routing wire that spans L tiles
         wire_lengths["wire_gen_routing"] = self.wire_length*width_dict["tile"]
+        if height != 0.0:
+            if height > ((width_dict["tile"]*width_dict["tile"])/height):
+                wire_lengths["wire_gen_routing"] = self.wire_length*(height)
+            else:
+                wire_lengths["wire_gen_routing"] = self.wire_length*((width_dict["tile"]*width_dict["tile"])/height)
 
         # These are the pieces of wire that are required to connect routing wires to switch 
         # block inputs. We assume that on average, they span half a tile.
         wire_lengths["wire_sb_load_on"] = width_dict["tile"]/2
         wire_lengths["wire_sb_load_partial"] = width_dict["tile"]/2
         wire_lengths["wire_sb_load_off"] = width_dict["tile"]/2 
-
+        if height != 0.0:
+            if num_sb_stripes == 1:
+                wire_lengths["wire_sb_load_on"] = wire_lengths["wire_gen_routing"]/self.wire_length
+                wire_lengths["wire_sb_load_partial"] = wire_lengths["wire_gen_routing"]/self.wire_length
+                wire_lengths["wire_sb_load_off"] = wire_lengths["wire_gen_routing"]/self.wire_length
+            else:
+                wire_lengths["wire_sb_load_on"] = wire_lengths["wire_gen_routing"]/(2*self.wire_length)
+                wire_lengths["wire_sb_load_partial"] = wire_lengths["wire_gen_routing"]/(2*self.wire_length)
+                wire_lengths["wire_sb_load_off"] = wire_lengths["wire_gen_routing"]/(2*self.wire_length)			
         # These are the pieces of wire that are required to connect routing wires to 
         # connection block multiplexer inputs. They span some fraction of a tile that is 
         # given my the input track-access span (track-access locality). 
+
         wire_lengths["wire_cb_load_on"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
         wire_lengths["wire_cb_load_partial"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
         wire_lengths["wire_cb_load_off"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
-
-        # Update wire layers
+        if height != 0 and num_cb_stripes == 1:
+            wire_lengths["wire_cb_load_on"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * 2
+            wire_lengths["wire_cb_load_partial"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * 2
+            wire_lengths["wire_cb_load_off"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * 2
+        elif height != 0 :
+            wire_lengths["wire_cb_load_on"] = (wire_lengths["wire_gen_routing"]/self.wire_length)
+            wire_lengths["wire_cb_load_partial"] = (wire_lengths["wire_gen_routing"]/self.wire_length)
+            wire_lengths["wire_cb_load_off"] = (wire_lengths["wire_gen_routing"]/self.wire_length)
+			
+       # Update wire layers
         wire_layers["wire_gen_routing"] = 1 
         wire_layers["wire_sb_load_on"] = 0 
         wire_layers["wire_sb_load_partial"] = 0 
@@ -5270,7 +5301,8 @@ class FPGA:
                     vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library, metal_stack, 
                         use_tgate, use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
                         memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                        enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
+                        enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files, area_opt_weight, delay_opt_weight,
+                        spice_interface):
           
         # Initialize the specs
         self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
@@ -5280,6 +5312,7 @@ class FPGA:
                                          enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files)
 
                                         
+
         ### CREATE SWITCH BLOCK OBJECT
         # Calculate switch block mux size (for direct-drive routing)
         # The mux will need Fs + (Fs-1)(L-1) inputs for routing-to-routing connections
@@ -5315,11 +5348,11 @@ class FPGA:
         skip_size = 5
         inter_wire_length = 0.5
         self.skip_size = skip_size
-        carry_skip_periphery_count = 0
+        self.carry_skip_periphery_count = 0
         if enable_carry_chain == 1 and carry_chain_type == "skip":
-            carry_skip_periphery_count = int(math.floor((N * FAs_per_flut)/skip_size))
+            self.carry_skip_periphery_count = int(math.floor((N * FAs_per_flut)/skip_size))
         # Create the logic cluster object            
-        self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count)
+        self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, self.carry_skip_periphery_count)
         
         ### CREATE LOAD OBJECTS
         # Create cluster output load object
@@ -5364,7 +5397,9 @@ class FPGA:
             hard_block = _hard_block(name, use_tgate)
             self.hardblocklist.append(hard_block)
 
-        
+        self.area_opt_weight = area_opt_weight
+        self.delay_opt_weight = delay_opt_weight
+        self.spice_interface = spice_interface        
         # This is a dictionary of all the transistor sizes in the FPGA ('name': 'size')
         # It will contain the data in xMin transistor width, e.g. 'inv_sb_mux_1_nmos': '2'
         # That means inv_sb_mux_1_nmos is a transistor with 2x minimum width
@@ -5424,6 +5459,13 @@ class FPGA:
         
         # weather or not to use transmission gates
         self.use_tgate = use_tgate
+
+        # This is the height of the logic block, once an initial floorplanning solution has been determined, it will be assigned a non-zero value.
+        self.lb_height =  0.0
+
+        # actual widths of blocks after floorplanning
+
+
 
     def generate(self, is_size_transistors):
         """ This function generates all SPICE netlists and library files. """
@@ -5555,6 +5597,7 @@ class FPGA:
         # Now, we have to update area_dict and width_dict with the new transistor area values
         self._update_area_and_width_dicts()
         
+
         # Calculate area of SRAM
         self.area_dict["sram"] = self.specs.sram_cell_area * self.specs.min_width_tran_area
         self.area_dict["ramsram"] = 5 * self.specs.min_width_tran_area
@@ -5598,33 +5641,83 @@ class FPGA:
         self.area_dict["cb_total"] = connection_block_area
         self.width_dict["cb_total"] = math.sqrt(connection_block_area)
         
-        # Calculate total area of local muxes
-        local_mux_area = self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name + "_sram"]
-        self.area_dict["local_mux_total"] = local_mux_area
-        self.width_dict["local_mux_total"] = math.sqrt(local_mux_area)
-        
-        # Calculate total lut area
-        lut_area = self.specs.N*self.area_dict["lut_and_drivers"]
-        self.area_dict["lut_total"] = lut_area
-        self.width_dict["lut_total"] = math.sqrt(lut_area)
-        
-        # Calculate total ff area
-        ff_area = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
-        self.area_dict["ff_total"] = ff_area
-        self.width_dict["ff_total"] = math.sqrt(ff_area)
-        
-        # Calcualte total ble output area
-        ble_output_area = self.specs.N*(self.area_dict["ble_output"])
-        self.area_dict["ble_output_total"] = ble_output_area
-        self.width_dict["ble_output_total"] = math.sqrt(ble_output_area)
-        
-        # Calculate area of logic cluster
-        #if self.specs.use_fluts:
-        cluster_area = local_mux_area + self.specs.N*self.area_dict["ble"]
-        #else:
-            #cluster_area = local_mux_area + lut_area + ff_area + ble_output_area
-        if self.specs.enable_carry_chain == 1:
-            cluster_area += self.area_dict["carry_chain_inter"]
+        if self.lb_height == 0.0:        
+            # Calculate total area of local muxes
+            local_mux_area = self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name + "_sram"]
+            self.area_dict["local_mux_total"] = local_mux_area
+            self.width_dict["local_mux_total"] = math.sqrt(local_mux_area)
+            
+            # Calculate total lut area
+            lut_area = self.specs.N*self.area_dict["lut_and_drivers"]
+            self.area_dict["lut_total"] = lut_area
+            self.width_dict["lut_total"] = math.sqrt(lut_area)
+            
+            # Calculate total ff area
+            ff_area = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
+            self.area_dict["ff_total"] = ff_area
+            self.width_dict["ff_total"] = math.sqrt(ff_area)
+            
+            # Calcualte total ble output area
+            ble_output_area = self.specs.N*(self.area_dict["ble_output"])
+            self.area_dict["ble_output_total"] = ble_output_area
+            self.width_dict["ble_output_total"] = math.sqrt(ble_output_area)
+            
+            # Calculate area of logic cluster
+            #if self.specs.use_fluts:
+            cluster_area = local_mux_area + self.specs.N*self.area_dict["ble"]
+            if self.specs.enable_carry_chain == 1:
+                cluster_area += self.area_dict["carry_chain_inter"]
+
+        else:
+
+            # lets do it assuming a given order for the wire updates and no minimum width on sram size.
+            sb_area_total = self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name]
+            sb_area_sram =  self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name + "_sram"] - sb_area_total
+            cb_area_total = self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name]
+            cb_area_total_sram = self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name + "_sram"] - cb_area_total
+
+            local_mux_area = self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name]            
+            local_mux_sram_area = self.logic_cluster.local_mux.num_per_tile* (self.area_dict[self.logic_cluster.local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.local_mux.name])
+
+            lut_area = self.specs.N*self.area_dict["lut_and_drivers"] - self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
+            lut_area_sram = self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
+
+            ffableout_area_total = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
+            if self.specs.use_fluts:
+                ffableout_area_total = 2 * ffableout_area_total
+            ffableout_area_total = ffableout_area_total + self.specs.N*(self.area_dict["ble_output"])
+
+            cc_area_total = 0.0
+            skip_size = 5
+            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/skip_size))
+            if self.specs.enable_carry_chain == 1:
+                if self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple":
+                    cc_area_total =  self.specs.N* (self.area_dict["carry_chain"] * self.specs.FAs_per_flut + (self.specs.FAs_per_flut) * self.area_dict["carry_chain_mux"])
+                else:
+                    cc_area_total =  self.specs.N*(self.area_dict["carry_chain"] * self.specs.FAs_per_flut + (self.specs.FAs_per_flut) * self.area_dict["carry_chain_mux"])
+                    cc_area_total = cc_area_total + ((self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)
+                cc_area_total = cc_area_total + self.area_dict["carry_chain_inter"]
+
+            cluster_area = local_mux_area + local_mux_sram_area + ffableout_area_total + cc_area_total + lut_area + lut_area_sram
+
+
+            self.area_dict["cc_area_total"] = cc_area_total
+            self.width_dict["cc_area_total"] = math.sqrt(cc_area_total)
+
+            self.area_dict["local_mux_total"] = local_mux_area + local_mux_area
+            self.width_dict["local_mux_total"] = math.sqrt(local_mux_area + local_mux_area)
+
+            self.area_dict["lut_total"] = lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
+            self.width_dict["lut_total"] = math.sqrt(lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"])
+
+            self.area_dict["ff_total"] = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
+            self.width_dict["ff_total"] = math.sqrt(self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name])
+
+            self.area_dict["ffableout_area_total"] = ffableout_area_total
+            self.width_dict["ffableout_area_total"] = math.sqrt(ffableout_area_total)            
+
+            self.area_dict["ble_output_total"] = self.specs.N*(self.area_dict["ble_output"])
+            self.width_dict["ble_output_total"] = math.sqrt(self.specs.N*(self.area_dict["ble_output"]))
 
         self.area_dict["logic_cluster"] = cluster_area
         self.width_dict["logic_cluster"] = math.sqrt(cluster_area)
@@ -5634,8 +5727,8 @@ class FPGA:
             # already included in bles, extracting for the report
             carry_chain_area = self.specs.N*( self.specs.FAs_per_flut * self.area_dict["carry_chain"] + (self.specs.FAs_per_flut) *  self.area_dict["carry_chain_mux"]) + self.area_dict["carry_chain_inter"]
             if self.specs.carry_chain_type == "skip":
-                carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
-                carry_chain_area += carry_skip_periphery_count *(self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
+                self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
+                carry_chain_area += self.carry_skip_periphery_count *(self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
             self.area_dict["total_carry_chain"] = carry_chain_area
         
         # Calculate tile area
@@ -5736,18 +5829,276 @@ class FPGA:
             self.area_dict["ram"] = RAM_area
             self.area_dict["ram_core"] = RAM_area - RAM_SB_area - RAM_CB_area
             self.width_dict["ram"] = math.sqrt(RAM_area) 
+        
+        if self.lb_height != 0.0:  
+            self.compute_distance()
 
-    
+    def compute_distance(self):
+        """ This function computes distances for different stripes for the floorplanner:
+
+        """
+        # todo: move these to user input
+        self.stripe_order = ["sb_sram","sb","sb", "cb", "cb_sram","ic_sram", "ic","lut_sram", "lut", "cc","ffble", "lut", "lut_sram", "ic", "ic_sram", "cb_sram", "cb", "sb","sb", "sb_sram"]
+        #self.stripe_order = ["cb", "cb_sram","ic_sram", "ic","lut_sram", "lut", "cc","ffble", "sb", "sb_sram"]
+        self.span_stripe_fraction = 10
+
+
+        self.num_cb_stripes = 0
+        self.num_sb_stripes = 0
+        self.num_ic_stripes = 0
+        self.num_lut_stripes = 0
+        self.num_ffble_stripes = 0
+        self.num_cc_stripes = 0
+        self.num_cbs_stripes = 0
+        self.num_sbs_stripes = 0
+        self.num_ics_stripes = 0
+        self.num_luts_stripes = 0
+        #find the number of each stripe type in the given arrangement:
+        for item in self.stripe_order:
+            if item == "sb":
+                self.num_sb_stripes =  self.num_sb_stripes + 1
+            elif item == "cb":
+                self.num_cb_stripes =  self.num_cb_stripes + 1
+            elif item == "ic":
+                self.num_ic_stripes =  self.num_ic_stripes + 1
+            elif item == "lut":
+                self.num_lut_stripes =  self.num_lut_stripes + 1
+            elif item == "cc":
+                self.num_cc_stripes =  self.num_cc_stripes + 1
+            elif item == "ffble":
+                self.num_ffble_stripes =  self.num_ffble_stripes + 1
+            elif item == "sb_sram":
+                self.num_sbs_stripes =  self.num_sbs_stripes + 1
+            elif item == "cb_sram":
+                self.num_cbs_stripes =  self.num_cbs_stripes + 1
+            elif item == "ic_sram":
+                self.num_ics_stripes =  self.num_ics_stripes + 1
+            elif item == "lut_sram":
+                self.num_luts_stripes =  self.num_luts_stripes + 1
+
+        # measure the width of each stripe:
+
+        self.w_cb = (self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name])/(self.num_cb_stripes * self.lb_height)
+        self.w_sb = (self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name])/(self.num_sb_stripes * self.lb_height)
+        self.w_ic = (self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name])/(self.num_ic_stripes * self.lb_height)
+        self.w_lut = (self.specs.N*self.area_dict["lut_and_drivers"] - self.specs.N*(2**self.specs.K)*self.area_dict["sram"])/(self.num_lut_stripes * self.lb_height)
+        #if self.specs.enable_carry_chain == 1:
+        self.w_cc = self.area_dict["cc_area_total"]/(self.num_cc_stripes * self.lb_height)
+        self.w_ffble = self.area_dict["ffableout_area_total"]/(self.num_ffble_stripes * self.lb_height)
+        self.w_scb = (self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name + "_sram"] - self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name])/(self.num_cbs_stripes * self.lb_height)
+        self.w_ssb = (self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name + "_sram"] - self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name])/(self.num_sbs_stripes * self.lb_height)
+        self.w_sic = (self.logic_cluster.local_mux.num_per_tile* (self.area_dict[self.logic_cluster.local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.local_mux.name]))/(self.num_ics_stripes * self.lb_height)
+        self.w_slut = (self.specs.N*(2**self.specs.K)*self.area_dict["sram"]) / (self.num_luts_stripes * self.lb_height)
+
+        # create a temporary dictionary of stripe width to use in distance calculation:
+        self.dict_real_widths = {}
+        self.dict_real_widths["sb_sram"] = self.w_ssb
+        self.dict_real_widths["sb"] = self.w_sb
+        self.dict_real_widths["cb"] = self.w_cb
+        self.dict_real_widths["cb_sram"] = self.w_scb
+        self.dict_real_widths["ic_sram"] = self.w_sic
+        self.dict_real_widths["ic"] = self.w_ic
+        self.dict_real_widths["lut_sram"] = self.w_slut
+        self.dict_real_widths["lut"] = self.w_lut
+        #if self.specs.enable_carry_chain == 1:
+        self.dict_real_widths["cc"] = self.w_cc
+        self.dict_real_widths["ffble"] = self.w_ffble
+
+        # what distances do we need?
+        self.d_cb_to_ic = 0.0
+        self.d_ic_to_lut = 0.0
+        self.d_lut_to_cc = 0.0
+        self.d_cc_to_ffble = 0.0
+        self.d_ffble_to_sb = 0.0
+        self.d_ffble_to_ic = 0.0
+
+        # worst-case distance between two stripes:
+        for index1, item1 in enumerate(self.stripe_order):
+            for index2, item2 in enumerate(self.stripe_order):
+                if item1 != item2:
+                    if (item1 == "cb" and item2 == "ic") or (item1 == "ic" and item2 == "cb"):
+                        if index1 < index2:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                            for i in range(index1 + 1, index2):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp +  self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                        else:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                            for i in range(index2 + 1, index1):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                        if self.d_cb_to_ic < distance_temp:
+                            self.d_cb_to_ic = distance_temp
+
+                    if (item1 == "lut" and item2 == "ic") or (item1 == "ic" and item2 == "lut"):
+                        if index1 < index2:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                            for i in range(index1 + 1, index2):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp +  self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                        else:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                            for i in range(index2 + 1, index1):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                        if self.d_ic_to_lut < distance_temp:
+                            self.d_ic_to_lut = distance_temp
+
+                    if (item1 == "lut" and item2 == "cc") or (item1 == "cc" and item2 == "lut"):
+                        if index1 < index2:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                            for i in range(index1 + 1, index2):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp +  self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                        else:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                            for i in range(index2 + 1, index1):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                        if self.d_lut_to_cc < distance_temp:
+                            self.d_lut_to_cc = distance_temp
+
+                    if (item1 == "ffble" and item2 == "cc") or (item1 == "cc" and item2 == "ffble"):
+                        if index1 < index2:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                            for i in range(index1 + 1, index2):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp +  self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                        else:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                            for i in range(index2 + 1, index1):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                        if self.d_cc_to_ffble < distance_temp:
+                            self.d_cc_to_ffble = distance_temp                                                                                    
+
+                    if (item1 == "ffble" and item2 == "sb") or (item1 == "sb" and item2 == "ffble"):
+                        if index1 < index2:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                            for i in range(index1 + 1, index2):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp +  self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                        else:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                            for i in range(index2 + 1, index1):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                        if self.d_ffble_to_sb < distance_temp:
+                            self.d_ffble_to_sb = distance_temp
+
+                    if (item1 == "ffble" and item2 == "ic") or (item1 == "ic" and item2 == "ffble"):
+                        if index1 < index2:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                            for i in range(index1 + 1, index2):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp +  self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                        else:
+                            distance_temp = self.dict_real_widths[self.stripe_order[index2]]/self.span_stripe_fraction
+                            for i in range(index2 + 1, index1):
+                                distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[i]]/self.span_stripe_fraction
+                            distance_temp = distance_temp + self.dict_real_widths[self.stripe_order[index1]]/self.span_stripe_fraction
+                        if self.d_ffble_to_ic < distance_temp:
+                            self.d_ffble_to_ic = distance_temp       
+        
+        #print str(self.dict_real_widths["sb"])
+        #print str(self.dict_real_widths["cb"])
+        #print str(self.dict_real_widths["ic"])
+        #print str(self.dict_real_widths["lut"])
+        #print str(self.dict_real_widths["cc"])
+        #print str(self.dict_real_widths["ffble"])
+        #print str(self.lb_height)
+
+
+    def determine_height(self):
+
+        # if no previous floorplan exists, get an initial height:
+        if self.lb_height == 0.0:
+            self.lb_height = math.sqrt(self.area_dict["tile"])
+
+        is_done = False
+        current_iteration = 0
+        max_iteration = 10
+        # tweak the current height to find a better one, possibly:
+        while is_done == False and current_iteration < max_iteration:
+            print "searching for a height for the logic tile " + str(self.lb_height)
+            old_height = self.lb_height
+            current_best_index = 0
+            self.update_area()
+            self.update_wires()
+            self.update_wire_rc()
+            self.update_delays(self.spice_interface)
+            old_cost = tran_sizing.cost_function(tran_sizing.get_eval_area(self, "global", self.sb_mux, 0, 0), tran_sizing.get_current_delay(self, 0), self.area_opt_weight, self.delay_opt_weight)
+            for i in range (-10,11):
+                self.lb_height = old_height + ((0.01 * (i))* old_height)
+                self.update_area()
+                self.update_wires()
+                self.update_wire_rc()
+                self.update_delays(self.spice_interface)
+                new_cost = tran_sizing.cost_function(tran_sizing.get_eval_area(self, "global", self.sb_mux, 0, 0), tran_sizing.get_current_delay(self, 0), self.area_opt_weight, self.delay_opt_weight)
+                if new_cost < old_cost:
+                    old_cost = new_cost
+                    current_best_index = i
+            self.lb_height = (0.01 * (current_best_index))* old_height + old_height
+            current_iteration = current_iteration + 1
+            if current_best_index == 0:
+                is_done = True
+
+        print "found the best tile height: " + str(self.lb_height)
+
+        
+
     def update_wires(self):
         """ This function updates self.wire_lengths and self.wire_layers. It passes wire_lengths and wire_layers to member 
             objects (like sb_mux) to update their wire lengths and layers. """
         
         # Update wire lengths and layers for all subcircuits
-        self.sb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
-        self.cb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
-        self.logic_cluster.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
-        self.cluster_output_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
-        self.routing_wire_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
+
+
+
+        if self.lb_height == 0:
+            self.cluster_output_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 0.0, 0.0)
+            self.sb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 1.0)
+            self.cb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 1.0)
+            self.logic_cluster.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 1.0, 1.0, 0.0, 0.0)
+            self.routing_wire_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 0.0, 2.0, 2.0)
+        else:
+            sb_ratio = (self.lb_height/(self.sb_mux.num_per_tile/self.num_sb_stripes)) / self.dict_real_widths["sb"]
+            if sb_ratio < 1.0:
+                sb_ratio = 1/sb_ratio
+			
+			#if the ratio is larger than 2.0, we can look at this stripe as two stripes put next to each other and partly fix the ratio:
+				
+            cb_ratio = (self.lb_height/(self.cb_mux.num_per_tile/self.num_cb_stripes)) / self.dict_real_widths["cb"]
+            if cb_ratio < 1.0:
+                cb_ratio = 1/cb_ratio
+				
+			#if the ratio is larger than 2.0, we can look at this stripe as two stripes put next to each other and partly fix the ratio:
+
+            ic_ratio = (self.lb_height/(self.logic_cluster.local_mux.num_per_tile/self.num_ic_stripes)) / self.dict_real_widths["ic"]
+            if ic_ratio < 1.0:
+                ic_ratio = 1/ic_ratio
+				
+			#if the ratio is larger than 2.0, we can look at this stripe as two stripes put next to each other and partly fix the ratio:			
+
+				
+				
+            lut_ratio = (self.lb_height/(self.specs.N/self.num_lut_stripes)) / self.dict_real_widths["lut"]
+            if lut_ratio < 1.0:
+                lut_ratio = 1/lut_ratio
+				
+			#if the ratio is larger than 2.0, we can look at this stripe as two stripes put next to each other and partly fix the ratio:
+            #sb_ratio = 1.0
+            #cb_ratio = 1.0
+            #ic_ratio = 1.0
+            #lut_ratio = 1.0
+            print "ratios" + str(sb_ratio) +" "+ str(cb_ratio) +" "+ str(ic_ratio) +" "+ str(lut_ratio)
+            self.cluster_output_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, self.d_ffble_to_sb, self.lb_height)
+            self.sb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, sb_ratio)
+            self.cb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, cb_ratio)
+            self.logic_cluster.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, ic_ratio, lut_ratio, self.d_ffble_to_ic, self.d_cb_to_ic + self.lb_height)
+            self.routing_wire_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, self.lb_height, self.num_sb_stripes, self.num_cb_stripes)
+
+
         
         if self.specs.enable_carry_chain == 1:
             self.carrychain.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
@@ -7128,3 +7479,4 @@ class FPGA:
         self.width_dict = width_dict
   
         return
+

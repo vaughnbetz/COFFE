@@ -43,14 +43,17 @@ def print_vpr_file(vpr_file, fpga_inst):
 	buf_size = fpga_inst.area_dict["switch_buf_size"]/fpga_inst.specs.min_width_tran_area
 	if buf_size < 1.00 :
 		buf_size = 1.00
+	cb_buf_size = fpga_inst.area_dict["cb_buf_size"]/fpga_inst.specs.min_width_tran_area
+	if cb_buf_size < 1.00:
+		cb_buf_size = 1.00
 
 	vpr_file.write("<architecture>  \n")
 	vpr_file.write("<!-- ODIN II specific config -->\n")
 	vpr_file.write("<models>\n")
 	vpr_file.write("  <model name=\"multiply\">\n")
 	vpr_file.write("    <input_ports>\n")
-	vpr_file.write("    <port name=\"a\"/>\n")
-	vpr_file.write("    <port name=\"b\"/>\n")
+	vpr_file.write("    <port name=\"a\" combinational_sink_ports=\"out\"/> \n")
+	vpr_file.write("    <port name=\"b\" combinational_sink_ports=\"out\"/>\n")
 	vpr_file.write("    </input_ports>\n")
 	vpr_file.write("    <output_ports>\n")
 	vpr_file.write("    <port name=\"out\"/>\n")
@@ -59,51 +62,64 @@ def print_vpr_file(vpr_file, fpga_inst):
 	    
 	vpr_file.write("<model name=\"single_port_ram\">\n")
 	vpr_file.write("  <input_ports>\n")
-	vpr_file.write("  <port name=\"we\"/>     <!-- control -->\n")
-	vpr_file.write("  <port name=\"addr\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"data\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"we\" clock=\"clk\"/>     <!-- control -->\n")
+	vpr_file.write("  <port name=\"addr\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"data\" clock=\"clk\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  <port name=\"clk\" is_clock=\"1\"/>  <!-- memories are often clocked -->\n")
 	vpr_file.write("  </input_ports>\n")
 	vpr_file.write("  <output_ports>\n")
-	vpr_file.write("  <port name=\"out\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  </output_ports>\n")
 	vpr_file.write("</model>\n")
 
 	vpr_file.write("<model name=\"dual_port_ram\">\n")
 	vpr_file.write("  <input_ports>\n")
-	vpr_file.write("  <port name=\"we1\"/>     <!-- write enable -->\n")
-	vpr_file.write("  <port name=\"we2\"/>     <!-- write enable -->\n")
-	vpr_file.write("  <port name=\"addr1\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"addr2\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"data1\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
-	vpr_file.write("  <port name=\"data2\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"we1\" clock=\"clk\"/>     <!-- write enable -->\n")
+	vpr_file.write("  <port name=\"we2\" clock=\"clk\"/>     <!-- write enable -->\n")
+	vpr_file.write("  <port name=\"addr1\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"addr2\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"data1\" clock=\"clk\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"data2\" clock=\"clk\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  <port name=\"clk\" is_clock=\"1\"/>  <!-- memories are often clocked -->\n")
 	vpr_file.write("  </input_ports>\n")
 	vpr_file.write("  <output_ports>\n")
-	vpr_file.write("  <port name=\"out1\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
-	vpr_file.write("  <port name=\"out2\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out1\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out2\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  </output_ports>\n")
 	vpr_file.write("</model>\n")
 
 	vpr_file.write("</models>\n")
 	vpr_file.write("<!-- ODIN II specific config ends -->\n")
 	vpr_file.write("<!-- Physical descriptions begin -->\n")
-	vpr_file.write("<layout auto=\"1.0\"/>\n")
+	vpr_file.write("<layout>\n")
+	vpr_file.write("<auto_layout aspect_ratio=\"1.0\">\n")
+	vpr_file.write("<perimeter type=\"io\" priority=\"100\"/>\n")
+	vpr_file.write("<corners type=\"EMPTY\" priority=\"101\"/>\n")
+	vpr_file.write("<fill type=\"clb\" priority=\"10\"/>\n")
+	vpr_file.write("<col type=\"mult_36\" startx=\"4\" starty=\"1\" repeatx=\"8\" priority=\"20\" />\n")
+	vpr_file.write("<col type=\"EMPTY\" startx=\"4\" starty=\"1\" repeatx=\"8\" priority=\"19\" />\n")
+	vpr_file.write("<col type=\"memory\" startx=\"2\" starty=\"1\" repeatx=\"8\" priority=\"20\" />\n")
+	vpr_file.write("<col type=\"EMPTY\" startx=\"2\" starty=\"1\" repeatx=\"8\" priority=\"19\" />\n")
+	vpr_file.write("</auto_layout>\n")
+	vpr_file.write("</layout>\n")
 
 	vpr_file.write("  <device>\n")
-	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\" ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n")
-	vpr_file.write("    <timing C_ipin_cblock=\"0.000000e+00\" T_ipin_cblock=\"" + str(T_ipin_cblock) + "\"/>\n")
+	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\"/> \n") #ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n
 	vpr_file.write("    <area grid_logic_tile_area=\"" + str(grid_logic_tile_area) +"\"/>\n")
 	vpr_file.write("    <chan_width_distr>\n")
-	vpr_file.write("      <io width=\"1.000000\"/>\n")
 	vpr_file.write("      <x distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("      <y distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("    </chan_width_distr>\n")
 	vpr_file.write("    <switch_block type=\"wilton\" fs=\"" + str(Fs) + "\"/>\n")
+	vpr_file.write("    <connection_block input_switch_name=\"ipin_cblock\"/>\n")
 	vpr_file.write("  </device>\n")
+
+	
 	vpr_file.write("  <switchlist>\n")
 	vpr_file.write("    <switch type=\"mux\" name=\"0\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(Tdel) + "\" mux_trans_size=\"" + str(mux_trans_size) + "\" buf_size=\"" + str(buf_size) + "\"/>\n")
+	vpr_file.write("    <switch type=\"mux\" name=\"ipin_cblock\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(T_ipin_cblock) + "\" mux_trans_size=\"" + str(ipin_mux_trans_size) + "\" buf_size=\"" + str(cb_buf_size) + "\"/>\n")
 	vpr_file.write("  </switchlist>\n")
+
 	vpr_file.write("  <segmentlist>\n")
 	vpr_file.write("    <segment freq=\"1.000000\" length=\"" + str(L) + "\" type=\"unidir\" Rmetal=\"0.000000\" Cmetal=\"0.000000e+00\">\n")
 	vpr_file.write("    <mux name=\"0\"/>\n")
@@ -150,9 +166,6 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("      <loc side=\"right\">io.outpad io.inpad io.clock</loc>\n")
 	vpr_file.write("      <loc side=\"bottom\">io.outpad io.inpad io.clock</loc>\n")
 	vpr_file.write("    </pinlocations>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"perimeter\" priority=\"10\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
 
 	vpr_file.write("  </pb_type>\n")
 	vpr_file.write("  <!-- Logic cluster definition -->\n")
@@ -313,9 +326,7 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("  <loc side=\"right\">clb.O1 clb.O2 clb.O3 clb.O4 clb.O5 clb.I1 clb.I3 clb.clk</loc> \n")
 	vpr_file.write("      <loc side=\"bottom\">clb.O6 clb.O7 clb.O8 clb.O9 clb.O10 clb.I2 clb.I4 clb.clk</loc>      \n")
 	vpr_file.write("    </pinlocations>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"fill\" priority=\"1\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
+
 	vpr_file.write("  </pb_type>\n")
 
 	vpr_file.write("  <!-- This is the 36*36 uniform mult -->\n")
@@ -442,9 +453,6 @@ def print_vpr_file(vpr_file, fpga_inst):
 	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
 
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"col\" start=\"4\" repeat=\"8\" priority=\"2\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
 	vpr_file.write("  </pb_type>\n")
 
 
@@ -893,14 +901,13 @@ def print_vpr_file(vpr_file, fpga_inst):
 
 	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"col\" start=\"2\" repeat=\"8\" priority=\"2\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
+
 	vpr_file.write("  </pb_type>\n")
 
 
 	vpr_file.write("</complexblocklist>\n")
 	vpr_file.write("</architecture>\n")
+
 
 
 def print_vpr_file_memory(vpr_file, fpga_inst):
@@ -955,14 +962,17 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	memory_setup_time = fpga_inst.RAM.RAM_local_mux.delay + 52.3e-12
 	memory_input_mux_size = 25
 	# Todo: I can add output mux size and create a crossbar at the output. Not sure if it will actually help. 
+	cb_buf_size = fpga_inst.area_dict["cb_buf_size"]/fpga_inst.specs.min_width_tran_area
+	if cb_buf_size < 1.00:
+		cb_buf_size = 1.00
 
 	vpr_file.write("<architecture>  \n")
 	vpr_file.write("<!-- ODIN II specific config -->\n")
 	vpr_file.write("<models>\n")
 	vpr_file.write("  <model name=\"multiply\">\n")
 	vpr_file.write("    <input_ports>\n")
-	vpr_file.write("    <port name=\"a\"/>\n")
-	vpr_file.write("    <port name=\"b\"/>\n")
+	vpr_file.write("    <port name=\"a\" combinational_sink_ports=\"out\"/> \n")
+	vpr_file.write("    <port name=\"b\" combinational_sink_ports=\"out\"/>\n")
 	vpr_file.write("    </input_ports>\n")
 	vpr_file.write("    <output_ports>\n")
 	vpr_file.write("    <port name=\"out\"/>\n")
@@ -971,51 +981,64 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	    
 	vpr_file.write("<model name=\"single_port_ram\">\n")
 	vpr_file.write("  <input_ports>\n")
-	vpr_file.write("  <port name=\"we\"/>     <!-- control -->\n")
-	vpr_file.write("  <port name=\"addr\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"data\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"we\" clock=\"clk\"/>     <!-- control -->\n")
+	vpr_file.write("  <port name=\"addr\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"data\" clock=\"clk\">  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  <port name=\"clk\" is_clock=\"1\"/>  <!-- memories are often clocked -->\n")
 	vpr_file.write("  </input_ports>\n")
 	vpr_file.write("  <output_ports>\n")
-	vpr_file.write("  <port name=\"out\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  </output_ports>\n")
 	vpr_file.write("</model>\n")
 
 	vpr_file.write("<model name=\"dual_port_ram\">\n")
 	vpr_file.write("  <input_ports>\n")
-	vpr_file.write("  <port name=\"we1\"/>     <!-- write enable -->\n")
-	vpr_file.write("  <port name=\"we2\"/>     <!-- write enable -->\n")
-	vpr_file.write("  <port name=\"addr1\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"addr2\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"data1\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
-	vpr_file.write("  <port name=\"data2\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"we1\" clock=\"clk\"/>     <!-- write enable -->\n")
+	vpr_file.write("  <port name=\"we2\" clock=\"clk\"/>     <!-- write enable -->\n")
+	vpr_file.write("  <port name=\"addr1\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"addr2\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"data1\" clock=\"clk\">  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"data2\" clock=\"clk\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  <port name=\"clk\" is_clock=\"1\"/>  <!-- memories are often clocked -->\n")
 	vpr_file.write("  </input_ports>\n")
 	vpr_file.write("  <output_ports>\n")
-	vpr_file.write("  <port name=\"out1\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
-	vpr_file.write("  <port name=\"out2\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out1\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out2\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  </output_ports>\n")
 	vpr_file.write("</model>\n")
 
 	vpr_file.write("</models>\n")
 	vpr_file.write("<!-- ODIN II specific config ends -->\n")
 	vpr_file.write("<!-- Physical descriptions begin -->\n")
-	vpr_file.write("<layout auto=\"1.0\"/>\n")
+	vpr_file.write("<layout>\n")
+	vpr_file.write("<auto_layout aspect_ratio=\"1.0\">\n")
+	vpr_file.write("<perimeter type=\"io\" priority=\"100\"/>\n")
+	vpr_file.write("<corners type=\"EMPTY\" priority=\"101\"/>\n")
+	vpr_file.write("<fill type=\"clb\" priority=\"10\"/>\n")
+	vpr_file.write("<col type=\"mult_36\" startx=\"4\" starty=\"1\" repeatx=\"8\" priority=\"20\" />\n")
+	vpr_file.write("<col type=\"EMPTY\" startx=\"4\" starty=\"1\" repeatx=\"8\" priority=\"19\" />\n")
+	vpr_file.write("<col type=\"memory\" startx=\"2\" starty=\"1\" repeatx=\"8\" priority=\"20\" />\n")
+	vpr_file.write("<col type=\"EMPTY\" startx=\"2\" starty=\"1\" repeatx=\"8\" priority=\"19\" />\n")
+	vpr_file.write("</auto_layout>\n")
+	vpr_file.write("</layout>\n")
 
 	vpr_file.write("  <device>\n")
-	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\" ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n")
-	vpr_file.write("    <timing C_ipin_cblock=\"0.000000e+00\" T_ipin_cblock=\"" + str(T_ipin_cblock) + "\"/>\n")
-	vpr_file.write("    <area grid_logic_tile_area=\"" + str(0) +"\"/>\n")
+	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\"/> \n") #ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n
+	vpr_file.write("    <area grid_logic_tile_area=\"" + str(grid_logic_tile_area) +"\"/>\n")
 	vpr_file.write("    <chan_width_distr>\n")
-	vpr_file.write("      <io width=\"1.000000\"/>\n")
 	vpr_file.write("      <x distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("      <y distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("    </chan_width_distr>\n")
 	vpr_file.write("    <switch_block type=\"wilton\" fs=\"" + str(Fs) + "\"/>\n")
+	vpr_file.write("    <connection_block input_switch_name=\"ipin_cblock\"/>\n")
 	vpr_file.write("  </device>\n")
+
+	
 	vpr_file.write("  <switchlist>\n")
 	vpr_file.write("    <switch type=\"mux\" name=\"0\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(Tdel) + "\" mux_trans_size=\"" + str(mux_trans_size) + "\" buf_size=\"" + str(buf_size) + "\"/>\n")
+	vpr_file.write("    <switch type=\"mux\" name=\"ipin_cblock\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(T_ipin_cblock) + "\" mux_trans_size=\"" + str(ipin_mux_trans_size) + "\" buf_size=\"" + str(cb_buf_size) + "\"/>\n")
 	vpr_file.write("  </switchlist>\n")
+
 	vpr_file.write("  <segmentlist>\n")
 	vpr_file.write("    <segment freq=\"1.000000\" length=\"" + str(L) + "\" type=\"unidir\" Rmetal=\"0.000000\" Cmetal=\"0.000000e+00\">\n")
 	vpr_file.write("    <mux name=\"0\"/>\n")
@@ -1062,9 +1085,6 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	vpr_file.write("      <loc side=\"right\">io.outpad io.inpad io.clock</loc>\n")
 	vpr_file.write("      <loc side=\"bottom\">io.outpad io.inpad io.clock</loc>\n")
 	vpr_file.write("    </pinlocations>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"perimeter\" priority=\"10\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
 
 	vpr_file.write("  </pb_type>\n")
 	vpr_file.write("  <!-- Logic cluster definition -->\n")
@@ -1225,9 +1245,6 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	vpr_file.write("  <loc side=\"right\">clb.O1 clb.O2 clb.O3 clb.O4 clb.O5 clb.I1 clb.I3 clb.clk</loc> \n")
 	vpr_file.write("      <loc side=\"bottom\">clb.O6 clb.O7 clb.O8 clb.O9 clb.O10 clb.I2 clb.I4 clb.clk</loc>      \n")
 	vpr_file.write("    </pinlocations>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"fill\" priority=\"1\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
 	vpr_file.write("  </pb_type>\n")
 
 	vpr_file.write("  <!-- This is the 36*36 uniform mult -->\n")
@@ -1354,9 +1371,6 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
 
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"col\" start=\"4\" repeat=\"8\" priority=\"2\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
 	vpr_file.write("  </pb_type>\n")
 
 
@@ -1472,9 +1486,6 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	#vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
 	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"col\" start=\"2\" repeat=\"8\" priority=\"2\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
 	vpr_file.write("  </pb_type>\n")
 
 
@@ -1527,13 +1538,17 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	if buf_size < 1.00 :
 		buf_size = 1.00
 
+	cb_buf_size = fpga_inst.area_dict["cb_buf_size"]/fpga_inst.specs.min_width_tran_area
+	if cb_buf_size < 1.00:
+		cb_buf_size = 1.00
+
 	vpr_file.write("<architecture>  \n")
 	vpr_file.write("<!-- ODIN II specific config -->\n")
 	vpr_file.write("<models>\n")
 	vpr_file.write("  <model name=\"multiply\">\n")
 	vpr_file.write("    <input_ports>\n")
-	vpr_file.write("    <port name=\"a\"/>\n")
-	vpr_file.write("    <port name=\"b\"/>\n")
+	vpr_file.write("    <port name=\"a\" combinational_sink_ports=\"out\"/> \n")
+	vpr_file.write("    <port name=\"b\" combinational_sink_ports=\"out\"/>\n")
 	vpr_file.write("    </input_ports>\n")
 	vpr_file.write("    <output_ports>\n")
 	vpr_file.write("    <port name=\"out\"/>\n")
@@ -1542,51 +1557,64 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	    
 	vpr_file.write("<model name=\"single_port_ram\">\n")
 	vpr_file.write("  <input_ports>\n")
-	vpr_file.write("  <port name=\"we\"/>     <!-- control -->\n")
-	vpr_file.write("  <port name=\"addr\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"data\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"we\" clock=\"clk\"/>     <!-- control -->\n")
+	vpr_file.write("  <port name=\"addr\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"data\" clock=\"clk\">  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  <port name=\"clk\" is_clock=\"1\"/>  <!-- memories are often clocked -->\n")
 	vpr_file.write("  </input_ports>\n")
 	vpr_file.write("  <output_ports>\n")
-	vpr_file.write("  <port name=\"out\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  </output_ports>\n")
 	vpr_file.write("</model>\n")
 
 	vpr_file.write("<model name=\"dual_port_ram\">\n")
 	vpr_file.write("  <input_ports>\n")
-	vpr_file.write("  <port name=\"we1\"/>     <!-- write enable -->\n")
-	vpr_file.write("  <port name=\"we2\"/>     <!-- write enable -->\n")
-	vpr_file.write("  <port name=\"addr1\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"addr2\"/>  <!-- address lines -->\n")
-	vpr_file.write("  <port name=\"data1\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
-	vpr_file.write("  <port name=\"data2\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"we1\" clock=\"clk\"/>     <!-- write enable -->\n")
+	vpr_file.write("  <port name=\"we2\" clock=\"clk\"/>     <!-- write enable -->\n")
+	vpr_file.write("  <port name=\"addr1\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"addr2\" clock=\"clk\"/>  <!-- address lines -->\n")
+	vpr_file.write("  <port name=\"data1\" clock=\"clk\">  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"data2\" clock=\"clk\"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  <port name=\"clk\" is_clock=\"1\"/>  <!-- memories are often clocked -->\n")
 	vpr_file.write("  </input_ports>\n")
 	vpr_file.write("  <output_ports>\n")
-	vpr_file.write("  <port name=\"out1\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
-	vpr_file.write("  <port name=\"out2\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out1\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
+	vpr_file.write("  <port name=\"out2\" clock=\"clk\"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->\n")
 	vpr_file.write("  </output_ports>\n")
 	vpr_file.write("</model>\n")
 
 	vpr_file.write("</models>\n")
 	vpr_file.write("<!-- ODIN II specific config ends -->\n")
 	vpr_file.write("<!-- Physical descriptions begin -->\n")
-	vpr_file.write("<layout auto=\"1.0\"/>\n")
+	vpr_file.write("<layout>\n")
+	vpr_file.write("<auto_layout aspect_ratio=\"1.0\">\n")
+	vpr_file.write("<perimeter type=\"io\" priority=\"100\"/>\n")
+	vpr_file.write("<corners type=\"EMPTY\" priority=\"101\"/>\n")
+	vpr_file.write("<fill type=\"clb\" priority=\"10\"/>\n")
+	vpr_file.write("<col type=\"mult_36\" startx=\"4\" starty=\"1\" repeatx=\"8\" priority=\"20\" />\n")
+	vpr_file.write("<col type=\"EMPTY\" startx=\"4\" starty=\"1\" repeatx=\"8\" priority=\"19\" />\n")
+	vpr_file.write("<col type=\"memory\" startx=\"2\" starty=\"1\" repeatx=\"8\" priority=\"20\" />\n")
+	vpr_file.write("<col type=\"EMPTY\" startx=\"2\" starty=\"1\" repeatx=\"8\" priority=\"19\" />\n")
+	vpr_file.write("</auto_layout>\n")
+	vpr_file.write("</layout>\n")
 
 	vpr_file.write("  <device>\n")
-	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\" ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n")
-	vpr_file.write("    <timing C_ipin_cblock=\"0.000000e+00\" T_ipin_cblock=\"" + str(T_ipin_cblock) + "\"/>\n")
+	vpr_file.write("    <sizing R_minW_nmos=\"13090.000000\" R_minW_pmos=\"19086.831111\"/> \n") #ipin_mux_trans_size=\"" + str(ipin_mux_trans_size)+ "\"/>\n
 	vpr_file.write("    <area grid_logic_tile_area=\"" + str(grid_logic_tile_area) +"\"/>\n")
 	vpr_file.write("    <chan_width_distr>\n")
-	vpr_file.write("      <io width=\"1.000000\"/>\n")
 	vpr_file.write("      <x distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("      <y distr=\"uniform\" peak=\"1.000000\"/>\n")
 	vpr_file.write("    </chan_width_distr>\n")
 	vpr_file.write("    <switch_block type=\"wilton\" fs=\"" + str(Fs) + "\"/>\n")
+	vpr_file.write("    <connection_block input_switch_name=\"ipin_cblock\"/>\n")
 	vpr_file.write("  </device>\n")
+
+	
 	vpr_file.write("  <switchlist>\n")
 	vpr_file.write("    <switch type=\"mux\" name=\"0\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(Tdel) + "\" mux_trans_size=\"" + str(mux_trans_size) + "\" buf_size=\"" + str(buf_size) + "\"/>\n")
+	vpr_file.write("    <switch type=\"mux\" name=\"ipin_cblock\" R=\"0.000000\" Cin=\"0.000000e+00\" Cout=\"0.000000e+00\" Tdel=\"" + str(T_ipin_cblock) + "\" mux_trans_size=\"" + str(ipin_mux_trans_size) + "\" buf_size=\"" + str(cb_buf_size) + "\"/>\n")
 	vpr_file.write("  </switchlist>\n")
+
 	vpr_file.write("  <segmentlist>\n")
 	vpr_file.write("    <segment freq=\"1.000000\" length=\"" + str(L) + "\" type=\"unidir\" Rmetal=\"0.000000\" Cmetal=\"0.000000e+00\">\n")
 	vpr_file.write("    <mux name=\"0\"/>\n")
@@ -1633,9 +1661,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	vpr_file.write("      <loc side=\"right\">io.outpad io.inpad io.clock</loc>\n")
 	vpr_file.write("      <loc side=\"bottom\">io.outpad io.inpad io.clock</loc>\n")
 	vpr_file.write("    </pinlocations>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"perimeter\" priority=\"10\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
+
 
 	vpr_file.write("  </pb_type>\n")
 	vpr_file.write("  <!-- Logic cluster definition -->\n")
@@ -2031,9 +2057,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	vpr_file.write("  <loc side=\"right\">clb.O1 clb.O2 clb.O3 clb.O4 clb.O5 clb.I1 clb.I3 clb.clk</loc> \n")
 	vpr_file.write("      <loc side=\"bottom\">clb.O6 clb.O7 clb.O8 clb.O9 clb.O10 clb.I2 clb.I4 clb.clk</loc>      \n")
 	vpr_file.write("    </pinlocations>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"fill\" priority=\"1\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
+
 	vpr_file.write("  </pb_type>\n")
 
 	vpr_file.write("  <!-- This is the 36*36 uniform mult -->\n")
@@ -2160,9 +2184,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
 
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"col\" start=\"4\" repeat=\"8\" priority=\"2\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
+
 	vpr_file.write("  </pb_type>\n")
 
 
@@ -2611,9 +2633,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 
 	vpr_file.write("    <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n")
 	vpr_file.write("    <pinlocations pattern=\"spread\"/>\n")
-	vpr_file.write("    <gridlocations>\n")
-	vpr_file.write("      <loc type=\"col\" start=\"2\" repeat=\"8\" priority=\"2\"/>\n")
-	vpr_file.write("    </gridlocations>\n")
+
 	vpr_file.write("  </pb_type>\n")
 
 

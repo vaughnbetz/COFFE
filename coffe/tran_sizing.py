@@ -270,12 +270,12 @@ def get_final_area(fpga_inst, opt_type, subcircuit, is_ram_component, is_cc_comp
 def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, is_ram_component, is_cc_component):
 
 	# omit measurements that are negative or doesn't reach Vgnd
-	if tfall < 0 or trise < 0 or low_voltage > 2.0e-1:
-		return 1
+	if tfall < 0 or trise < 0 or low_voltage > 4.0e-1:
+		return 100
 
 	# omit measurements that are too large
 	if tfall > 5e-9 or trise > 5e-9 :
-		return 1
+		return 100
 
 	# Use average delay for evaluation
 	delay = (tfall + trise)/2
@@ -2225,6 +2225,23 @@ def size_fpga_transistors(fpga_inst,
 		# cluster, finally emerging back into the general routing when we reach the cluster 
 		# outputs. This code is all basically the same, just repeated for each subcircuit.
 
+		print "determining a floorplan for this sizing iteration"
+		
+		
+		fpga_inst.update_area()
+		if fpga_inst.lb_height == 0.0:
+			fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
+			fpga_inst.update_area()
+
+		fpga_inst.update_wires()
+		fpga_inst.update_wire_rc()
+		fpga_inst.determine_height()
+		fpga_inst.update_area()
+		fpga_inst.compute_distance()
+		fpga_inst.update_wires()
+		fpga_inst.update_wire_rc()
+		fpga_inst.update_delays(spice_interface)
+		
 		
 		print "Sizing will begin now."
 		current_cost = cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)
