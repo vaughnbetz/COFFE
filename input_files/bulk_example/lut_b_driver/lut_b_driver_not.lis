@@ -1,0 +1,2853 @@
+Using: /usr/bin/time -p /CMC/tools/synopsys/hspice_2007.09/hspice/linux/hspice lut_b_driver_not.sp
+ ****** HSPICE  --  A-2007.09  32-BIT    (Aug 28 2007) 19:56:37 06/22/2018 linux
+  Copyright (C) 2007 Synopsys, Inc. All Rights Reserved.                        
+  Unpublished-rights reserved under US copyright laws.
+  This program is protected by law and is subject to the 
+  terms and conditions of the license agreement found in:
+    /CMC/tools/synopsys/hspice_2007.09/hspice/license.txt
+  Use of this program is your acceptance to be bound by this 
+  license agreement. HSPICE is the trademark of Synopsys, Inc.
+  Input File: lut_b_driver_not.sp                                               
+ lic: No 'setenv LM_LICENSE_FILE' in current environment' 
+ lic:  
+ lic: FLEXlm: v8.5b 
+ lic: USER:   eldafraw             HOSTNAME: flames.eecg 
+ lic: HOSTID: 00145e558a3e         PID:      8027 
+ lic: Using FLEXlm license file: 
+ lic: 7053@u10e.vrg.utoronto.ca 
+ lic: Checkout 1 hspice;  Encryption code: 7E5BF1FD085CE06A1286 
+ lic: License/Maintenance for hspice will expire on 27-aug-2018/2017.03 
+ lic: 2(in_use)/500(total) FLOATING license(s) on SERVER u10e.vrg.utoronto.ca 
+ lic:   
+ Init: read install configuration file: /CMC/tools/synopsys/hspice_2007.09/hspice/meta.cfg
+ Init: hspice initialization file: /CMC/tools/synopsys/hspice_2007.09/hspice/hspice.ini
+
+ ********************************************************************************
+ ** include libraries, parameters and other
+ ********************************************************************************
+
+ .lib "../includes.l" includes
+
+
+ * include process data (voltage levels, gate length and device models library)
+ .lib "process_data.l" process_data
+
+
+ * voltage levels
+ .param supply_v = 0.8
+
+ .param sram_v = 1.0
+
+ .param sram_n_v = 0.0
+
+ .param rcurrent = 1e-06
+
+ .param supply_v_lp = 0.95
+
+
+ .param sense_v = 0.65
+
+
+ .param mtj_worst_high = 4840
+
+ .param mtj_worst_low = 3060
+
+ .param mtj_nominal_low = 2500
+
+
+ .param mtj_nominal_high = 6250
+
+
+ .param vref = 0.627
+
+ .param vclmp = 0.653
+
+ * geometry
+ .param gate_length = 22n
+
+ .param trans_diffusion_length = 52.0n
+
+ .param min_tran_width = 45n
+
+ .param rest_length_factor=1
+
+
+ * supply voltage.
+ vsupply vdd gnd supply_v
+
+ vsupplylp vdd_lp gnd supply_v_lp
+
+ * sram voltages connecting to gates
+ vsram vsram gnd sram_v
+
+ vrefmtjn vrefmtj gnd vref
+
+ vclmomtjn vclmpmtj gnd vclmp
+
+ vsram_n vsram_n gnd sram_n_v
+
+
+ * device models
+ .lib "/autofs/fs1.ece/fs1.eecg.vaughn/eldafraw/coffe/spice_models/ptm_22nm_bulk_hp.l" 22nm_bulk_hp
+
+ .model  nmos  nmos  level = 54
+
+ +version = 4.0             binunit = 1               paramchk= 1               mobmod  = 0             
+ +capmod  = 2               igcmod  = 1               igbmod  = 1               geomod  = 1             
+ +diomod  = 1               rdsmod  = 0               rbodymod= 1               rgatemod= 1             
+ +permod  = 1               acnqsmod= 0               trnqsmod= 0             
+
+ +tnom    = 27              toxe    = 1.05e-009       toxp    = 8e-010          toxm    = 1.05e-009     
+ +dtox    = 2.5e-010        epsrox  = 3.9             wint    = 5e-009          lint    = 2e-009        
+ +ll      = 0               wl      = 0               lln     = 1               wln     = 1             
+ +lw      = 0               ww      = 0               lwn     = 1               wwn     = 1             
+ +lwl     = 0               wwl     = 0               xpart   = 0               toxref  = 1.05e-009     
+ +xl	   = -9e-9
+
+ +vth0    = 0.50308         k1      = 0.4             k2      = 0               k3      = 0             
+ +k3b     = 0               w0      = 2.5e-006        dvt0    = 1               dvt1    = 2             
+ +dvt2    = 0               dvt0w   = 0               dvt1w   = 0               dvt2w   = 0             
+ +dsub    = 0.1             minv    = 0.05            voffl   = 0               dvtp0   = 1e-011        
+ +dvtp1   = 0.1             lpe0    = 0               lpeb    = 0               xj      = 7.2e-009      
+ +ngate   = 1e+023          ndep    = 5.5e+018        nsd     = 2e+020          phin    = 0             
+ +cdsc    = 0               cdscb   = 0               cdscd   = 0               cit     = 0             
+ +voff    = -0.13           nfactor = 2.3             eta0    = 0.004           etab    = 0             
+ +vfb     = -0.55           u0      = 0.04            ua      = 6e-010          ub      = 1.2e-018      
+ +uc      = 0               vsat    = 250000          a0      = 1               ags     = 0             
+ +a1      = 0               a2      = 1               b0      = 0               b1      = 0             
+ +keta    = 0.04            dwg     = 0               dwb     = 0               pclm    = 0.02          
+ +pdiblc1 = 0.001           pdiblc2 = 0.001           pdiblcb = -0.005          drout   = 0.5           
+ +pvag    = 1e-020          delta   = 0.01            pscbe1  = 8.14e+008       pscbe2  = 1e-007        
+ +fprout  = 0.2             pdits   = 0.01            pditsd  = 0.23            pditsl  = 2300000       
+ +rsh     = 5               rdsw    = 145             rsw     = 75              rdw     = 75            
+ +rdswmin = 0               rdwmin  = 0               rswmin  = 0               prwg    = 0             
+ +prwb    = 0               wr      = 1               alpha0  = 0.074           alpha1  = 0.005         
+ +beta0   = 30              agidl   = 0.0002          bgidl   = 2.1e+009        cgidl   = 0.0002        
+ +egidl   = 0.8             aigbacc = 0.012           bigbacc = 0.0028          cigbacc = 0.002         
+ +nigbacc = 1               aigbinv = 0.014           bigbinv = 0.004           cigbinv = 0.004         
+ +eigbinv = 1.1             nigbinv = 3               aigc    = 0.0213          bigc    = 0.0025889     
+ +cigc    = 0.002           aigsd   = 0.0213          bigsd   = 0.0025889       cigsd   = 0.002         
+ +nigc    = 1               poxedge = 1               pigcd   = 1               ntox    = 1             
+ +xrcrg1  = 12              xrcrg2  = 5             
+
+ +cgso    = 6.5e-011        cgdo    = 6.5e-011        cgbo    = 2.56e-011       cgdl    = 2.653e-010    
+ +cgsl    = 2.653e-010      ckappas = 0.03            ckappad = 0.03            acde    = 1             
+ +moin    = 15              noff    = 0.9             voffcv  = 0.02          
+
+ +kt1     = -0.11           kt1l    = 0               kt2     = 0.022           ute     = -1.5          
+ +ua1     = 4.31e-009       ub1     = 7.61e-018       uc1     = -5.6e-011       prt     = 0             
+ +at      = 33000         
+
+ +fnoimod = 1               tnoimod = 0             
+
+ +jss     = 0.0001          jsws    = 1e-011          jswgs   = 1e-010          njs     = 1             
+ +ijthsfwd= 0.01            ijthsrev= 0.001           bvs     = 10              xjbvs   = 1             
+ +jsd     = 0.0001          jswd    = 1e-011          jswgd   = 1e-010          njd     = 1             
+ +ijthdfwd= 0.01            ijthdrev= 0.001           bvd     = 10              xjbvd   = 1             
+ +pbs     = 1               cjs     = 0.0005          mjs     = 0.5             pbsws   = 1             
+ +cjsws   = 5e-010          mjsws   = 0.33            pbswgs  = 1               cjswgs  = 3e-010        
+ +mjswgs  = 0.33            pbd     = 1               cjd     = 0.0005          mjd     = 0.5           
+ +pbswd   = 1               cjswd   = 5e-010          mjswd   = 0.33            pbswgd  = 1             
+ +cjswgd  = 5e-010          mjswgd  = 0.33            tpb     = 0.005           tcj     = 0.001         
+ +tpbsw   = 0.005           tcjsw   = 0.001           tpbswg  = 0.005           tcjswg  = 0.001         
+ +xtis    = 3               xtid    = 3             
+
+ +dmcg    = 0               dmci    = 0               dmdg    = 0               dmcgt   = 0             
+ +dwj     = 0               xgw     = 0               xgl     = 0             
+
+ +rshg    = 0.4             gbmin   = 1e-010          rbpb    = 5               rbpd    = 15            
+ +rbps    = 15              rbdb    = 15              rbsb    = 15              ngcon   = 1             
+
+
+
+ .model  pmos  pmos  level = 54
+
+ +version = 4.0             binunit = 1               paramchk= 1               mobmod  = 0             
+ +capmod  = 2               igcmod  = 1               igbmod  = 1               geomod  = 1             
+ +diomod  = 1               rdsmod  = 0               rbodymod= 1               rgatemod= 1             
+ +permod  = 1               acnqsmod= 0               trnqsmod= 0             
+
+ +tnom    = 27              toxe    = 1.1e-009        toxp    = 8e-010          toxm    = 1.1e-009      
+ +dtox    = 3e-010          epsrox  = 3.9             wint    = 5e-009          lint    = 2e-009        
+ +ll      = 0               wl      = 0               lln     = 1               wln     = 1             
+ +lw      = 0               ww      = 0               lwn     = 1               wwn     = 1             
+ +lwl     = 0               wwl     = 0               xpart   = 0               toxref  = 1.1e-009      
+ +xl	   = -9e-9
+
+ +vth0    = -0.4606         k1      = 0.4             k2      = -0.01           k3      = 0             
+ +k3b     = 0               w0      = 2.5e-006        dvt0    = 1               dvt1    = 2             
+ +dvt2    = -0.032          dvt0w   = 0               dvt1w   = 0               dvt2w   = 0             
+ +dsub    = 0.1             minv    = 0.05            voffl   = 0               dvtp0   = 1e-011        
+ +dvtp1   = 0.05            lpe0    = 0               lpeb    = 0               xj      = 7.2e-009      
+ +ngate   = 1e+023          ndep    = 4.4e+018        nsd     = 2e+020          phin    = 0             
+ +cdsc    = 0               cdscb   = 0               cdscd   = 0               cit     = 0             
+ +voff    = -0.126          nfactor = 2.1             eta0    = 0.0038          etab    = 0             
+ +vfb     = 0.55            u0      = 0.0095          ua      = 2e-009          ub      = 5e-019        
+ +uc      = 0               vsat    = 210000          a0      = 1               ags     = 1e-020        
+ +a1      = 0               a2      = 1               b0      = 0               b1      = 0             
+ +keta    = -0.047          dwg     = 0               dwb     = 0               pclm    = 0.12          
+ +pdiblc1 = 0.001           pdiblc2 = 0.001           pdiblcb = 3.4e-008        drout   = 0.56          
+ +pvag    = 1e-020          delta   = 0.01            pscbe1  = 8.14e+008       pscbe2  = 9.58e-007     
+ +fprout  = 0.2             pdits   = 0.08            pditsd  = 0.23            pditsl  = 2300000       
+ +rsh     = 5               rdsw    = 145             rsw     = 72.5            rdw     = 72.5          
+ +rdswmin = 0               rdwmin  = 0               rswmin  = 0               prwg    = 0             
+ +prwb    = 0               wr      = 1               alpha0  = 0.074           alpha1  = 0.005         
+ +beta0   = 30              agidl   = 0.0002          bgidl   = 2.1e+009        cgidl   = 0.0002        
+ +egidl   = 0.8             aigbacc = 0.012           bigbacc = 0.0028          cigbacc = 0.002         
+ +nigbacc = 1               aigbinv = 0.014           bigbinv = 0.004           cigbinv = 0.004         
+ +eigbinv = 1.1             nigbinv = 3               aigc    = 0.0213          bigc    = 0.0025889     
+ +cigc    = 0.002           aigsd   = 0.0213          bigsd   = 0.0025889       cigsd   = 0.002         
+ +nigc    = 1               poxedge = 1               pigcd   = 1               ntox    = 1             
+ +xrcrg1  = 12              xrcrg2  = 5             
+
+ +cgso    = 6.5e-011        cgdo    = 6.5e-011        cgbo    = 2.56e-011       cgdl    = 2.653e-010    
+ +cgsl    = 2.653e-010      ckappas = 0.03            ckappad = 0.03            acde    = 1             
+ +moin    = 15              noff    = 0.9             voffcv  = 0.02          
+
+ +kt1     = -0.11           kt1l    = 0               kt2     = 0.022           ute     = -1.5          
+ +ua1     = 4.31e-009       ub1     = 7.61e-018       uc1     = -5.6e-011       prt     = 0             
+ +at      = 33000         
+
+ +fnoimod = 1               tnoimod = 0             
+
+ +jss     = 0.0001          jsws    = 1e-011          jswgs   = 1e-010          njs     = 1             
+ +ijthsfwd= 0.01            ijthsrev= 0.001           bvs     = 10              xjbvs   = 1             
+ +jsd     = 0.0001          jswd    = 1e-011          jswgd   = 1e-010          njd     = 1             
+ +ijthdfwd= 0.01            ijthdrev= 0.001           bvd     = 10              xjbvd   = 1             
+ +pbs     = 1               cjs     = 0.0005          mjs     = 0.5             pbsws   = 1             
+ +cjsws   = 5e-010          mjsws   = 0.33            pbswgs  = 1               cjswgs  = 3e-010        
+ +mjswgs  = 0.33            pbd     = 1               cjd     = 0.0005          mjd     = 0.5           
+ +pbswd   = 1               cjswd   = 5e-010          mjswd   = 0.33            pbswgd  = 1             
+ +cjswgd  = 5e-010          mjswgd  = 0.33            tpb     = 0.005           tcj     = 0.001         
+ +tpbsw   = 0.005           tcjsw   = 0.001           tpbswg  = 0.005           tcjswg  = 0.001         
+ +xtis    = 3               xtid    = 3             
+
+ +dmcg    = 0               dmci    = 0               dmdg    = 0               dmcgt   = 0             
+ +dwj     = 0               xgw     = 0               xgl     = 0             
+
+ +rshg    = 0.4             gbmin   = 1e-010          rbpb    = 5               rbpd    = 15            
+ +rbps    = 15              rbdb    = 15              rbsb    = 15              ngcon   = 1 
+
+
+
+ .model  nmos_lp  nmos  level = 54
+
+
+ +version = 4.0             binunit = 1               paramchk= 1               mobmod  = 0             
+ +capmod  = 2               igcmod  = 1               igbmod  = 1               geomod  = 1             
+ +diomod  = 1               rdsmod  = 0               rbodymod= 1               rgatemod= 1             
+ +permod  = 1               acnqsmod= 0               trnqsmod= 0             
+
+ +tnom    = 27              toxe    = 1.4e-009        toxp    = 1.1e-009        toxm    = 1.4e-009      
+ +dtox    = 3e-010          epsrox  = 3.9             wint    = 5e-009          lint    = 0             
+ +ll      = 0               wl      = 0               lln     = 1               wln     = 1             
+ +lw      = 0               ww      = 0               lwn     = 1               wwn     = 1             
+ +lwl     = 0               wwl     = 0               xpart   = 0               toxref  = 1.4e-009      
+
+ +vth0    = 0.58858         k1      = 0.4             k2      = 0               k3      = 0             
+ +k3b     = 0               w0      = 2.5e-006        dvt0    = 1               dvt1    = 2             
+ +dvt2    = 0               dvt0w   = 0               dvt1w   = 0               dvt2w   = 0             
+ +dsub    = 0.1             minv    = 0.05            voffl   = 0               dvtp0   = 1e-011        
+ +dvtp1   = 0.1             lpe0    = 0               lpeb    = 0               xj      = 7.2e-009      
+ +ngate   = 1e+023          ndep    = 5.5e+018        nsd     = 2e+020          phin    = 0             
+ +cdsc    = 0               cdscb   = 0               cdscd   = 0               cit     = 0             
+ +voff    = -0.1092         nfactor = 1.6             eta0    = 0.0105          etab    = 0             
+ +vfb     = -0.55           u0      = 0.035           ua      = 6e-010          ub      = 1.2e-018      
+ +uc      = 0               vsat    = 170000          a0      = 1               ags     = 0             
+ +a1      = 0               a2      = 1               b0      = 0               b1      = 0             
+ +keta    = 0.04            dwg     = 0               dwb     = 0               pclm    = 0.02          
+ +pdiblc1 = 0.001           pdiblc2 = 0.001           pdiblcb = -0.005          drout   = 0.5           
+ +pvag    = 1e-020          delta   = 0.01            pscbe1  = 8.14e+008       pscbe2  = 1e-007        
+ +fprout  = 0.2             pdits   = 0.01            pditsd  = 0.23            pditsl  = 2300000       
+ +rsh     = 5               rdsw    = 180             rsw     = 75              rdw     = 75            
+ +rdswmin = 0               rdwmin  = 0               rswmin  = 0               prwg    = 0             
+ +prwb    = 0               wr      = 1               alpha0  = 0.074           alpha1  = 0.005         
+ +beta0   = 30              agidl   = 0.0002          bgidl   = 2.1e+009        cgidl   = 0.0002        
+ +egidl   = 0.8             aigbacc = 0.012           bigbacc = 0.0028          cigbacc = 0.002         
+ +nigbacc = 1               aigbinv = 0.014           bigbinv = 0.004           cigbinv = 0.004         
+ +eigbinv = 1.1             nigbinv = 3               aigc    = 0.015211        bigc    = 0.0027432     
+ +cigc    = 0.002           aigsd   = 0.015211        bigsd   = 0.0027432       cigsd   = 0.002         
+ +nigc    = 1               poxedge = 1               pigcd   = 1               ntox    = 1             
+ +xrcrg1  = 12              xrcrg2  = 5             
+
+ +cgso    = 6.5e-011        cgdo    = 6.5e-011        cgbo    = 2.56e-011       cgdl    = 2.653e-010    
+ +cgsl    = 2.653e-010      ckappas = 0.03            ckappad = 0.03            acde    = 1             
+ +moin    = 15              noff    = 0.9             voffcv  = 0.02          
+
+ +kt1     = -0.11           kt1l    = 0               kt2     = 0.022           ute     = -1.5          
+ +ua1     = 4.31e-009       ub1     = 7.61e-018       uc1     = -5.6e-011       prt     = 0             
+ +at      = 33000         
+
+ +fnoimod = 1               tnoimod = 0             
+
+ +jss     = 0.0001          jsws    = 1e-011          jswgs   = 1e-010          njs     = 1             
+ +ijthsfwd= 0.01            ijthsrev= 0.001           bvs     = 10              xjbvs   = 1             
+ +jsd     = 0.0001          jswd    = 1e-011          jswgd   = 1e-010          njd     = 1             
+ +ijthdfwd= 0.01            ijthdrev= 0.001           bvd     = 10              xjbvd   = 1             
+ +pbs     = 1               cjs     = 0.0005          mjs     = 0.5             pbsws   = 1             
+ +cjsws   = 5e-010          mjsws   = 0.33            pbswgs  = 1               cjswgs  = 3e-010        
+ +mjswgs  = 0.33            pbd     = 1               cjd     = 0.0005          mjd     = 0.5           
+ +pbswd   = 1               cjswd   = 5e-010          mjswd   = 0.33            pbswgd  = 1             
+ +cjswgd  = 5e-010          mjswgd  = 0.33            tpb     = 0.005           tcj     = 0.001         
+ +tpbsw   = 0.005           tcjsw   = 0.001           tpbswg  = 0.005           tcjswg  = 0.001         
+ +xtis    = 3               xtid    = 3             
+
+ +dmcg    = 0               dmci    = 0               dmdg    = 0               dmcgt   = 0             
+ +dwj     = 0               xgw     = 0               xgl     = 0             
+
+ +rshg    = 0.4             gbmin   = 1e-010          rbpb    = 5               rbpd    = 15            
+ +rbps    = 15              rbdb    = 15              rbsb    = 15              ngcon   = 1             
+
+
+ .model  pmos_lp  pmos  level = 54
+
+ +version = 4.0             binunit = 1               paramchk= 1               mobmod  = 0             
+ +capmod  = 2               igcmod  = 1               igbmod  = 1               geomod  = 1             
+ +diomod  = 1               rdsmod  = 0               rbodymod= 1               rgatemod= 1             
+ +permod  = 1               acnqsmod= 0               trnqsmod= 0             
+
+ +tnom    = 27              toxe    = 1.4e-009        toxp    = 1.08e-009       toxm    = 1.42e-009     
+ +dtox    = 3.2e-010        epsrox  = 3.9             wint    = 5e-009          lint    = 0             
+ +ll      = 0               wl      = 0               lln     = 1               wln     = 1             
+ +lw      = 0               ww      = 0               lwn     = 1               wwn     = 1             
+ +lwl     = 0               wwl     = 0               xpart   = 0               toxref  = 1.42e-009     
+
+ +vth0    = -0.53745        k1      = 0.4             k2      = -0.01           k3      = 0             
+ +k3b     = 0               w0      = 2.5e-006        dvt0    = 1               dvt1    = 2             
+ +dvt2    = -0.032          dvt0w   = 0               dvt1w   = 0               dvt2w   = 0             
+ +dsub    = 0.1             minv    = 0.05            voffl   = 0               dvtp0   = 1e-011        
+ +dvtp1   = 0.05            lpe0    = 0               lpeb    = 0               xj      = 7.2e-009      
+ +ngate   = 1e+023          ndep    = 4.4e+018        nsd     = 2e+020          phin    = 0             
+ +cdsc    = 0               cdscb   = 0               cdscd   = 0               cit     = 0             
+ +voff    = -0.09           nfactor = 1.8             eta0    = 0.0105          etab    = 0             
+ +vfb     = 0.55            u0      = 0.011           ua      = 2e-009          ub      = 5e-019        
+ +uc      = 0               vsat    = 170000          a0      = 1               ags     = 1e-020        
+ +a1      = 0               a2      = 1               b0      = 0               b1      = 0             
+ +keta    = -0.047          dwg     = 0               dwb     = 0               pclm    = 0.12          
+ +pdiblc1 = 0.001           pdiblc2 = 0.001           pdiblcb = 3.4e-008        drout   = 0.56          
+ +pvag    = 1e-020          delta   = 0.01            pscbe1  = 8.14e+008       pscbe2  = 9.58e-007     
+ +fprout  = 0.2             pdits   = 0.08            pditsd  = 0.23            pditsl  = 2300000       
+ +rsh     = 5               rdsw    = 230             rsw     = 72.5            rdw     = 72.5          
+ +rdswmin = 0               rdwmin  = 0               rswmin  = 0               prwg    = 0             
+ +prwb    = 0               wr      = 1               alpha0  = 0.074           alpha1  = 0.005         
+ +beta0   = 30              agidl   = 0.0002          bgidl   = 2.1e+009        cgidl   = 0.0002        
+ +egidl   = 0.8             aigbacc = 0.012           bigbacc = 0.0028          cigbacc = 0.002         
+ +nigbacc = 1               aigbinv = 0.014           bigbinv = 0.004           cigbinv = 0.004         
+ +eigbinv = 1.1             nigbinv = 3               aigc    = 0.0097          bigc    = 0.00125       
+ +cigc    = 0.0008          aigsd   = 0.0097          bigsd   = 0.00125         cigsd   = 0.0008        
+ +nigc    = 1               poxedge = 1               pigcd   = 1               ntox    = 1             
+ +xrcrg1  = 12              xrcrg2  = 5             
+
+ +cgso    = 6.5e-011        cgdo    = 6.5e-011        cgbo    = 2.56e-011       cgdl    = 2.653e-010    
+ +cgsl    = 2.653e-010      ckappas = 0.03            ckappad = 0.03            acde    = 1             
+ +moin    = 15              noff    = 0.9             voffcv  = 0.02          
+
+ +kt1     = -0.11           kt1l    = 0               kt2     = 0.022           ute     = -1.5          
+ +ua1     = 4.31e-009       ub1     = 7.61e-018       uc1     = -5.6e-011       prt     = 0             
+ +at      = 33000         
+
+ +fnoimod = 1               tnoimod = 0             
+
+ +jss     = 0.0001          jsws    = 1e-011          jswgs   = 1e-010          njs     = 1             
+ +ijthsfwd= 0.01            ijthsrev= 0.001           bvs     = 10              xjbvs   = 1             
+ +jsd     = 0.0001          jswd    = 1e-011          jswgd   = 1e-010          njd     = 1             
+ +ijthdfwd= 0.01            ijthdrev= 0.001           bvd     = 10              xjbvd   = 1             
+ +pbs     = 1               cjs     = 0.0005          mjs     = 0.5             pbsws   = 1             
+ +cjsws   = 5e-010          mjsws   = 0.33            pbswgs  = 1               cjswgs  = 3e-010        
+ +mjswgs  = 0.33            pbd     = 1               cjd     = 0.0005          mjd     = 0.5           
+ +pbswd   = 1               cjswd   = 5e-010          mjswd   = 0.33            pbswgd  = 1             
+ +cjswgd  = 5e-010          mjswgd  = 0.33            tpb     = 0.005           tcj     = 0.001         
+ +tpbsw   = 0.005           tcjsw   = 0.001           tpbswg  = 0.005           tcjswg  = 0.001         
+ +xtis    = 3               xtid    = 3             
+
+ +dmcg    = 0               dmci    = 0               dmdg    = 0               dmcgt   = 0             
+ +dwj     = 0               xgw     = 0               xgl     = 0             
+
+ +rshg    = 0.4             gbmin   = 1e-010          rbpb    = 5               rbpd    = 15            
+ +rbps    = 15              rbdb    = 15              rbsb    = 15              ngcon   = 1             
+             
+
+ .endl 22nm_hp
+
+
+
+
+ * include transistor parameters
+ * include wire resistance and capacitance
+ * include basic subcircuits
+ .lib "basic_subcircuits.l" basic_subcircuits
+
+
+ ******************************************************************************************
+ * interconnect wire
+ ******************************************************************************************
+ .subckt wire n_in n_out rw=1 cw=1
+
+ cwire_1 n_in gnd cw
+
+ rwire_1 n_in n_out rw
+
+ cwire_2 n_out gnd cw
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * pass-transistor
+ ******************************************************************************************
+ .subckt ptran n_in n_out n_gate n_gnd wn=45n 
+
+ mnpass n_in n_gate n_out n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * pmos pass-transistor
+ ******************************************************************************************
+ .subckt ptranp n_in n_out n_gate n_vdd wn=45n 
+
+ mppass n_in n_gate n_out n_vdd pmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * transmission gate
+ ******************************************************************************************
+ .subckt tgate n_in n_out n_gate_nmos n_gate_pmos n_vdd n_gnd wn=45n wp=45n
+
+ mntgate n_in n_gate_nmos n_out n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mptgate n_in n_gate_pmos n_out n_vdd pmos l=gate_length w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * transmission gate
+ ******************************************************************************************
+ .subckt tgate_lp n_in n_out n_gate_nmos n_gate_pmos n_vdd n_gnd wn=45n wp=45n
+
+ mntgate n_in n_gate_nmos n_out n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mptgate n_in n_gate_pmos n_out n_vdd pmos_lp l=gate_length w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * level-restorer pmos
+ ******************************************************************************************
+ .subckt rest n_pull n_gate n_vdd n_gnd wp=45n
+
+ mprest n_pull n_gate n_vdd n_vdd pmos l=gate_length*rest_length_factor w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * inverter
+ ******************************************************************************************
+ .subckt inv n_in n_out n_vdd n_gnd wn=45n wp=45n
+
+ mndown n_out n_in n_gnd n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup n_out n_in n_vdd n_vdd pmos l=gate_length w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * low power inverter
+ ******************************************************************************************
+ .subckt inv_lp n_in n_out n_vdd n_gnd wn=45n wp=45n
+
+ mndown n_out n_in n_gnd n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup n_out n_in n_vdd n_vdd pmos_lp l=gate_length w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * nand2
+ ******************************************************************************************
+ .subckt nand2 n_in n_out n_vdd n_gnd wn=45n wp=45n
+
+ mndown2 n_out n_vdd n_z n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mndown1 n_z n_in n_gnd n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup1 n_out n_vdd n_vdd n_vdd pmos l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup2 n_out n_in n_vdd n_vdd pmos l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * nand2
+ ******************************************************************************************
+ .subckt nand2_lp n_in n_out n_vdd n_gnd wn=45n wp=45n
+
+ mndown2 n_out n_vdd n_z n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mndown1 n_z n_in n_gnd n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup1 n_out n_vdd n_vdd n_vdd pmos_lp l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup2 n_out n_in n_vdd n_vdd pmos_lp l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * nand3
+ ******************************************************************************************
+ .subckt nand3 n_in n_out n_vdd n_gnd wn=45n wp=45n
+
+ mndown2 n_out n_vdd n_z n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mndown1 n_z n_vdd n_z2 n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mndown0 n_z2 n_in n_gnd n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup0 n_out n_vdd n_vdd n_vdd pmos l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup1 n_out n_vdd n_vdd n_vdd pmos l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup2 n_out n_in n_vdd n_vdd pmos l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * nand3
+ ******************************************************************************************
+ .subckt nand3_lp n_in n_out n_vdd n_gnd wn=45n wp=45n
+
+ mndown2 n_out n_vdd n_z n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mndown1 n_z n_vdd n_z2 n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mndown0 n_z2 n_in n_gnd n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup0 n_out n_vdd n_vdd n_vdd pmos_lp l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup1 n_out n_vdd n_vdd n_vdd pmos_lp l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mpup2 n_out n_in n_vdd n_vdd pmos_lp l=gate_length w=wp as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * transmission gate
+ ******************************************************************************************
+ .subckt ram_tgate n_in n_out n_gate_nmos n_gate_pmos n_vdd n_gnd wn=200n wp=250n
+
+ mntgate n_in n_gate_nmos n_out n_gnd nmos l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mptgate n_in n_gate_pmos n_out n_vdd pmos l=gate_length w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * transmission gate
+ ******************************************************************************************
+ .subckt ram_tgate_lp n_in n_out n_gate_nmos n_gate_pmos n_vdd n_gnd wn=200n wp=250n
+
+ mntgate n_in n_gate_nmos n_out n_gnd nmos_lp l=gate_length w=wn as=wn*trans_diffusion_length ad=wn*trans_diffusion_length ps=wn+2*trans_diffusion_length pd=wn+2*trans_diffusion_length
+
+ mptgate n_in n_gate_pmos n_out n_vdd pmos_lp l=gate_length w=wp as=wp*trans_diffusion_length ad=wp*trans_diffusion_length ps=wp+2*trans_diffusion_length pd=wp+2*trans_diffusion_length
+
+ .ends
+
+
+
+
+
+ * include subcircuits
+ .lib "subcircuits.l" subcircuits
+
+
+ ******************************************************************************************
+ * sb_mux driver subcircuit (12:1)
+ ******************************************************************************************
+ .subckt sb_mux_driver n_in n_out n_vdd n_gnd
+
+ xrest_sb_mux n_in n_1_1 n_vdd n_gnd rest wp=rest_sb_mux_pmos
+
+ xinv_sb_mux_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_sb_mux_1_nmos wp=inv_sb_mux_1_pmos
+
+ xwire_sb_mux_driver n_1_1 n_1_2 wire rw=wire_sb_mux_driver_res cw=wire_sb_mux_driver_cap
+
+ xinv_sb_mux_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_sb_mux_2_nmos wp=inv_sb_mux_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * sb_mux subcircuit (12:1), turned off 
+ ******************************************************************************************
+ .subckt sb_mux_off n_in n_gate n_gate_n n_vdd n_gnd
+
+ xptran_sb_mux_l1 n_in n_gnd n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * sb_mux subcircuit (12:1), partially turned on
+ ******************************************************************************************
+ .subckt sb_mux_partial n_in n_gate n_gate_n n_vdd n_gnd
+
+ xptran_sb_mux_l1 n_in n_1 n_gate n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_1 n_1 n_1_1 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l1_1h n_gnd n_1_1 n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_2 n_1_1 n_1_2 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l1_2h n_gnd n_1_2 n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_3 n_1_2 n_1_3 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l1_3h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_4 n_1_3 n_1_4 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l2 n_1_4 n_gnd n_gnd n_gnd ptran wn=ptran_sb_mux_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * sb_mux subcircuit (12:1), fully turned on (mux only)
+ ******************************************************************************************
+ .subckt sb_mux_on_mux_only n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xptran_sb_mux_l1 n_in n_1 n_gate n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_1 n_1 n_1_1 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l1_1h n_gnd n_1_1 n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_2 n_1_1 n_1_2 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l1_2h n_gnd n_1_2 n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_3 n_1_2 n_1_3 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l1_3h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_sb_mux_l1_nmos
+
+ xwire_sb_mux_l1_4 n_1_3 n_1_4 wire rw='wire_sb_mux_l1_res/4' cw='wire_sb_mux_l1_cap/4'
+
+ xptran_sb_mux_l2 n_1_4 n_2 n_gate n_gnd ptran wn=ptran_sb_mux_l2_nmos
+
+ xwire_sb_mux_l2_1 n_2 n_out wire rw='wire_sb_mux_l2_res/2' cw='wire_sb_mux_l2_cap/2'
+
+ xptran_sb_mux_l2_1h n_gnd n_out n_gnd n_gnd ptran wn=ptran_sb_mux_l2_nmos
+
+ xwire_sb_mux_l2_2  n_out n_2_1 wire rw='wire_sb_mux_l2_res/2' cw='wire_sb_mux_l2_cap/2'
+
+ xptran_sb_mux_l2_2h n_gnd n_2_1 n_gnd n_gnd ptran wn=ptran_sb_mux_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * sb_mux subcircuit (12:1), fully turned on 
+ ******************************************************************************************
+ .subckt sb_mux_on n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xsb_mux_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd sb_mux_on_mux_only
+
+ xsb_mux_driver n_1_1 n_out n_vdd n_gnd sb_mux_driver
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * cb_mux driver subcircuit (64:1)
+ ******************************************************************************************
+ .subckt cb_mux_driver n_in n_out n_vdd n_gnd
+
+ xrest_cb_mux n_in n_1_1 n_vdd n_gnd rest wp=rest_cb_mux_pmos
+
+ xinv_cb_mux_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_cb_mux_1_nmos wp=inv_cb_mux_1_pmos
+
+ xwire_cb_mux_driver n_1_1 n_1_2 wire rw=wire_cb_mux_driver_res cw=wire_cb_mux_driver_cap
+
+ xinv_cb_mux_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_cb_mux_2_nmos wp=inv_cb_mux_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * cb_mux subcircuit (64:1), turned off 
+ ******************************************************************************************
+ .subckt cb_mux_off n_in n_gate n_gate_n n_vdd n_gnd
+
+ xptran_cb_mux_l1 n_in n_gnd n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * cb_mux subcircuit (64:1), partially turned on
+ ******************************************************************************************
+ .subckt cb_mux_partial n_in n_gate n_gate_n n_vdd n_gnd
+
+ xptran_cb_mux_l1 n_in n_1 n_gate n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_1 n_1 n_1_1 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_1h n_gnd n_1_1 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_2 n_1_1 n_1_2 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_2h n_gnd n_1_2 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_3 n_1_2 n_1_3 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_3h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_4 n_1_3 n_1_4 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_4h n_gnd n_1_4 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_5 n_1_4 n_1_5 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_5h n_gnd n_1_5 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_6 n_1_5 n_1_6 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_6h n_gnd n_1_6 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_7 n_1_6 n_1_7 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_7h n_gnd n_1_7 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_8 n_1_7 n_1_8 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l2 n_1_8 n_gnd n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * cb_mux subcircuit (64:1), fully turned on (mux only)
+ ******************************************************************************************
+ .subckt cb_mux_on_mux_only n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xptran_cb_mux_l1 n_in n_1 n_gate n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_1 n_1 n_1_1 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_1h n_gnd n_1_1 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_2 n_1_1 n_1_2 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_2h n_gnd n_1_2 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_3 n_1_2 n_1_3 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_3h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_4 n_1_3 n_1_4 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_4h n_gnd n_1_4 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_5 n_1_4 n_1_5 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_5h n_gnd n_1_5 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_6 n_1_5 n_1_6 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_6h n_gnd n_1_6 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_7 n_1_6 n_1_7 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l1_7h n_gnd n_1_7 n_gnd n_gnd ptran wn=ptran_cb_mux_l1_nmos
+
+ xwire_cb_mux_l1_8 n_1_7 n_1_8 wire rw='wire_cb_mux_l1_res/8' cw='wire_cb_mux_l1_cap/8'
+
+ xptran_cb_mux_l2 n_1_8 n_2 n_gate n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_1 n_2 n_2_1 wire rw='wire_cb_mux_l2_res/7' cw='wire_cb_mux_l2_cap/7'
+
+ xptran_cb_mux_l2_1h n_gnd n_2_1 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_2 n_2_1 n_2_2 wire rw='wire_cb_mux_l2_res/7' cw='wire_cb_mux_l2_cap/7'
+
+ xptran_cb_mux_l2_2h n_gnd n_2_2 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_3 n_2_2 n_2_3 wire rw='wire_cb_mux_l2_res/7' cw='wire_cb_mux_l2_cap/7'
+
+ xptran_cb_mux_l2_3h n_gnd n_2_3 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_4 n_2_3 n_out wire rw='wire_cb_mux_l2_res/14' cw='wire_cb_mux_l2_cap/14'
+
+ xwire_cb_mux_l2_5  n_out n_2_4 wire rw='wire_cb_mux_l2_res/14' cw='wire_cb_mux_l2_cap/14'
+
+ xptran_cb_mux_l2_4h n_gnd n_2_4 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_6 n_2_4 n_2_5 wire rw='wire_cb_mux_l2_res/7' cw='wire_cb_mux_l2_cap/7'
+
+ xptran_cb_mux_l2_5h n_gnd n_2_5 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_7 n_2_5 n_2_6 wire rw='wire_cb_mux_l2_res/7' cw='wire_cb_mux_l2_cap/7'
+
+ xptran_cb_mux_l2_6h n_gnd n_2_6 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ xwire_cb_mux_l2_8 n_2_6 n_2_7 wire rw='wire_cb_mux_l2_res/7' cw='wire_cb_mux_l2_cap/7'
+
+ xptran_cb_mux_l2_7h n_gnd n_2_7 n_gnd n_gnd ptran wn=ptran_cb_mux_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * cb_mux subcircuit (64:1), fully turned on 
+ ******************************************************************************************
+ .subckt cb_mux_on n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xcb_mux_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd cb_mux_on_mux_only
+
+ xcb_mux_driver n_1_1 n_out n_vdd n_gnd cb_mux_driver
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * 6-lut subcircuit 
+ ******************************************************************************************
+ .subckt lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd
+
+ xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv wn=45n wp=75.015n
+
+ xwire_lut_sram_driver n_1_1 n_1_2 wire rw=wire_lut_sram_driver_res cw=wire_lut_sram_driver_cap
+
+ xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv wn=inv_lut_0sram_driver_2_nmos wp=inv_lut_0sram_driver_2_pmos
+
+ xwire_lut_sram_driver_out n_2_1 n_2_2 wire rw=wire_lut_sram_driver_out_res cw=wire_lut_sram_driver_out_cap
+
+
+ * first chain
+ xptran_lut_l1 n_2_2 n_3_1 n_a n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_l1 n_3_1 n_3_2 wire rw='wire_lut_l1_res/2' cw='wire_lut_l1_cap/2'
+
+ xwire_lut_l1h n_3_2 n_3_3 wire rw='wire_lut_l1_res/2' cw='wire_lut_l1_cap/2'
+
+ xptran_lut_l1h n_gnd n_3_3 n_gnd n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xptran_lut_l2 n_3_2 n_4_1 n_b n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_l2 n_4_1 n_4_2 wire rw='wire_lut_l2_res/2' cw='wire_lut_l2_cap/2'
+
+ xwire_lut_l2h n_4_2 n_4_3 wire rw='wire_lut_l2_res/2' cw='wire_lut_l2_cap/2'
+
+ xptran_lut_l2h n_gnd n_4_3 n_gnd n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xptran_lut_l3 n_4_2 n_5_1 n_c n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_l3 n_5_1 n_5_2 wire rw='wire_lut_l3_res/2' cw='wire_lut_l3_cap/2'
+
+ xwire_lut_l3h n_5_2 n_5_3 wire rw='wire_lut_l3_res/2' cw='wire_lut_l3_cap/2'
+
+ xptran_lut_l3h n_gnd n_5_3 n_gnd n_gnd ptran wn=ptran_lut_l3_nmos
+
+
+ * internal buffer 
+ xrest_lut_int_buffer n_5_2 n_6_1 n_vdd n_gnd rest wp=rest_lut_int_buffer_pmos
+
+ xinv_lut_int_buffer_1 n_5_2 n_6_1 n_vdd n_gnd inv wn=inv_lut_int_buffer_1_nmos wp=inv_lut_int_buffer_1_pmos
+
+ xwire_lut_int_buffer n_6_1 n_6_2 wire rw=wire_lut_int_buffer_res cw=wire_lut_int_buffer_cap
+
+ xinv_lut_int_buffer_2 n_6_2 n_7_1 n_vdd n_gnd inv wn=inv_lut_int_buffer_2_nmos wp=inv_lut_int_buffer_2_pmos
+
+ xwire_lut_int_buffer_out n_7_1 n_7_2 wire rw=wire_lut_int_buffer_out_res cw=wire_lut_int_buffer_out_cap
+
+
+ * second chain
+ xptran_lut_l4 n_7_2 n_8_1 n_d n_gnd ptran wn=ptran_lut_l4_nmos
+
+ xwire_lut_l4 n_8_1 n_8_2 wire rw='wire_lut_l4_res/2' cw='wire_lut_l4_cap/2'
+
+ xwire_lut_l4h n_8_2 n_8_3 wire rw='wire_lut_l4_res/2' cw='wire_lut_l4_cap/2'
+
+ xptran_lut_l4h n_gnd n_8_3 n_gnd n_gnd ptran wn=ptran_lut_l4_nmos
+
+ xptran_lut_l5 n_8_2 n_9_1 n_e n_gnd ptran wn=ptran_lut_l5_nmos
+
+ xwire_lut_l5 n_9_1 n_9_2 wire rw='wire_lut_l5_res/2' cw='wire_lut_l5_cap/2'
+
+ xwire_lut_l5h n_9_2 n_9_3 wire rw='wire_lut_l5_res/2' cw='wire_lut_l5_cap/2'
+
+ xptran_lut_l5h n_gnd n_9_3 n_gnd n_gnd ptran wn=ptran_lut_l5_nmos
+
+ xptran_lut_l6 n_9_2 n_10_1 n_f n_gnd ptran wn=ptran_lut_l6_nmos
+
+ xwire_lut_l6 n_10_1 n_10_2 wire rw='wire_lut_l6_res/2' cw='wire_lut_l6_cap/2'
+
+ xwire_lut_l6h n_10_2 n_10_3 wire rw='wire_lut_l6_res/2' cw='wire_lut_l6_cap/2'
+
+ xptran_lut_l6h n_gnd n_10_3 n_gnd n_gnd ptran wn=ptran_lut_l6_nmos
+
+
+ * output buffer 
+ xrest_lut_out_buffer n_10_2 n_11_1 n_vdd n_gnd rest wp=rest_lut_out_buffer_pmos
+
+ xinv_lut_out_buffer_1 n_10_2 n_11_1 n_vdd n_gnd inv wn=inv_lut_out_buffer_1_nmos wp=inv_lut_out_buffer_1_pmos
+
+ xwire_lut_out_buffer n_11_1 n_11_2 wire rw=wire_lut_out_buffer_res cw=wire_lut_out_buffer_cap
+
+ xinv_lut_out_buffer_2 n_11_2 n_out n_vdd n_gnd inv wn=inv_lut_out_buffer_2_nmos wp=inv_lut_out_buffer_2_pmos
+
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_a_driver subcircuit 
+ ******************************************************************************************
+ .subckt lut_a_driver n_in n_out n_gate n_gate_n n_rsel n_not_input n_vdd n_gnd
+
+ xwire_lut_a_driver n_in n_not_input wire rw=wire_lut_a_driver_res cw=wire_lut_a_driver_cap
+
+ xinv_lut_a_driver_2 n_not_input n_out n_vdd n_gnd inv wn=inv_lut_a_driver_2_nmos wp=inv_lut_a_driver_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_a_driver_not subcircuit 
+ ******************************************************************************************
+ .subckt lut_a_driver_not n_in n_out n_vdd n_gnd
+
+ xinv_lut_a_driver_not_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_a_driver_not_1_nmos wp=inv_lut_a_driver_not_1_pmos
+
+ xwire_lut_a_driver_not n_1_1 n_1_2 wire rw=wire_lut_a_driver_not_res cw=wire_lut_a_driver_not_cap
+
+ xinv_lut_a_driver_not_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_lut_a_driver_not_2_nmos wp=inv_lut_a_driver_not_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_b_driver subcircuit 
+ ******************************************************************************************
+ .subckt lut_b_driver n_in n_out n_gate n_gate_n n_rsel n_not_input n_vdd n_gnd
+
+ xwire_lut_b_driver n_in n_not_input wire rw=wire_lut_b_driver_res cw=wire_lut_b_driver_cap
+
+ xinv_lut_b_driver_2 n_not_input n_out n_vdd n_gnd inv wn=inv_lut_b_driver_2_nmos wp=inv_lut_b_driver_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_b_driver_not subcircuit 
+ ******************************************************************************************
+ .subckt lut_b_driver_not n_in n_out n_vdd n_gnd
+
+ xinv_lut_b_driver_not_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_b_driver_not_1_nmos wp=inv_lut_b_driver_not_1_pmos
+
+ xwire_lut_b_driver_not n_1_1 n_1_2 wire rw=wire_lut_b_driver_not_res cw=wire_lut_b_driver_not_cap
+
+ xinv_lut_b_driver_not_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_lut_b_driver_not_2_nmos wp=inv_lut_b_driver_not_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_c_driver subcircuit 
+ ******************************************************************************************
+ .subckt lut_c_driver n_in n_out n_gate n_gate_n n_rsel n_not_input n_vdd n_gnd
+
+ xinv_lut_c_driver_0 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_c_driver_0_nmos wp=inv_lut_c_driver_0_pmos
+
+ xwire_lut_c_driver_0_rsel n_1_1 n_rsel wire rw=wire_lut_c_driver_0_rsel_res cw=wire_lut_c_driver_0_rsel_cap
+
+ xwire_lut_c_driver_0_out n_1_1 n_1_2 wire rw=wire_lut_c_driver_0_out_res cw=wire_lut_c_driver_0_out_cap
+
+ xptran_lut_c_driver_0 n_1_2 n_2_1 n_gate n_gnd ptran wn=ptran_lut_c_driver_0_nmos
+
+ xwire_lut_c_driver_0 n_2_1 n_2_2 wire rw='wire_lut_c_driver_0_res/2' cw='wire_lut_c_driver_0_cap/2'
+
+ xwire_lut_c_driver_0h n_2_2 n_2_3 wire rw='wire_lut_c_driver_0_res/2' cw='wire_lut_c_driver_0_cap/2'
+
+ xptran_lut_c_driver_0h n_gnd n_2_3 n_gate_n n_gnd ptran wn=ptran_lut_c_driver_0_nmos
+
+ xrest_lut_c_driver n_2_2 n_3_1 n_vdd n_gnd rest wp=rest_lut_c_driver_pmos
+
+ xinv_lut_c_driver_1 n_2_2 n_3_1 n_vdd n_gnd inv wn=inv_lut_c_driver_1_nmos wp=inv_lut_c_driver_1_pmos
+
+ xwire_lut_c_driver n_3_1 n_not_input wire rw=wire_lut_c_driver_res cw=wire_lut_c_driver_cap
+
+ xinv_lut_c_driver_2 n_not_input n_out n_vdd n_gnd inv wn=inv_lut_c_driver_2_nmos wp=inv_lut_c_driver_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_c_driver_not subcircuit 
+ ******************************************************************************************
+ .subckt lut_c_driver_not n_in n_out n_vdd n_gnd
+
+ xinv_lut_c_driver_not_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_c_driver_not_1_nmos wp=inv_lut_c_driver_not_1_pmos
+
+ xwire_lut_c_driver_not n_1_1 n_1_2 wire rw=wire_lut_c_driver_not_res cw=wire_lut_c_driver_not_cap
+
+ xinv_lut_c_driver_not_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_lut_c_driver_not_2_nmos wp=inv_lut_c_driver_not_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_d_driver subcircuit 
+ ******************************************************************************************
+ .subckt lut_d_driver n_in n_out n_gate n_gate_n n_rsel n_not_input n_vdd n_gnd
+
+ xwire_lut_d_driver n_in n_not_input wire rw=wire_lut_d_driver_res cw=wire_lut_d_driver_cap
+
+ xinv_lut_d_driver_2 n_not_input n_out n_vdd n_gnd inv wn=inv_lut_d_driver_2_nmos wp=inv_lut_d_driver_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_d_driver_not subcircuit 
+ ******************************************************************************************
+ .subckt lut_d_driver_not n_in n_out n_vdd n_gnd
+
+ xinv_lut_d_driver_not_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_d_driver_not_1_nmos wp=inv_lut_d_driver_not_1_pmos
+
+ xwire_lut_d_driver_not n_1_1 n_1_2 wire rw=wire_lut_d_driver_not_res cw=wire_lut_d_driver_not_cap
+
+ xinv_lut_d_driver_not_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_lut_d_driver_not_2_nmos wp=inv_lut_d_driver_not_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_e_driver subcircuit 
+ ******************************************************************************************
+ .subckt lut_e_driver n_in n_out n_gate n_gate_n n_rsel n_not_input n_vdd n_gnd
+
+ xwire_lut_e_driver n_in n_not_input wire rw=wire_lut_e_driver_res cw=wire_lut_e_driver_cap
+
+ xinv_lut_e_driver_2 n_not_input n_out n_vdd n_gnd inv wn=inv_lut_e_driver_2_nmos wp=inv_lut_e_driver_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_e_driver_not subcircuit 
+ ******************************************************************************************
+ .subckt lut_e_driver_not n_in n_out n_vdd n_gnd
+
+ xinv_lut_e_driver_not_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_e_driver_not_1_nmos wp=inv_lut_e_driver_not_1_pmos
+
+ xwire_lut_e_driver_not n_1_1 n_1_2 wire rw=wire_lut_e_driver_not_res cw=wire_lut_e_driver_not_cap
+
+ xinv_lut_e_driver_not_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_lut_e_driver_not_2_nmos wp=inv_lut_e_driver_not_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_f_driver subcircuit 
+ ******************************************************************************************
+ .subckt lut_f_driver n_in n_out n_gate n_gate_n n_rsel n_not_input n_vdd n_gnd
+
+ xwire_lut_f_driver n_in n_not_input wire rw=wire_lut_f_driver_res cw=wire_lut_f_driver_cap
+
+ xinv_lut_f_driver_2 n_not_input n_out n_vdd n_gnd inv wn=inv_lut_f_driver_2_nmos wp=inv_lut_f_driver_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut lut_f_driver_not subcircuit 
+ ******************************************************************************************
+ .subckt lut_f_driver_not n_in n_out n_vdd n_gnd
+
+ xinv_lut_f_driver_not_1 n_in n_1_1 n_vdd n_gnd inv wn=inv_lut_f_driver_not_1_nmos wp=inv_lut_f_driver_not_1_pmos
+
+ xwire_lut_f_driver_not n_1_1 n_1_2 wire rw=wire_lut_f_driver_not_res cw=wire_lut_f_driver_not_cap
+
+ xinv_lut_f_driver_not_2 n_1_2 n_out n_vdd n_gnd inv wn=inv_lut_f_driver_not_2_nmos wp=inv_lut_f_driver_not_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut a-input load subcircuit 
+ ******************************************************************************************
+ .subckt lut_a_driver_load n_1 n_vdd n_gnd
+
+ xwire_lut_a_driver_load_1 n_1 n_2 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_1 n_gnd n_gnd n_2 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_2 n_2 n_3 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_2 n_gnd n_gnd n_3 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_3 n_3 n_4 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_3 n_gnd n_gnd n_4 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_4 n_4 n_5 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_4 n_gnd n_gnd n_5 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_5 n_5 n_6 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_5 n_gnd n_gnd n_6 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_6 n_6 n_7 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_6 n_gnd n_gnd n_7 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_7 n_7 n_8 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_7 n_gnd n_gnd n_8 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_8 n_8 n_9 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_8 n_gnd n_gnd n_9 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_9 n_9 n_10 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_9 n_gnd n_gnd n_10 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_10 n_10 n_11 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_10 n_gnd n_gnd n_11 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_11 n_11 n_12 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_11 n_gnd n_gnd n_12 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_12 n_12 n_13 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_12 n_gnd n_gnd n_13 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_13 n_13 n_14 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_13 n_gnd n_gnd n_14 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_14 n_14 n_15 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_14 n_gnd n_gnd n_15 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_15 n_15 n_16 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_15 n_gnd n_gnd n_16 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_16 n_16 n_17 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_16 n_gnd n_gnd n_17 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_17 n_17 n_18 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_17 n_gnd n_gnd n_18 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_18 n_18 n_19 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_18 n_gnd n_gnd n_19 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_19 n_19 n_20 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_19 n_gnd n_gnd n_20 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_20 n_20 n_21 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_20 n_gnd n_gnd n_21 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_21 n_21 n_22 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_21 n_gnd n_gnd n_22 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_22 n_22 n_23 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_22 n_gnd n_gnd n_23 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_23 n_23 n_24 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_23 n_gnd n_gnd n_24 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_24 n_24 n_25 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_24 n_gnd n_gnd n_25 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_25 n_25 n_26 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_25 n_gnd n_gnd n_26 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_26 n_26 n_27 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_26 n_gnd n_gnd n_27 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_27 n_27 n_28 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_27 n_gnd n_gnd n_28 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_28 n_28 n_29 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_28 n_gnd n_gnd n_29 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_29 n_29 n_30 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_29 n_gnd n_gnd n_30 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_30 n_30 n_31 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_30 n_gnd n_gnd n_31 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_31 n_31 n_32 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_31 n_gnd n_gnd n_32 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ xwire_lut_a_driver_load_32 n_32 n_33 wire rw='wire_lut_a_driver_load_res/32' cw='wire_lut_a_driver_load_cap/32'
+
+ xptran_lut_a_driver_load_32 n_gnd n_gnd n_33 n_gnd ptran wn=ptran_lut_l1_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut b-input load subcircuit 
+ ******************************************************************************************
+ .subckt lut_b_driver_load n_1 n_vdd n_gnd
+
+ xwire_lut_b_driver_load_1 n_1 n_2 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_1 n_gnd n_gnd n_2 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_2 n_2 n_3 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_2 n_gnd n_gnd n_3 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_3 n_3 n_4 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_3 n_gnd n_gnd n_4 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_4 n_4 n_5 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_4 n_gnd n_gnd n_5 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_5 n_5 n_6 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_5 n_gnd n_gnd n_6 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_6 n_6 n_7 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_6 n_gnd n_gnd n_7 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_7 n_7 n_8 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_7 n_gnd n_gnd n_8 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_8 n_8 n_9 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_8 n_gnd n_gnd n_9 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_9 n_9 n_10 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_9 n_gnd n_gnd n_10 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_10 n_10 n_11 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_10 n_gnd n_gnd n_11 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_11 n_11 n_12 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_11 n_gnd n_gnd n_12 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_12 n_12 n_13 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_12 n_gnd n_gnd n_13 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_13 n_13 n_14 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_13 n_gnd n_gnd n_14 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_14 n_14 n_15 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_14 n_gnd n_gnd n_15 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_15 n_15 n_16 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_15 n_gnd n_gnd n_16 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ xwire_lut_b_driver_load_16 n_16 n_17 wire rw='wire_lut_b_driver_load_res/16' cw='wire_lut_b_driver_load_cap/16'
+
+ xptran_lut_b_driver_load_16 n_gnd n_gnd n_17 n_gnd ptran wn=ptran_lut_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut c-input load subcircuit 
+ ******************************************************************************************
+ .subckt lut_c_driver_load n_1 n_vdd n_gnd
+
+ xwire_lut_c_driver_load_1 n_1 n_2 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_1 n_gnd n_gnd n_2 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_2 n_2 n_3 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_2 n_gnd n_gnd n_3 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_3 n_3 n_4 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_3 n_gnd n_gnd n_4 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_4 n_4 n_5 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_4 n_gnd n_gnd n_5 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_5 n_5 n_6 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_5 n_gnd n_gnd n_6 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_6 n_6 n_7 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_6 n_gnd n_gnd n_7 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_7 n_7 n_8 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_7 n_gnd n_gnd n_8 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ xwire_lut_c_driver_load_8 n_8 n_9 wire rw='wire_lut_c_driver_load_res/8' cw='wire_lut_c_driver_load_cap/8'
+
+ xptran_lut_c_driver_load_8 n_gnd n_gnd n_9 n_gnd ptran wn=ptran_lut_l3_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut d-input load subcircuit 
+ ******************************************************************************************
+ .subckt lut_d_driver_load n_1 n_vdd n_gnd
+
+ xwire_lut_d_driver_load_1 n_1 n_2 wire rw='wire_lut_d_driver_load_res/4' cw='wire_lut_d_driver_load_cap/4'
+
+ xptran_lut_d_driver_load_1 n_gnd n_gnd n_2 n_gnd ptran wn=ptran_lut_l4_nmos
+
+ xwire_lut_d_driver_load_2 n_2 n_3 wire rw='wire_lut_d_driver_load_res/4' cw='wire_lut_d_driver_load_cap/4'
+
+ xptran_lut_d_driver_load_2 n_gnd n_gnd n_3 n_gnd ptran wn=ptran_lut_l4_nmos
+
+ xwire_lut_d_driver_load_3 n_3 n_4 wire rw='wire_lut_d_driver_load_res/4' cw='wire_lut_d_driver_load_cap/4'
+
+ xptran_lut_d_driver_load_3 n_gnd n_gnd n_4 n_gnd ptran wn=ptran_lut_l4_nmos
+
+ xwire_lut_d_driver_load_4 n_4 n_5 wire rw='wire_lut_d_driver_load_res/4' cw='wire_lut_d_driver_load_cap/4'
+
+ xptran_lut_d_driver_load_4 n_gnd n_gnd n_5 n_gnd ptran wn=ptran_lut_l4_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut e-input load subcircuit 
+ ******************************************************************************************
+ .subckt lut_e_driver_load n_1 n_vdd n_gnd
+
+ xwire_lut_e_driver_load_1 n_1 n_2 wire rw='wire_lut_e_driver_load_res/2' cw='wire_lut_e_driver_load_cap/2'
+
+ xptran_lut_e_driver_load_1 n_gnd n_gnd n_2 n_gnd ptran wn=ptran_lut_l5_nmos
+
+ xwire_lut_e_driver_load_2 n_2 n_3 wire rw='wire_lut_e_driver_load_res/2' cw='wire_lut_e_driver_load_cap/2'
+
+ xptran_lut_e_driver_load_2 n_gnd n_gnd n_3 n_gnd ptran wn=ptran_lut_l5_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut f-input load subcircuit 
+ ******************************************************************************************
+ .subckt lut_f_driver_load n_1 n_vdd n_gnd
+
+ xwire_lut_f_driver_load_1 n_1 n_2 wire rw='wire_lut_f_driver_load_res/1' cw='wire_lut_f_driver_load_cap/1'
+
+ xptran_lut_f_driver_load_1 n_gnd n_gnd n_2 n_gnd ptran wn=ptran_lut_l6_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * ff subcircuit 
+ ******************************************************************************************
+ .subckt ff n_in n_out n_gate n_gate_n n_clk n_clk_n n_set n_set_n n_reset n_reset_n n_vdd n_gnd
+
+ * input selection mux
+ xptran_ff_input_select n_in n_1_1 n_gate n_gnd ptran wn=ptran_ff_input_select_nmos
+
+ xwire_ff_input_select n_1_1 n_1_2 wire rw='wire_ff_input_select_res/2' cw='wire_ff_input_select_cap/2'
+
+ xwire_ff_input_select_h n_1_2 n_1_3 wire rw='wire_ff_input_select_res/2' cw='wire_ff_input_select_cap/2'
+
+ xptran_ff_input_select_h n_gnd n_1_3 n_gate_n n_gnd ptran wn=ptran_ff_input_select_nmos
+
+ xrest_ff_input_select n_1_2 n_2_1 n_vdd n_gnd rest wp=rest_ff_input_select_pmos
+
+ xinv_ff_input_1 n_1_2 n_2_1 n_vdd n_gnd inv wn=inv_ff_input_1_nmos wp=inv_ff_input_1_pmos
+
+
+ * first t-gate and cross-coupled inverters
+ xwire_ff_input_out n_2_1 n_2_2 wire rw=wire_ff_input_out_res cw=wire_ff_input_out_cap
+
+ xtgate_ff_1 n_2_2 n_3_1 n_clk_n n_clk n_vdd n_gnd tgate wn=tgate_ff_1_nmos wp=tgate_ff_1_pmos
+
+ mptran_ff_set_n n_3_1 n_set_n n_vdd n_vdd pmos l=gate_length w=tran_ff_set_n_pmos
+
+ mntran_ff_reset n_3_1 n_reset n_gnd n_gnd nmos l=gate_length w=tran_ff_reset_nmos
+
+ xwire_ff_tgate_1_out n_3_1 n_3_2 wire rw=wire_ff_tgate_1_out_res cw=wire_ff_tgate_1_out_cap
+
+ xinv_ff_cc1_1 n_3_2 n_4_1 n_vdd n_gnd inv wn=inv_ff_cc1_1_nmos wp=inv_ff_cc1_1_pmos
+
+ xinv_ff_cc1_2 n_4_1 n_3_2 n_vdd n_gnd inv wn=inv_ff_cc1_2_nmos wp=inv_ff_cc1_2_pmos
+
+ xwire_ff_cc1_out n_4_1 n_4_2 wire rw=wire_ff_cc1_out_res cw=wire_ff_cc1_out_cap
+
+
+ * second t-gate and cross-coupled inverters
+ xtgate_ff_2 n_4_2 n_5_1 n_clk n_clk_n n_vdd n_gnd tgate wn=tgate_ff_2_nmos wp=tgate_ff_2_pmos
+
+ mptran_ff_reset_n n_5_1 n_reset_n n_vdd n_vdd pmos l=gate_length w=tran_ff_reset_n_pmos
+
+ mntran_ff_set n_5_1 n_set n_gnd n_gnd nmos l=gate_length w=tran_ff_set_nmos
+
+ xwire_ff_tgate_2_out n_5_1 n_5_2 wire rw=wire_ff_tgate_2_out_res cw=wire_ff_tgate_2_out_cap
+
+ xinv_ff_cc2_1 n_5_2 n_6_1 n_vdd n_gnd inv wn=inv_ff_cc2_1_nmos wp=inv_ff_cc2_1_pmos
+
+ xinv_ff_cc2_2 n_6_1 n_5_2 n_vdd n_gnd inv wn=inv_ff_cc2_2_nmos wp=inv_ff_cc2_2_pmos
+
+ xwire_ff_cc2_out n_6_1 n_6_2 wire rw=wire_ff_cc2_out_res cw=wire_ff_cc2_out_cap
+
+
+ * output driver
+ xinv_ff_output_driver n_6_2 n_out n_vdd n_gnd inv wn=inv_ff_output_driver_nmos wp=inv_ff_output_driver_pmos
+
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local_ble_output subcircuit (2:1)
+ ******************************************************************************************
+ .subckt local_ble_output n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xptran_local_ble_output n_in n_1_1 n_gate n_gnd ptran wn=ptran_local_ble_output_nmos
+
+ xwire_local_ble_output n_1_1 n_1_2 wire rw='wire_local_ble_output_res/2' cw='wire_local_ble_output_cap/2'
+
+ xwire_local_ble_output_h n_1_2 n_1_3 wire rw='wire_local_ble_output_res/2' cw='wire_local_ble_output_cap/2'
+
+ xptran_local_ble_output_h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_local_ble_output_nmos
+
+ xrest_local_ble_output n_1_2 n_2_1 n_vdd n_gnd rest wp=rest_local_ble_output_pmos
+
+ xinv_local_ble_output_1 n_1_2 n_2_1 n_vdd n_gnd inv wn=inv_local_ble_output_1_nmos wp=inv_local_ble_output_1_pmos
+
+ xwire_local_ble_output_driver n_2_1 n_2_2 wire rw=wire_local_ble_output_driver_res cw=wire_local_ble_output_driver_cap
+
+ xinv_local_ble_output_2 n_2_2 n_out n_vdd n_gnd inv wn=inv_local_ble_output_2_nmos wp=inv_local_ble_output_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * general_ble_output subcircuit (2:1)
+ ******************************************************************************************
+ .subckt general_ble_output n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xptran_general_ble_output n_in n_1_1 n_gate n_gnd ptran wn=ptran_general_ble_output_nmos
+
+ xwire_general_ble_output n_1_1 n_1_2 wire rw='wire_general_ble_output_res/2' cw='wire_general_ble_output_cap/2'
+
+ xwire_general_ble_output_h n_1_2 n_1_3 wire rw='wire_general_ble_output_res/2' cw='wire_general_ble_output_cap/2'
+
+ xptran_general_ble_output_h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_general_ble_output_nmos
+
+ xrest_general_ble_output n_1_2 n_2_1 n_vdd n_gnd rest wp=rest_general_ble_output_pmos
+
+ xinv_general_ble_output_1 n_1_2 n_2_1 n_vdd n_gnd inv wn=inv_general_ble_output_1_nmos wp=inv_general_ble_output_1_pmos
+
+ xwire_general_ble_output_driver n_2_1 n_2_2 wire rw=wire_general_ble_output_driver_res cw=wire_general_ble_output_driver_cap
+
+ xinv_general_ble_output_2 n_2_2 n_out n_vdd n_gnd inv wn=inv_general_ble_output_2_nmos wp=inv_general_ble_output_2_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * ble outputs
+ ******************************************************************************************
+ .subckt ble_outputs n_1_3 n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on
+
+ xlocal_ble_output_1 n_1_2 n_local_out n_gate n_gate_n n_vdd_local_output_on n_gnd local_ble_output
+
+ xwire_ble_outputs_1 n_1_2 n_1_3 wire rw='wire_ble_outputs_res/2' cw='wire_ble_outputs_cap/2'
+
+ xgeneral_ble_output_1 n_1_3 n_general_out n_gate n_gate_n n_vdd_general_output_on n_gnd general_ble_output
+
+ xwire_ble_outputs_2 n_1_3 n_1_4 wire rw='wire_ble_outputs_res/2' cw='wire_ble_outputs_cap/2'
+
+ xgeneral_ble_output_2 n_1_4 n_hang_4 n_gate n_gate_n n_vdd n_gnd general_ble_output
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * lut output load
+ ******************************************************************************************
+ .subckt lut_output_load n_in n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on
+
+ xwire_lut_output_load_1 n_in n_1_1 wire rw='wire_lut_output_load_1_res' cw='wire_lut_output_load_1_cap'
+
+ xff n_1_1 n_hang1 n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff
+
+ xwire_lut_output_load_2 n_1_1 n_1_2 wire rw='wire_lut_output_load_2_res' cw='wire_lut_output_load_2_cap'
+
+ xble_outputs n_1_2 n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on ble_outputs
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local_mux sense inverter subcircuit (25:1)
+ ******************************************************************************************
+ .subckt local_mux_sense n_in n_out n_vdd n_gnd
+
+ xrest_local_mux n_in n_out n_vdd n_gnd rest wp=rest_local_mux_pmos
+
+ xinv_local_mux_1 n_in n_out n_vdd n_gnd inv wn=inv_local_mux_1_nmos wp=inv_local_mux_1_pmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local_mux subcircuit (25:1), turned off 
+ ******************************************************************************************
+ .subckt local_mux_off n_in n_gate n_gate_n n_vdd n_gnd
+
+ xptran_local_mux_l1 n_in n_gnd n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local_mux subcircuit (25:1), partially turned on
+ ******************************************************************************************
+ .subckt local_mux_partial n_in n_gate n_gate_n n_vdd n_gnd
+
+ xptran_local_mux_l1 n_in n_1 n_gate n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_1 n_1 n_1_1 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_1h n_gnd n_1_1 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_2 n_1_1 n_1_2 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_2h n_gnd n_1_2 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_3 n_1_2 n_1_3 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_3h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_4 n_1_3 n_1_4 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_4h n_gnd n_1_4 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_5 n_1_4 n_1_5 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l2 n_1_5 n_gnd n_gnd n_gnd ptran wn=ptran_local_mux_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local_mux subcircuit (25:1), fully turned on (mux only)
+ ******************************************************************************************
+ .subckt local_mux_on_mux_only n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xptran_local_mux_l1 n_in n_1 n_gate n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_1 n_1 n_1_1 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_1h n_gnd n_1_1 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_2 n_1_1 n_1_2 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_2h n_gnd n_1_2 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_3 n_1_2 n_1_3 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_3h n_gnd n_1_3 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_4 n_1_3 n_1_4 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l1_4h n_gnd n_1_4 n_gnd n_gnd ptran wn=ptran_local_mux_l1_nmos
+
+ xwire_local_mux_l1_5 n_1_4 n_1_5 wire rw='wire_local_mux_l1_res/5' cw='wire_local_mux_l1_cap/5'
+
+ xptran_local_mux_l2 n_1_5 n_2 n_gate n_gnd ptran wn=ptran_local_mux_l2_nmos
+
+ xwire_local_mux_l2_1 n_2 n_2_1 wire rw='wire_local_mux_l2_res/4' cw='wire_local_mux_l2_cap/4'
+
+ xptran_local_mux_l2_1h n_gnd n_2_1 n_gnd n_gnd ptran wn=ptran_local_mux_l2_nmos
+
+ xwire_local_mux_l2_2 n_2_1 n_out wire rw='wire_local_mux_l2_res/4' cw='wire_local_mux_l2_cap/4'
+
+ xptran_local_mux_l2_2h n_gnd n_out n_gnd n_gnd ptran wn=ptran_local_mux_l2_nmos
+
+ xwire_local_mux_l2_3  n_out n_2_2 wire rw='wire_local_mux_l2_res/4' cw='wire_local_mux_l2_cap/4'
+
+ xptran_local_mux_l2_3h n_gnd n_2_2 n_gnd n_gnd ptran wn=ptran_local_mux_l2_nmos
+
+ xwire_local_mux_l2_4 n_2_2 n_2_3 wire rw='wire_local_mux_l2_res/4' cw='wire_local_mux_l2_cap/4'
+
+ xptran_local_mux_l2_4h n_gnd n_2_3 n_gnd n_gnd ptran wn=ptran_local_mux_l2_nmos
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local_mux subcircuit (25:1), fully turned on 
+ ******************************************************************************************
+ .subckt local_mux_on n_in n_out n_gate n_gate_n n_vdd n_gnd
+
+ xlocal_mux_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd local_mux_on_mux_only
+
+ xlocal_mux_sense n_1_1 n_out n_vdd n_gnd local_mux_sense
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local routing wire load
+ ******************************************************************************************
+ .subckt local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on
+
+ xwire_local_routing_1 n_in n_1 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_1 n_1 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_2 n_1 n_2 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_2 n_2 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_3 n_2 n_3 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_3 n_3 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_4 n_3 n_4 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_4 n_4 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_5 n_4 n_5 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_5 n_5 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_6 n_5 n_6 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_6 n_6 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_7 n_6 n_7 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_partial_1 n_7 n_gate n_gate_n n_vdd n_gnd local_mux_partial
+
+ xwire_local_routing_8 n_7 n_8 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_7 n_8 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_9 n_8 n_9 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_8 n_9 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_10 n_9 n_10 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_9 n_10 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_11 n_10 n_11 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_10 n_11 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_12 n_11 n_12 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_11 n_12 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_13 n_12 n_13 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_12 n_13 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_14 n_13 n_14 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_partial_2 n_14 n_gate n_gate_n n_vdd n_gnd local_mux_partial
+
+ xwire_local_routing_15 n_14 n_15 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_13 n_15 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_16 n_15 n_16 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_14 n_16 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_17 n_16 n_17 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_15 n_17 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_18 n_17 n_18 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_16 n_18 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_19 n_18 n_19 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_17 n_19 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_20 n_19 n_20 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_18 n_20 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_21 n_20 n_21 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_partial_3 n_21 n_gate n_gate_n n_vdd n_gnd local_mux_partial
+
+ xwire_local_routing_22 n_21 n_22 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_19 n_22 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_23 n_22 n_23 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_20 n_23 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_24 n_23 n_24 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_21 n_24 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_25 n_24 n_25 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_22 n_25 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_26 n_25 n_26 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_23 n_26 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_27 n_26 n_27 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_24 n_27 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ xwire_local_routing_28 n_27 n_28 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_partial_4 n_28 n_gate n_gate_n n_vdd n_gnd local_mux_partial
+
+ xwire_local_routing_29 n_28 n_29 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_on_1 n_29 n_out n_gate n_gate_n n_vdd_local_mux_on n_gnd local_mux_on
+
+ xwire_local_routing_30 n_29 n_30 wire rw='wire_local_routing_res/30' cw='wire_local_routing_cap/30'
+
+ xlocal_mux_off_25 n_30 n_gate n_gate_n n_vdd n_gnd local_mux_off
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * local ble output load
+ ******************************************************************************************
+ .subckt local_ble_output_load n_in n_gate n_gate_n n_vdd n_gnd
+
+ xwire_local_ble_output_feedback n_in n_1_1 wire rw='wire_local_ble_output_feedback_res' cw='wire_local_ble_output_feedback_cap'
+
+ xlocal_routing_wire_load_1 n_1_1 n_1_2 n_gate n_gate_n n_vdd n_gnd n_vdd local_routing_wire_load
+
+ xlut_a_driver_1 n_1_2 n_hang1 vsram vsram_n n_hang2 n_hang3 n_vdd n_gnd lut_a_driver
+
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * general ble output load
+ ******************************************************************************************
+ .subckt general_ble_output_load n_1_1 n_out n_gate n_gate_n n_vdd n_gnd
+
+ xwire_general_ble_output_1 n_1_1 n_1_2 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_off_1 n_1_2 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+ xwire_general_ble_output_2 n_1_2 n_1_3 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_off_2 n_1_3 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+ xwire_general_ble_output_3 n_1_3 n_1_4 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_off_3 n_1_4 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+ xwire_general_ble_output_4 n_1_4 n_1_5 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_off_4 n_1_5 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+ xwire_general_ble_output_5 n_1_5 n_1_6 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_off_5 n_1_6 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+ xwire_general_ble_output_6 n_1_6 n_1_7 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_off_6 n_1_7 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+ xwire_general_ble_output_7 n_1_7 n_1_8 wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_partial_1 n_1_8 n_gate n_gate_n n_vdd n_gnd sb_mux_partial
+
+ xwire_general_ble_output_8 n_1_8 n_meas_point wire rw='wire_general_ble_output_res/8' cw='wire_general_ble_output_cap/8'
+
+ xsb_mux_on_1 n_meas_point n_out n_gate n_gate_n n_vdd n_gnd sb_mux_on
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * routing wire load tile 1
+ ******************************************************************************************
+ .subckt routing_wire_load_tile_1 n_in n_out n_cb_out n_gate n_gate_n n_vdd n_gnd n_vdd_sb_mux_on n_vdd_cb_mux_on
+
+ xwire_gen_routing_1 n_in n_1_1 wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+
+ xwire_sb_load_partial_1 n_1_1 n_1_sb_partial_1 wire rw=wire_sb_load_partial_res cw=wire_sb_load_partial_cap
+
+ xsb_load_partial_1 n_1_sb_partial_1 n_gate n_gate_n n_vdd n_gnd sb_mux_partial
+
+
+ xwire_sb_load_off_1 n_1_1 n_1_sb_off_1 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_1 n_1_sb_off_1 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_cb_load_on_1 n_1_1 n_1_cb_on_1 wire rw=wire_cb_load_on_res cw=wire_cb_load_on_cap
+
+ xcb_load_on_1 n_1_cb_on_1 n_cb_out n_gate n_gate_n n_vdd_cb_mux_on n_gnd cb_mux_on
+
+
+ xwire_cb_load_partial_1 n_1_1 n_1_cb_partial_1 wire rw=wire_cb_load_partial_res cw=wire_cb_load_partial_cap
+
+ xcb_load_partial_1 n_1_cb_partial_1 n_gate n_gate_n n_vdd n_gnd cb_mux_partial
+
+
+ xwire_cb_load_off_1 n_1_1 n_1_cb_off_1 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_1 n_1_cb_off_1 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_2 n_1_1 n_1_cb_off_2 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_2 n_1_cb_off_2 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_gen_routing_2 n_1_1 n_1_2 wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+ xsb_mux_on_out n_1_2 n_out n_gate n_gate_n n_vdd_sb_mux_on n_gnd sb_mux_on
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * routing wire load tile 2
+ ******************************************************************************************
+ .subckt routing_wire_load_tile_2 n_in n_out n_cb_out n_gate n_gate_n n_vdd n_gnd
+
+ xwire_gen_routing_1 n_in n_1_1 wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+
+ xwire_sb_load_off_1 n_1_1 n_1_sb_off_1 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_1 n_1_sb_off_1 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_sb_load_off_2 n_1_1 n_1_sb_off_2 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_2 n_1_sb_off_2 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_cb_load_off_1 n_1_1 n_1_cb_off_1 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_1 n_1_cb_off_1 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_2 n_1_1 n_1_cb_off_2 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_2 n_1_cb_off_2 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_3 n_1_1 n_1_cb_off_3 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_3 n_1_cb_off_3 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_4 n_1_1 n_1_cb_off_4 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_4 n_1_cb_off_4 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_gen_routing_2 n_1_1 n_out wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * routing wire load tile 3
+ ******************************************************************************************
+ .subckt routing_wire_load_tile_3 n_in n_out n_cb_out n_gate n_gate_n n_vdd n_gnd
+
+ xwire_gen_routing_1 n_in n_1_1 wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+
+ xwire_sb_load_off_1 n_1_1 n_1_sb_off_1 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_1 n_1_sb_off_1 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_sb_load_off_2 n_1_1 n_1_sb_off_2 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_2 n_1_sb_off_2 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_cb_load_off_1 n_1_1 n_1_cb_off_1 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_1 n_1_cb_off_1 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_2 n_1_1 n_1_cb_off_2 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_2 n_1_cb_off_2 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_3 n_1_1 n_1_cb_off_3 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_3 n_1_cb_off_3 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_4 n_1_1 n_1_cb_off_4 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_4 n_1_cb_off_4 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_gen_routing_2 n_1_1 n_out wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * routing wire load tile 4
+ ******************************************************************************************
+ .subckt routing_wire_load_tile_4 n_in n_out n_cb_out n_gate n_gate_n n_vdd n_gnd
+
+ xwire_gen_routing_1 n_in n_1_1 wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+
+ xwire_sb_load_off_1 n_1_1 n_1_sb_off_1 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_1 n_1_sb_off_1 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_sb_load_off_2 n_1_1 n_1_sb_off_2 wire rw=wire_sb_load_off_res cw=wire_sb_load_off_cap
+
+ xsb_load_off_2 n_1_sb_off_2 n_gate n_gate_n n_vdd n_gnd sb_mux_off
+
+
+ xwire_cb_load_off_1 n_1_1 n_1_cb_off_1 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_1 n_1_cb_off_1 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_2 n_1_1 n_1_cb_off_2 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_2 n_1_cb_off_2 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_3 n_1_1 n_1_cb_off_3 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_3 n_1_cb_off_3 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_cb_load_off_4 n_1_1 n_1_cb_off_4 wire rw=wire_cb_load_off_res cw=wire_cb_load_off_cap
+
+ xcb_load_off_4 n_1_cb_off_4 n_gate n_gate_n n_vdd n_gnd cb_mux_off
+
+
+ xwire_gen_routing_2 n_1_1 n_out wire rw='wire_gen_routing_res/8' cw='wire_gen_routing_cap/8'
+
+ .ends
+
+
+
+ ******************************************************************************************
+ * routing wire load tile 4
+ ******************************************************************************************
+ .subckt routing_wire_load n_in n_out n_cb_out n_gate n_gate_n n_vdd n_gnd n_vdd_sb_mux_on n_vdd_cb_mux_on
+
+ xrouting_wire_load_tile_4 n_in n_4 n_hang_4 n_gate n_gate_n n_vdd n_gnd routing_wire_load_tile_4
+
+ xrouting_wire_load_tile_3 n_4 n_3 n_hang_3 n_gate n_gate_n n_vdd n_gnd routing_wire_load_tile_3
+
+ xrouting_wire_load_tile_2 n_3 n_2 n_hang_2 n_gate n_gate_n n_vdd n_gnd routing_wire_load_tile_2
+
+ xrouting_wire_load_tile_1 n_2 n_out n_cb_out n_gate n_gate_n n_vdd n_gnd n_vdd_sb_mux_on n_vdd_cb_mux_on routing_wire_load_tile_1
+
+ .ends
+
+
+
+
+
+ * include sweep data file for .data sweep analysis
+ .include "sweep_data.l"
+ .data sweep_data wire_lut_int_buffer_out_cap inv_lut_out_buffer_2_nmos wire_lut_a_driver_not_cap wire_ff_input_select_cap
+ ptran_local_ble_output_nmos inv_lut_out_buffer_2_pmos wire_lut_c_driver_not_res wire_sb_load_partial_res
+ wire_lut_e_driver_not_cap wire_ff_tgate_1_out_cap wire_lut_d_driver_load_res wire_lut_f_driver_load_cap
+ ptran_lut_l3_nmos wire_lut_l5_cap wire_lut_b_driver_load_cap rest_general_ble_output_pmos
+ wire_ff_tgate_2_out_res inv_cb_mux_1_nmos inv_lut_d_driver_not_2_pmos inv_lut_f_driver_2_pmos
+ tgate_ff_1_pmos wire_lut_l4_res inv_lut_int_buffer_2_pmos inv_general_ble_output_1_nmos
+ wire_lut_d_driver_not_res wire_ff_cc2_out_cap inv_lut_c_driver_2_pmos wire_ble_outputs_cap
+ wire_cb_load_on_res wire_sb_mux_l1_cap inv_lut_e_driver_2_pmos inv_local_ble_output_1_pmos
+ wire_local_mux_l1_res inv_sb_mux_2_nmos inv_lut_e_driver_not_1_nmos wire_lut_b_driver_cap
+ wire_lut_l2_cap wire_local_ble_output_feedback_cap tran_ff_set_nmos wire_cb_mux_driver_res
+ wire_ff_tgate_2_out_cap wire_lut_c_driver_0_res inv_general_ble_output_2_nmos ptran_sb_mux_l2_nmos
+ wire_local_mux_l2_cap wire_lut_output_load_1_cap inv_sb_mux_1_nmos wire_lut_b_driver_not_cap
+ wire_lut_f_driver_not_res wire_lut_out_buffer_cap wire_gen_routing_res rest_lut_c_driver_pmos
+ wire_sb_mux_l2_res inv_lut_b_driver_not_2_nmos inv_lut_e_driver_2_nmos rest_lut_int_buffer_pmos
+ ptran_sb_mux_l1_nmos ptran_local_mux_l2_nmos wire_lut_c_driver_0_rsel_cap wire_lut_l4_cap
+ inv_ff_cc2_1_nmos inv_lut_b_driver_not_1_pmos wire_lut_c_driver_load_cap tgate_ff_2_nmos
+ wire_ff_cc1_out_cap wire_lut_d_driver_not_cap inv_lut_b_driver_not_1_nmos inv_local_ble_output_2_pmos
+ wire_local_ble_output_res inv_lut_a_driver_not_1_pmos wire_sb_load_partial_cap wire_ff_cc2_out_res
+ inv_ff_cc1_2_nmos inv_sb_mux_1_pmos wire_lut_l2_res wire_lut_c_driver_0_cap
+ rest_lut_out_buffer_pmos inv_lut_d_driver_not_1_nmos wire_ff_input_out_res wire_local_ble_output_driver_res
+ inv_lut_a_driver_not_2_pmos wire_lut_output_load_2_cap wire_lut_c_driver_0_rsel_res wire_lut_b_driver_load_res
+ wire_lut_int_buffer_out_res wire_lut_a_driver_cap inv_lut_c_driver_1_nmos inv_lut_c_driver_2_nmos
+ inv_lut_int_buffer_1_pmos wire_lut_l1_res wire_lut_sram_driver_out_cap rest_local_ble_output_pmos
+ inv_ff_cc2_2_nmos inv_lut_f_driver_not_2_pmos wire_local_routing_cap wire_lut_output_load_2_res
+ inv_lut_c_driver_not_2_nmos inv_lut_f_driver_not_1_nmos inv_lut_f_driver_2_nmos wire_sb_mux_driver_cap
+ ptran_lut_l2_nmos wire_cb_mux_l2_res wire_sb_load_off_cap wire_ff_input_out_cap
+ wire_local_mux_l2_res inv_ff_output_driver_pmos inv_ff_cc1_1_nmos inv_lut_a_driver_not_2_nmos
+ wire_local_ble_output_cap wire_cb_mux_driver_cap inv_lut_e_driver_not_1_pmos wire_cb_load_on_cap
+ wire_sb_mux_l1_res wire_sb_mux_l2_cap inv_ff_cc1_1_pmos inv_ff_input_1_pmos
+ inv_lut_int_buffer_1_nmos rest_ff_input_select_pmos wire_lut_e_driver_load_cap wire_lut_f_driver_load_res
+ wire_ff_input_select_res wire_gen_routing_cap wire_lut_l1_cap inv_lut_out_buffer_1_pmos
+ wire_general_ble_output_cap inv_lut_a_driver_not_1_nmos wire_ff_cc1_out_res inv_lut_e_driver_not_2_pmos
+ wire_lut_l6_cap tran_ff_reset_nmos wire_lut_b_driver_not_res wire_cb_mux_l1_res
+ wire_local_mux_l1_cap wire_sb_load_off_res inv_cb_mux_1_pmos wire_lut_a_driver_res
+ inv_lut_d_driver_2_pmos inv_lut_c_driver_not_1_nmos wire_local_ble_output_driver_cap tgate_ff_2_pmos
+ inv_lut_b_driver_2_pmos inv_cb_mux_2_nmos inv_ff_cc2_2_pmos inv_lut_a_driver_2_nmos
+ inv_lut_d_driver_2_nmos inv_general_ble_output_2_pmos wire_lut_f_driver_cap tran_ff_reset_n_pmos
+ wire_lut_a_driver_load_res wire_general_ble_output_res wire_lut_e_driver_cap wire_lut_c_driver_0_out_res
+ wire_lut_d_driver_cap ptran_local_mux_l1_nmos wire_lut_l3_cap inv_local_mux_1_nmos
+ ptran_cb_mux_l2_nmos inv_ff_input_1_nmos ptran_lut_l4_nmos wire_lut_c_driver_not_cap
+ ptran_lut_c_driver_0_nmos rest_sb_mux_pmos wire_lut_e_driver_not_res inv_lut_d_driver_not_2_nmos
+ wire_cb_load_partial_cap wire_lut_int_buffer_cap wire_cb_mux_l2_cap wire_lut_out_buffer_res
+ wire_lut_l6_res inv_lut_c_driver_not_1_pmos inv_lut_c_driver_1_pmos rest_cb_mux_pmos
+ wire_general_ble_output_driver_cap inv_ff_output_driver_nmos ptran_lut_l6_nmos inv_lut_c_driver_0_pmos
+ wire_cb_mux_l1_cap ptran_ff_input_select_nmos inv_lut_a_driver_2_pmos inv_lut_0sram_driver_2_nmos
+ wire_lut_a_driver_load_cap wire_sb_load_on_res inv_lut_c_driver_not_2_pmos inv_lut_int_buffer_2_nmos
+ wire_cb_load_partial_res wire_lut_sram_driver_cap inv_ff_cc1_2_pmos wire_cb_load_off_res
+ wire_lut_c_driver_res wire_lut_c_driver_0_out_cap wire_lut_d_driver_load_cap wire_cb_load_off_cap
+ wire_lut_sram_driver_out_res wire_lut_l3_res wire_lut_e_driver_res inv_lut_b_driver_2_nmos
+ inv_cb_mux_2_pmos inv_lut_d_driver_not_1_pmos wire_local_ble_output_feedback_res wire_lut_d_driver_res
+ inv_lut_e_driver_not_2_nmos wire_sb_mux_driver_res wire_lut_e_driver_load_res rest_local_mux_pmos
+ wire_lut_a_driver_not_res wire_lut_f_driver_res ptran_lut_l5_nmos wire_lut_l5_res
+ inv_local_mux_1_pmos wire_sb_load_on_cap wire_ble_outputs_res tran_ff_set_n_pmos
+ inv_lut_c_driver_0_nmos wire_lut_b_driver_res wire_lut_c_driver_load_res ptran_general_ble_output_nmos
+ wire_ff_tgate_1_out_res wire_lut_int_buffer_res wire_lut_sram_driver_res inv_local_ble_output_2_nmos
+ wire_general_ble_output_driver_res ptran_cb_mux_l1_nmos inv_sb_mux_2_pmos inv_lut_b_driver_not_2_pmos
+ inv_lut_f_driver_not_1_pmos inv_lut_out_buffer_1_nmos tgate_ff_1_nmos ptran_lut_l1_nmos
+ wire_local_routing_res inv_lut_0sram_driver_2_pmos wire_lut_c_driver_cap wire_lut_output_load_1_res
+ inv_lut_f_driver_not_2_nmos inv_local_ble_output_1_nmos inv_ff_cc2_1_pmos wire_lut_f_driver_not_cap
+ inv_general_ble_output_1_pmos
+ 1.21872382595e-17 1.8e-07 1.16097960341e-17 1.96104641988e-17 9e-08
+ 2.7e-07 7.27436648652 898.156853286 1.16097960341e-17
+ 1.24164337934e-17 685.448271722 1.09396668993e-15 9e-08
+ 2.66499220702e-16 1.09396668993e-15 4.5e-08 6.89801184679
+ 9e-08 9e-08 9e-08 4.5e-08
+ 83.4903987143 2.7e-07 4.5e-08 7.27436648652
+ 1.38451864349e-17 9e-08 1.6497918871e-16 1796.31370657
+ 1.4399768005e-16 9e-08 4.5e-08 59.9991003571
+ 4.5e-07 4.5e-08 3.00737260514e-17 3.33124025878e-17
+ 4.68448428851e-17 4.5e-08 9.49624029116 1.10091388344e-17
+ 10.4362998393 2.25e-07 1.8e-07 9.57577981076e-17
+ 6.41548009904e-17 3.6e-07 1.16097960341e-17 7.27436648652
+ 1.37908443886e-17 1030.3779926 4.5e-08 90.2248320996
+ 9e-08 9e-08 4.5e-08 1.35e-07
+ 9e-08 4.44125000707e-16 1.33249610351e-16 4.5e-08
+ 4.5e-08 1.09396668993e-15 4.5e-08 1.24164337934e-17
+ 1.16097960341e-17 4.5e-08 1.8e-07 10.4362998393
+ 4.5e-08 1.43344687027e-15 8.67499824333 4.5e-08
+ 1.8e-07 20.8725996786 1.66562012939e-17 4.5e-08
+ 4.5e-08 8.30793544968 6.82093543875 9e-08
+ 8.9481952747e-17 278.276036158 685.448271722 7.63617528657
+ 3.00737260514e-17 4.5e-08 9e-08 9e-08
+ 10.4362998393 1.17881616136e-17 4.5e-08 4.5e-08
+ 9e-08 2.98914386813e-15 56.066834964 9e-08
+ 4.5e-08 9e-08 1.8575644346e-17 9e-08
+ 100.112727595 1.43344687027e-15 1.32593589028e-17 59.9991003571
+ 4.365e-07 1.35e-07 9e-08 1.66562012939e-17
+ 1.51558782577e-17 4.5e-08 2.86689374054e-15 90.2248320996
+ 1.4399768005e-16 1.8e-07 3.69e-07 9e-08
+ 4.5e-08 1.09396668993e-15 685.448271722 12.287356568
+ 1.40887349535e-14 1.66562012939e-17 9e-08 1.66562012939e-17
+ 4.5e-08 7.77978265969 9e-08 5.32998441405e-16
+ 4.5e-08 7.27436648652 100.112727595 9.57577981076e-17
+ 898.156853286 9e-08 18.8433374945 9e-08
+ 4.5e-08 1.08861258712e-17 4.5e-08 9e-08
+ 2.7e-07 5.85e-08 9e-08 9e-08
+ 2.25e-07 3.00737260514e-17 4.5e-08 685.448271722
+ 10.4362998393 3.00737260514e-17 6.47297372697 3.00737260514e-17
+ 9e-08 6.66248051756e-17 9e-08 9e-08
+ 1.35e-07 1.35e-07 1.16097960341e-17 9e-08
+ 4.5e-08 7.27436648652 9e-08 2.86689374054e-15
+ 1.37908443886e-17 1.59778635013e-16 8.64094906979 333.961594857
+ 4.5e-08 4.5e-08 4.5e-08 1.08861258712e-17
+ 1.8e-07 1.35e-07 9e-08 1.59778635013e-16
+ 1.8e-07 9e-08 1.8e-07 1.09396668993e-15
+ 898.156853286 9e-08 1.8e-07 1796.31370657
+ 1.52482225803e-17 5.85e-08 1796.31370657 7.27436648652
+ 1.0330783422e-17 1.09396668993e-15 2.86689374054e-15 7.38612526247
+ 41.7451993572 18.8433374945 9e-08 5.4e-07
+ 4.5e-08 29.3516401277 18.8433374945 9e-08
+ 11.6389680145 685.448271722 4.5e-08 7.27436648652
+ 18.8433374945 1.35e-07 166.980797429 9e-08
+ 1.43344687027e-15 103.371245955 4.5e-08 9e-08
+ 18.8433374945 685.448271722 9e-08 7.77978265969
+ 8.64094906979 9.55410060529 1.8e-07 6.82093543875
+ 9e-08 9e-07 9e-08 4.5e-08
+ 9e-08 4.5e-08 9e-08 1872.91214366
+ 2.7e-07 1.16097960341e-17 40.1975653063 9e-08
+ 4.5e-08 5.85e-08 1.16097960341e-17 4.5e-08
+
+
+
+
+ ********************************************************************************
+ ** setup and input
+ ********************************************************************************
+
+ .tran 1p 4n sweep data=sweep_data
+ .options brief=1
+
+ ***********************************************************************
+ ** runlvl is invoked, you can disable it by:
+      a) Add option runlvl=0 to your current simulation job.
+      b) Copy $installdir/hspice.ini to your HOME directory and
+         customize it by adding option runlvl=0, which disables
+         it for all of your simulation jobs.
+      c) Re-invoke $installdir/bin/config program and unselect the
+         option runlvl setting in box 'hspice.ini' which disables
+         it for whole group simulation jobs.
+
+ ** runlvl is invoked, some options are ignored or automatically set:
+      Options below are automatically set(user setting will overwrite them):
+      if runlvl=6,            .option bypass=0
+      if runlvl=[1|2|3|4|5],  .option bypass=2
+
+      Options below are ignored, they are replaced by automated algorithms:
+        lvltim    dvdt      ft    fast   trtol  absvar  relvar
+          relq  chgtol    dvtr    imin    itl3    rmax
+
+ ** runlvl is invoked, actual option value used by HSPICE are:
+       runlvl= 3       bypass= 2      mbypass=   2.00   bytol= 100.00u
+ ***********************************************************************
+
+
+ **warning** dc voltage reset to initial transient source value
+             in source        0:vin                 new dc=  0.0000D+00
+
+
+ *** warning *** pulse rise time is  < or = zero, reset to tstep
+
+
+ *** warning *** pulse fall time is  < or = zero, reset to tstep
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=4.5e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=4.5e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=2.7e-07 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model nmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=4.5e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=4.5e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=4.5e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=4.5e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=5.4e-07 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=4.5e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=4.5e-08 l=2.2e-08.
+
+ Warning:  Acde = 1 may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+ Warning: (B1 + Weff) may be too small in BSIM4 model pmos with w=9e-08 l=2.2e-08.
+
+
+
+
+ **warning**  no dc path to ground from node        0:n_gnd            defined in subckt 0               now it is connected with gdcpath
+
+
+
+ ***warning** no connections on node        0:n_rsel           defined in subckt 0                ignored
+
+ ***warning** no connections on node        0:n_vdd            defined in subckt 0                ignored
+
+ **warning** the following singular supplies were terminated to 1 meg resistor 
+   supply       node1            node2
+  vclmomtjn               0:vclmpmtj         defined in subckt 0                     0:0                defined in subckt 0               
+  vsupplylp               0:vdd_lp           defined in subckt 0                     0:0                defined in subckt 0               
+  vrefmtjn                0:vrefmtj          defined in subckt 0                     0:0                defined in subckt 0               
+  vsram_n                 0:vsram_n          defined in subckt 0                     0:0                defined in subckt 0               
+
+ **diagnostic** dc convergence failure, 
+ resetting dcon option to 1 and retrying
+
+ no convergence with standard algorithm,  trying damped pseudo-transient
+
+  *** initial damped pseudo transient completed. ***
+  *** final try started ***
+
+ **warning** This was a difficult operating point.
+             You can speed up your simulation by specifying:
+             .OPTION CONVERGE=1
+
+ ******  
+ .title lut_b_driver_not                                                        
+  ******  transient analysis               tnom=  25.000 temp=  25.000          
+ ******  
+   meas_inv_lut_b_driver_not_1_tfall=  7.8848E-12  targ=  2.1372E-09   trig=  2.1293E-09
+   meas_inv_lut_b_driver_not_1_trise=  1.4310E-11  targ=  1.5786E-10   trig=  1.4355E-10
+   meas_inv_lut_b_driver_not_2_tfall=  3.5142E-11  targ=  1.7869E-10   trig=  1.4355E-10
+   meas_inv_lut_b_driver_not_2_trise=  3.4236E-11  targ=  2.1635E-09   trig=  2.1293E-09
+   meas_total_tfall=  3.5142E-11  targ=  1.7869E-10   trig=  1.4355E-10
+   meas_total_trise=  3.4236E-11  targ=  2.1635E-09   trig=  2.1293E-09
+   meas_logic_low_voltage=  3.3864E-05
+   meas_current= -3.2330E-15  from=  0.0000E+00     to=  4.0000E-09
+   meas_avg_power=  6.4660E-07
+
+   meas_variable = m1357          }
+   mean  =   7.8848p      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =   7.8848p      min    =   7.8848p    
+    1-sigma =   0.          median =   7.8848p    
+
+   meas_variable = m1363          }
+   mean  =  14.3102p      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  14.3102p      min    =  14.3102p    
+    1-sigma =   0.          median =  14.3102p    
+
+   meas_variable = m1365          }
+   mean  =  35.1417p      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  35.1417p      min    =  35.1417p    
+    1-sigma =   0.          median =  35.1417p    
+
+   meas_variable = m1367          }
+   mean  =  34.2357p      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  34.2357p      min    =  34.2357p    
+    1-sigma =   0.          median =  34.2357p    
+
+   meas_variable = meas_total_tfall
+   mean  =  35.1417p      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  35.1417p      min    =  35.1417p    
+    1-sigma =   0.          median =  35.1417p    
+
+   meas_variable = meas_total_trise
+   mean  =  34.2357p      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  34.2357p      min    =  34.2357p    
+    1-sigma =   0.          median =  34.2357p    
+
+   meas_variable = m1369          }
+   mean  =  33.8638u      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  33.8638u      min    =  33.8638u    
+    1-sigma =   0.          median =  33.8638u    
+
+   meas_variable = meas_current    
+   mean  =  -3.2330f      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   =  -3.2330f      min    =  -3.2330f    
+    1-sigma =   0.          median =  -3.2330f    
+
+   meas_variable = meas_avg_power  
+   mean  = 646.5965n      varian =   0.         
+   sigma =   0.           avgdev =   0.         
+   max   = 646.5965n      min    = 646.5965n    
+    1-sigma =   0.          median = 646.5965n    
+ 
+
+          ***** job concluded
+ ****** HSPICE  --  A-2007.09  32-BIT    (Aug 28 2007) 19:56:37 06/22/2018 linux
+ ******  
+ .title lut_b_driver_not                                                        
+  ******  job statistics summary           tnom=  25.000 temp=  25.000          
+ ******  
+
+           total memory used       2214 kbytes
+
+  # nodes =     620 # elements=     465
+  # diodes=       0 # bjts    =       0 # jfets   =       0 # mosfets =     121
+  # va device =       0
+
+    analysis           time    # points   tot. iter  conv.iter
+
+    op point           0.56           1         462
+    transient          0.24        4001         249          96 rev=         2
+    readin             0.04
+    errchk             0.02
+    setup              0.00
+    output             0.00
+           total cpu time          0.86 seconds
+               job started at  19:56:37 06/22/2018
+               job ended   at  19:56:39 06/22/2018
+
+
+>info:         ***** hspice job concluded
+ Init: hspice initialization file: /CMC/tools/synopsys/hspice_2007.09/hspice/hspice.ini
+ lic: Release hspice token(s) 
+real 2.48
+user 0.86
+sys 0.01

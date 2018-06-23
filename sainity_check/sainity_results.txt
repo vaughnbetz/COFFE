@@ -1,0 +1,69 @@
+|------------------------------------------------------------------------------|
+|    Area and Delay Report                                                     |
+|------------------------------------------------------------------------------|
+
+  SUBCIRCUIT AREA & DELAY
+  -----------------------
+  Subcircuit            Area (um^2)  Delay (ps)   trise (ps)   tfall (ps)   
+  sb_mux                1.089        147.6        147.6        144.0        
+  cb_mux                2.974        97.56        97.56        95.36        
+  local_mux             0.984        90.99        90.99        71.6         
+  local_ble_output      1.032        131.7        110.6        131.7        
+  general_ble_output    0.58         32.02        32.02        31.57        
+  lut                   22.408       198.8        198.8        176.6        
+  lut_a_driver          0.223        14.57        14.57        13.81        
+  lut_a_driver_not      0.292        21.2         20.72        21.2         
+  lut_b_driver          0.223        13.76        13.76        12.46        
+  lut_b_driver_not      0.292        20.35        20.02        20.35        
+  lut_c_driver          0.53         34.32        33.79        34.32        
+  lut_c_driver_not      0.196        39.13        39.13        38.93        
+  lut_d_driver          0.213        11.32        11.32        10.97        
+  lut_d_driver_not      0.28         18.61        18.56        18.61        
+  lut_e_driver          0.208        10.15        9.316        10.15        
+  lut_e_driver_not      0.249        19.07        19.07        18.25        
+  lut_f_driver          0.146        10.52        9.651        10.52        
+  lut_f_driver_not      0.236        16.9         16.9         15.64        
+
+  TILE AREA CONTRIBUTIONS
+  -----------------------
+  Block             Total Area (um^2)   Fraction of total tile area
+  Tile              911.894             100%
+  LUT               254.982             27.962%
+  FF                10.458              1.147%
+  BLE output        21.923              2.404%
+  Local mux         128.287             14.068%
+  Connection block  192.826             21.146%
+  Switch block      303.418             33.273%
+
+  VPR DELAYS
+  ----------
+  Path                                            Delay (ps)
+  Tdel (routing switch)                           1.476e-10
+  T_ipin_cblock (connection block mux)            9.756e-11
+  CLB input -> BLE input (local CLB routing)      9.099e-11
+  LUT output -> BLE input (local feedback)        1.317e-10
+  LUT output -> CLB output (logic block output)   3.202e-11
+  lut_a                                           2.273e-10
+  lut_b                                           2.2245e-10
+  lut_c                                           2.1393e-10
+  lut_d                                           1.4021e-10
+  lut_e                                           1.3087e-10
+  lut_f                                           1.1253e-10
+
+  VPR AREAS
+  ----------
+  grid_logic_tile_area                            14406.7953988
+  ipin_mux_trans_size (connection block mux)      1.25595750289
+  mux_trans_size (routing switch)                 1.25595750289
+  buf_size (routing switch)                       18.1333191335
+
+  SUMMARY
+  -------
+  Tile Area                            911.89 um^2
+  Representative Critical Path Delay   127.0 ps
+  Cost (area^1 x delay^1)              0.11581
+
+|------------------------------------------------------------------------------|
+
+Number of HSPICE simulations performed: 79355
+Total time elapsed: 2 hours 15 minutes 17 seconds

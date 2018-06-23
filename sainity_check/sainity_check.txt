@@ -1,0 +1,34 @@
+# run with -i 1
+
+##############################
+##### Architecture Parameters
+##############################
+N=10
+K=6
+W=320
+L=4
+I=40
+Fs=3
+Fcin=0.2
+Fcout=0.025
+Or=2
+Ofb=1
+Fclocal=0.5
+Rsel=c
+Rfb=c
+
+##############################
+##### Process Technology Parameters
+##############################
+vdd=0.8
+vsram=1.0
+vsram_n=0
+gate_length=22
+min_tran_width=45
+min_width_tran_area = 28851
+sram_cell_area = 4
+trans_diffusion_length = 47
+model_path=spice_models/ptm22hp.l
+model_library=22NM_HP
+metal=0.054825,0.000175
+metal=0.007862,0.000215
