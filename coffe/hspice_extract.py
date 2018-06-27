@@ -1,6 +1,7 @@
 import os
 import subprocess
 import spice
+import coffe.utils as utils
 
 
 def extract_hspice_delay_and_power(fpga_inst):
@@ -95,6 +96,8 @@ def get_tfall_trise(name, spice_path):
 	# Run the SPICE simulation and capture console output
 	spice_output_filename = spice_filename_nodir.rstrip(".sp") + ".output"
 	output = open(spice_output_filename, "w")
+
+	utils.check_for_time()
 	subprocess.call(["hspice", spice_filename_nodir], stdout=output, stderr=output)
 	output.close()
 
@@ -143,16 +146,19 @@ def flip_flop(architecture_dir, delay_dict, power_dict):
 	
 	# Run HSPICE on ff_input_select.sp and capture output
 	ff_input_select_output = open('ff_input_select.output', 'w')
+	utils.check_for_time()
 	subprocess.call(['hspice', 'ff_input_select.sp'], stdout=ff_input_select_output, stderr=ff_input_select_output)
 	ff_input_select_output.close()
 	
 	# Run HSPICE on ff_input_select2.sp and capture output
 	ff_input_select2_output = open('ff_input_select2.output', 'w')
+	utils.check_for_time()
 	subprocess.call(['hspice', 'ff_input_select2.sp'], stdout=ff_input_select2_output, stderr=ff_input_select2_output)
 	ff_input_select2_output.close()
 	
 	# Run HSPICE on flipflop.sp and capture output
 	flipflop_output = open('flipflop.output', 'w')
+	utils.check_for_time()
 	subprocess.call(['hspice', 'flipflop.sp'], stdout=flipflop_output, stderr=flipflop_output)
 	flipflop_output.close()
 	

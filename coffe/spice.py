@@ -3,7 +3,7 @@
 
 import os
 import subprocess
-
+import coffe.utils as utils
 
 # All .sp files should be created to use sweep_data.l to set parameters.
 HSPICE_DATA_SWEEP_PATH = "sweep_data.l"
@@ -162,6 +162,7 @@ class SpiceInterface(object):
         # ".mt0" exists, if not, we run hspice again. After we read the results, we delete it to make
         # sure we are not reading previous results
         while ( not hspice_success) :
+            utils.check_for_time()
             subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
             output_file.close()
              

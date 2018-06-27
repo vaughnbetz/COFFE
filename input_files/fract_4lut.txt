@@ -16,7 +16,7 @@
 
 # The following parameters are the classic VPR architecture parameters
 N=10
-K=6
+K=5
 W=320
 L=4
 I=40
@@ -56,12 +56,12 @@ Rfb=c
 # Do we want to use fracturable Luts?
 use_fluts=True
 # can be as large as K-1
-independent_inputs = 0
+independent_inputs = 2
 
-enable_carry_chain = 0
+enable_carry_chain = 1
 #the carry chain type could be "skip" or "ripple"
 carry_chain_type = ripple
-FAs_per_flut = 2
+FAs_per_flut = 1
 
 
 #######################################

@@ -1,5 +1,7 @@
 import sys
 import os
+import time 
+import datetime
 
 
 def compare_tfall_trise(tfall, trise):
@@ -1038,3 +1040,15 @@ def extract_initial_tran_size(filename, use_tgate):
 
     sizes_file.close()
     return  transistor_sizes
+
+def check_for_time():
+    """ This finction should be used before each call for HSPICE it checks
+        if the time is between 2:30 a.m and 3:30 a.m. since during this time
+        it was found that the license doesn't work on my machine. So, to avoid
+        program termination this function was written. If you're using COFFE on 
+        a machine that doesn't have this problem you can comment this function 
+        in the code """
+    now = datetime.datetime.now()
+    while (now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30):
+        sleep(60)
+        now = datetime.datetime.now()
