@@ -127,6 +127,7 @@ arch_params_dict = coffe.utils.load_arch_params(arch_description_filename)
 # Print architecture and process details to terminal and report file
 coffe.utils.print_architecture_params(arch_params_dict, report_file_path)
 
+
 # Create some local variables
 N = arch_params_dict['N']
 K = arch_params_dict['K']
