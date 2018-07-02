@@ -409,8 +409,13 @@ def generate_ptran_lut_not_driver(spice_filename, lut_input_name):
    
    
 def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts):
-	""" Generates LUT input load SPICE deck """
+	""" Generates LUT input load SPICE deck 
+		Note: the input K incase of fluts is still input comming from the architecure file.
+		For a 5-FLUT K = 5"""
 	
+	#TODO: how come the number of loading transistors doesn't depend 
+	# on whether this is an independent input of not
+
 	# Calculate number of pass-transistors loading this input
 	max_num_ptran = math.pow(2, K)
 	if lut_input_name == "a":
@@ -942,6 +947,7 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	return wire_names_list
 
 
+# not used in the code
 def generate_full_adder(spice_filename, circuit_name, use_finfet):
 	""" Generates full adder SPICE deck """
 
@@ -1023,6 +1029,12 @@ def generate_full_adder(spice_filename, circuit_name, use_finfet):
 def generate_full_adder_simplified(spice_filename, circuit_name, use_finfet):
 	""" Generates full adder SPICE deck """
 
+	"""
+	TODO: The logic of the cout is not right. Checked with a waveform viewer. 
+	The cin fed to the tgate 6 should be cin and not cin complement and the same 
+	thing applies for the n_a fed to the other tgate connected to cout. Probably this
+	also added to the critical path of the carry chain.
+	"""
 
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')

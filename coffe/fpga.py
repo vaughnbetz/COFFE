@@ -857,13 +857,14 @@ class _LUTInputNotDriver(_SizableCircuit):
     
 
 class _LUTInput(_CompoundCircuit):
-    """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). """
+    """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). 
+        The muxing on the LUT input is defined here """
 
     def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate, use_fluts):
         # Subcircuit name (should be driver letter like a, b, c...)
         self.name = name
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
-        # In addition, the input can (optionally) drive the register select circuitry: 'default_rsel' or 'reg_fb_rsel'
+        # In addition, the input can (optionally) drive the register input 'default_rsel' or do both 'reg_fb_rsel'
         # Therefore, there are 4 different types, which are controlled by Rsel and Rfb
         if name in Rfb:
             if Rsel == name:
@@ -1070,6 +1071,7 @@ class _LUT(_SizableCircuit):
         
         # Generate LUT differently based on K
         tempK = self.K
+        # TODO: level of fracturability could be checked here
         if self.use_fluts:
             tempK = self.K - 1
 
@@ -1197,6 +1199,7 @@ class _LUT(_SizableCircuit):
                         area_dict["inv_lut_out_buffer_2"] +
                         16*area_dict["sram"])
         
+        #TODO: level of fracturablility will affect this
         if self.use_fluts:
             area = 2*area
             area = area + area_dict["flut_mux"]
@@ -1655,6 +1658,9 @@ class _LUT(_SizableCircuit):
         self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
         self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
         self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
+
+        # If this is one level fracutrable LUT then the e input will still be used
+        #TODO: when increasing the level of fructurability the f input will be used too
         if use_fluts:
             self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
         
@@ -1663,6 +1669,8 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["b"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["c"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
+
+        # If this is one level fracutrable LUT then the e input will still be used
         if use_fluts:
             self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
         
@@ -1861,11 +1869,11 @@ class _CarryChain(_SizableCircuit):
             wire_lengths["wire_" + self.name + "_3"] = width_dict["logic_cluster"]/(4 * self.N) # Wire for input Cin
         wire_layers["wire_" + self.name + "_3"] = 0
         if self.FAs_per_flut ==1:
-            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(2 * self.N) # Wire for input Cout
+            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(2 * self.N) # Wire for output Cout
         else:
-            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(4 * self.N) # Wire for input Cout
+            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(4 * self.N) # Wire for output Cout
         wire_layers["wire_" + self.name + "_4"] = 0
-        wire_lengths["wire_" + self.name + "_5"] = width_dict[self.name] # Wire for input Sum
+        wire_lengths["wire_" + self.name + "_5"] = width_dict[self.name] # Wire for output Sum
         wire_layers["wire_" + self.name + "_5"] = 0
 
     def print_details(self):
@@ -5494,6 +5502,7 @@ class FPGA:
     
         # TODO: We don't use the transistor_sizes.l file anymore.
         # But, we could add some kind of input file for transistor sizes...
+
         # If transistor sizing is turned off, we want to keep the transistor sizes
         # that are in 'transistor_sizes.l'. To do this, we keep a copy of the original file
         # as COFFE will overwrite the original, and then we replace the overwritten file with
@@ -6091,7 +6100,9 @@ class FPGA:
             #cb_ratio = 1.0
             #ic_ratio = 1.0
             #lut_ratio = 1.0
-            print "ratios " + str(sb_ratio) +" "+ str(cb_ratio) +" "+ str(ic_ratio) +" "+ str(lut_ratio)
+
+            #this was used for debugging so I commented it
+            #print "ratios " + str(sb_ratio) +" "+ str(cb_ratio) +" "+ str(ic_ratio) +" "+ str(lut_ratio)
             self.cluster_output_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, self.d_ffble_to_sb, self.lb_height)
             self.sb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, sb_ratio)
             self.cb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, cb_ratio)

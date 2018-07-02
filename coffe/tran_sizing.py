@@ -2133,6 +2133,7 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 		# Sadegh: I have decided not to include this part to be able to observe how cost function is changed over time
 		# It also facilitiates having quick mode.
 		# The user should probably have an idea of how many iterations to run the tool with after using the quick mode.
+
 		# If we are moving to a higher cost solution,
 		# Stop, and choose the one with smaller cost (the previous one)
 		#if total_cost >= previous_cost:
@@ -3190,13 +3191,18 @@ def size_fpga_transistors(fpga_inst,
 		is_done, final_result_index = check_if_done(sizing_results_list, area_results_list, delay_results_list, area_opt_weight, delay_opt_weight)
 
 		# Update the above results with quickmode
+
+		# TODO: Why is it taking the previous iteration results in case of a quick mode
+		# from my  understanding the quick mode means that if the improvement in this 
+		# iteration is less than the given value stop resizing this subcircuit. This 
+		# means the means that probably the current results are the best so far.
 		if 1 not in quick_mode_dict.values():
 			is_done = True
 			final_result_index = iteration - 1
 
 		iteration += 1
 		sys.stdout.flush()
-		final_report_file = open("sizing_results/sizes_interation_" + str(iteration) + ".txt", 'w')
+		final_report_file = open("sizing_results/sizes_iteration_" + str(iteration) + ".txt", 'w')
 		print_final_transistor_size(fpga_inst, final_report_file)
 		final_report_file.close()
 

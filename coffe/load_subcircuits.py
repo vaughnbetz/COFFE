@@ -316,7 +316,7 @@ def RAM_local_routing_load_generate(spice_filename, num_on, num_partial, num_off
  
 def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
     """ Create the BLE outputs block. Contains 'num_local_out' local outputs and 'num_gen_out' general outputs. """
- 
+    #TODO: The order of the wires is weird in this netlist, have a look at it later.
     # Total number of BLE outputs
     total_outputs = num_local_out + num_gen_out
     
@@ -330,6 +330,7 @@ def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
     # Create the BLE output bar
     current_node = 2
     for i in range(num_local_out):
+        #if it is the first 2:1 local ble feedback mux then attach the n_local_out signal to its output else assign a random signal to it
         if i == 0:
             spice_file.write("Xlocal_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_local_out n_gate n_gate_n n_vdd_local_output_on n_gnd local_ble_output\n")
         else:
@@ -337,6 +338,7 @@ def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
         spice_file.write("Xwire_ble_outputs_" + str(i+1) + " n_1_" + str(current_node) + " n_1_" + str(current_node + 1) + " wire Rw='wire_ble_outputs_res/" + str(total_outputs-1) + "' Cw='wire_ble_outputs_cap/" + str(total_outputs-1) + "'\n")
         current_node = current_node + 1
     for i in range(num_gen_out):
+        #if it is the first 2:1 general ble output mux then attach the n_general_out signal to its output else assign a random signal to it
         if i == 0:
             spice_file.write("Xgeneral_ble_output_" + str(i+1) + " n_1_" + str(current_node) + " n_general_out n_gate n_gate_n n_vdd_general_output_on n_gnd general_ble_output\n")
         else:
@@ -359,6 +361,7 @@ def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
 def generate_lut_output_load(spice_filename, num_local_out, num_gen_out):
     """ Create the LUT output load subcircuit. It consists of a FF and all BLE outputs. """
 
+    #TODO: How is the output of the lut not connected to a mux before the FF?!
     # Total number of BLE outputs
     total_outputs = num_local_out + num_gen_out
 
@@ -386,7 +389,8 @@ def generate_lut_output_load(spice_filename, num_local_out, num_gen_out):
     
 
 def generate_local_ble_output_load(spice_filename):
-    """ """
+    """ 
+    TODO: Why does it always asume the output is connected to the lut a driver and not the driver having the feedback mux"""
     
     # Open SPICE file for appending
     spice_file = open(spice_filename, 'a')

@@ -114,7 +114,7 @@ def print_area_and_delay(report_file, fpga_inst):
         report_file.write( "  " + fpga_inst.carrychaininter.name.ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
         # total carry chain area
         print "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13) 
-        report_file.write( "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13))
+        report_file.write( "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13) + "\n")
 
         if fpga_inst.specs.carry_chain_type == "skip":
             # skip and
@@ -943,6 +943,9 @@ def print_architecture_params(arch_params_dict, report_file_path):
     report_file.write("ARCHITECTURE PARAMETERS:\n")
     print "Number of BLEs per cluster (N): " + str(arch_params_dict['N'])
     print "LUT size (K): " + str(arch_params_dict['K'])
+    if arch_params_dict['use_fluts'] == True:
+        print "LUT fracturability level: 1"
+        print "Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut'])
     print "Channel width (W): " + str(arch_params_dict['W'])
     print "Wire segment length (L): " + str(arch_params_dict['L'])
     print "Number of cluster inputs (I): " + str(arch_params_dict['I'])
@@ -958,6 +961,9 @@ def print_architecture_params(arch_params_dict, report_file_path):
     print ""
     report_file.write("Number of BLEs per cluster (N): " + str(arch_params_dict['N']) + "\n")
     report_file.write("LUT size (K): " + str(arch_params_dict['K']) + "\n")
+    if arch_params_dict['use_fluts'] == True:
+        report_file.write("LUT fracturability level: 1" + "\n")
+        report_file.write("Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut']) + "\n")
     report_file.write("Channel width (W): " + str(arch_params_dict['W']) + "\n")
     report_file.write("Wire segment length (L): " + str(arch_params_dict['L']) + "\n")
     report_file.write("Number of cluster inputs (I): " + str(arch_params_dict['I']) + "\n")
@@ -1050,5 +1056,9 @@ def check_for_time():
         in the code """
     now = datetime.datetime.now()
     while (now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30):
-        sleep(60)
+    #while (now.minute >= 20) and (now.minute < 25):
+        print("I'm sleeping")
+        time.sleep(60)
         now = datetime.datetime.now()
+        if not ((now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30)):
+            print("Execution is resumed")
