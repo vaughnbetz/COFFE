@@ -33,7 +33,7 @@
 
 import os
 import sys
-import shutil
+#import shutil
 import argparse
 import time
 import coffe.fpga as fpga
@@ -50,7 +50,9 @@ print "Without tools he is nothing, with tools he is all."
 print "                           - Thomas Carlyle\n\n"
 
 # TODO: see the effect on disabling floorplanning on results and runtime
-# if it is worth it we could add an argument which could disable floorplanning
+# if it is worth it we could add an argument which could disable 
+# floorplanning for a quicker run
+
 # Parse the input arguments with argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('arch_description')
@@ -68,7 +70,7 @@ parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimu
 
 args = parser.parse_args()
 
-#TODO: change this to a dictionary and do this and the printings in a function
+#TODO: remove this and use the args object no need to replicate code
 arch_description_filename = args.arch_description
 is_size_transistors = not args.no_sizing
 opt_type = args.opt_type
@@ -81,55 +83,22 @@ quick_mode_threshold = args.quick_mode
 
 
 # Make the top-level spice folder if it doesn't already exist
-arch_desc_words = arch_description_filename.split('.')
-arch_folder = arch_desc_words[0]
-if not os.path.exists(arch_folder):
-    os.mkdir(arch_folder)
-else:
-    # Delete contents of sub-directories
-    # COFFE generates several 'intermediate results' files during sizing
-    # so we delete them to avoid from having them pile up if we run COFFE
-    # more than once.
-    dir_contents = os.listdir(arch_folder)
-    for content in dir_contents:
-        if os.path.isdir(arch_folder + "/" + content):
-            shutil.rmtree(arch_folder + "/" + content)
-
-# Print the options to both terminal and report file
-report_file_path = os.path.join(arch_folder, "report.txt") 
-report_file = open(report_file_path, 'w')
-
-report_file.write("Created " + str(datetime.datetime.now()) + "\n\n")
-
-
-utils.print_and_write(report_file, "RUN OPTIONS:")
-
-if is_size_transistors:
-    utils.print_and_write(report_file, "Transistor sizing: on")
-else:
-    utils.print_and_write(report_file, "Transistor sizing: off")
-
-if opt_type == "global":
-    utils.print_and_write(report_file, "Optimization type: global")
-else:
-    utils.print_and_write(report_file, "Optimization type: local")
-
-
-utils.print_and_write(report_file, "Number of top combos to re-ERF: " + str(re_erf))
-utils.print_and_write(report_file, "Area optimization weight: " + str(area_opt_weight))
-utils.print_and_write(report_file, "Delay optimization weight: " + str(delay_opt_weight))
-utils.print_and_write(report_file, "Maximum number of sizing iterations: " + str(max_iterations))
-utils.print_and_write(report_file, "")
-
-
-report_file.close()
+# if it's already there delete its content
+arch_folder = utils.create_output_dir(args.arch_description)
 
 # Load the input architecture description file
 arch_params_dict = utils.load_arch_params(arch_description_filename)
 
+# Print the options to both terminal and report file
+report_file_path = os.path.join(arch_folder, "report.txt") 
+utils.print_run_options(args, report_file_path)
+
 # Print architecture and process details to terminal and report file
 utils.print_architecture_params(arch_params_dict, report_file_path)
 
+
+# TODO: Remove this and pass the dictionary to the FPGA instance and 
+# handel this there
 
 # Create some local variables
 N = arch_params_dict['N']
@@ -209,45 +178,23 @@ spice_interface = spice.SpiceInterface()
 total_start_time = time.time()
 
 # Create an FPGA instance
-#TODO: The two calls are exactly the same; remove one and remove the if condition
-if not use_finfet :
-    fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                          vdd, vsram, vsram_n, 
-                          gate_length, 
-                          min_tran_width, 
-                          min_width_tran_area, 
-                          sram_cell_area,
-                          trans_diffusion_length,
-                          model_path, 
-                          model_library, 
-                          metal_stack,
-                          use_tgate,
-                          use_finfet,
-                          rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
-                          memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
-                          hb_files, area_opt_weight, delay_opt_weight,
-                          spice_interface)
-else :
-    fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                          vdd, vsram, vsram_n, 
-                          gate_length, 
-                          min_tran_width, 
-                          min_width_tran_area, 
-                          sram_cell_area,
-                          trans_diffusion_length, 
-                          model_path, 
-                          model_library, 
-                          metal_stack,
-                          use_tgate,
-                          use_finfet,
-                          rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
-                          memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
-                          read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
-                          hb_files, area_opt_weight, delay_opt_weight,
-                          spice_interface)
-
-
+fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
+                      vdd, vsram, vsram_n, 
+                      gate_length, 
+                      min_tran_width, 
+                      min_width_tran_area, 
+                      sram_cell_area,
+                      trans_diffusion_length,
+                      model_path, 
+                      model_library, 
+                      metal_stack,
+                      use_tgate,
+                      use_finfet,
+                      rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
+                      memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, 
+                      read_to_write_ratio, enable_bram_module, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut,
+                      hb_files, area_opt_weight, delay_opt_weight,
+                      spice_interface)
 
 ###############################################################
 ## GENERATE FILES
@@ -328,14 +275,9 @@ else:
 
   fpga_inst.update_delays(spice_interface)
 
-
-
 # Obtain Memory core power
 if enable_bram_module == 1:
   fpga_inst.update_power(spice_interface)
-
-# Go back to the base directory
-os.chdir(default_dir)
 
 
 #print str(fpga_inst.dict_real_widths["sb_sram"])
@@ -351,57 +293,16 @@ os.chdir(default_dir)
 #print str(fpga_inst.lb_height)
 
 
+# Go back to the base directory
+os.chdir(default_dir)
+
+
 # Print out final COFFE report to file
-report_file = open(arch_folder + "/report.txt", 'a')
-report_file.write("\n")
-
-utils.print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
-utils.print_and_write(report_file, "|    Area and Delay Report                                                                         |")
-utils.print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
-utils.print_and_write(report_file, "")
-
-# Print area and delay per subcircuit
-utils.print_area_and_delay(report_file, fpga_inst)
-
-# Print block areas
-utils.print_block_area(report_file, fpga_inst)
-
-# Print VPR delays (to be used to make architecture file)
-utils.print_vpr_delays(report_file, fpga_inst)
-
-# Print VPR areas (to be used to make architecture file)
-utils.print_vpr_areas(report_file, fpga_inst)
-      
-# Print area and delay summary
-final_cost = fpga_inst.area_dict["tile"]*fpga_inst.delay_dict["rep_crit_path"]
-
-utils.print_and_write(report_file, "  SUMMARY")
-utils.print_and_write(report_file, "  -------")
-utils.print_and_write(report_file, "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2")
-utils.print_and_write(report_file, "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps")
-utils.print_and_write(report_file, "  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
-       + str(round(final_cost,5)))
-
-utils.print_and_write(report_file, "")
-utils.print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
-utils.print_and_write(report_file, "")
-
-# Record end time
-total_end_time = time.time()
-total_time_elapsed = total_end_time - total_start_time
-total_hours_elapsed = int(total_time_elapsed/3600)
-total_minutes_elapsed = int((total_time_elapsed-3600*total_hours_elapsed)/60)
-total_seconds_elapsed = int(total_time_elapsed - 3600*total_hours_elapsed - 60*total_minutes_elapsed)
-
-utils.print_and_write(report_file, "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed()))
-utils.print_and_write(report_file, "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n") 
-
-report_file.write( "\n")
-report_file.close()
+utils.print_summary(arch_folder, fpga_inst, total_start_time)
 
 
 
-vpr_file = open(arch_desc_words[0] + ".xml", 'w')
+vpr_file = open(arch_folder + ".xml", 'w')
 
 if enable_bram_module == 1:
   coffe.vpr.print_vpr_file_memory(vpr_file, fpga_inst)

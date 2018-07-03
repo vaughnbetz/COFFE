@@ -2651,7 +2651,7 @@ class _GeneralBLEOutputLoad:
     def print_details(self, report_file):
         """ Print cluster output load details """
         
-        utils.print_and_write(report_file, "  CLUSTER OUTPUT LOAD DETAILS")
+        utils.print_and_write(report_file, "  CLUSTER OUTPUT LOAD DETAILS:")
         utils.print_and_write(report_file, "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption))
         utils.print_and_write(report_file, "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption))
         utils.print_and_write(report_file, "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial))
@@ -2921,7 +2921,7 @@ class _RoutingWireLoad:
     
     def print_details(self, report_file):
         
-        utils.print_and_write(report_file, "  ROUTING WIRE LOAD DETAILS")
+        utils.print_and_write(report_file, "  ROUTING WIRE LOAD DETAILS:")
         utils.print_and_write(report_file, "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off))
         utils.print_and_write(report_file, "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")")
         utils.print_and_write(report_file, "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off))
@@ -6064,7 +6064,7 @@ class FPGA:
         # second and set our valid_delay flag to False.
 
         # Switch Block MUX 
-        print "Updating delay for " + self.sb_mux.name
+        print "  Updating delay for " + self.sb_mux.name
         spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict)
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6083,7 +6083,7 @@ class FPGA:
         self.sb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Connection Block MUX
-        print "Updating delay for " + self.cb_mux.name
+        print "  Updating delay for " + self.cb_mux.name
         spice_meas = spice_interface.run(self.cb_mux.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6102,7 +6102,7 @@ class FPGA:
         self.cb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local MUX
-        print "Updating delay for " + self.logic_cluster.local_mux.name
+        print "  Updating delay for " + self.logic_cluster.local_mux.name
         spice_meas = spice_interface.run(self.logic_cluster.local_mux.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6123,7 +6123,7 @@ class FPGA:
         self.logic_cluster.local_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local BLE output
-        print "Updating delay for " + self.logic_cluster.ble.local_output.name 
+        print "  Updating delay for " + self.logic_cluster.ble.local_output.name 
         spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6144,7 +6144,7 @@ class FPGA:
         self.logic_cluster.ble.local_output.power = float(spice_meas["meas_avg_power"][0])
         
         # General BLE output
-        print "Updating delay for " + self.logic_cluster.ble.general_output.name
+        print "  Updating delay for " + self.logic_cluster.ble.general_output.name
         spice_meas = spice_interface.run(self.logic_cluster.ble.general_output.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6169,7 +6169,7 @@ class FPGA:
         #print self.specs.use_fluts 
         # fracturable lut mux
         if self.specs.use_fluts:
-            print "Updating delay for " + self.logic_cluster.ble.fmux.name
+            print "  Updating delay for " + self.logic_cluster.ble.fmux.name
             spice_meas = spice_interface.run(self.logic_cluster.ble.fmux.top_spice_path, 
                                              parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6189,7 +6189,7 @@ class FPGA:
  
 
         # LUT delay
-        print "Updating delay for " + self.logic_cluster.ble.lut.name
+        print "  Updating delay for " + self.logic_cluster.ble.lut.name
         spice_meas = spice_interface.run(self.logic_cluster.ble.lut.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6213,7 +6213,7 @@ class FPGA:
         for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
             driver = lut_input.driver
             not_driver = lut_input.not_driver
-            print "Updating delay for " + driver.name.replace("_driver", "")
+            print "  Updating delay for " + driver.name.replace("_driver", "")
             driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
 
             if (lut_input_name == "f" and self.specs.use_fluts and self.specs.K == 6) or (lut_input_name == "e" and self.specs.use_fluts and self.specs.K == 5):
@@ -6250,7 +6250,7 @@ class FPGA:
             self.delay_dict[lut_input.name] = lut_input.delay
             
             # Now, we want to get the delay and power for the driver
-            print "Updating delay for " + driver.name 
+            print "  Updating delay for " + driver.name 
             spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6272,7 +6272,7 @@ class FPGA:
                 exit(2)
 
             # ... and the not_driver
-            print "Updating delay for " + not_driver.name
+            print "  Updating delay for " + not_driver.name
             spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6311,7 +6311,7 @@ class FPGA:
         # Carry Chain
         
         if self.specs.enable_carry_chain == 1:
-            print "Updating delay for " + self.carrychain.name
+            print "  Updating delay for " + self.carrychain.name
             spice_meas = spice_interface.run(self.carrychain.top_spice_path, 
                                              parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6476,7 +6476,7 @@ class FPGA:
         if self.specs.enable_bram_block == 0:
             return valid_delay
         # Local RAM MUX
-        print "Updating delay for " + self.RAM.RAM_local_mux.name
+        print "  Updating delay for " + self.RAM.RAM_local_mux.name
         spice_meas = spice_interface.run(self.RAM.RAM_local_mux.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6495,7 +6495,7 @@ class FPGA:
         self.RAM.RAM_local_mux.power = float(spice_meas["meas_avg_power"][0])
 
         #RAM decoder units
-        print "Updating delay for " + self.RAM.rowdecoder_stage0.name
+        print "  Updating delay for " + self.RAM.rowdecoder_stage0.name
         spice_meas = spice_interface.run(self.RAM.rowdecoder_stage0.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6516,7 +6516,7 @@ class FPGA:
 
         if self.RAM.valid_row_dec_size2 == 1:
 
-            print "Updating delay for " + self.RAM.rowdecoder_stage1_size2.name
+            print "  Updating delay for " + self.RAM.rowdecoder_stage1_size2.name
             spice_meas = spice_interface.run(self.RAM.rowdecoder_stage1_size2.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6536,7 +6536,7 @@ class FPGA:
 
         if self.RAM.valid_row_dec_size3 == 1:
 
-            print "Updating delay for " + self.RAM.rowdecoder_stage1_size3.name
+            print "  Updating delay for " + self.RAM.rowdecoder_stage1_size3.name
             spice_meas = spice_interface.run(self.RAM.rowdecoder_stage1_size3.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6556,7 +6556,7 @@ class FPGA:
 
 
 
-        print "Updating delay for " + self.RAM.rowdecoder_stage3.name
+        print "  Updating delay for " + self.RAM.rowdecoder_stage3.name
         spice_meas = spice_interface.run(self.RAM.rowdecoder_stage3.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6576,7 +6576,7 @@ class FPGA:
 
         if self.RAM.memory_technology == "SRAM":
 
-            print "Updating delay for " + self.RAM.precharge.name
+            print "  Updating delay for " + self.RAM.precharge.name
             spice_meas = spice_interface.run(self.RAM.precharge.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6595,7 +6595,7 @@ class FPGA:
             self.RAM.precharge.power = float(spice_meas["meas_avg_power"][0])
 
 
-            print "Updating delay for " + self.RAM.samp_part2.name
+            print "  Updating delay for " + self.RAM.samp_part2.name
             spice_meas = spice_interface.run(self.RAM.samp_part2.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6613,7 +6613,7 @@ class FPGA:
             self.delay_dict[self.RAM.samp_part2.name] = self.RAM.samp_part2.delay
             self.RAM.samp_part2.power = float(spice_meas["meas_avg_power"][0])
 
-            print "Updating delay for " + self.RAM.samp.name
+            print "  Updating delay for " + self.RAM.samp.name
             spice_meas = spice_interface.run(self.RAM.samp.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6634,7 +6634,7 @@ class FPGA:
             self.RAM.samp.power = float(spice_meas["meas_avg_power"][0])
 
 
-            print "Updating delay for " + self.RAM.writedriver.name
+            print "  Updating delay for " + self.RAM.writedriver.name
             spice_meas = spice_interface.run(self.RAM.writedriver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6653,7 +6653,7 @@ class FPGA:
             self.RAM.writedriver.power = float(spice_meas["meas_avg_power"][0])
 
         else:
-            print "Updating delay for " + self.RAM.bldischarging.name
+            print "  Updating delay for " + self.RAM.bldischarging.name
             spice_meas = spice_interface.run(self.RAM.bldischarging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6671,7 +6671,7 @@ class FPGA:
             self.delay_dict[self.RAM.bldischarging.name] = self.RAM.bldischarging.delay
             self.RAM.bldischarging.power = float(spice_meas["meas_avg_power"][0])
 
-            print "Updating delay for " + self.RAM.blcharging.name
+            print "  Updating delay for " + self.RAM.blcharging.name
             spice_meas = spice_interface.run(self.RAM.blcharging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6693,7 +6693,7 @@ class FPGA:
 
             self.RAM._update_process_data()
 
-            print "Updating delay for " + self.RAM.blcharging.name
+            print "  Updating delay for " + self.RAM.blcharging.name
             spice_meas = spice_interface.run(self.RAM.blcharging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6714,7 +6714,7 @@ class FPGA:
 
             self.RAM._update_process_data()
 
-            print "Updating delay for " + self.RAM.mtjsamp.name
+            print "  Updating delay for " + self.RAM.mtjsamp.name
             spice_meas = spice_interface.run(self.RAM.mtjsamp.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6733,7 +6733,7 @@ class FPGA:
             self.RAM.mtjsamp.power = float(spice_meas["meas_avg_power"][0])
 
     
-        print "Updating delay for " + self.RAM.columndecoder.name
+        print "  Updating delay for " + self.RAM.columndecoder.name
         spice_meas = spice_interface.run(self.RAM.columndecoder.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6752,7 +6752,7 @@ class FPGA:
         self.RAM.columndecoder.power = float(spice_meas["meas_avg_power"][0])
 
 
-        print "Updating delay for " + self.RAM.configurabledecoderi.name
+        print "  Updating delay for " + self.RAM.configurabledecoderi.name
         spice_meas = spice_interface.run(self.RAM.configurabledecoderi.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6772,7 +6772,7 @@ class FPGA:
 
 
         if self.RAM.cvalidobj1 ==1:
-            print "Updating delay for " + self.RAM.configurabledecoder3ii.name
+            print "  Updating delay for " + self.RAM.configurabledecoder3ii.name
             spice_meas = spice_interface.run(self.RAM.configurabledecoder3ii.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6792,7 +6792,7 @@ class FPGA:
 
 
         if self.RAM.cvalidobj2 ==1:
-            print "Updating delay for " + self.RAM.configurabledecoder2ii.name
+            print "  Updating delay for " + self.RAM.configurabledecoder2ii.name
             spice_meas = spice_interface.run(self.RAM.configurabledecoder2ii.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6810,7 +6810,7 @@ class FPGA:
             self.delay_dict[self.RAM.configurabledecoder2ii.name] = self.RAM.configurabledecoder2ii.delay
             self.RAM.configurabledecoder2ii.power = float(spice_meas["meas_avg_power"][0])
 
-        print "Updating delay for " + self.RAM.configurabledecoderiii.name
+        print "  Updating delay for " + self.RAM.configurabledecoderiii.name
         spice_meas = spice_interface.run(self.RAM.configurabledecoderiii.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6829,7 +6829,7 @@ class FPGA:
         self.RAM.configurabledecoderiii.power = float(spice_meas["meas_avg_power"][0])
   
 
-        print "Updating delay for " + self.RAM.pgateoutputcrossbar.name
+        print "  Updating delay for " + self.RAM.pgateoutputcrossbar.name
         spice_meas = spice_interface.run(self.RAM.pgateoutputcrossbar.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6848,7 +6848,7 @@ class FPGA:
         self.RAM.pgateoutputcrossbar.power = float(spice_meas["meas_avg_power"][0])
         self.delay_dict["rep_crit_path"] = crit_path_delay    
 
-        print "Updating delay for " + self.RAM.wordlinedriver.name
+        print "  Updating delay for " + self.RAM.wordlinedriver.name
         spice_meas = spice_interface.run(self.RAM.wordlinedriver.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False

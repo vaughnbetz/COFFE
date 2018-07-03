@@ -1,5 +1,6 @@
 import sys
 import os
+import shutil
 import time 
 import datetime
 
@@ -893,54 +894,92 @@ def print_error(value, argument, filename):
     return
 
 
-def print_architecture_params(arch_params_dict, report_file_path):
+def print_run_options(args, report_file_path):
+    """ 
+    This function prints the run options entered by the user
+    when running COFFE in the terminal and in the report file  
+    """
 
-    report_file = open(report_file_path, 'a')
-
-
-    print_and_write(report_file, "ARCHITECTURE PARAMETERS:")
-
-
-    print_and_write(report_file, "Number of BLEs per cluster (N): " + str(arch_params_dict['N']))
-    print_and_write(report_file, "LUT size (K): " + str(arch_params_dict['K']))
-
-    if arch_params_dict['use_fluts'] == True:
-        print_and_write(report_file, "LUT fracturability level: 1")
-        print_and_write(report_file, "Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut']))
-
-    print_and_write(report_file, "Channel width (W): " + str(arch_params_dict['W']))
-    print_and_write(report_file, "Wire segment length (L): " + str(arch_params_dict['L']))
-    print_and_write(report_file, "Number of cluster inputs (I): " + str(arch_params_dict['I']))
-    print_and_write(report_file, "Number of BLE outputs to general routing (Or): " + str(arch_params_dict['Or']))
-    print_and_write(report_file, "Number of BLE outputs to local routing (Ofb): " + str(arch_params_dict['Ofb']))
-    print_and_write(report_file, "Total number of cluster outputs (N*Or): " + str(arch_params_dict['N']*arch_params_dict['Or']))
-    print_and_write(report_file, "Switch block flexibility (Fs): " + str(arch_params_dict['Fs']))
-    print_and_write(report_file, "Cluster input flexibility (Fcin): " + str(arch_params_dict['Fcin']))
-    print_and_write(report_file, "Cluster output flexibility (Fcout): " + str(arch_params_dict['Fcout']))
-    print_and_write(report_file, "Local MUX population (Fclocal): " + str(arch_params_dict['Fclocal']))
-    print_and_write(report_file, "LUT input for register selection MUX (Rsel): " + str(arch_params_dict['Rsel']))
-    print_and_write(report_file, "LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb']))
-    print_and_write(report_file, "")
+    report_file = open(report_file_path, 'w')
+    report_file.write("Created " + str(datetime.datetime.now()) + "\n\n")
     
-
-    print_and_write(report_file, "PROCESS TECHNOLOGY PARAMETERS:")
-    print_and_write(report_file, "transistor_type = " + arch_params_dict['transistor_type'])
-    print_and_write(report_file, "switch_type = " + arch_params_dict['switch_type'])
-    print_and_write(report_file, "vdd = " + str( arch_params_dict['vdd']))
-    print_and_write(report_file, "vsram = " + str( arch_params_dict['vsram']) )
-    print_and_write(report_file, "vsram_n = " + str( arch_params_dict['vsram_n']) )
-    print_and_write(report_file, "gate_length = " + str( arch_params_dict['gate_length']))
-    print_and_write(report_file, "min_tran_width = " + str( arch_params_dict['min_tran_width']) )
-    print_and_write(report_file, "min_width_tran_area = " + str( arch_params_dict['min_width_tran_area']) )
-    print_and_write(report_file, "sram_cell_area = " + str( arch_params_dict['sram_cell_area']) )
-    print_and_write(report_file, "model_path = " + str( arch_params_dict['model_path']) )
-    print_and_write(report_file, "model_library = " + str( arch_params_dict['model_library']) )
-    print_and_write(report_file, "metal = " + str( arch_params_dict['metal']) )
+    # TODO: check if the report_file is open or not
+    print_and_write(report_file, "----------------------------------------------")
+    print_and_write(report_file, "  RUN OPTIONS:")
+    print_and_write(report_file, "----------------------------------------------" + "\n")
+    if not args.no_sizing:
+        print_and_write(report_file, "  Transistor sizing: on")
+    else:
+        print_and_write(report_file, "  Transistor sizing: off")
+    
+    if args.opt_type == "global":
+        print_and_write(report_file, "  Optimization type: global")
+    else:
+        print_and_write(report_file, "  Optimization type: local")
+    
+    
+    print_and_write(report_file, "  Number of top combos to re-ERF: " + str(args.re_erf))
+    print_and_write(report_file, "  Area optimization weight: " + str(args.area_opt_weight))
+    print_and_write(report_file, "  Delay optimization weight: " + str(args.delay_opt_weight))
+    print_and_write(report_file, "  Maximum number of sizing iterations: " + str(args.max_iterations))
+    print_and_write(report_file, "")
     print_and_write(report_file, "")
 
     report_file.close()
 
-    return
+
+
+def print_architecture_params(arch_params_dict, report_file_path):
+
+    report_file = open(report_file_path, 'a')
+
+    print_and_write(report_file, "-------------------------------------------------")
+    print_and_write(report_file, "  ARCHITECTURE PARAMETERS:")
+    print_and_write(report_file, "-------------------------------------------------" + "\n")
+
+
+    print_and_write(report_file, "  Number of BLEs per cluster (N): " + str(arch_params_dict['N']))
+    print_and_write(report_file, "  LUT size (K): " + str(arch_params_dict['K']))
+
+    if arch_params_dict['use_fluts'] == True:
+        print_and_write(report_file, "  LUT fracturability level: 1")
+        print_and_write(report_file, "  Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut']))
+
+    print_and_write(report_file, "  Channel width (W): " + str(arch_params_dict['W']))
+    print_and_write(report_file, "  Wire segment length (L): " + str(arch_params_dict['L']))
+    print_and_write(report_file, "  Number of cluster inputs (I): " + str(arch_params_dict['I']))
+    print_and_write(report_file, "  Number of BLE outputs to general routing (Or): " + str(arch_params_dict['Or']))
+    print_and_write(report_file, "  Number of BLE outputs to local routing (Ofb): " + str(arch_params_dict['Ofb']))
+    print_and_write(report_file, "  Total number of cluster outputs (N*Or): " + str(arch_params_dict['N']*arch_params_dict['Or']))
+    print_and_write(report_file, "  Switch block flexibility (Fs): " + str(arch_params_dict['Fs']))
+    print_and_write(report_file, "  Cluster input flexibility (Fcin): " + str(arch_params_dict['Fcin']))
+    print_and_write(report_file, "  Cluster output flexibility (Fcout): " + str(arch_params_dict['Fcout']))
+    print_and_write(report_file, "  Local MUX population (Fclocal): " + str(arch_params_dict['Fclocal']))
+    print_and_write(report_file, "  LUT input for register selection MUX (Rsel): " + str(arch_params_dict['Rsel']))
+    print_and_write(report_file, "  LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb']))
+    print_and_write(report_file, "")
+    
+    print_and_write(report_file, "-------------------------------------------------")
+    print_and_write(report_file, "  PROCESS TECHNOLOGY PARAMETERS:")
+    print_and_write(report_file, "-------------------------------------------------" + "\n")
+
+    print_and_write(report_file, "  transistor_type = " + arch_params_dict['transistor_type'])
+    print_and_write(report_file, "  switch_type = " + arch_params_dict['switch_type'])
+    print_and_write(report_file, "  vdd = " + str( arch_params_dict['vdd']))
+    print_and_write(report_file, "  vsram = " + str( arch_params_dict['vsram']) )
+    print_and_write(report_file, "  vsram_n = " + str( arch_params_dict['vsram_n']) )
+    print_and_write(report_file, "  gate_length = " + str( arch_params_dict['gate_length']))
+    print_and_write(report_file, "  min_tran_width = " + str( arch_params_dict['min_tran_width']) )
+    print_and_write(report_file, "  min_width_tran_area = " + str( arch_params_dict['min_width_tran_area']) )
+    print_and_write(report_file, "  sram_cell_area = " + str( arch_params_dict['sram_cell_area']) )
+    print_and_write(report_file, "  model_path = " + str( arch_params_dict['model_path']) )
+    print_and_write(report_file, "  model_library = " + str( arch_params_dict['model_library']) )
+    print_and_write(report_file, "  metal = " + str( arch_params_dict['metal']) )
+    print_and_write(report_file, "")
+    print_and_write(report_file, "")
+
+    report_file.close()
+
 
 
 def extract_initial_tran_size(filename, use_tgate):
@@ -988,12 +1027,10 @@ def check_for_time():
     now = datetime.datetime.now()
     if (now.hour == 2 or now.hour == 3):
         print "-----------------------------------------------------------------"
-        print "            Entered the check for time function                  "
+        print "      Entered the check for time function @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second)
         print "-----------------------------------------------------------------"
         print ""
-        print "\tTime is: " + str(now.hour) + ":" + str(now.minute)
-        print ""
-
+       
     while (now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30):
     #while (now.minute >= 20) and (now.minute < 25):
         print("\tI'm sleeping")
@@ -1002,9 +1039,10 @@ def check_for_time():
         if not ((now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30)):
             print("\tExecution is resumed")
 
+    now = datetime.datetime.now()
     if (now.hour == 2 or now.hour == 3):        
         print "-----------------------------------------------------------------"
-        print "            Exiting the check for time function                  "
+        print "      Exited the check for time function  @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second)
         print "-----------------------------------------------------------------"
         print ""         
 
@@ -1018,3 +1056,80 @@ def print_and_write(file, string):
     #TODO: check if the file is already open or not
     print(string)
     file.write(string + "\n")
+
+
+def create_output_dir(arch_file_name):
+    """
+    This function created the architecture folder and returns its name
+    it also deletes the content of the folder in case it's already created
+    to avoid any errors in case of multiple runs on the same architecture file
+    """
+
+    arch_desc_words = arch_file_name.split('.')
+    arch_folder = arch_desc_words[0]
+    if not os.path.exists(arch_folder):
+        os.mkdir(arch_folder)
+    else:
+        # Delete contents of sub-directories
+        # COFFE generates several 'intermediate results' files during sizing
+        # so we delete them to avoid from having them pile up if we run COFFE
+        # more than once.
+        dir_contents = os.listdir(arch_folder)
+        for content in dir_contents:
+            if os.path.isdir(arch_folder + "/" + content):
+                shutil.rmtree(arch_folder + "/" + content)
+
+    return arch_folder  
+
+
+def print_summary(arch_folder, fpga_inst, start_time):
+
+    report_file = open(arch_folder + "/report.txt", 'a')
+    report_file.write("\n")
+    
+    print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
+    print_and_write(report_file, "|    Area and Delay Report                                                                         |")
+    print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
+    print_and_write(report_file, "")
+    
+    # Print area and delay per subcircuit
+    print_area_and_delay(report_file, fpga_inst)
+    
+    # Print block areas
+    print_block_area(report_file, fpga_inst)
+    
+    # Print VPR delays (to be used to make architecture file)
+    print_vpr_delays(report_file, fpga_inst)
+    
+    # Print VPR areas (to be used to make architecture file)
+    print_vpr_areas(report_file, fpga_inst)
+          
+    # Print area and delay summary
+    final_cost = fpga_inst.area_dict["tile"]*fpga_inst.delay_dict["rep_crit_path"]
+    
+    print_and_write(report_file, "  SUMMARY")
+    print_and_write(report_file, "  -------")
+    print_and_write(report_file, "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2")
+    print_and_write(report_file, "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps")
+    print_and_write(report_file, "  Cost (area^" + str(fpga_inst.area_opt_weight) + " x delay^" + str(fpga_inst.delay_opt_weight) + ")              " 
+           + str(round(final_cost,5)))
+    
+    print_and_write(report_file, "")
+    print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
+    print_and_write(report_file, "")
+    
+    # Record end time
+    total_end_time = time.time()
+    total_time_elapsed = total_end_time - start_time
+    total_hours_elapsed = int(total_time_elapsed/3600)
+    total_minutes_elapsed = int((total_time_elapsed - 3600*total_hours_elapsed)/60)
+    total_seconds_elapsed = int(total_time_elapsed - 3600*total_hours_elapsed - 60*total_minutes_elapsed)
+    
+    print_and_write(report_file, "Number of HSPICE simulations performed: " + str(fpga_inst.spice_interface.get_num_simulations_performed()))
+    print_and_write(report_file, "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n") 
+    
+    report_file.write("\n")
+    report_file.close() 
+
+
+

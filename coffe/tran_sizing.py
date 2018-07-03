@@ -2055,7 +2055,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 			results_file.write("".join(name.ljust(col_width)) + ": " + size_string + "\n")
 		results_file.write("\n")
 		
-		results_file.write("Area\t\tDelay\t\tAPD\n")
+		results_file.write(("Area").ljust(20) + ("Delay").ljust(20) + ("APD").ljust(20) + "\n")
 		area_delay_strings = []
 		for i in range(len(area_results_list)):
 			area_results = area_results_list[i]
@@ -2063,7 +2063,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 			subcircuit_area = area_results[subcircuit_name]
 			subcircuit_delay = delay_results[subcircuit_name]
 			subcircuit_cost = subcircuit_area*subcircuit_delay
-			area_delay_strings.append(str(subcircuit_area) + "\t" + str(subcircuit_delay) + "\t" + str(subcircuit_cost))
+			area_delay_strings.append((str(subcircuit_area)).ljust(20) + (str(subcircuit_delay)).ljust(20) + (str(subcircuit_cost)).ljust(20))
 		
 		# Write results
 		for area_delay_str in area_delay_strings:
@@ -2071,7 +2071,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 		results_file.write("\n")
 				  
 	results_file.write("TOTALS:\n")
-	results_file.write("Area\t\tDelay\t\tAPD\n")
+	results_file.write(("Area").ljust(20) + ("Delay").ljust(20) + ("APD").ljust(20) + "\n")
 	totals_strings = []
 	for i in range(len(area_results_list)):
 		area_results = area_results_list[i]
@@ -2079,7 +2079,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 		total_area = area_results["tile"]
 		total_delay = delay_results["rep_crit_path"]
 		total_cost = total_area*total_delay
-		totals_strings.append(str(total_area) + "\t" + str(total_delay) + "\t" + str(total_cost))
+		totals_strings.append((str(total_area)).ljust(20) + (str(total_delay)).ljust(2) + (str(total_cost)).ljust(20))
 	for total_str in totals_strings:
 		results_file.write(total_str + "\n")
 	results_file.write("\n")
