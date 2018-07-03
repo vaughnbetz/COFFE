@@ -4675,13 +4675,13 @@ def generate_general_ble_output_top(name, use_tgate):
 
 
 def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
-    """ 
-    TODO: 
-    - I think the general ble output load should be removed from this ciruit in case of an ALM
-      with carry chain. Since, the load in this case is only the carry chain mux. 
-    - I also think that in both cases whether there is a carry chain mux or not the delay should 
-      be measured between the n_1_1 and n_1_3 and not between n_1_1 and n_local_out.
-    """
+    
+    #TODO: 
+    #- I think the general ble output load should be removed from this ciruit in case of an ALM
+    #  with carry chain. Since, the load in this case is only the carry chain mux. 
+    #- I also think that in both cases whether there is a carry chain mux or not the delay should 
+    #  be measured between the n_1_1 and n_1_3 and not between n_1_1 and n_local_out.
+
     
     # Create directories
     if not os.path.exists(name):

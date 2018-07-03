@@ -1029,12 +1029,12 @@ def generate_full_adder(spice_filename, circuit_name, use_finfet):
 def generate_full_adder_simplified(spice_filename, circuit_name, use_finfet):
 	""" Generates full adder SPICE deck """
 
-	"""
-	TODO: The logic of the cout is not right. Checked with a waveform viewer. 
-	The cin fed to the tgate 6 should be cin and not cin complement and the same 
-	thing applies for the n_a fed to the other tgate connected to cout. Probably this
-	also added to the critical path of the carry chain.
-	"""
+	
+	#TODO: The logic of the cout is not right. Checked with a waveform viewer. 
+	#The cin fed to the tgate 6 should be cin and not cin complement and the same 
+	#thing applies for the n_a fed to the other tgate connected to cout. Probably this
+	#also added to the critical path of the carry chain.
+	
 
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')

@@ -39,7 +39,7 @@ import time
 import coffe.fpga as fpga
 import coffe.spice as spice
 import coffe.tran_sizing as tran_sizing
-import coffe.utils
+import coffe.utils as utils
 import coffe.vpr
 import datetime
 import math
@@ -65,6 +65,8 @@ parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimu
 
 
 args = parser.parse_args()
+
+#TODO: change this to a dictionary and do this and the printings in a function
 arch_description_filename = args.arch_description
 is_size_transistors = not args.no_sizing
 opt_type = args.opt_type
@@ -94,38 +96,37 @@ else:
 # Print the options to both terminal and report file
 report_file_path = os.path.join(arch_folder, "report.txt") 
 report_file = open(report_file_path, 'w')
+
 report_file.write("Created " + str(datetime.datetime.now()) + "\n\n")
-print "RUN OPTIONS:"
-report_file.write("RUN OPTIONS:\n")
+
+
+utils.print_and_write(report_file, "RUN OPTIONS:")
+
 if is_size_transistors:
-    print "Transistor sizing: on"
-    report_file.write("Transistor sizing: on\n")
+    utils.print_and_write(report_file, "Transistor sizing: on")
 else:
-    print "Transistor sizing: off"
-    report_file.write("Transistor sizing: off\n")
+    utils.print_and_write(report_file, "Transistor sizing: off")
+
 if opt_type == "global":
-    print "Optimization type: global"
-    report_file.write("Optimization type: global\n")
+    utils.print_and_write(report_file, "Optimization type: global")
 else:
-    print "Optimization type: local"
-    report_file.write("Optimization type: local\n")
-print "Number of top combos to re-ERF: " + str(re_erf)
-print "Area optimization weight: " + str(area_opt_weight)
-print "Delay optimization weight: " + str(delay_opt_weight)
-print "Maximum number of sizing iterations: " + str(max_iterations)
-print ""
-report_file.write("Number of top combos to re-ERF: " + str(re_erf) + "\n")
-report_file.write("Area optimization weight: " + str(area_opt_weight) + "\n")
-report_file.write("Delay optimization weight: " + str(delay_opt_weight) + "\n")
-report_file.write("Maximum number of sizing iterations: " + str(max_iterations) + "\n")
-report_file.write("\n")
+    utils.print_and_write(report_file, "Optimization type: local")
+
+
+utils.print_and_write(report_file, "Number of top combos to re-ERF: " + str(re_erf))
+utils.print_and_write(report_file, "Area optimization weight: " + str(area_opt_weight))
+utils.print_and_write(report_file, "Delay optimization weight: " + str(delay_opt_weight))
+utils.print_and_write(report_file, "Maximum number of sizing iterations: " + str(max_iterations))
+utils.print_and_write(report_file, "")
+
+
 report_file.close()
 
 # Load the input architecture description file
-arch_params_dict = coffe.utils.load_arch_params(arch_description_filename)
+arch_params_dict = utils.load_arch_params(arch_description_filename)
 
 # Print architecture and process details to terminal and report file
-coffe.utils.print_architecture_params(arch_params_dict, report_file_path)
+utils.print_architecture_params(arch_params_dict, report_file_path)
 
 
 # Create some local variables
@@ -206,6 +207,7 @@ spice_interface = spice.SpiceInterface()
 total_start_time = time.time()
 
 # Create an FPGA instance
+#TODO: The two calls are exactly the same; remove one and remove the if condition
 if not use_finfet :
     fpga_inst = fpga.FPGA(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
                           vdd, vsram, vsram_n, 
@@ -262,7 +264,7 @@ os.chdir(default_dir)
 # Extract initial transistor sizes from file if this option was used.
 if initial_sizes != "default" :
     print "Extracting initial transistor sizes from: " + initial_sizes
-    initial_tran_size = coffe.utils.extract_initial_tran_size(initial_sizes, use_tgate)
+    initial_tran_size = utils.extract_initial_tran_size(initial_sizes, use_tgate)
 
 # over writes default initial sizes if initial sizes are specified
 if initial_sizes != "default" :
@@ -283,6 +285,7 @@ if initial_sizes != "default" :
 report_file = open(report_file_path, 'a')
 fpga_inst.print_details(report_file)  
 report_file.close()
+
 
 # Go to architecture directory
 os.chdir(arch_folder)
@@ -312,6 +315,7 @@ else:
   fpga_inst.update_wire_rc()
   fpga_inst.determine_height()
   fpga_inst.update_delays(spice_interface)
+
 # Obtain Memory core power
 if enable_bram_module == 1:
   fpga_inst.update_power(spice_interface)
@@ -331,54 +335,41 @@ print str(fpga_inst.dict_real_widths["cc"])
 print str(fpga_inst.dict_real_widths["ffble"])
 print str(fpga_inst.lb_height)
 
-print "|--------------------------------------------------------------------------------------------------|"
-print "|    Area and Delay Report                                                                         |"
-print "|--------------------------------------------------------------------------------------------------|"
-print ""
 
 # Print out final COFFE report to file
 report_file = open(arch_folder + "/report.txt", 'a')
 report_file.write("\n")
-report_file.write("|--------------------------------------------------------------------------------------------------|\n")
-report_file.write("|    Area and Delay Report                                                                         |\n")
-report_file.write("|--------------------------------------------------------------------------------------------------|\n")
-report_file.write("\n")
+
+utils.print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
+utils.print_and_write(report_file, "|    Area and Delay Report                                                                         |")
+utils.print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
+utils.print_and_write(report_file, "")
 
 # Print area and delay per subcircuit
-coffe.utils.print_area_and_delay(report_file, fpga_inst)
+utils.print_area_and_delay(report_file, fpga_inst)
 
 # Print block areas
-coffe.utils.print_block_area(report_file, fpga_inst)
+utils.print_block_area(report_file, fpga_inst)
 
 # Print VPR delays (to be used to make architecture file)
-coffe.utils.print_vpr_delays(report_file, fpga_inst)
+utils.print_vpr_delays(report_file, fpga_inst)
 
 # Print VPR areas (to be used to make architecture file)
-coffe.utils.print_vpr_areas(report_file, fpga_inst)
+utils.print_vpr_areas(report_file, fpga_inst)
       
 # Print area and delay summary
 final_cost = fpga_inst.area_dict["tile"]*fpga_inst.delay_dict["rep_crit_path"]
-print "  SUMMARY"
-print "  -------"
-print "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2"
-print "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps"
-print ("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
+
+utils.print_and_write(report_file, "  SUMMARY")
+utils.print_and_write(report_file, "  -------")
+utils.print_and_write(report_file, "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2")
+utils.print_and_write(report_file, "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps")
+utils.print_and_write(report_file, "  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
        + str(round(final_cost,5)))
 
-print ""
-print "|--------------------------------------------------------------------------------------------------|"
-print ""
-
-report_file.write("  SUMMARY\n")
-report_file.write("  -------\n")
-report_file.write("  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2\n")
-report_file.write("  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps\n")
-report_file.write("  Cost (area^" + str(area_opt_weight) + " x delay^" + str(delay_opt_weight) + ")              " 
-       + str(round(final_cost,5)) + "\n")
-
-report_file.write("\n")
-report_file.write("|--------------------------------------------------------------------------------------------------|\n")
-report_file.write("\n")
+utils.print_and_write(report_file, "")
+utils.print_and_write(report_file, "|--------------------------------------------------------------------------------------------------|")
+utils.print_and_write(report_file, "")
 
 # Record end time
 total_end_time = time.time()
@@ -387,18 +378,19 @@ total_hours_elapsed = int(total_time_elapsed/3600)
 total_minutes_elapsed = int((total_time_elapsed-3600*total_hours_elapsed)/60)
 total_seconds_elapsed = int(total_time_elapsed - 3600*total_hours_elapsed - 60*total_minutes_elapsed)
 
-print "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed())
-print "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" 
+utils.print_and_write(report_file, "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed()))
+utils.print_and_write(report_file, "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n") 
 
-report_file.write( "Number of HSPICE simulations performed: " + str(spice_interface.get_num_simulations_performed()) + "\n")
-report_file.write( "Total time elapsed: " + str(total_hours_elapsed) + " hours " + str(total_minutes_elapsed) + " minutes " + str(total_seconds_elapsed) + " seconds\n" )
 report_file.write( "\n")
-
 report_file.close()
 
+
+
 vpr_file = open(arch_desc_words[0] + ".xml", 'w')
+
 if enable_bram_module == 1:
   coffe.vpr.print_vpr_file_memory(vpr_file, fpga_inst)
 else:
   coffe.vpr.print_vpr_file_flut_hard(vpr_file, fpga_inst)
+
 vpr_file.close()

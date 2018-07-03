@@ -316,6 +316,7 @@ def RAM_local_routing_load_generate(spice_filename, num_on, num_partial, num_off
  
 def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
     """ Create the BLE outputs block. Contains 'num_local_out' local outputs and 'num_gen_out' general outputs. """
+    
     #TODO: The order of the wires is weird in this netlist, have a look at it later.
     # Total number of BLE outputs
     total_outputs = num_local_out + num_gen_out
@@ -389,9 +390,7 @@ def generate_lut_output_load(spice_filename, num_local_out, num_gen_out):
     
 
 def generate_local_ble_output_load(spice_filename):
-    """ 
-    TODO: Why does it always asume the output is connected to the lut a driver and not the driver having the feedback mux"""
-    
+
     # Open SPICE file for appending
     spice_file = open(spice_filename, 'a')
     

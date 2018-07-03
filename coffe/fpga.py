@@ -347,27 +347,16 @@ class _SwitchBlockMUX(_SizableCircuit):
     def print_details(self, report_file):
         """ Print switch block details """
 
-        print "  SWITCH BLOCK DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
- 
-        report_file.write( "  SWITCH BLOCK DETAILS:" + "\n") 
-        report_file.write( "  Style: two-level MUX" + "\n") 
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n") 
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n") 
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n") 
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n") 
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n") 
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n") 
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n") 
-        report_file.write( "" + "\n") 
+        utils.print_and_write(report_file, "  SWITCH BLOCK DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
 
 
 class _ConnectionBlockMUX(_SizableCircuit):
@@ -490,28 +479,17 @@ class _ConnectionBlockMUX(_SizableCircuit):
    
     def print_details(self, report_file):
         """ Print connection block details """
-        
-        print "  CONNECTION BLOCK DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
 
-        report_file.write( "  CONNECTION BLOCK DETAILS:" + "\n" )
-        report_file.write( "  Style: two-level MUX" + "\n" )
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n" )
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n" )
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n" )
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n" )
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n" )
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n" )
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n" )
-        report_file.write( "" + "\n" )
+        utils.print_and_write(report_file, "  CONNECTION BLOCK DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
         
         
 class _LocalMUX(_SizableCircuit):
@@ -622,29 +600,17 @@ class _LocalMUX(_SizableCircuit):
    
     def print_details(self, report_file):
         """ Print local mux details """
-        
-        print "  LOCAL MUX DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
-
-        report_file.write( "  LOCAL MUX DETAILS:" + "\n" )
-        report_file.write( "  Style: two-level MUX" + "\n" )
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n" )
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n" )
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n" )
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n" )
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n" )
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n" )
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n" )
-        report_file.write( "" + "\n" )
     
+        utils.print_and_write(report_file, "  LOCAL MUX DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
 
 class _LUTInputDriver(_SizableCircuit):
     """ LUT input driver class. LUT input drivers can optionally support register feedback.
@@ -936,9 +902,7 @@ class _LUTInput(_CompoundCircuit):
     def print_details(self, report_file):
         """ Print LUT input driver details """
         
-        print "  LUT input " + self.name + " type: " + self.type
-        report_file.write( "  LUT input " + self.name + " type: " + self.type + "\n" )
-
+        utils.print_and_write(report_file, "  LUT input " + self.name + " type: " + self.type)
 
 
 
@@ -1389,69 +1353,18 @@ class _LUT(_SizableCircuit):
         
     def print_details(self, report_file):
         """ Print LUT details """
+    
+        utils.print_and_write(report_file, "  LUT DETAILS:")
+        utils.print_and_write(report_file, "  Style: Fully encoded MUX tree")
+        utils.print_and_write(report_file, "  Size: " + str(self.K) + "-LUT")
+        utils.print_and_write(report_file, "  Internal buffering: 2-stage buffer betweens levels 3 and 4")
+        utils.print_and_write(report_file, "  Isolation inverters between SRAM and LUT inputs")
+        utils.print_and_write(report_file, "")
+        utils.print_and_write(report_file, "  LUT INPUT DRIVER DETAILS:")
+        for driver_name, input_driver in self.input_drivers.iteritems():
+            input_driver.print_details(report_file)
+        utils.print_and_write(report_file,"")
         
-        if self.K == 6:
-            print "  LUT DETAILS:"
-            print "  Style: Fully encoded MUX tree"
-            print "  Size: 6-LUT"
-            print "  Internal buffering: 2-stage buffer betweens levels 3 and 4"
-            print "  Isolation inverters between SRAM and LUT inputs"
-            print ""
-            print "  LUT INPUT DRIVER DETAILS:"
-
-            report_file.write( "  LUT DETAILS:" + "\n" )
-            report_file.write( "  Style: Fully encoded MUX tree" + "\n" )
-            report_file.write( "  Size: 6-LUT" + "\n" )
-            report_file.write( "  Internal buffering: 2-stage buffer betweens levels 3 and 4" + "\n" )
-            report_file.write( "  Isolation inverters between SRAM and LUT inputs" + "\n" )
-            report_file.write( "" + "\n" )
-            report_file.write( "  LUT INPUT DRIVER DETAILS:" + "\n" )
-            for driver_name, input_driver in self.input_drivers.iteritems():
-                input_driver.print_details(report_file)
-            print ""
-            report_file.write("\n")
-        elif self.K == 5:
-            print "  LUT DETAILS:"
-            print "  Style: Fully encoded MUX tree"
-            print "  Size: 5-LUT"
-            print "  Internal buffering: 2-stage buffer betweens levels 3 and 4"
-            print "  Isolation inverters between SRAM and LUT inputs"
-            print ""
-            print "  LUT INPUT DRIVER DETAILS:"
-
-            report_file.write( "  LUT DETAILS:" + "\n" )
-            report_file.write( "  Style: Fully encoded MUX tree" + "\n" )
-            report_file.write( "  Size: 5-LUT" + "\n" )
-            report_file.write( "  Internal buffering: 2-stage buffer betweens levels 3 and 4" + "\n" )
-            report_file.write( "  Isolation inverters between SRAM and LUT inputs" + "\n" )
-            report_file.write( "" + "\n" )
-            report_file.write( "  LUT INPUT DRIVER DETAILS:" + "\n" )
-            for driver_name, input_driver in self.input_drivers.iteritems():
-                input_driver.print_details(report_file)
-            print ""
-            report_file.write("\n")
-
-
-        elif self.K == 4:
-            print "  LUT DETAILS:"
-            print "  Style: Fully encoded MUX tree"
-            print "  Size: 4-LUT"
-            print "  Internal buffering: 2-stage buffer betweens levels 2 and 3"
-            print "  Isolation inverters between SRAM and LUT inputs"
-            print ""
-            print "  LUT INPUT DRIVER DETAILS:"
-
-            report_file.write( "  LUT DETAILS:" + "\n" )
-            report_file.write( "  Style: Fully encoded MUX tree" + "\n" )
-            report_file.write( "  Size: 4-LUT" + "\n" )
-            report_file.write( "  Internal buffering: 2-stage buffer betweens levels 2 and 3" + "\n" )
-            report_file.write( "  Isolation inverters between SRAM and LUT inputs" + "\n" )
-            report_file.write( "" + "\n" )
-            report_file.write( "  LUT INPUT DRIVER DETAILS:" + "\n" )
-            for driver_name, input_driver in self.input_drivers.iteritems():
-                input_driver.print_details(report_file)
-            print ""
-            report_file.write("\n")
     
     def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         print "Generating 6-LUT"
@@ -2738,19 +2651,12 @@ class _GeneralBLEOutputLoad:
     def print_details(self, report_file):
         """ Print cluster output load details """
         
-        print "  CLUSTER OUTPUT LOAD DETAILS"
-        print "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption)
-        print "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption)
-        print "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial)
-        print "  Number of 'off' SB MUXes: " + str(self.num_sb_mux_off)
-        print ""
-
-        report_file.write( "  CLUSTER OUTPUT LOAD DETAILS" + "\n" )
-        report_file.write( "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption) + "\n" )
-        report_file.write( "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption) + "\n" )
-        report_file.write( "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial) + "\n" )
-        report_file.write( "  Number of 'off' SB MUXes: " + str(self.num_sb_mux_off) + "\n" )
-        report_file.write( "" + "\n" )
+        utils.print_and_write(report_file, "  CLUSTER OUTPUT LOAD DETAILS")
+        utils.print_and_write(report_file, "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption))
+        utils.print_and_write(report_file, "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption))
+        utils.print_and_write(report_file, "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial))
+        utils.print_and_write(report_file, "  Number of 'off' SB MUXes: " + str(self.num_sb_mux_off))
+        utils.print_and_write(report_file, "")
         
       
     def _compute_load(self, specs, sb_mux, channel_usage, sb_mux_on):
@@ -3014,22 +2920,17 @@ class _RoutingWireLoad:
     
     
     def print_details(self, report_file):
-        print "  ROUTING WIRE LOAD DETAILS"
-        print "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off)
-        print "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")"
-        print "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off)
-        print "  Wire: CB (on = " + str(self.cb_load_on) + ", partial = " + str(self.cb_load_partial) + ", off = " + str(self.cb_load_off) + ")"
+        
+        utils.print_and_write(report_file, "  ROUTING WIRE LOAD DETAILS")
+        utils.print_and_write(report_file, "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off))
+        utils.print_and_write(report_file, "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")")
+        utils.print_and_write(report_file, "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off))
+        utils.print_and_write(report_file, "  Wire: CB (on = " + str(self.cb_load_on) + ", partial = " + str(self.cb_load_partial) + ", off = " + str(self.cb_load_off) + ")")
 
-        report_file.write( "  ROUTING WIRE LOAD DETAILS" + "\n")
-        report_file.write( "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off) + "\n")
-        report_file.write( "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")" + "\n")
-        report_file.write( "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off) + "\n")
-        report_file.write( "  Wire: CB (on = " + str(self.cb_load_on) + ", partial = " + str(self.cb_load_partial) + ", off = " + str(self.cb_load_off) + ")" + "\n")
         for i in range(self.wire_length):
-            print "  Tile " + str(i+1) + ": SB (on = " + str(self.tile_sb_on[i]) + ", partial = " + str(self.tile_sb_partial[i]) + ", off = " + str(self.tile_sb_off[i]) + "); CB (on = " + str(self.tile_cb_on[i]) + ", partial = " + str(self.tile_cb_partial[i]) + ", off = " + str(self.tile_cb_off[i]) + ")"
-            report_file.write( "  Tile " + str(i+1) + ": SB (on = " + str(self.tile_sb_on[i]) + ", partial = " + str(self.tile_sb_partial[i]) + ", off = " + str(self.tile_sb_off[i]) + "); CB (on = " + str(self.tile_cb_on[i]) + ", partial = " + str(self.tile_cb_partial[i]) + ", off = " + str(self.tile_cb_off[i]) + ")" + "\n")
-        print ""
-        report_file.write("\n")
+            utils.print_and_write(report_file, "  Tile " + str(i+1) + ": SB (on = " + str(self.tile_sb_on[i]) + ", partial = " + str(self.tile_sb_partial[i]) + 
+            ", off = " + str(self.tile_sb_off[i]) + "); CB (on = " + str(self.tile_cb_on[i]) + ", partial = " + str(self.tile_cb_partial[i]) + ", off = " + str(self.tile_cb_off[i]) + ")")
+        utils.print_and_write(report_file, "")
         
        
     def _compute_load(self, specs, sb_mux, cb_mux, channel_usage, cluster_input_usage):
@@ -4388,27 +4289,16 @@ class _RAMLocalMUX(_SizableCircuit):
     def print_details(self, report_file):
         """ Print RAM local mux details """
         
-        print "  RAM LOCAL MUX DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
-
-        report_file.write( "  RAM LOCAL MUX DETAILS:" + "\n" )
-        report_file.write( "  Style: two-level MUX" + "\n" )
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n" )
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n" )
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n" )
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n" )
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n" )
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n" )
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n" )
-        report_file.write( "" + "\n" )
+        utils.print_and_write(report_file, "  RAM LOCAL MUX DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
 
 
 class _RAMLocalRoutingWireLoad:
@@ -7159,14 +7049,10 @@ class FPGA:
         
     def print_details(self, report_file):
 
-        print "|------------------------------------------------------------------------------|"
-        print "|   FPGA Implementation Details                                                |"
-        print "|------------------------------------------------------------------------------|"
-        print ""
-        report_file.write("|------------------------------------------------------------------------------|\n")
-        report_file.write("|   FPGA Implementation Details                                                |\n")
-        report_file.write("|------------------------------------------------------------------------------|\n")
-        report_file.write("\n")
+        utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
+        utils.print_and_write(report_file, "|   FPGA Implementation Details                                                |")
+        utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
+        utils.print_and_write(report_file, "")
 
         self.sb_mux.print_details(report_file)
         self.cb_mux.print_details(report_file)
@@ -7176,10 +7062,8 @@ class FPGA:
         if self.specs.enable_bram_block == 1:
             self.RAM.print_details(report_file)
 
-        print "|------------------------------------------------------------------------------|"
-        print ""
-        report_file.write("|------------------------------------------------------------------------------|\n")
-        report_file.write("\n")
+        utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
+        utils.print_and_write(report_file, "")
 
         return
     

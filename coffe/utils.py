@@ -38,12 +38,8 @@ def compare_tfall_trise(tfall, trise):
 def print_area_and_delay(report_file, fpga_inst):
     """ Print area and delay per subcircuit """
     
-    print "  SUBCIRCUIT AREA, DELAY & POWER"
-    print "  ------------------------------"
-
-    report_file.write( "  SUBCIRCUIT AREA, DELAY & POWER\n")
-    report_file.write( "  ------------------------------\n")
-    
+    print_and_write(report_file, "  SUBCIRCUIT AREA, DELAY & POWER")
+    print_and_write(report_file, "  ------------------------------")
     
     area_dict = fpga_inst.area_dict
 
@@ -52,32 +48,35 @@ def print_area_and_delay(report_file, fpga_inst):
     # not work as well. The 'ljust' constants would have to be adjusted accordingly.
     
     # Print the header
-    print "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22) 
-    report_file.write("  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22) + "\n")
+    print_and_write(report_file, "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22)) 
     
     # Switch block mux
-    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22)
-    report_file.write( "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22))
     
     # Connection block mux
-    print "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6)
-    report_file.write( "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6))
     
     # Local mux
-    print "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.local_mux.power/1e-6)
-    report_file.write( "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.local_mux.power/1e-6) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.local_mux.power/1e-6))
     
     # Local BLE output
-    print "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.local_output.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6)
-    report_file.write( "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.local_output.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.local_output.name]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.ble.local_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.ble.local_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6))
     
     # General BLE output
-    print "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6)
-    report_file.write( "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6))
     
     # LUT
-    print "  " + (fpga_inst.logic_cluster.ble.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-    report_file.write( "  " + fpga_inst.logic_cluster.ble.lut.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.ble.lut.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
     
     # Get LUT input names so that we can print inputs in sorted order
     lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
@@ -86,43 +85,47 @@ def print_area_and_delay(report_file, fpga_inst):
     # LUT input drivers
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
-        print "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22)
-        report_file.write("  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + 
+            str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22))
 
         driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].driver
         not_driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].not_driver
-        print "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22)
-        print "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22)
-
-        report_file.write( "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22) + "\n")
-        report_file.write( "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + 
+            str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22))
+        print_and_write(report_file, "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + 
+            str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22))
 
     # Carry chain
     
     if fpga_inst.specs.enable_carry_chain == 1:
         #carry path
-        print "  " + (fpga_inst.carrychain.name).ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-        report_file.write( "  " + fpga_inst.carrychain.name.ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        print_and_write(report_file, "  " + (fpga_inst.carrychain.name).ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
         # Sum inverter
-        print "  " + (fpga_inst.carrychainperf.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-        report_file.write( "  " + fpga_inst.carrychainperf.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        print_and_write(report_file, "  " + (fpga_inst.carrychainperf.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
         # mux
-        print "  " + (fpga_inst.carrychainmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-        report_file.write( "  " + fpga_inst.carrychainmux.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        print_and_write(report_file, "  " + (fpga_inst.carrychainmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
         # Intercluster
-        print "  " + (fpga_inst.carrychaininter.name).ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-        report_file.write( "  " + fpga_inst.carrychaininter.name.ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+        print_and_write(report_file, "  " + (fpga_inst.carrychaininter.name).ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
         # total carry chain area
-        print "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13) 
-        report_file.write( "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13) + "\n")
+        print_and_write(report_file, "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13))
 
         if fpga_inst.specs.carry_chain_type == "skip":
             # skip and
-            print "  " + (fpga_inst.carrychainand.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-            report_file.write( "  " + fpga_inst.carrychainand.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+            print_and_write(report_file, "  " + (fpga_inst.carrychainand.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + 
+                str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + 
+                str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
             # skip mux
-            print "  " + (fpga_inst.carrychainskipmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22)
-            report_file.write( "  " + fpga_inst.carrychainskipmux.name.ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22) + "\n")
+            print_and_write(report_file, "  " + (fpga_inst.carrychainskipmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + 
+                str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + 
+                str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
 
 
 
@@ -131,19 +134,23 @@ def print_area_and_delay(report_file, fpga_inst):
         ## Size dedicated routing links
         ############################################
         if hardblock.parameters['num_dedicated_outputs'] > 0:
-            print "  dedicated link ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.trise/1e-12,4)).ljust(13) + str(hardblock.dedicated.power/1e-6).ljust(22)
-            report_file.write( "  dedicated ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.trise/1e-12,4)).ljust(13) + str(hardblock.dedicated.power/1e-6).ljust(22) + "\n")
+            print_and_write(report_file, "  dedicated link ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + 
+                str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + 
+                str(round(hardblock.dedicated.trise/1e-12,4)).ljust(13) + str(hardblock.dedicated.power/1e-6).ljust(22))
         
-        print "  mux " + str(hardblock.parameters['name']).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + str(hardblock.mux.power/1e-6).ljust(22)
-        report_file.write( "  mux " + str(hardblock.mux.name).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + str(hardblock.mux.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  mux " + str(hardblock.parameters['name']).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + 
+            str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + 
+            str(hardblock.mux.power/1e-6).ljust(22))
         
     # Connection block mux
-    print "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6)
-    report_file.write( "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + 
+        str(fpga_inst.cb_mux.power/1e-6))
     
-    # Switch block mux
-    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22)
-    report_file.write( "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22) + "\n")
+    # Switch block mux,
+    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + 
+        str(fpga_inst.sb_mux.power/1e-6).ljust(22))
     
 
     if fpga_inst.specs.enable_bram_block == 0:
@@ -156,8 +163,9 @@ def print_area_and_delay(report_file, fpga_inst):
     # RAM
 
     # RAM local input mux
-    print "  " + fpga_inst.RAM.RAM_local_mux.name.ljust(22) + str(round(fpga_inst.area_dict["ram_local_mux_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.RAM_local_mux.power/1e-6).ljust(22)
-    report_file.write( "  " + fpga_inst.RAM.RAM_local_mux.name.ljust(22) + str(round(area_dict[fpga_inst.RAM.RAM_local_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.RAM_local_mux.power/1e-6).ljust(22) + "\n")
+    print_and_write(report_file, "  " + fpga_inst.RAM.RAM_local_mux.name.ljust(22) + str(round(fpga_inst.area_dict["ram_local_mux_total"]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.RAM.RAM_local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.RAM.RAM_local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.RAM_local_mux.power/1e-6).ljust(22))
     
     # Row decoder:
     stage1_delay = 0.0
@@ -175,9 +183,9 @@ def print_area_and_delay(report_file, fpga_inst):
 
     row_decoder_delay =  stage0_delay + stage1_delay + stage3_delay + stage2_delay
 
-    print "  Row Decoder".ljust(24) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(13) + str(round(row_decoder_delay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22)
+    print_and_write(report_file, "  Row Decoder".ljust(24) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(13) + str(round(row_decoder_delay/1e-12,4)).ljust(13) + 
+        "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22))    
 
-    report_file.write( "  Row Decoder".ljust(24) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(13) + str(round(row_decoder_delay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22) + "\n")
     print "  Power Breakdown: ".ljust(24) + "stage0".ljust(22)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(22)
 
     if fpga_inst.RAM.valid_row_dec_size2 == 1:
@@ -197,12 +205,14 @@ def print_area_and_delay(report_file, fpga_inst):
         configdelay += fpga_inst.RAM.configurabledecoder2ii.delay
 
     # Column decoder:
-    print "  Column Decoder".ljust(24) + str(round(fpga_inst.area_dict["columndecoder_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.columndecoder.power/1e-6).ljust(22)
-    report_file.write( "  Column Decoder".ljust(24) + str(round(fpga_inst.area_dict["columndecoder_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.columndecoder.power/1e-6).ljust(22) + "\n")
-    print "  Configurable Decoder".ljust(24) + str(round(fpga_inst.area_dict["configurabledecoder"]/1e6,3)).ljust(13) + str(round(configdelay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22)
-    report_file.write( "  Configurable Decoder".ljust(24) + str(round(fpga_inst.area_dict["configurabledecoder"]/1e6,3)).ljust(13) + str(round(configdelay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22) + "\n")
-    print "  CD driver delay ".ljust(24) + "n/a".ljust(13) + str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22)
-    report_file.write( "  CD driver delay".ljust(24) + "n/a".ljust(13) + str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22) + "\n")
+    print_and_write(report_file, "  Column Decoder".ljust(24) + str(round(fpga_inst.area_dict["columndecoder_total"]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.RAM.columndecoder.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.RAM.columndecoder.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.columndecoder.power/1e-6).ljust(22))
+    print_and_write(report_file, "  Configurable Decoder".ljust(24) + str(round(fpga_inst.area_dict["configurabledecoder"]/1e6,3)).ljust(13) + 
+        str(round(configdelay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22))
+    print_and_write(report_file, "  CD driver delay ".ljust(24) + "n/a".ljust(13) + 
+        str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22))
+
     print "  Power Breakdown: ".ljust(24) + "stage0".ljust(22)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(22)
     if fpga_inst.RAM.cvalidobj2 !=0:
         print "  Power Breakdown: ".ljust(24) + "stage1".ljust(22)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(22)
@@ -212,40 +222,42 @@ def print_area_and_delay(report_file, fpga_inst):
 
 
     # BRAM output crossbar:
-    print "  Output Crossbar".ljust(24) + str(round(fpga_inst.area_dict["pgateoutputcrossbar_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.pgateoutputcrossbar.power/1e-6).ljust(22)
-    report_file.write( " Output Crossbar ".ljust(24) + str(round(fpga_inst.area_dict["pgateoutputcrossbar_sram"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.pgateoutputcrossbar.power/1e-6).ljust(22) + "\n")
+    print_and_write(report_file, "  Output Crossbar".ljust(24) + str(round(fpga_inst.area_dict["pgateoutputcrossbar_sram"]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.RAM.pgateoutputcrossbar.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.pgateoutputcrossbar.power/1e-6).ljust(22))
     
     # reporting technology-specific part of the BRAM (sense amplifier, precharge/predischarge and write driver/bitline charge)
     if fpga_inst.RAM.memory_technology == "SRAM":
-        print "  sense amp".ljust(24) + str(round(fpga_inst.area_dict["samp_total"]/1e6,3)).ljust(13) + str(round((fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay)/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.samp.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.samp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.samp.power/1e-6).ljust(22)
-        report_file.write( " sense amp ".ljust(24) + str(round(fpga_inst.area_dict["samp_total"]/1e6,3)).ljust(13) + str(round((fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay)/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.samp.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.samp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.samp.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  sense amp".ljust(24) + str(round(fpga_inst.area_dict["samp_total"]/1e6,3)).ljust(13) + 
+            str(round((fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay)/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.samp.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.RAM.samp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.samp.power/1e-6).ljust(22))
     
-        print "  precharge".ljust(24) + str(round(fpga_inst.area_dict["precharge_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.precharge.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.precharge.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.precharge.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.precharge.power/1e-6).ljust(22)
-        report_file.write( " precharge ".ljust(24) + str(round(fpga_inst.area_dict["precharge_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.precharge.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.precharge.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.precharge.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.precharge.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  precharge".ljust(24) + str(round(fpga_inst.area_dict["precharge_total"]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.RAM.precharge.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.precharge.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.RAM.precharge.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.precharge.power/1e-6).ljust(22))
 
-        print "  Write driver".ljust(24) + str(round(fpga_inst.area_dict["writedriver_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.writedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.writedriver.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.writedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.writedriver.power/1e-6).ljust(22)
-        report_file.write( " Write driver ".ljust(24) + str(round(fpga_inst.area_dict["writedriver_total"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.writedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.writedriver.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.writedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.writedriver.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  Write driver".ljust(24) + str(round(fpga_inst.area_dict["writedriver_total"]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.RAM.writedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.writedriver.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.RAM.writedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.writedriver.power/1e-6).ljust(22))
     else:
-        print "  Sense Amp".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.mtjsamp.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.mtjsamp.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.mtjsamp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.mtjsamp.power/1e-6).ljust(22)
-        report_file.write( " Sense Amp ".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.mtjsamp.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.mtjsamp.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.mtjsamp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.mtjsamp.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  Sense Amp".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.mtjsamp.delay/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.RAM.mtjsamp.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.mtjsamp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.mtjsamp.power/1e-6).ljust(22))
     
-        print "  BL Charge".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.blcharging.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.blcharging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.blcharging.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.blcharging.power/1e-6).ljust(22)
-        report_file.write( " BL Charge ".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.blcharging.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.blcharging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.blcharging.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.blcharging.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  BL Charge".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.blcharging.delay/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.RAM.blcharging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.blcharging.trise/1e-12,4)).ljust(13) + 
+            str(fpga_inst.RAM.blcharging.power/1e-6).ljust(22))
 
-        print "  BL Discharge".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.bldischarging.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.bldischarging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.bldischarging.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.bldischarging.power/1e-6).ljust(22)
-        report_file.write( " BL Discharge ".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.bldischarging.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.bldischarging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.bldischarging.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.bldischarging.power/1e-6).ljust(22) + "\n")
+        print_and_write(report_file, "  BL Discharge".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.bldischarging.delay/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.RAM.bldischarging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.bldischarging.trise/1e-12,4)).ljust(13) + 
+            str(fpga_inst.RAM.bldischarging.power/1e-6).ljust(22))
     
     # wordline driver:
-    print "  Wordline driver".ljust(24) + str(round(fpga_inst.area_dict["wordline_driver"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.wordlinedriver.power/1e-6).ljust(22)
-    report_file.write( " Wordline driver ".ljust(24) + str(round(fpga_inst.area_dict["wordline_driver"]/1e6,3)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.wordlinedriver.power/1e-6).ljust(22) + "\n")
+    print_and_write(report_file, "  Wordline driver".ljust(24) + str(round(fpga_inst.area_dict["wordline_driver"]/1e6,3)).ljust(13) + 
+        str(round(fpga_inst.RAM.wordlinedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.tfall/1e-12,4)).ljust(13) + 
+        str(round(fpga_inst.RAM.wordlinedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.wordlinedriver.power/1e-6).ljust(22))
     
     # Level shifter: This was measured outside COFFE by kosuke.
-    print "  Level Shifter".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22)
-    report_file.write( " Level Shifter ".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22) + "\n")
-    
-
-
-
+    print_and_write(report_file, "  Level Shifter".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + 
+        str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22))
 
     report_file.write( "\n" )
 
@@ -330,96 +342,53 @@ def print_block_area(report_file, fpga_inst):
             else:
                 ram_routing = ram - decod - ramlocalmux - ramcoldecode - ramconfdecode - ramoutputcbar - memcells - wordlinedrivera - writedrivertotal - samptotal - cstotal - levels
 
-        print "  TILE AREA CONTRIBUTIONS"
-        print "  -----------------------"
-        print "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of total tile area"
-        print "  Tile".ljust(20) + str(round(tile,3)).ljust(20) + "100%"
-        print "  LUT".ljust(20) + str(round(lut,3)).ljust(20) + str(round(lut/tile*100,3)) + "%"
-        print "  FF".ljust(20) + str(round(ff,3)).ljust(20) + str(round(ff/tile*100,3)) + "%"
-        print "  BLE output".ljust(20) + str(round(ble_output,3)).ljust(20) + str(round(ble_output/tile*100,3)) + "%"
-        print "  Local mux".ljust(20) + str(round(local_mux,3)).ljust(20) + str(round(local_mux/tile*100,3)) + "%"
-        print "  Connection block".ljust(20) + str(round(cb,3)).ljust(20) + str(round(cb/tile*100,3)) + "%"
-        print "  Switch block".ljust(20) + str(round(sb,3)).ljust(20) + str(round(sb/tile*100,3)) + "%"
-        print "" 
+        print_and_write(report_file, "  TILE AREA CONTRIBUTIONS")
+        print_and_write(report_file, "  -----------------------")
+        print_and_write(report_file, "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of total tile area")
+        print_and_write(report_file, "  Tile".ljust(20) + str(round(tile,3)).ljust(20) + "100%")
+        print_and_write(report_file, "  LUT".ljust(20) + str(round(lut,3)).ljust(20) + str(round(lut/tile*100,3)) + "%")
+        print_and_write(report_file, "  FF".ljust(20) + str(round(ff,3)).ljust(20) + str(round(ff/tile*100,3)) + "%")
+        print_and_write(report_file, "  BLE output".ljust(20) + str(round(ble_output,3)).ljust(20) + str(round(ble_output/tile*100,3)) + "%")
+        print_and_write(report_file, "  Local mux".ljust(20) + str(round(local_mux,3)).ljust(20) + str(round(local_mux/tile*100,3)) + "%")
+        print_and_write(report_file, "  Connection block".ljust(20) + str(round(cb,3)).ljust(20) + str(round(cb/tile*100,3)) + "%")
+        print_and_write(report_file, "  Switch block".ljust(20) + str(round(sb,3)).ljust(20) + str(round(sb/tile*100,3)) + "%")
+        print_and_write(report_file, "")
         if fpga_inst.specs.enable_bram_block == 1:
-            print "  RAM AREA CONTRIBUTIONS"
-            print "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of RAM tile area"
-            print "  RAM".ljust(20) + str(round(ram,3)).ljust(20) + str(round(ram/ram*100,3)) + "%"
-            print "  RAM Local Mux".ljust(20) + str(round(ramlocalmux,3)).ljust(20) + str(round(ramlocalmux/ram*100,3)) + "%"
-            print "  Level Shifters".ljust(20) + str(round(levels,3)).ljust(20) + str(round(levels/ram*100,3)) + "%"
-            print "  Decoder".ljust(20) + str(round(decod,3)).ljust(20) + str(round(decod/ram*100,3)) + "%"
-            print "  WL driver".ljust(20) + str(round(wordlinedrivera,3)).ljust(20) + str(round(wordlinedrivera/ram*100,3)) + "%"
-            
-            print "  Column Decoder".ljust(20) + str(round(ramcoldecode,3)).ljust(20) + str(round(ramcoldecode/ram*100,3)) + "%"
-            print "  Configurable Dec".ljust(20) + str(round(ramconfdecode,3)).ljust(20) + str(round(ramconfdecode/ram*100,3)) + "%"
-            print "  Output CrossBar".ljust(20) + str(round(ramoutputcbar,3)).ljust(20) + str(round(ramoutputcbar/ram*100,3)) + "%"
+            print_and_write(report_file, "  RAM AREA CONTRIBUTIONS")
+            print_and_write(report_file, "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of RAM tile area")
+            print_and_write(report_file, "  RAM".ljust(20) + str(round(ram,3)).ljust(20) + str(round(ram/ram*100,3)) + "%")
+            print_and_write(report_file, "  RAM Local Mux".ljust(20) + str(round(ramlocalmux,3)).ljust(20) + str(round(ramlocalmux/ram*100,3)) + "%")
+            print_and_write(report_file, "  Level Shifters".ljust(20) + str(round(levels,3)).ljust(20) + str(round(levels/ram*100,3)) + "%")
+            print_and_write(report_file, "  Decoder".ljust(20) + str(round(decod,3)).ljust(20) + str(round(decod/ram*100,3)) + "%")
+            print_and_write(report_file, "  WL driver".ljust(20) + str(round(wordlinedrivera,3)).ljust(20) + str(round(wordlinedrivera/ram*100,3)) + "%"            )
+            print_and_write(report_file, "  Column Decoder".ljust(20) + str(round(ramcoldecode,3)).ljust(20) + str(round(ramcoldecode/ram*100,3)) + "%")
+            print_and_write(report_file, "  Configurable Dec".ljust(20) + str(round(ramconfdecode,3)).ljust(20) + str(round(ramconfdecode/ram*100,3)) + "%")
+            print_and_write(report_file, "  Output CrossBar".ljust(20) + str(round(ramoutputcbar,3)).ljust(20) + str(round(ramoutputcbar/ram*100,3)) + "%")
             if fpga_inst.RAM.memory_technology == "SRAM":
-                print "  Precharge Total".ljust(20) + str(round(prechargetotal,3)).ljust(20) + str(round(prechargetotal/ram*100,3)) + "%"
-                print "  Write Drivers".ljust(20) + str(round(writedrivertotal,3)).ljust(20) + str(round(writedrivertotal/ram*100,3)) + "%"
-                print "  Sense Amp Total ".ljust(20) + str(round(samptotal,3)).ljust(20) + str(round(samptotal/ram*100,3)) + "%"
+                print_and_write(report_file, "  Precharge Total".ljust(20) + str(round(prechargetotal,3)).ljust(20) + str(round(prechargetotal/ram*100,3)) + "%")
+                print_and_write(report_file, "  Write Drivers".ljust(20) + str(round(writedrivertotal,3)).ljust(20) + str(round(writedrivertotal/ram*100,3)) + "%")
+                print_and_write(report_file, "  Sense Amp Total ".ljust(20) + str(round(samptotal,3)).ljust(20) + str(round(samptotal/ram*100,3)) + "%")
             else:
-                print "  Column selectors".ljust(20) + str(round(cstotal,3)).ljust(20) + str(round(cstotal/ram*100,3)) + "%"
-                print "  Write Drivers".ljust(20) + str(round(writedrivertotal,3)).ljust(20) + str(round(writedrivertotal/ram*100,3)) + "%"
-                print "  Sense Amp Total ".ljust(20) + str(round(samptotal,3)).ljust(20) + str(round(samptotal/ram*100,3)) + "%"
+                print_and_write(report_file, "  Column selectors".ljust(20) + str(round(cstotal,3)).ljust(20) + str(round(cstotal/ram*100,3)) + "%")
+                print_and_write(report_file, "  Write Drivers".ljust(20) + str(round(writedrivertotal,3)).ljust(20) + str(round(writedrivertotal/ram*100,3)) + "%")
+                print_and_write(report_file, "  Sense Amp Total ".ljust(20) + str(round(samptotal,3)).ljust(20) + str(round(samptotal/ram*100,3)) + "%")
 
-            print "  Memory Cells ".ljust(20) + str(round(memcells,3)).ljust(20) + str(round(memcells/ram*100,3)) + "%"
-            print "  RAM Routing".ljust(20) + str(round(ram_routing,3)).ljust(20) + str(round(ram_routing/ram*100,3)) + "%"
-            print "  RAM CB".ljust(20) + str(round(RAM_CB_TOTAL,3)).ljust(20) + str(round(RAM_CB_TOTAL/ram*100,3)) + "%"
-            print "  RAM SB".ljust(20) + str(round(RAM_SB_TOTAL,3)).ljust(20) + str(round(RAM_SB_TOTAL/ram*100,3)) + "%"
-
-        report_file.write( "  TILE AREA CONTRIBUTIONS\n")
-        report_file.write( "  -----------------------\n")
-        report_file.write( "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of total tile area\n")
-        report_file.write( "  Tile".ljust(20) + str(round(tile,3)).ljust(20) + "100%\n")
-        report_file.write( "  LUT".ljust(20) + str(round(lut,3)).ljust(20) + str(round(lut/tile*100,3)) + "%\n")
-        report_file.write( "  FF".ljust(20) + str(round(ff,3)).ljust(20) + str(round(ff/tile*100,3)) + "%\n")
-        report_file.write( "  BLE output".ljust(20) + str(round(ble_output,3)).ljust(20) + str(round(ble_output/tile*100,3)) + "%\n")
-        report_file.write( "  Local mux".ljust(20) + str(round(local_mux,3)).ljust(20) + str(round(local_mux/tile*100,3)) + "%\n")
-        report_file.write( "  Connection block".ljust(20) + str(round(cb,3)).ljust(20) + str(round(cb/tile*100,3)) + "%\n")
-        report_file.write( "  Switch block".ljust(20) + str(round(sb,3)).ljust(20) + str(round(sb/tile*100,3)) + "%\n")
-        report_file.write( "\n")
-        if fpga_inst.specs.enable_bram_block == 1:
-            report_file.write( "  RAM AREA CONTRIBUTIONS\n")
-            report_file.write( "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of RAM tile area\n")
-            report_file.write( "  RAM".ljust(20) + str(round(ram,3)).ljust(20) + str(round(ram/ram*100,3)) + "%\n")
-            report_file.write( "  RAM local mux".ljust(20) + str(round(ramlocalmux,3)).ljust(20) + str(round(ramlocalmux/ram*100,3)) + "%\n")
-            report_file.write( "  Level Shifters".ljust(20) + str(round(levels,3)).ljust(20) + str(round(levels/ram*100,3)) + "%\n")
-            report_file.write( "  Row Decoder".ljust(20) + str(round(decod,3)).ljust(20) + str(round(decod/ram*100,3)) + "%\n")
-            report_file.write( "  Columndecoder".ljust(20) + str(round(ramcoldecode,3)).ljust(20) + str(round(ramcoldecode/ram*100,3)) + "%\n")
-            report_file.write( "  WL driver".ljust(20) + str(round(wordlinedrivera,3)).ljust(20) + str(round(wordlinedrivera/ram*100,3)) + "%\n")
-            report_file.write( "  Configurable Dec".ljust(20) + str(round(ramconfdecode,3)).ljust(20) + str(round(ramconfdecode/ram*100,3)) + "%\n")
-            report_file.write( "  Output CrossBar".ljust(20) + str(round(ramoutputcbar,3)).ljust(20) + str(round(ramoutputcbar/ram*100,3)) + "%\n")
-            if fpga_inst.RAM.memory_technology == "SRAM":
-                report_file.write( "  Precharge Total".ljust(20) + str(round(prechargetotal,3)).ljust(20) + str(round(prechargetotal/ram*100,3)) + "%\n")
-                report_file.write( "  Write Drivers".ljust(20) + str(round(writedrivertotal,3)).ljust(20) + str(round(writedrivertotal/ram*100,3)) + "%\n")
-                report_file.write( "  Sense Amp Total ".ljust(20) + str(round(samptotal,3)).ljust(20) + str(round(samptotal/ram*100,3)) + "%\n")
-            else:
-                report_file.write( "  Column selectors".ljust(20) + str(round(cstotal,3)).ljust(20) + str(round(cstotal/ram*100,3)) + "%\n")
-                report_file.write( "  Write Drivers".ljust(20) + str(round(writedrivertotal,3)).ljust(20) + str(round(writedrivertotal/ram*100,3)) + "%\n")
-                report_file.write( "  Sense Amp Total ".ljust(20) + str(round(samptotal,3)).ljust(20) + str(round(samptotal/ram*100,3)) + "%\n")
-            report_file.write( "  Memory Cells ".ljust(20) + str(round(memcells,3)).ljust(20) + str(round(memcells/ram*100,3)) + "%\n")
-            report_file.write( "  RAM Routing".ljust(20) + str(round(ram_routing,3)).ljust(20) + str(round(ram_routing/ram*100,3)) + "%\n")
+            print_and_write(report_file, "  Memory Cells ".ljust(20) + str(round(memcells,3)).ljust(20) + str(round(memcells/ram*100,3)) + "%")
+            print_and_write(report_file, "  RAM Routing".ljust(20) + str(round(ram_routing,3)).ljust(20) + str(round(ram_routing/ram*100,3)) + "%")
+            print_and_write(report_file, "  RAM CB".ljust(20) + str(round(RAM_CB_TOTAL,3)).ljust(20) + str(round(RAM_CB_TOTAL/ram*100,3)) + "%")
+            print_and_write(report_file, "  RAM SB".ljust(20) + str(round(RAM_SB_TOTAL,3)).ljust(20) + str(round(RAM_SB_TOTAL/ram*100,3)) + "%")
      
 
 def print_vpr_delays(report_file, fpga_inst):
 
-    print "  VPR DELAYS"
-    print "  ----------"
-    print "  Path".ljust(50) + "Delay (ps)"
-    print "  Tdel (routing switch)".ljust(50) + str(fpga_inst.sb_mux.delay)
-    print "  T_ipin_cblock (connection block mux)".ljust(50) + str(fpga_inst.cb_mux.delay)
-    print "  CLB input -> BLE input (local CLB routing)".ljust(50) + str(fpga_inst.logic_cluster.local_mux.delay)
-    print "  LUT output -> BLE input (local feedback)".ljust(50) + str(fpga_inst.logic_cluster.ble.local_output.delay)
-    print "  LUT output -> CLB output (logic block output)".ljust(50) + str(fpga_inst.logic_cluster.ble.general_output.delay)
-
-    report_file.write( "  VPR DELAYS" + "\n")
-    report_file.write( "  ----------" + "\n")
-    report_file.write( "  Path".ljust(50) + "Delay (ps)" + "\n")
-    report_file.write( "  Tdel (routing switch)".ljust(50) + str(fpga_inst.sb_mux.delay) + "\n")
-    report_file.write( "  T_ipin_cblock (connection block mux)".ljust(50) + str(fpga_inst.cb_mux.delay) + "\n")
-    report_file.write( "  CLB input -> BLE input (local CLB routing)".ljust(50) + str(fpga_inst.logic_cluster.local_mux.delay) + "\n")
-    report_file.write( "  LUT output -> BLE input (local feedback)".ljust(50) + str(fpga_inst.logic_cluster.ble.local_output.delay) + "\n")
-    report_file.write( "  LUT output -> CLB output (logic block output)".ljust(50) + str(fpga_inst.logic_cluster.ble.general_output.delay) + "\n")
+    print_and_write(report_file, "  VPR DELAYS")
+    print_and_write(report_file, "  ----------")
+    print_and_write(report_file, "  Path".ljust(50) + "Delay (ps)")
+    print_and_write(report_file, "  Tdel (routing switch)".ljust(50) + str(fpga_inst.sb_mux.delay))
+    print_and_write(report_file, "  T_ipin_cblock (connection block mux)".ljust(50) + str(fpga_inst.cb_mux.delay))
+    print_and_write(report_file, "  CLB input -> BLE input (local CLB routing)".ljust(50) + str(fpga_inst.logic_cluster.local_mux.delay))
+    print_and_write(report_file, "  LUT output -> BLE input (local feedback)".ljust(50) + str(fpga_inst.logic_cluster.ble.local_output.delay))
+    print_and_write(report_file, "  LUT output -> CLB output (logic block output)".ljust(50) + str(fpga_inst.logic_cluster.ble.general_output.delay))
     
     # Figure out LUT delays
     lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
@@ -428,30 +397,20 @@ def print_vpr_delays(report_file, fpga_inst):
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
         driver_delay = max(lut_input.driver.delay, lut_input.not_driver.delay)
         path_delay = lut_input.delay
-        print ("  lut_" + input_name).ljust(50) + str(driver_delay+path_delay)
-        report_file.write( ("  lut_" + input_name).ljust(50) + str(driver_delay+path_delay) + "\n")
+        print_and_write(report_file, "  lut_" + input_name).ljust(50) + str(driver_delay+path_delay)
     
-    print ""
-    report_file.write( "\n")
+    print_and_write(report_file, "")
  
 
 def print_vpr_areas(report_file, fpga_inst):
 
-    print "  VPR AREAS"
-    print "  ----------"
-    print "  grid_logic_tile_area".ljust(50) + str(fpga_inst.area_dict["logic_cluster"]/fpga_inst.specs.min_width_tran_area)
-    print "  ipin_mux_trans_size (connection block mux)".ljust(50) + str(fpga_inst.area_dict["ipin_mux_trans_size"]/fpga_inst.specs.min_width_tran_area)
-    print "  mux_trans_size (routing switch)".ljust(50) + str(fpga_inst.area_dict["switch_mux_trans_size"]/fpga_inst.specs.min_width_tran_area)
-    print "  buf_size (routing switch)".ljust(50) + str(fpga_inst.area_dict["switch_buf_size"]/fpga_inst.specs.min_width_tran_area)
-    print ""
-
-    report_file.write( "  VPR AREAS" + "\n")
-    report_file.write( "  ----------" + "\n")
-    report_file.write( "  grid_logic_tile_area".ljust(50) + str(fpga_inst.area_dict["logic_cluster"]/fpga_inst.specs.min_width_tran_area) + "\n")
-    report_file.write( "  ipin_mux_trans_size (connection block mux)".ljust(50) + str(fpga_inst.area_dict["ipin_mux_trans_size"]/fpga_inst.specs.min_width_tran_area) + "\n")
-    report_file.write( "  mux_trans_size (routing switch)".ljust(50) + str(fpga_inst.area_dict["switch_mux_trans_size"]/fpga_inst.specs.min_width_tran_area) + "\n")
-    report_file.write( "  buf_size (routing switch)".ljust(50) + str(fpga_inst.area_dict["switch_buf_size"]/fpga_inst.specs.min_width_tran_area) + "\n")
-    report_file.write( "\n")
+    print_and_write(report_file, "  VPR AREAS")
+    print_and_write(report_file, "  ----------")
+    print_and_write(report_file, "  grid_logic_tile_area".ljust(50) + str(fpga_inst.area_dict["logic_cluster"]/fpga_inst.specs.min_width_tran_area))
+    print_and_write(report_file, "  ipin_mux_trans_size (connection block mux)".ljust(50) + str(fpga_inst.area_dict["ipin_mux_trans_size"]/fpga_inst.specs.min_width_tran_area))
+    print_and_write(report_file, "  mux_trans_size (routing switch)".ljust(50) + str(fpga_inst.area_dict["switch_mux_trans_size"]/fpga_inst.specs.min_width_tran_area))
+    print_and_write(report_file, "  buf_size (routing switch)".ljust(50) + str(fpga_inst.area_dict["switch_buf_size"]/fpga_inst.specs.min_width_tran_area))
+    print_and_write(report_file, "")
 
     
 def load_arch_params(filename):
@@ -939,74 +898,47 @@ def print_error(value, argument, filename):
 def print_architecture_params(arch_params_dict, report_file_path):
 
     report_file = open(report_file_path, 'a')
-    print "ARCHITECTURE PARAMETERS:"
-    report_file.write("ARCHITECTURE PARAMETERS:\n")
-    print "Number of BLEs per cluster (N): " + str(arch_params_dict['N'])
-    print "LUT size (K): " + str(arch_params_dict['K'])
-    if arch_params_dict['use_fluts'] == True:
-        print "LUT fracturability level: 1"
-        print "Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut'])
-    print "Channel width (W): " + str(arch_params_dict['W'])
-    print "Wire segment length (L): " + str(arch_params_dict['L'])
-    print "Number of cluster inputs (I): " + str(arch_params_dict['I'])
-    print "Number of BLE outputs to general routing (Or): " + str(arch_params_dict['Or'])
-    print "Number of BLE outputs to local routing (Ofb): " + str(arch_params_dict['Ofb'])
-    print "Total number of cluster outputs (N*Or): " + str(arch_params_dict['N']*arch_params_dict['Or'])
-    print "Switch block flexibility (Fs): " + str(arch_params_dict['Fs'])
-    print "Cluster input flexibility (Fcin): " + str(arch_params_dict['Fcin'])
-    print "Cluster output flexibility (Fcout): " + str(arch_params_dict['Fcout'])
-    print "Local MUX population (Fclocal): " + str(arch_params_dict['Fclocal'])
-    print "LUT input for register selection MUX (Rsel): " + str(arch_params_dict['Rsel'])
-    print "LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb'])
-    print ""
-    report_file.write("Number of BLEs per cluster (N): " + str(arch_params_dict['N']) + "\n")
-    report_file.write("LUT size (K): " + str(arch_params_dict['K']) + "\n")
-    if arch_params_dict['use_fluts'] == True:
-        report_file.write("LUT fracturability level: 1" + "\n")
-        report_file.write("Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut']) + "\n")
-    report_file.write("Channel width (W): " + str(arch_params_dict['W']) + "\n")
-    report_file.write("Wire segment length (L): " + str(arch_params_dict['L']) + "\n")
-    report_file.write("Number of cluster inputs (I): " + str(arch_params_dict['I']) + "\n")
-    report_file.write("Number of BLE outputs to general routing (Or): " + str(arch_params_dict['Or']) + "\n")
-    report_file.write("Number of BLE outputs to local routing (Ofb): " + str(arch_params_dict['Ofb']) + "\n")
-    report_file.write("Total number of cluster outputs (N*Or): " + str(arch_params_dict['N']*arch_params_dict['Or']) + "\n")
-    report_file.write("Switch block flexibility (Fs): " + str(arch_params_dict['Fs']) + "\n")
-    report_file.write("Cluster input flexibility (Fcin): " + str(arch_params_dict['Fcin']) + "\n")
-    report_file.write("Cluster output flexibility (Fcout): " + str(arch_params_dict['Fcout']) + "\n")
-    report_file.write("Local MUX population (Fclocal): " + str(arch_params_dict['Fclocal']) + "\n")
-    report_file.write("LUT input for register selection MUX (Rsel): " + str(arch_params_dict['Rsel']) + "\n")
-    report_file.write("LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb']) + "\n")
 
-    report_file.write("\n")
 
-    print "PROCESS TECHNOLOGY PARAMETERS:"
-    report_file.write("PROCESS TECHNOLOGY PARAMETERS:\n")
-    print "transistor_type = " + arch_params_dict['transistor_type']
-    print "switch_type = " + arch_params_dict['switch_type']
-    print "vdd = " + str( arch_params_dict['vdd'])
-    print "vsram = " + str( arch_params_dict['vsram']) 
-    print "vsram_n = " + str( arch_params_dict['vsram_n']) 
-    print "gate_length = " + str( arch_params_dict['gate_length'])
-    print "min_tran_width = " + str( arch_params_dict['min_tran_width']) 
-    print "min_width_tran_area = " + str( arch_params_dict['min_width_tran_area']) 
-    print "sram_cell_area = " + str( arch_params_dict['sram_cell_area']) 
-    print "model_path = " + str( arch_params_dict['model_path']) 
-    print "model_library = " + str( arch_params_dict['model_library']) 
-    print "metal = " + str( arch_params_dict['metal']) 
-    print ""
-    report_file.write("transistor_type = " + arch_params_dict['transistor_type'] + "\n")
-    report_file.write("switch_type = " + arch_params_dict['switch_type'] + "\n")
-    report_file.write("vdd = " + str( arch_params_dict['vdd']) + "\n")
-    report_file.write("vsram = " + str( arch_params_dict['vsram']) + "\n")
-    report_file.write("vsram_n = " + str( arch_params_dict['vsram_n']) + "\n")
-    report_file.write("gate_length = " + str( arch_params_dict['gate_length']) + "\n")
-    report_file.write("min_tran_width = " + str( arch_params_dict['min_tran_width']) + "\n")
-    report_file.write("min_width_tran_area = " + str( arch_params_dict['min_width_tran_area']) + "\n")
-    report_file.write("sram_cell_area = " + str( arch_params_dict['sram_cell_area']) + "\n")
-    report_file.write("model_path = " + str( arch_params_dict['model_path']) + "\n")
-    report_file.write("model_library = " + str( arch_params_dict['model_library']) + "\n")
-    report_file.write("metal = " + str( arch_params_dict['metal']) + "\n")
-    report_file.write("\n")
+    print_and_write(report_file, "ARCHITECTURE PARAMETERS:")
+
+
+    print_and_write(report_file, "Number of BLEs per cluster (N): " + str(arch_params_dict['N']))
+    print_and_write(report_file, "LUT size (K): " + str(arch_params_dict['K']))
+
+    if arch_params_dict['use_fluts'] == True:
+        print_and_write(report_file, "LUT fracturability level: 1")
+        print_and_write(report_file, "Number of adder bits per ALM: " + str(arch_params_dict['FAs_per_flut']))
+
+    print_and_write(report_file, "Channel width (W): " + str(arch_params_dict['W']))
+    print_and_write(report_file, "Wire segment length (L): " + str(arch_params_dict['L']))
+    print_and_write(report_file, "Number of cluster inputs (I): " + str(arch_params_dict['I']))
+    print_and_write(report_file, "Number of BLE outputs to general routing (Or): " + str(arch_params_dict['Or']))
+    print_and_write(report_file, "Number of BLE outputs to local routing (Ofb): " + str(arch_params_dict['Ofb']))
+    print_and_write(report_file, "Total number of cluster outputs (N*Or): " + str(arch_params_dict['N']*arch_params_dict['Or']))
+    print_and_write(report_file, "Switch block flexibility (Fs): " + str(arch_params_dict['Fs']))
+    print_and_write(report_file, "Cluster input flexibility (Fcin): " + str(arch_params_dict['Fcin']))
+    print_and_write(report_file, "Cluster output flexibility (Fcout): " + str(arch_params_dict['Fcout']))
+    print_and_write(report_file, "Local MUX population (Fclocal): " + str(arch_params_dict['Fclocal']))
+    print_and_write(report_file, "LUT input for register selection MUX (Rsel): " + str(arch_params_dict['Rsel']))
+    print_and_write(report_file, "LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb']))
+    print_and_write(report_file, "")
+    
+
+    print_and_write(report_file, "PROCESS TECHNOLOGY PARAMETERS:")
+    print_and_write(report_file, "transistor_type = " + arch_params_dict['transistor_type'])
+    print_and_write(report_file, "switch_type = " + arch_params_dict['switch_type'])
+    print_and_write(report_file, "vdd = " + str( arch_params_dict['vdd']))
+    print_and_write(report_file, "vsram = " + str( arch_params_dict['vsram']) )
+    print_and_write(report_file, "vsram_n = " + str( arch_params_dict['vsram_n']) )
+    print_and_write(report_file, "gate_length = " + str( arch_params_dict['gate_length']))
+    print_and_write(report_file, "min_tran_width = " + str( arch_params_dict['min_tran_width']) )
+    print_and_write(report_file, "min_width_tran_area = " + str( arch_params_dict['min_width_tran_area']) )
+    print_and_write(report_file, "sram_cell_area = " + str( arch_params_dict['sram_cell_area']) )
+    print_and_write(report_file, "model_path = " + str( arch_params_dict['model_path']) )
+    print_and_write(report_file, "model_library = " + str( arch_params_dict['model_library']) )
+    print_and_write(report_file, "metal = " + str( arch_params_dict['metal']) )
+    print_and_write(report_file, "")
 
     report_file.close()
 
@@ -1062,3 +994,14 @@ def check_for_time():
         now = datetime.datetime.now()
         if not ((now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30)):
             print("Execution is resumed")
+
+def print_and_write(file, string):
+    """
+    This function takes a file name and a string, it prints the string to the 
+    terminal and writes it to the file. Since this sequence is repeated a lot
+    in the code this function is added to remove some redundent code. 
+    Note: the file should be open for writing before calling this function
+    """
+    #TODO: check if the file is already open or not
+    print(string)
+    file.write(string + "\n")
