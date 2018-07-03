@@ -95,8 +95,7 @@ def print_area_and_delay(report_file, fpga_inst):
         print_and_write(report_file, "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + 
             str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22))
 
-    # Carry chain
-    
+    # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
         #carry path
         print_and_write(report_file, "  " + (fpga_inst.carrychain.name).ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + 
@@ -141,6 +140,7 @@ def print_area_and_delay(report_file, fpga_inst):
         print_and_write(report_file, "  mux " + str(hardblock.parameters['name']).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + 
             str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + 
             str(hardblock.mux.power/1e-6).ljust(22))
+
         
     # Connection block mux
     print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
@@ -154,10 +154,8 @@ def print_area_and_delay(report_file, fpga_inst):
     
 
     if fpga_inst.specs.enable_bram_block == 0:
-        report_file.write( "\n" )
-        return
-
-    
+        print_and_write(report_file, "\n")
+        return 
 
 
     # RAM
@@ -259,7 +257,7 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  Level Shifter".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + 
         str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22))
 
-    report_file.write( "\n" )
+    print_and_write(report_file, "\n")
 
 
 def print_power(report_file, fpga_inst):
@@ -397,7 +395,7 @@ def print_vpr_delays(report_file, fpga_inst):
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
         driver_delay = max(lut_input.driver.delay, lut_input.not_driver.delay)
         path_delay = lut_input.delay
-        print_and_write(report_file, "  lut_" + input_name).ljust(50) + str(driver_delay+path_delay)
+        print_and_write(report_file, ("  lut_" + input_name).ljust(50) + str(driver_delay+path_delay))
     
     print_and_write(report_file, "")
  
@@ -979,6 +977,7 @@ def extract_initial_tran_size(filename, use_tgate):
     sizes_file.close()
     return  transistor_sizes
 
+
 def check_for_time():
     """ This finction should be used before each call for HSPICE it checks
         if the time is between 2:30 a.m and 3:30 a.m. since during this time
@@ -987,13 +986,27 @@ def check_for_time():
         a machine that doesn't have this problem you can comment this function 
         in the code """
     now = datetime.datetime.now()
+    if (now.hour == 2 or now.hour == 3):
+        print "-----------------------------------------------------------------"
+        print "            Entered the check for time function                  "
+        print "-----------------------------------------------------------------"
+        print ""
+        print "\tTime is: " + str(now.hour) + ":" + str(now.minute)
+        print ""
+
     while (now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30):
     #while (now.minute >= 20) and (now.minute < 25):
-        print("I'm sleeping")
+        print("\tI'm sleeping")
         time.sleep(60)
         now = datetime.datetime.now()
         if not ((now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30)):
-            print("Execution is resumed")
+            print("\tExecution is resumed")
+
+    if (now.hour == 2 or now.hour == 3):        
+        print "-----------------------------------------------------------------"
+        print "            Exiting the check for time function                  "
+        print "-----------------------------------------------------------------"
+        print ""         
 
 def print_and_write(file, string):
     """

@@ -6033,6 +6033,7 @@ class FPGA:
             self.wire_rc_dict[wire] = (resistance, capacitance)     
 
 
+    #TODO: break this into different functions or form a loop out of it; it's too long
     def update_delays(self, spice_interface):
         """ 
         Get the HSPICE delays for each subcircuit. 

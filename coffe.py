@@ -49,6 +49,8 @@ print "Man is a tool-using animal."
 print "Without tools he is nothing, with tools he is all."
 print "                           - Thomas Carlyle\n\n"
 
+# TODO: see the effect on disabling floorplanning on results and runtime
+# if it is worth it we could add an argument which could disable floorplanning
 # Parse the input arguments with argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('arch_description')
@@ -306,15 +308,27 @@ if is_size_transistors:
                                       delay_opt_weight, 
                                       spice_interface)    
 else:
-  fpga_inst.update_delays(spice_interface)
-  fpga_inst.update_area()
+  # in case of disabeling floorplanning there is no need to 
+  # update delays before updating area. Tried both ways and 
+  # they give exactly the same results
+  #fpga_inst.update_delays(spice_interface)
+
+  # same thing here no need to update area before calculating 
+  # the lb_height value. Also tested and gave same results
+  #fpga_inst.update_area()
   fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
   fpga_inst.update_area()
   fpga_inst.compute_distance()
   fpga_inst.update_wires()
   fpga_inst.update_wire_rc()
-  fpga_inst.determine_height()
+
+  # commented this part to avoid doing floorplannig for
+  # a non-sizing run
+  #fpga_inst.determine_height()
+
   fpga_inst.update_delays(spice_interface)
+
+
 
 # Obtain Memory core power
 if enable_bram_module == 1:
@@ -323,17 +337,18 @@ if enable_bram_module == 1:
 # Go back to the base directory
 os.chdir(default_dir)
 
-print str(fpga_inst.dict_real_widths["sb_sram"])
-print str(fpga_inst.dict_real_widths["sb"])
-print str(fpga_inst.dict_real_widths["cb_sram"])
-print str(fpga_inst.dict_real_widths["cb"])
-print str(fpga_inst.dict_real_widths["ic_sram"])
-print str(fpga_inst.dict_real_widths["ic"])
-print str(fpga_inst.dict_real_widths["lut_sram"])
-print str(fpga_inst.dict_real_widths["lut"])
-print str(fpga_inst.dict_real_widths["cc"])
-print str(fpga_inst.dict_real_widths["ffble"])
-print str(fpga_inst.lb_height)
+
+#print str(fpga_inst.dict_real_widths["sb_sram"])
+#print str(fpga_inst.dict_real_widths["sb"])
+#print str(fpga_inst.dict_real_widths["cb_sram"])
+#print str(fpga_inst.dict_real_widths["cb"])
+#print str(fpga_inst.dict_real_widths["ic_sram"])
+#print str(fpga_inst.dict_real_widths["ic"])
+#print str(fpga_inst.dict_real_widths["lut_sram"])
+#print str(fpga_inst.dict_real_widths["lut"])
+#print str(fpga_inst.dict_real_widths["cc"])
+#print str(fpga_inst.dict_real_widths["ffble"])
+#print str(fpga_inst.lb_height)
 
 
 # Print out final COFFE report to file

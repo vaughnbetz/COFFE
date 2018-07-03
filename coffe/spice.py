@@ -148,6 +148,7 @@ class SpiceInterface(object):
         saved_cwd = os.getcwd()
         os.chdir(sp_dir)
          
+        # Creat an output file having the ending .lis
         # Run the SPICE simulation and capture output
         output_filename = sp_filename.rstrip(".sp") + ".lis"
         output_file = open(output_filename, "w")
@@ -155,32 +156,43 @@ class SpiceInterface(object):
         hspice_success = False
         hspice_runs = 0
 
-        # there are many cases when then hspice similation will fail
-        # most often, it is because the input file is incorrect (which would be a bug with in COFFE)
-        # or hpice fails to checheck out the license, assuming the license exists, it is likely due
-        # to many instances checking out the license at the same time. In this case, we check if the
-        # ".mt0" exists, if not, we run hspice again. After we read the results, we delete it to make
-        # sure we are not reading previous results
-        while ( not hspice_success) :
+        # HSPICE simulations might fail for some reasons:
+        # 1- The input file is incorrect, which would be a bug within COFFE.
+        # 2- HSPICE fails to checheck out the license, assuming the license exists, it is likely due
+        #    to many instances checking out the license at the same time or license going down temporarly. 
+        #    In this case, we check if the ".mt0" exists, if not, we run hspice again. 
+        while (not hspice_success) :
             utils.check_for_time()
             subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
-            output_file.close()
+
+            # how come this file is closed here, it should be closed only if there is a success
+            # since else the call process will write in a closed file
+            ##output_file.close()
              
-            # Read spice measurements
+            # HSPICE should print the measurements in a file having the same
+            # name as the output file with .mt0 ending
             mt0_path = output_filename.replace(".lis", ".mt0")
+
             # check that the ".mt0" file is there
             if os.path.isfile(mt0_path) :
+                # store the measurments in a dictionary
                 spice_measurements = self.parse_mt0(mt0_path)
+                # delete results file to avoid confusion in future runs
                 os.remove(mt0_path)
                 hspice_success = True
-            # something else is likely to be the problem
+                output_file.close()
+            # HSPICE failed to run
             else :
                 hspice_runs = hspice_runs + 1
                 if hspice_runs > 10 :
-                    print "***hspice failed to run***"
+                    print "----------------------------------------------------------"
+                    print "                  HSPICE failed to run                    "
+                    print "----------------------------------------------------------"
+                    print ""
                     exit(2)
   
-        # Update simulation counter
+        # Update simulation counter with the number of simulations done by 
+        # adding the length of the list of parameter values inside the dictionary
         self.simulation_counter += len(parameter_dict.itervalues().next())
 
         # Return to saved cwd
