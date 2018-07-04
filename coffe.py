@@ -137,13 +137,7 @@ sys.stdout.flush()
 # Size FPGA transistors
 if is_size_transistors:
     # TODO: pass the args object instead of passing all its memebers
-    tran_sizing.size_fpga_transistors(fpga_inst, 
-                                      args.opt_type, 
-                                      args.re_erf, 
-                                      args.max_iterations, 
-                                      args.area_opt_weight, 
-                                      args.delay_opt_weight, 
-                                      spice_interface)    
+    tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
 else:
   # in case of disabeling floorplanning there is no need to 
   # update delays before updating area. Tried both ways and 

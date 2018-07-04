@@ -2147,22 +2147,17 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 	return False, 0
 
 	
-def size_fpga_transistors(fpga_inst, 
-						  opt_type, 
-						  re_erf, 
-						  max_iterations, 
-						  area_opt_weight, 
-						  delay_opt_weight, 
-						  spice_interface):
+def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	""" Size FPGA transistors. 
 	
 		Inputs: fpga_inst - fpga object instance
-				opt_type - optimization type (global or local)
-				re_erf - number of sizing combos to re-erf
-				max_iterations - maximum number of 'FPGA sizing iterations' (see [1])
-				area_opt_weight - the 'b' in (cost = area^b * delay^c)
-				delay_opt_weight - the 'c' in (cost = area^b * delay^c)
-				num_hspice_sims - a counter that is incremented for every HSPICE simulation performed
+				run_options which include:
+					opt_type         - optimization type (global or local)
+					re_erf           - number of sizing combos to re-erf
+					max_iterations   - maximum number of 'FPGA sizing iterations' (see [1])
+					area_opt_weight  - the 'b' in (cost = area^b * delay^c)
+					delay_opt_weight - the 'c' in (cost = area^b * delay^c)
+				spice_interface - an object that is used to run HSPICE and parse its outputs
 		
 		One 'FPGA sizing iteration' means sizing each subcircuits once.
 		We perform multiple sizing iterations. Stopping criteria is that
@@ -2183,6 +2178,13 @@ def size_fpga_transistors(fpga_inst,
 		[1] C. Chiasson and V.Betz, "COFFE: Fully-Automated Transistor Sizing for FPGAs", FPT2013
 		
 		"""
+
+
+	opt_type  = run_options.opt_type 
+	re_erf = run_options.re_erf
+	max_iterations  = run_options.max_iterations 
+	area_opt_weight  = run_options.area_opt_weight 
+	delay_opt_weight = run_options.delay_opt_weight
    
 	# Create results folder if it doesn't exist
 	if not os.path.exists("sizing_results"):
@@ -2238,7 +2240,7 @@ def size_fpga_transistors(fpga_inst,
 		fpga_inst.update_wire_rc()
 		fpga_inst.determine_height()
 		fpga_inst.update_area()
-		fpga_inst.compute_distance()
+		fpga_inst.compute_distance()	
 		fpga_inst.update_wires()
 		fpga_inst.update_wire_rc()
 		fpga_inst.update_delays(spice_interface)
