@@ -534,12 +534,21 @@ def load_arch_params(filename):
         elif param == 'number_of_banks':
             arch_params['number_of_banks'] = int(value)
         elif param == 'conf_decoder_bits':
-            arch_params['conf_decoder_bits'] = int(value)  
+            arch_params['conf_decoder_bits'] = int(value) 
+
         #process technology parameters
         elif param == 'transistor_type':
             arch_params['transistor_type'] = value
-        elif param == 'switch_type':
-            arch_params['switch_type'] = value
+            if value == 'finfet':
+                arch_params['use_finfet'] = True
+            else:
+                arch_params['use_finfet'] = False
+        elif param == 'switch_type':  
+            arch_params['switch_type'] = value        
+            if value == 'transmission_gate':
+                arch_params['use_tgate'] = True
+            else:
+                arch_params['use_tgate'] = False
         elif param == 'memory_technology':
             arch_params['memory_technology'] = value
         elif param == 'vdd':
@@ -883,7 +892,10 @@ def check_arch_params (arch_params, filename):
     if arch_params['sram_cell_area'] <= 0 :
         print_error (str(arch_params['sram_cell_area']), "sram_cell_area", filename)
     if arch_params['trans_diffusion_length'] <= 0 :
-        print_error (str(arch_params['trans_diffusion_length']), "trans_diffusion_length", filename)           
+        print_error (str(arch_params['trans_diffusion_length']), "trans_diffusion_length", filename)  
+    if arch_params['enable_bram_module'] == 1 and arch_params['use_finfet'] == True:
+        print "finfet and BRAM simulations are not compatible"
+        sys.exit()             
 
     return
 
@@ -1014,7 +1026,25 @@ def extract_initial_tran_size(filename, use_tgate):
         transistor_sizes[trans] = float(size)
 
     sizes_file.close()
+
     return  transistor_sizes
+
+
+def use_initial_tran_size(initial_sizes, fpga_inst, tran_sizing, use_tgate):
+
+    print "Extracting initial transistor sizes from: " + initial_sizes
+    initial_tran_size = extract_initial_tran_size(initial_sizes, use_tgate)
+    print "Setting transistor sizes to extracted values"
+    tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
+    for tran in initial_tran_size :
+        fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
+    print "Re-calculating area..."
+    fpga_inst.update_area()
+    print "Re-calculating wire lengths..."
+    fpga_inst.update_wires()
+    print "Re-calculating resistance and capacitance..."
+    fpga_inst.update_wire_rc()
+    print ""
 
 
 def check_for_time():
