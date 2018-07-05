@@ -1,0 +1,44 @@
+***** HSPICE  --  A-2007.09  32-BIT    (Aug 28 2007) 19:56:27 06/22/2018 linux
+ Input File: lut_c_driver.sp
+ lic: No 'setenv LM_LICENSE_FILE' in current environment'
+ lic:
+ lic: FLEXlm: v8.5b
+ lic: USER:   eldafraw             HOSTNAME: flames.eecg
+ lic: HOSTID: 00145e558a3e         PID:      7965
+ lic: Using FLEXlm license file:
+ lic: 7053@u10e.vrg.utoronto.ca
+ lic: Checkout 1 hspice;  Encryption code: 7E5BF1FD085CE06A1286
+ lic: License/Maintenance for hspice will expire on 27-aug-2018/2017.03
+ lic: 2(in_use)/500(total) FLOATING license(s) on SERVER u10e.vrg.utoronto.ca
+ lic:
+ Init: hspice initialization file: /CMC/tools/synopsys/hspice_2007.09/hspice/hsp
+ init: begin read circuit files,  cpu clock=  2.00E-02
+       option brief    =     1.00
+ init: end read circuit files,  cpu clock=  4.00E-02 memory=    811 kb
+ init: begin check errors,  cpu clock=  4.00E-02
+ init: end check errors,  cpu clock=  8.00E-02 memory=   1835 kb
+ init: begin setup matrix, pivot=    10 cpu clock=  8.00E-02
+       establish matrix -- done,  cpu clock=  8.00E-02 memory=   1997 kb
+       re-order matrix -- done,  cpu clock=  8.00E-02 memory=   2052 kb
+ init: end setup matrix,  cpu clock=  8.00E-02 memory=   2235 kb
+ data: data=sweep_data      w269           }=    1.22E-17
+ dcop: begin dcop,  cpu clock=  8.00E-02
+ dcop: begin pseudo transient
+ dcop: ...succeeded
+ dcop: end pseudo transient
+ dcop: end dcop,  cpu clock=  7.00E-01 memory=   2240 kb  tot_iter=     453
+ sweep: tran tran1    begin, stop_t=  4.00E-09 #sweeps=4001 cpu clock=  7.00E-01
+ tran: time= 4.28297E-10 tot_iter=     122   conv_iter=      43
+ tran: time= 9.39754E-10 tot_iter=     132   conv_iter=      48
+ tran: time= 1.33975E-09 tot_iter=     136   conv_iter=      50
+ tran: time= 1.73975E-09 tot_iter=     140   conv_iter=      52
+ tran: time= 2.00100E-09 tot_iter=     144   conv_iter=      54
+ tran: time= 2.40559E-09 tot_iter=     329   conv_iter=     117
+ tran: time= 2.90713E-09 tot_iter=     345   conv_iter=     125
+ tran: time= 3.28122E-09 tot_iter=     349   conv_iter=     127
+ tran: time= 3.68122E-09 tot_iter=     353   conv_iter=     129
+ tran: time= 4.00000E-09 tot_iter=     357   conv_iter=     131
+ sweep: tran tran1    end,  cpu clock=  1.02E+00 memory=   2240 kb
+>info:         ***** hspice job concluded
+ Init: hspice initialization file: /CMC/tools/synopsys/hspice_2007.09/hspice/hsp
+ lic: Release hspice token(s)

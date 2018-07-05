@@ -93,62 +93,75 @@ use_lp_transistor = 1
 class _Specs:
     """ General FPGA specs. """
  
-    def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                    vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
-                     use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
-                     memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                     enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
-        self.N = N
-        self.K = K
-        self.W = W
-        self.L = L
-        self.I = I
-        self.Fs = Fs
-        self.Fcin = Fcin
-        self.Fcout = Fcout
-        self.Fclocal = Fclocal
-        self.num_ble_general_outputs = Or
-        self.num_ble_local_outputs = Ofb
-        self.num_cluster_outputs = N*Or
-        self.Rsel = Rsel
-        self.Rfb = Rfb
-        self.vdd = vdd
-        self.vsram = vsram
-        self.vsram_n = vsram_n
-        self.gate_length = gate_length
-        self.min_tran_width = min_tran_width
-        self.min_width_tran_area = min_width_tran_area
-        self.sram_cell_area = sram_cell_area
-        self.trans_diffusion_length = trans_diffusion_length
-        self.model_path = model_path
-        self.model_library = model_library
-        self.use_finfet = use_finfet
-        self.rest_length_factor = rest_length_factor
-        self.row_decoder_bits = row_decoder_bits
-        self.col_decoder_bits = col_decoder_bits
-        self.conf_decoder_bits = conf_decoder_bits
-        self.sense_dv = sense_dv
-        self.worst_read_current = worst_read_current
-        self.quick_mode_threshold = quick_mode_threshold
-        self.vdd_low_power = vdd_low_power
-        self.vref = vref
-        self.number_of_banks = number_of_banks
-        self.memory_technology = memory_technology
-        self.SRAM_nominal_current = SRAM_nominal_current
-        self.MTJ_Rlow_nominal = MTJ_Rlow_nominal
-        self.MTJ_Rlow_worstcase = MTJ_Rlow_worstcase
-        self.MTJ_Rhigh_worstcase = MTJ_Rhigh_worstcase
-        self.MTJ_Rhigh_nominal = MTJ_Rhigh_nominal
-        self.vclmp = vclmp
-        self.read_to_write_ratio = read_to_write_ratio
-        self.enable_bram_block = enable_bram_block
-        self.ram_local_mux_size = ram_local_mux_size
-        self.use_fluts = use_fluts
-        self.independent_inputs = independent_inputs
-        self.enable_carry_chain = enable_carry_chain
-        self.carry_chain_type = carry_chain_type
-        self.FAs_per_flut = FAs_per_flut
+    def __init__(self, arch_params_dict, quick_mode_threshold):
+                     #N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
+                     #vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
+                     #use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
+                     #memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
+                     #enable_bram_block, ram_local_mux_size, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
+        
+        # FPGA architecture specs
+        self.N                       = arch_params_dict['N']
+        self.K                       = arch_params_dict['K']
+        self.W                       = arch_params_dict['W']
+        self.L                       = arch_params_dict['L']
+        self.I                       = arch_params_dict['I']
+        self.Fs                      = arch_params_dict['Fs']
+        self.Fcin                    = arch_params_dict['Fcin']
+        self.Fcout                   = arch_params_dict['Fcout']
+        self.Fclocal                 = arch_params_dict['Fclocal']
+        self.num_ble_general_outputs = arch_params_dict['Or']
+        self.num_ble_local_outputs   = arch_params_dict['Ofb']
+        self.num_cluster_outputs     = self.N*self.num_ble_general_outputs
+        self.Rsel                    = arch_params_dict['Rsel']
+        self.Rfb                     = arch_params_dict['Rfb']
+        self.use_fluts               = arch_params_dict['use_fluts']
+        self.independent_inputs      = arch_params_dict['independent_inputs']
+        self.enable_carry_chain      = arch_params_dict['enable_carry_chain']
+        self.carry_chain_type        = arch_params_dict['carry_chain_type']
+        self.FAs_per_flut            = arch_params_dict['FAs_per_flut']
 
+
+        # BRAM specs
+        self.row_decoder_bits     = arch_params_dict['row_decoder_bits']
+        self.col_decoder_bits     = arch_params_dict['col_decoder_bits']
+        self.conf_decoder_bits    = arch_params_dict['conf_decoder_bits']
+        self.sense_dv             = arch_params_dict['sense_dv']
+        self.worst_read_current   = arch_params_dict['worst_read_current']
+        self.quick_mode_threshold = quick_mode_threshold
+        self.vdd_low_power        = arch_params_dict['vdd_low_power']
+        self.vref                 = arch_params_dict['vref']
+        self.number_of_banks      = arch_params_dict['number_of_banks']
+        self.memory_technology    = arch_params_dict['memory_technology']
+        self.SRAM_nominal_current = arch_params_dict['SRAM_nominal_current']
+        self.MTJ_Rlow_nominal     = arch_params_dict['MTJ_Rlow_nominal']
+        self.MTJ_Rlow_worstcase   = arch_params_dict['MTJ_Rlow_worstcase']
+        self.MTJ_Rhigh_worstcase  = arch_params_dict['MTJ_Rhigh_worstcase']
+        self.MTJ_Rhigh_nominal    = arch_params_dict['MTJ_Rhigh_nominal']
+        self.vclmp                = arch_params_dict['vclmp']
+        self.read_to_write_ratio  = arch_params_dict['read_to_write_ratio']
+        self.enable_bram_block    = arch_params_dict['enable_bram_module']
+        self.ram_local_mux_size   = arch_params_dict['ram_local_mux_size']
+
+
+        # Technology specs
+        self.vdd                    = arch_params_dict['vdd']
+        self.vsram                  = arch_params_dict['vsram']
+        self.vsram_n                = arch_params_dict['vsram_n']
+        self.gate_length            = arch_params_dict['gate_length']
+        self.min_tran_width         = arch_params_dict['min_tran_width']
+        self.min_width_tran_area    = arch_params_dict['min_width_tran_area']
+        self.sram_cell_area         = arch_params_dict['sram_cell_area']
+        self.trans_diffusion_length = arch_params_dict['trans_diffusion_length']
+        self.metal_stack            = arch_params_dict['metal']
+        self.model_path             = arch_params_dict['model_path']
+        self.model_library          = arch_params_dict['model_library']
+        self.rest_length_factor     = arch_params_dict['rest_length_factor']
+        self.hb_files               = arch_params_dict['hb_files']
+        self.use_tgate              = arch_params_dict['use_tgate']
+        self.use_finfet             = arch_params_dict['use_finfet']
+
+        
         
 class _SizableCircuit:
     """ This is a base class used to identify FPGA circuits that can be sized (e.g. transistor sizing on lut)
@@ -347,27 +360,16 @@ class _SwitchBlockMUX(_SizableCircuit):
     def print_details(self, report_file):
         """ Print switch block details """
 
-        print "  SWITCH BLOCK DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
- 
-        report_file.write( "  SWITCH BLOCK DETAILS:" + "\n") 
-        report_file.write( "  Style: two-level MUX" + "\n") 
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n") 
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n") 
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n") 
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n") 
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n") 
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n") 
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n") 
-        report_file.write( "" + "\n") 
+        utils.print_and_write(report_file, "  SWITCH BLOCK DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
 
 
 class _ConnectionBlockMUX(_SizableCircuit):
@@ -490,28 +492,17 @@ class _ConnectionBlockMUX(_SizableCircuit):
    
     def print_details(self, report_file):
         """ Print connection block details """
-        
-        print "  CONNECTION BLOCK DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
 
-        report_file.write( "  CONNECTION BLOCK DETAILS:" + "\n" )
-        report_file.write( "  Style: two-level MUX" + "\n" )
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n" )
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n" )
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n" )
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n" )
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n" )
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n" )
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n" )
-        report_file.write( "" + "\n" )
+        utils.print_and_write(report_file, "  CONNECTION BLOCK DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
         
         
 class _LocalMUX(_SizableCircuit):
@@ -622,29 +613,18 @@ class _LocalMUX(_SizableCircuit):
    
     def print_details(self, report_file):
         """ Print local mux details """
-        
-        print "  LOCAL MUX DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
-
-        report_file.write( "  LOCAL MUX DETAILS:" + "\n" )
-        report_file.write( "  Style: two-level MUX" + "\n" )
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n" )
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n" )
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n" )
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n" )
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n" )
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n" )
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n" )
-        report_file.write( "" + "\n" )
     
+        utils.print_and_write(report_file, "  LOCAL MUX DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
+
 
 class _LUTInputDriver(_SizableCircuit):
     """ LUT input driver class. LUT input drivers can optionally support register feedback.
@@ -857,13 +837,14 @@ class _LUTInputNotDriver(_SizableCircuit):
     
 
 class _LUTInput(_CompoundCircuit):
-    """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). """
+    """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). 
+        The muxing on the LUT input is defined here """
 
     def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate, use_fluts):
         # Subcircuit name (should be driver letter like a, b, c...)
         self.name = name
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
-        # In addition, the input can (optionally) drive the register select circuitry: 'default_rsel' or 'reg_fb_rsel'
+        # In addition, the input can (optionally) drive the register input 'default_rsel' or do both 'reg_fb_rsel'
         # Therefore, there are 4 different types, which are controlled by Rsel and Rfb
         if name in Rfb:
             if Rsel == name:
@@ -935,9 +916,7 @@ class _LUTInput(_CompoundCircuit):
     def print_details(self, report_file):
         """ Print LUT input driver details """
         
-        print "  LUT input " + self.name + " type: " + self.type
-        report_file.write( "  LUT input " + self.name + " type: " + self.type + "\n" )
-
+        utils.print_and_write(report_file, "  LUT input " + self.name + " type: " + self.type)
 
 
 
@@ -1070,6 +1049,8 @@ class _LUT(_SizableCircuit):
         
         # Generate LUT differently based on K
         tempK = self.K
+
+        # TODO: level of fracturability could be checked here
         if self.use_fluts:
             tempK = self.K - 1
 
@@ -1197,6 +1178,8 @@ class _LUT(_SizableCircuit):
                         area_dict["inv_lut_out_buffer_2"] +
                         16*area_dict["sram"])
         
+
+        #TODO: level of fracturablility will affect this
         if self.use_fluts:
             area = 2*area
             area = area + area_dict["flut_mux"]
@@ -1386,69 +1369,18 @@ class _LUT(_SizableCircuit):
         
     def print_details(self, report_file):
         """ Print LUT details """
+    
+        utils.print_and_write(report_file, "  LUT DETAILS:")
+        utils.print_and_write(report_file, "  Style: Fully encoded MUX tree")
+        utils.print_and_write(report_file, "  Size: " + str(self.K) + "-LUT")
+        utils.print_and_write(report_file, "  Internal buffering: 2-stage buffer betweens levels 3 and 4")
+        utils.print_and_write(report_file, "  Isolation inverters between SRAM and LUT inputs")
+        utils.print_and_write(report_file, "")
+        utils.print_and_write(report_file, "  LUT INPUT DRIVER DETAILS:")
+        for driver_name, input_driver in self.input_drivers.iteritems():
+            input_driver.print_details(report_file)
+        utils.print_and_write(report_file,"")
         
-        if self.K == 6:
-            print "  LUT DETAILS:"
-            print "  Style: Fully encoded MUX tree"
-            print "  Size: 6-LUT"
-            print "  Internal buffering: 2-stage buffer betweens levels 3 and 4"
-            print "  Isolation inverters between SRAM and LUT inputs"
-            print ""
-            print "  LUT INPUT DRIVER DETAILS:"
-
-            report_file.write( "  LUT DETAILS:" + "\n" )
-            report_file.write( "  Style: Fully encoded MUX tree" + "\n" )
-            report_file.write( "  Size: 6-LUT" + "\n" )
-            report_file.write( "  Internal buffering: 2-stage buffer betweens levels 3 and 4" + "\n" )
-            report_file.write( "  Isolation inverters between SRAM and LUT inputs" + "\n" )
-            report_file.write( "" + "\n" )
-            report_file.write( "  LUT INPUT DRIVER DETAILS:" + "\n" )
-            for driver_name, input_driver in self.input_drivers.iteritems():
-                input_driver.print_details(report_file)
-            print ""
-            report_file.write("\n")
-        elif self.K == 5:
-            print "  LUT DETAILS:"
-            print "  Style: Fully encoded MUX tree"
-            print "  Size: 5-LUT"
-            print "  Internal buffering: 2-stage buffer betweens levels 3 and 4"
-            print "  Isolation inverters between SRAM and LUT inputs"
-            print ""
-            print "  LUT INPUT DRIVER DETAILS:"
-
-            report_file.write( "  LUT DETAILS:" + "\n" )
-            report_file.write( "  Style: Fully encoded MUX tree" + "\n" )
-            report_file.write( "  Size: 5-LUT" + "\n" )
-            report_file.write( "  Internal buffering: 2-stage buffer betweens levels 3 and 4" + "\n" )
-            report_file.write( "  Isolation inverters between SRAM and LUT inputs" + "\n" )
-            report_file.write( "" + "\n" )
-            report_file.write( "  LUT INPUT DRIVER DETAILS:" + "\n" )
-            for driver_name, input_driver in self.input_drivers.iteritems():
-                input_driver.print_details(report_file)
-            print ""
-            report_file.write("\n")
-
-
-        elif self.K == 4:
-            print "  LUT DETAILS:"
-            print "  Style: Fully encoded MUX tree"
-            print "  Size: 4-LUT"
-            print "  Internal buffering: 2-stage buffer betweens levels 2 and 3"
-            print "  Isolation inverters between SRAM and LUT inputs"
-            print ""
-            print "  LUT INPUT DRIVER DETAILS:"
-
-            report_file.write( "  LUT DETAILS:" + "\n" )
-            report_file.write( "  Style: Fully encoded MUX tree" + "\n" )
-            report_file.write( "  Size: 4-LUT" + "\n" )
-            report_file.write( "  Internal buffering: 2-stage buffer betweens levels 2 and 3" + "\n" )
-            report_file.write( "  Isolation inverters between SRAM and LUT inputs" + "\n" )
-            report_file.write( "" + "\n" )
-            report_file.write( "  LUT INPUT DRIVER DETAILS:" + "\n" )
-            for driver_name, input_driver in self.input_drivers.iteritems():
-                input_driver.print_details(report_file)
-            print ""
-            report_file.write("\n")
     
     def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         print "Generating 6-LUT"
@@ -1655,6 +1587,9 @@ class _LUT(_SizableCircuit):
         self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
         self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
         self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
+
+        # If this is one level fracutrable LUT then the e input will still be used
+        #TODO: when increasing the level of fructurability the f input will be used too
         if use_fluts:
             self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
         
@@ -1663,6 +1598,8 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["b"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["c"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
+
+        # If this is one level fracutrable LUT then the e input will still be used
         if use_fluts:
             self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
         
@@ -1861,11 +1798,11 @@ class _CarryChain(_SizableCircuit):
             wire_lengths["wire_" + self.name + "_3"] = width_dict["logic_cluster"]/(4 * self.N) # Wire for input Cin
         wire_layers["wire_" + self.name + "_3"] = 0
         if self.FAs_per_flut ==1:
-            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(2 * self.N) # Wire for input Cout
+            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(2 * self.N) # Wire for output Cout
         else:
-            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(4 * self.N) # Wire for input Cout
+            wire_lengths["wire_" + self.name + "_4"] = width_dict["logic_cluster"]/(4 * self.N) # Wire for output Cout
         wire_layers["wire_" + self.name + "_4"] = 0
-        wire_lengths["wire_" + self.name + "_5"] = width_dict[self.name] # Wire for input Sum
+        wire_lengths["wire_" + self.name + "_5"] = width_dict[self.name] # Wire for output Sum
         wire_layers["wire_" + self.name + "_5"] = 0
 
     def print_details(self):
@@ -2730,19 +2667,12 @@ class _GeneralBLEOutputLoad:
     def print_details(self, report_file):
         """ Print cluster output load details """
         
-        print "  CLUSTER OUTPUT LOAD DETAILS"
-        print "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption)
-        print "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption)
-        print "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial)
-        print "  Number of 'off' SB MUXes: " + str(self.num_sb_mux_off)
-        print ""
-
-        report_file.write( "  CLUSTER OUTPUT LOAD DETAILS" + "\n" )
-        report_file.write( "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption) + "\n" )
-        report_file.write( "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption) + "\n" )
-        report_file.write( "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial) + "\n" )
-        report_file.write( "  Number of 'off' SB MUXes: " + str(self.num_sb_mux_off) + "\n" )
-        report_file.write( "" + "\n" )
+        utils.print_and_write(report_file, "  CLUSTER OUTPUT LOAD DETAILS:")
+        utils.print_and_write(report_file, "  Total number of SB inputs connected to cluster output: " + str(self.num_sb_mux_off + self.num_sb_mux_partial + self.num_sb_mux_on_assumption))
+        utils.print_and_write(report_file, "  Number of 'on' SB MUXes (assumed): " + str(self.num_sb_mux_on_assumption))
+        utils.print_and_write(report_file, "  Number of 'partial' SB MUXes: " + str(self.num_sb_mux_partial))
+        utils.print_and_write(report_file, "  Number of 'off' SB MUXes: " + str(self.num_sb_mux_off))
+        utils.print_and_write(report_file, "")
         
       
     def _compute_load(self, specs, sb_mux, channel_usage, sb_mux_on):
@@ -3006,22 +2936,17 @@ class _RoutingWireLoad:
     
     
     def print_details(self, report_file):
-        print "  ROUTING WIRE LOAD DETAILS"
-        print "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off)
-        print "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")"
-        print "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off)
-        print "  Wire: CB (on = " + str(self.cb_load_on) + ", partial = " + str(self.cb_load_partial) + ", off = " + str(self.cb_load_off) + ")"
+        
+        utils.print_and_write(report_file, "  ROUTING WIRE LOAD DETAILS:")
+        utils.print_and_write(report_file, "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off))
+        utils.print_and_write(report_file, "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")")
+        utils.print_and_write(report_file, "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off))
+        utils.print_and_write(report_file, "  Wire: CB (on = " + str(self.cb_load_on) + ", partial = " + str(self.cb_load_partial) + ", off = " + str(self.cb_load_off) + ")")
 
-        report_file.write( "  ROUTING WIRE LOAD DETAILS" + "\n")
-        report_file.write( "  Number of SB inputs connected to routing wire = " + str(self.sb_load_on + self.sb_load_partial + self.sb_load_off) + "\n")
-        report_file.write( "  Wire: SB (on = " + str(self.sb_load_on) + ", partial = " + str(self.sb_load_partial) + ", off = " + str(self.sb_load_off) + ")" + "\n")
-        report_file.write( "  Number of CB inputs connected to routing wire = " + str(self.cb_load_on + self.cb_load_partial + self.cb_load_off) + "\n")
-        report_file.write( "  Wire: CB (on = " + str(self.cb_load_on) + ", partial = " + str(self.cb_load_partial) + ", off = " + str(self.cb_load_off) + ")" + "\n")
         for i in range(self.wire_length):
-            print "  Tile " + str(i+1) + ": SB (on = " + str(self.tile_sb_on[i]) + ", partial = " + str(self.tile_sb_partial[i]) + ", off = " + str(self.tile_sb_off[i]) + "); CB (on = " + str(self.tile_cb_on[i]) + ", partial = " + str(self.tile_cb_partial[i]) + ", off = " + str(self.tile_cb_off[i]) + ")"
-            report_file.write( "  Tile " + str(i+1) + ": SB (on = " + str(self.tile_sb_on[i]) + ", partial = " + str(self.tile_sb_partial[i]) + ", off = " + str(self.tile_sb_off[i]) + "); CB (on = " + str(self.tile_cb_on[i]) + ", partial = " + str(self.tile_cb_partial[i]) + ", off = " + str(self.tile_cb_off[i]) + ")" + "\n")
-        print ""
-        report_file.write("\n")
+            utils.print_and_write(report_file, "  Tile " + str(i+1) + ": SB (on = " + str(self.tile_sb_on[i]) + ", partial = " + str(self.tile_sb_partial[i]) + 
+            ", off = " + str(self.tile_sb_off[i]) + "); CB (on = " + str(self.tile_cb_on[i]) + ", partial = " + str(self.tile_cb_partial[i]) + ", off = " + str(self.tile_cb_off[i]) + ")")
+        utils.print_and_write(report_file, "")
         
        
     def _compute_load(self, specs, sb_mux, cb_mux, channel_usage, cluster_input_usage):
@@ -4380,27 +4305,16 @@ class _RAMLocalMUX(_SizableCircuit):
     def print_details(self, report_file):
         """ Print RAM local mux details """
         
-        print "  RAM LOCAL MUX DETAILS:"
-        print "  Style: two-level MUX"
-        print "  Required MUX size: " + str(self.required_size) + ":1"
-        print "  Implemented MUX size: " + str(self.implemented_size) + ":1"
-        print "  Level 1 size = " + str(self.level1_size)
-        print "  Level 2 size = " + str(self.level2_size)
-        print "  Number of unused inputs = " + str(self.num_unused_inputs)
-        print "  Number of MUXes per tile: " + str(self.num_per_tile)
-        print "  Number of SRAM cells per MUX: " + str(self.sram_per_mux)
-        print ""
-
-        report_file.write( "  RAM LOCAL MUX DETAILS:" + "\n" )
-        report_file.write( "  Style: two-level MUX" + "\n" )
-        report_file.write( "  Required MUX size: " + str(self.required_size) + ":1" + "\n" )
-        report_file.write( "  Implemented MUX size: " + str(self.implemented_size) + ":1" + "\n" )
-        report_file.write( "  Level 1 size = " + str(self.level1_size) + "\n" )
-        report_file.write( "  Level 2 size = " + str(self.level2_size) + "\n" )
-        report_file.write( "  Number of unused inputs = " + str(self.num_unused_inputs) + "\n" )
-        report_file.write( "  Number of MUXes per tile: " + str(self.num_per_tile) + "\n" )
-        report_file.write( "  Number of SRAM cells per MUX: " + str(self.sram_per_mux) + "\n" )
-        report_file.write( "" + "\n" )
+        utils.print_and_write(report_file, "  RAM LOCAL MUX DETAILS:")
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
 
 
 class _RAMLocalRoutingWireLoad:
@@ -5297,108 +5211,128 @@ class _hard_block(_CompoundCircuit):
 class FPGA:
     """ This class describes an FPGA. """
         
-    def __init__(self, N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                    vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library, metal_stack, 
-                        use_tgate, use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
-                        memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                        enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files, area_opt_weight, delay_opt_weight,
-                        spice_interface):
+    def __init__(self, arch_params_dict, run_options, spice_interface):
           
         # Initialize the specs
-        self.specs = _Specs(N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                                        vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
-                                         use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
-                                         memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                                         enable_bram_block, ram_local_mux_size, quick_mode_threshold, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files)
+        self.specs = _Specs(arch_params_dict, run_options.quick_mode)
+
+
+        ######################################
+        ### INITIALIZE SPICE LIBRARY NAMES ###
+        ######################################
+
+        self.wire_RC_filename           = "wire_RC.l"
+        self.process_data_filename      = "process_data.l"
+        self.includes_filename          = "includes.l"
+        self.basic_subcircuits_filename = "basic_subcircuits.l"
+        self.subcircuits_filename       = "subcircuits.l"
+        self.sweep_data_filename        = "sweep_data.l"
 
                                         
+        ##################################
+        ### CREATE SWITCH BLOCK OBJECT ###
+        ##################################
 
-        ### CREATE SWITCH BLOCK OBJECT
         # Calculate switch block mux size (for direct-drive routing)
         # The mux will need Fs + (Fs-1)(L-1) inputs for routing-to-routing connections
         # The Fs term comes from starting wires, the (Fs-1) term comes from non-starting wires, of which there are (L-1)
-        r_to_r_sb_mux_size = Fs + (Fs-1)*(L-1)
-        # Then, each mux needs No*Fcout*L/2 additional inputs for logic cluster outputs (No = number of cluster outputs)
+        r_to_r_sb_mux_size = self.specs.Fs + (self.specs.Fs-1)*(self.specs.L-1)
+        # Then, each mux needs No*Fcout*L/2 additional inputs for logic cluster outputs (No = number of cluster outputs (Or))
         No = self.specs.num_cluster_outputs
-        clb_to_r_sb_mux_size = No*Fcout*L/2
+        clb_to_r_sb_mux_size = No*self.specs.Fcout*self.specs.L/2
         sb_mux_size_required = int(r_to_r_sb_mux_size + clb_to_r_sb_mux_size)
         # Calculate number of switch block muxes per tile
-        num_sb_mux_per_tile = 2*W/L
+        num_sb_mux_per_tile = 2*self.specs.W/self.specs.L
         # Initialize the switch block
-        self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, use_tgate)
+        self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, self.specs.use_tgate)
+
         
-        
-        ### CREATE CONNECTION BLOCK OBJECT
+        ######################################
+        ### CREATE CONNECTION BLOCK OBJECT ###
+        ######################################
+
         # Calculate connection block mux size
         # Size is W*Fcin
-        cb_mux_size_required = int(W*Fcin)
-        num_cb_mux_per_tile = I
+        cb_mux_size_required = int(self.specs.W*self.specs.Fcin)
+        num_cb_mux_per_tile = self.specs.I
         # Initialize the connection block
-        self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile, use_tgate)
+        self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile, self.specs.use_tgate)
+
         
-        
-        ### CREATE LOGIC CLUSTER OBJECT
+        ###################################
+        ### CREATE LOGIC CLUSTER OBJECT ###
+        ###################################
+
         # Calculate local mux size
         # Local mux size is (inputs + feedback) * population
-        local_mux_size_required = int((I + Ofb*N) * Fclocal)
-        num_local_mux_per_tile = N*(K+independent_inputs)
-
+        local_mux_size_required = int((self.specs.I + self.specs.num_ble_local_outputs*self.specs.N) * self.specs.Fclocal)
+        num_local_mux_per_tile = self.specs.N*(self.specs.K+self.specs.independent_inputs)
 
         # Todo: make this a parameter
-        skip_size = 5
         inter_wire_length = 0.5
-        self.skip_size = skip_size
+        self.skip_size = 5
         self.carry_skip_periphery_count = 0
-        if enable_carry_chain == 1 and carry_chain_type == "skip":
-            self.carry_skip_periphery_count = int(math.floor((N * FAs_per_flut)/skip_size))
-        # Create the logic cluster object            
-        self.logic_cluster = _LogicCluster(N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, self.carry_skip_periphery_count)
+        if self.specs.enable_carry_chain == 1 and self.specs.carry_chain_type == "skip":
+            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
+        # initialize the logic cluster
+        self.logic_cluster = _LogicCluster(self.specs.N, self.specs.K, self.specs.num_ble_general_outputs, self.specs.num_ble_local_outputs, self.specs.Rsel, self.specs.Rfb, 
+                                           local_mux_size_required, num_local_mux_per_tile, self.specs.use_tgate, self.specs.use_finfet, self.specs.use_fluts, 
+                                           self.specs.enable_carry_chain, self.specs.FAs_per_flut, self.carry_skip_periphery_count)
         
-        ### CREATE LOAD OBJECTS
+        ###########################
+        ### CREATE LOAD OBJECTS ###
+        ###########################
+
         # Create cluster output load object
         self.cluster_output_load = _GeneralBLEOutputLoad()
         # Create routing wire load object
-        self.routing_wire_load = _RoutingWireLoad(L)
+        self.routing_wire_load = _RoutingWireLoad(self.specs.L)
 
-        # Create the Carry Chain Object
 
-        #print carry_chain_type
-        if enable_carry_chain == 1:
-            self.carrychain = _CarryChain(use_finfet, carry_chain_type, N, FAs_per_flut)
-            self.carrychainperf = _CarryChainPer(use_finfet, carry_chain_type, N, FAs_per_flut, use_tgate)
-            self.carrychainmux = _CarryChainMux(use_finfet, use_fluts, use_tgate)
-            self.carrychaininter = _CarryChainInterCluster(use_finfet, carry_chain_type, inter_wire_length)
-            if carry_chain_type == "skip":
-                self.carrychainand = _CarryChainSkipAnd(use_finfet, use_tgate, carry_chain_type, N, FAs_per_flut, skip_size)
-                self.carrychainskipmux = _CarryChainSkipMux(use_finfet, carry_chain_type, use_tgate)
+        ##################################
+        ### CREATE CARRY CHAIN OBJECTS ###
+        ##################################
 
-        ### INITIALIZE OTHER VARIABLES, LISTS AND DICTIONARIES
-        # Initialize SPICE library filenames
-        self.wire_RC_filename = "wire_RC.l"
-        self.process_data_filename = "process_data.l"
-        self.includes_filename = "includes.l"
-        self.basic_subcircuits_filename = "basic_subcircuits.l"
-        self.subcircuits_filename = "subcircuits.l"
-        self.sweep_data_filename = "sweep_data.l"
+        if self.specs.enable_carry_chain == 1:
+            self.carrychain = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut)
+            self.carrychainperf = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate)
+            self.carrychainmux = _CarryChainMux(self.specs.use_finfet, self.specs.use_fluts, self.specs.use_tgate)
+            self.carrychaininter = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length)
+            if self.specs.carry_chain_type == "skip":
+                self.carrychainand = _CarryChainSkipAnd(self.specs.use_finfet, self.specs.use_tgate, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.skip_size)
+                self.carrychainskipmux = _CarryChainSkipMux(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.use_tgate)
+        
 
-        # CREATE RAM object
-        RAM_local_mux_size_required = float(ram_local_mux_size)
+        #########################
+        ### CREATE RAM OBJECT ###
+        #########################
 
-        RAM_num_mux_per_tile = (3 + 2*(row_decoder_bits + col_decoder_bits + conf_decoder_bits ) + 2** (conf_decoder_bits))
+        RAM_local_mux_size_required = float(self.specs.ram_local_mux_size)
+        RAM_num_mux_per_tile = (3 + 2*(self.specs.row_decoder_bits + self.specs.col_decoder_bits + self.specs.conf_decoder_bits ) + 2** (self.specs.conf_decoder_bits))
+        self.RAM = _RAM(self.specs.row_decoder_bits, self.specs.col_decoder_bits, self.specs.conf_decoder_bits, RAM_local_mux_size_required, 
+                        RAM_num_mux_per_tile , self.specs.use_tgate, self.specs.sram_cell_area*self.specs.min_width_tran_area, self.specs.number_of_banks,
+                        self.specs.memory_technology, self.specs, self.process_data_filename, self.specs.read_to_write_ratio)
+        self.number_of_banks = self.specs.number_of_banks
 
-        self.RAM = _RAM(row_decoder_bits, col_decoder_bits, conf_decoder_bits, RAM_local_mux_size_required, RAM_num_mux_per_tile ,use_tgate, self.specs.sram_cell_area*self.specs.min_width_tran_area, number_of_banks, memory_technology, self.specs, self.process_data_filename, read_to_write_ratio)
-        self.number_of_banks = number_of_banks
+        
+        ################################
+        ### CREATE HARD BLOCK OBJECT ###
+        ################################
 
-        # Hard blocks
         self.hardblocklist = []
-        self.hard_block_files = hb_files
+        self.hard_block_files = self.specs.hb_files
         #self.hard_block_files = {}
         for name in self.hard_block_files:
-            hard_block = _hard_block(name, use_tgate)
+            hard_block = _hard_block(name, self.specs.use_tgate)
             self.hardblocklist.append(hard_block)
 
-        self.area_opt_weight = area_opt_weight
-        self.delay_opt_weight = delay_opt_weight
+
+        ##########################################################
+        ### INITIALIZE OTHER VARIABLES, LISTS AND DICTIONARIES ###
+        ##########################################################
+
+        self.area_opt_weight = run_options.area_opt_weight
+        self.delay_opt_weight = run_options.delay_opt_weight
         self.spice_interface = spice_interface        
         # This is a dictionary of all the transistor sizes in the FPGA ('name': 'size')
         # It will contain the data in xMin transistor width, e.g. 'inv_sb_mux_1_nmos': '2'
@@ -5455,15 +5389,13 @@ class FPGA:
         # Metal stack. Lowest index is lowest metal layer. COFFE assumes that wire widths increase as we use higher metal layers.
         # For example, wires in metal_stack[1] are assumed to be wider (and/or more spaced) than wires in metal_stack[0]
         # e.g. metal_stack[0] = (R0, C0)
-        self.metal_stack = metal_stack
+        self.metal_stack = self.specs.metal_stack
         
-        # weather or not to use transmission gates
-        self.use_tgate = use_tgate
+        # whether or not to use transmission gates
+        self.use_tgate = self.specs.use_tgate
 
         # This is the height of the logic block, once an initial floorplanning solution has been determined, it will be assigned a non-zero value.
         self.lb_height =  0.0
-
-        # actual widths of blocks after floorplanning
 
 
 
@@ -5494,6 +5426,7 @@ class FPGA:
     
         # TODO: We don't use the transistor_sizes.l file anymore.
         # But, we could add some kind of input file for transistor sizes...
+
         # If transistor sizing is turned off, we want to keep the transistor sizes
         # that are in 'transistor_sizes.l'. To do this, we keep a copy of the original file
         # as COFFE will overwrite the original, and then we replace the overwritten file with
@@ -6091,7 +6024,9 @@ class FPGA:
             #cb_ratio = 1.0
             #ic_ratio = 1.0
             #lut_ratio = 1.0
-            print "ratios" + str(sb_ratio) +" "+ str(cb_ratio) +" "+ str(ic_ratio) +" "+ str(lut_ratio)
+
+            #this was used for debugging so I commented it
+            #print "ratios " + str(sb_ratio) +" "+ str(cb_ratio) +" "+ str(ic_ratio) +" "+ str(lut_ratio)
             self.cluster_output_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, self.d_ffble_to_sb, self.lb_height)
             self.sb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, sb_ratio)
             self.cb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, cb_ratio)
@@ -6132,6 +6067,8 @@ class FPGA:
             self.wire_rc_dict[wire] = (resistance, capacitance)     
 
 
+
+    #TODO: break this into different functions or form a loop out of it; it's too long
     def update_delays(self, spice_interface):
         """ 
         Get the HSPICE delays for each subcircuit. 
@@ -6162,7 +6099,7 @@ class FPGA:
         # second and set our valid_delay flag to False.
 
         # Switch Block MUX 
-        print "Updating delay for " + self.sb_mux.name
+        print "  Updating delay for " + self.sb_mux.name
         spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict)
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6181,7 +6118,7 @@ class FPGA:
         self.sb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Connection Block MUX
-        print "Updating delay for " + self.cb_mux.name
+        print "  Updating delay for " + self.cb_mux.name
         spice_meas = spice_interface.run(self.cb_mux.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6200,7 +6137,7 @@ class FPGA:
         self.cb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local MUX
-        print "Updating delay for " + self.logic_cluster.local_mux.name
+        print "  Updating delay for " + self.logic_cluster.local_mux.name
         spice_meas = spice_interface.run(self.logic_cluster.local_mux.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6221,7 +6158,7 @@ class FPGA:
         self.logic_cluster.local_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local BLE output
-        print "Updating delay for " + self.logic_cluster.ble.local_output.name 
+        print "  Updating delay for " + self.logic_cluster.ble.local_output.name 
         spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6242,7 +6179,7 @@ class FPGA:
         self.logic_cluster.ble.local_output.power = float(spice_meas["meas_avg_power"][0])
         
         # General BLE output
-        print "Updating delay for " + self.logic_cluster.ble.general_output.name
+        print "  Updating delay for " + self.logic_cluster.ble.general_output.name
         spice_meas = spice_interface.run(self.logic_cluster.ble.general_output.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6267,7 +6204,7 @@ class FPGA:
         #print self.specs.use_fluts 
         # fracturable lut mux
         if self.specs.use_fluts:
-            print "Updating delay for " + self.logic_cluster.ble.fmux.name
+            print "  Updating delay for " + self.logic_cluster.ble.fmux.name
             spice_meas = spice_interface.run(self.logic_cluster.ble.fmux.top_spice_path, 
                                              parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6287,7 +6224,7 @@ class FPGA:
  
 
         # LUT delay
-        print "Updating delay for " + self.logic_cluster.ble.lut.name
+        print "  Updating delay for " + self.logic_cluster.ble.lut.name
         spice_meas = spice_interface.run(self.logic_cluster.ble.lut.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6311,7 +6248,7 @@ class FPGA:
         for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
             driver = lut_input.driver
             not_driver = lut_input.not_driver
-            print "Updating delay for " + driver.name.replace("_driver", "")
+            print "  Updating delay for " + driver.name.replace("_driver", "")
             driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
 
             if (lut_input_name == "f" and self.specs.use_fluts and self.specs.K == 6) or (lut_input_name == "e" and self.specs.use_fluts and self.specs.K == 5):
@@ -6348,7 +6285,7 @@ class FPGA:
             self.delay_dict[lut_input.name] = lut_input.delay
             
             # Now, we want to get the delay and power for the driver
-            print "Updating delay for " + driver.name 
+            print "  Updating delay for " + driver.name 
             spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6370,7 +6307,7 @@ class FPGA:
                 exit(2)
 
             # ... and the not_driver
-            print "Updating delay for " + not_driver.name
+            print "  Updating delay for " + not_driver.name
             spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6409,7 +6346,7 @@ class FPGA:
         # Carry Chain
         
         if self.specs.enable_carry_chain == 1:
-            print "Updating delay for " + self.carrychain.name
+            print "  Updating delay for " + self.carrychain.name
             spice_meas = spice_interface.run(self.carrychain.top_spice_path, 
                                              parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6574,7 +6511,7 @@ class FPGA:
         if self.specs.enable_bram_block == 0:
             return valid_delay
         # Local RAM MUX
-        print "Updating delay for " + self.RAM.RAM_local_mux.name
+        print "  Updating delay for " + self.RAM.RAM_local_mux.name
         spice_meas = spice_interface.run(self.RAM.RAM_local_mux.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6593,7 +6530,7 @@ class FPGA:
         self.RAM.RAM_local_mux.power = float(spice_meas["meas_avg_power"][0])
 
         #RAM decoder units
-        print "Updating delay for " + self.RAM.rowdecoder_stage0.name
+        print "  Updating delay for " + self.RAM.rowdecoder_stage0.name
         spice_meas = spice_interface.run(self.RAM.rowdecoder_stage0.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6613,8 +6550,7 @@ class FPGA:
 
 
         if self.RAM.valid_row_dec_size2 == 1:
-
-            print "Updating delay for " + self.RAM.rowdecoder_stage1_size2.name
+            print "  Updating delay for " + self.RAM.rowdecoder_stage1_size2.name
             spice_meas = spice_interface.run(self.RAM.rowdecoder_stage1_size2.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6633,8 +6569,7 @@ class FPGA:
             self.RAM.rowdecoder_stage1_size2.power = float(spice_meas["meas_avg_power"][0])
 
         if self.RAM.valid_row_dec_size3 == 1:
-
-            print "Updating delay for " + self.RAM.rowdecoder_stage1_size3.name
+            print "  Updating delay for " + self.RAM.rowdecoder_stage1_size3.name
             spice_meas = spice_interface.run(self.RAM.rowdecoder_stage1_size3.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6653,8 +6588,7 @@ class FPGA:
             self.RAM.rowdecoder_stage1_size3.power = float(spice_meas["meas_avg_power"][0])
 
 
-
-        print "Updating delay for " + self.RAM.rowdecoder_stage3.name
+        print "  Updating delay for " + self.RAM.rowdecoder_stage3.name
         spice_meas = spice_interface.run(self.RAM.rowdecoder_stage3.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6673,8 +6607,7 @@ class FPGA:
 
 
         if self.RAM.memory_technology == "SRAM":
-
-            print "Updating delay for " + self.RAM.precharge.name
+            print "  Updating delay for " + self.RAM.precharge.name
             spice_meas = spice_interface.run(self.RAM.precharge.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6692,8 +6625,7 @@ class FPGA:
             self.delay_dict[self.RAM.precharge.name] = self.RAM.precharge.delay
             self.RAM.precharge.power = float(spice_meas["meas_avg_power"][0])
 
-
-            print "Updating delay for " + self.RAM.samp_part2.name
+            print "  Updating delay for " + self.RAM.samp_part2.name
             spice_meas = spice_interface.run(self.RAM.samp_part2.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6711,7 +6643,7 @@ class FPGA:
             self.delay_dict[self.RAM.samp_part2.name] = self.RAM.samp_part2.delay
             self.RAM.samp_part2.power = float(spice_meas["meas_avg_power"][0])
 
-            print "Updating delay for " + self.RAM.samp.name
+            print "  Updating delay for " + self.RAM.samp.name
             spice_meas = spice_interface.run(self.RAM.samp.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6731,8 +6663,7 @@ class FPGA:
             self.delay_dict[self.RAM.samp.name] = self.RAM.samp.delay
             self.RAM.samp.power = float(spice_meas["meas_avg_power"][0])
 
-
-            print "Updating delay for " + self.RAM.writedriver.name
+            print "  Updating delay for " + self.RAM.writedriver.name
             spice_meas = spice_interface.run(self.RAM.writedriver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6751,7 +6682,7 @@ class FPGA:
             self.RAM.writedriver.power = float(spice_meas["meas_avg_power"][0])
 
         else:
-            print "Updating delay for " + self.RAM.bldischarging.name
+            print "  Updating delay for " + self.RAM.bldischarging.name
             spice_meas = spice_interface.run(self.RAM.bldischarging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6769,7 +6700,7 @@ class FPGA:
             self.delay_dict[self.RAM.bldischarging.name] = self.RAM.bldischarging.delay
             self.RAM.bldischarging.power = float(spice_meas["meas_avg_power"][0])
 
-            print "Updating delay for " + self.RAM.blcharging.name
+            print "  Updating delay for " + self.RAM.blcharging.name
             spice_meas = spice_interface.run(self.RAM.blcharging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6791,7 +6722,7 @@ class FPGA:
 
             self.RAM._update_process_data()
 
-            print "Updating delay for " + self.RAM.blcharging.name
+            print "  Updating delay for " + self.RAM.blcharging.name
             spice_meas = spice_interface.run(self.RAM.blcharging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6812,7 +6743,7 @@ class FPGA:
 
             self.RAM._update_process_data()
 
-            print "Updating delay for " + self.RAM.mtjsamp.name
+            print "  Updating delay for " + self.RAM.mtjsamp.name
             spice_meas = spice_interface.run(self.RAM.mtjsamp.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6831,7 +6762,7 @@ class FPGA:
             self.RAM.mtjsamp.power = float(spice_meas["meas_avg_power"][0])
 
     
-        print "Updating delay for " + self.RAM.columndecoder.name
+        print "  Updating delay for " + self.RAM.columndecoder.name
         spice_meas = spice_interface.run(self.RAM.columndecoder.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6850,7 +6781,7 @@ class FPGA:
         self.RAM.columndecoder.power = float(spice_meas["meas_avg_power"][0])
 
 
-        print "Updating delay for " + self.RAM.configurabledecoderi.name
+        print "  Updating delay for " + self.RAM.configurabledecoderi.name
         spice_meas = spice_interface.run(self.RAM.configurabledecoderi.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6870,7 +6801,7 @@ class FPGA:
 
 
         if self.RAM.cvalidobj1 ==1:
-            print "Updating delay for " + self.RAM.configurabledecoder3ii.name
+            print "  Updating delay for " + self.RAM.configurabledecoder3ii.name
             spice_meas = spice_interface.run(self.RAM.configurabledecoder3ii.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6890,7 +6821,7 @@ class FPGA:
 
 
         if self.RAM.cvalidobj2 ==1:
-            print "Updating delay for " + self.RAM.configurabledecoder2ii.name
+            print "  Updating delay for " + self.RAM.configurabledecoder2ii.name
             spice_meas = spice_interface.run(self.RAM.configurabledecoder2ii.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6908,7 +6839,7 @@ class FPGA:
             self.delay_dict[self.RAM.configurabledecoder2ii.name] = self.RAM.configurabledecoder2ii.delay
             self.RAM.configurabledecoder2ii.power = float(spice_meas["meas_avg_power"][0])
 
-        print "Updating delay for " + self.RAM.configurabledecoderiii.name
+        print "  Updating delay for " + self.RAM.configurabledecoderiii.name
         spice_meas = spice_interface.run(self.RAM.configurabledecoderiii.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6927,7 +6858,7 @@ class FPGA:
         self.RAM.configurabledecoderiii.power = float(spice_meas["meas_avg_power"][0])
   
 
-        print "Updating delay for " + self.RAM.pgateoutputcrossbar.name
+        print "  Updating delay for " + self.RAM.pgateoutputcrossbar.name
         spice_meas = spice_interface.run(self.RAM.pgateoutputcrossbar.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6946,7 +6877,7 @@ class FPGA:
         self.RAM.pgateoutputcrossbar.power = float(spice_meas["meas_avg_power"][0])
         self.delay_dict["rep_crit_path"] = crit_path_delay    
 
-        print "Updating delay for " + self.RAM.wordlinedriver.name
+        print "  Updating delay for " + self.RAM.wordlinedriver.name
         spice_meas = spice_interface.run(self.RAM.wordlinedriver.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6966,9 +6897,9 @@ class FPGA:
         if self.RAM.wordlinedriver.wl_repeater == 1:
             self.RAM.wordlinedriver.power *=2
 
-         
-
         return valid_delay
+
+
                   
     def update_power(self, spice_interface):
         """This funciton measures RAM core power once sizing has finished.
@@ -7148,14 +7079,10 @@ class FPGA:
         
     def print_details(self, report_file):
 
-        print "|------------------------------------------------------------------------------|"
-        print "|   FPGA Implementation Details                                                |"
-        print "|------------------------------------------------------------------------------|"
-        print ""
-        report_file.write("|------------------------------------------------------------------------------|\n")
-        report_file.write("|   FPGA Implementation Details                                                |\n")
-        report_file.write("|------------------------------------------------------------------------------|\n")
-        report_file.write("\n")
+        utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
+        utils.print_and_write(report_file, "|   FPGA Implementation Details                                                |")
+        utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
+        utils.print_and_write(report_file, "")
 
         self.sb_mux.print_details(report_file)
         self.cb_mux.print_details(report_file)
@@ -7165,10 +7092,8 @@ class FPGA:
         if self.specs.enable_bram_block == 1:
             self.RAM.print_details(report_file)
 
-        print "|------------------------------------------------------------------------------|"
-        print ""
-        report_file.write("|------------------------------------------------------------------------------|\n")
-        report_file.write("\n")
+        utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
+        utils.print_and_write(report_file, "")
 
         return
     

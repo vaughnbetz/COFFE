@@ -2055,7 +2055,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 			results_file.write("".join(name.ljust(col_width)) + ": " + size_string + "\n")
 		results_file.write("\n")
 		
-		results_file.write("Area\t\tDelay\t\tAPD\n")
+		results_file.write(("Area").ljust(20) + ("Delay").ljust(20) + ("APD").ljust(20) + "\n")
 		area_delay_strings = []
 		for i in range(len(area_results_list)):
 			area_results = area_results_list[i]
@@ -2063,7 +2063,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 			subcircuit_area = area_results[subcircuit_name]
 			subcircuit_delay = delay_results[subcircuit_name]
 			subcircuit_cost = subcircuit_area*subcircuit_delay
-			area_delay_strings.append(str(subcircuit_area) + "\t" + str(subcircuit_delay) + "\t" + str(subcircuit_cost))
+			area_delay_strings.append((str(subcircuit_area)).ljust(20) + (str(subcircuit_delay)).ljust(20) + (str(subcircuit_cost)).ljust(20))
 		
 		# Write results
 		for area_delay_str in area_delay_strings:
@@ -2071,7 +2071,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 		results_file.write("\n")
 				  
 	results_file.write("TOTALS:\n")
-	results_file.write("Area\t\tDelay\t\tAPD\n")
+	results_file.write(("Area").ljust(20) + ("Delay").ljust(20) + ("APD").ljust(20) + "\n")
 	totals_strings = []
 	for i in range(len(area_results_list)):
 		area_results = area_results_list[i]
@@ -2079,7 +2079,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 		total_area = area_results["tile"]
 		total_delay = delay_results["rep_crit_path"]
 		total_cost = total_area*total_delay
-		totals_strings.append(str(total_area) + "\t" + str(total_delay) + "\t" + str(total_cost))
+		totals_strings.append((str(total_area)).ljust(20) + (str(total_delay)).ljust(20) + (str(total_cost)).ljust(20))
 	for total_str in totals_strings:
 		results_file.write(total_str + "\n")
 	results_file.write("\n")
@@ -2133,6 +2133,7 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 		# Sadegh: I have decided not to include this part to be able to observe how cost function is changed over time
 		# It also facilitiates having quick mode.
 		# The user should probably have an idea of how many iterations to run the tool with after using the quick mode.
+
 		# If we are moving to a higher cost solution,
 		# Stop, and choose the one with smaller cost (the previous one)
 		#if total_cost >= previous_cost:
@@ -2146,22 +2147,18 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 	return False, 0
 
 	
-def size_fpga_transistors(fpga_inst, 
-						  opt_type, 
-						  re_erf, 
-						  max_iterations, 
-						  area_opt_weight, 
-						  delay_opt_weight, 
-						  spice_interface):
+
+def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	""" Size FPGA transistors. 
 	
 		Inputs: fpga_inst - fpga object instance
-				opt_type - optimization type (global or local)
-				re_erf - number of sizing combos to re-erf
-				max_iterations - maximum number of 'FPGA sizing iterations' (see [1])
-				area_opt_weight - the 'b' in (cost = area^b * delay^c)
-				delay_opt_weight - the 'c' in (cost = area^b * delay^c)
-				num_hspice_sims - a counter that is incremented for every HSPICE simulation performed
+				run_options which include:
+					opt_type         - optimization type (global or local)
+					re_erf           - number of sizing combos to re-erf
+					max_iterations   - maximum number of 'FPGA sizing iterations' (see [1])
+					area_opt_weight  - the 'b' in (cost = area^b * delay^c)
+					delay_opt_weight - the 'c' in (cost = area^b * delay^c)
+				spice_interface - an object that is used to run HSPICE and parse its outputs
 		
 		One 'FPGA sizing iteration' means sizing each subcircuits once.
 		We perform multiple sizing iterations. Stopping criteria is that
@@ -2182,6 +2179,12 @@ def size_fpga_transistors(fpga_inst,
 		[1] C. Chiasson and V.Betz, "COFFE: Fully-Automated Transistor Sizing for FPGAs", FPT2013
 		
 		"""
+
+	opt_type         = run_options.opt_type 
+	re_erf           = run_options.re_erf
+	max_iterations   = run_options.max_iterations 
+	area_opt_weight  = run_options.area_opt_weight 
+	delay_opt_weight = run_options.delay_opt_weight
    
 	# Create results folder if it doesn't exist
 	if not os.path.exists("sizing_results"):
@@ -3190,13 +3193,18 @@ def size_fpga_transistors(fpga_inst,
 		is_done, final_result_index = check_if_done(sizing_results_list, area_results_list, delay_results_list, area_opt_weight, delay_opt_weight)
 
 		# Update the above results with quickmode
+
+		# TODO: Why is it taking the previous iteration results in case of a quick mode
+		# from my  understanding the quick mode means that if the improvement in this 
+		# iteration is less than the given value stop resizing this subcircuit. This 
+		# means the means that probably the current results are the best so far.
 		if 1 not in quick_mode_dict.values():
 			is_done = True
 			final_result_index = iteration - 1
 
 		iteration += 1
 		sys.stdout.flush()
-		final_report_file = open("sizing_results/sizes_interation_" + str(iteration) + ".txt", 'w')
+		final_report_file = open("sizing_results/sizes_iteration_" + str(iteration) + ".txt", 'w')
 		print_final_transistor_size(fpga_inst, final_report_file)
 		final_report_file.close()
 

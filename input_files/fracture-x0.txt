@@ -59,7 +59,8 @@ use_fluts=True
 independent_inputs = 0
 
 enable_carry_chain = 0
-carry_chain_type = skip
+#the carry chain type could be "skip" or "ripple"
+carry_chain_type = ripple
 FAs_per_flut = 2
 
 

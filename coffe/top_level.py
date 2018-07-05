@@ -3971,6 +3971,12 @@ def generate_RAM_local_mux_top_lp(mux_name):
 def generate_lut6_top(lut_name, use_tgate):
     """ Generate the top level 6-LUT SPICE file """
 
+    """
+    TODO:
+    - This should be modified for the case of FLUTs since the LUTs in this case are loaded differently
+      they are loaded with a full adder and the input to the flut mux and not with the lut output load.
+    """
+
     # Create directory
     if not os.path.exists(lut_name):
         os.makedirs(lut_name)  
@@ -4082,6 +4088,12 @@ def generate_lut6_top(lut_name, use_tgate):
 def generate_lut5_top(lut_name, use_tgate):
     """ Generate the top level 5-LUT SPICE file """
 
+    
+    # TODO:
+    # This should be modified for the case of FLUTs since the LUTs in this case are loaded differently
+    # they are loaded with a full adder and the input to the flut mux and not with the lut output load.
+    
+
     # Create directory
     if not os.path.exists(lut_name):
         os.makedirs(lut_name)  
@@ -4166,6 +4178,12 @@ def generate_lut5_top(lut_name, use_tgate):
 
 def generate_lut4_top(lut_name, use_tgate):
     """ Generate the top level 4-LUT SPICE file """
+
+    
+    # TODO:
+    # This should be modified for the case of FLUTs since the LUTs in this case are loaded differently
+    # they are loaded with a full adder and the input to the flut mux and not with the lut output load.
+    
 
     # Create directory
     if not os.path.exists(lut_name):
@@ -4657,7 +4675,12 @@ def generate_general_ble_output_top(name, use_tgate):
 
 
 def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
-    """ """
+    
+    #TODO: 
+    #- I think the general ble output load should be removed from this ciruit in case of an ALM
+    #  with carry chain. Since, the load in this case is only the carry chain mux. 
+    #- I also think that in both cases whether there is a carry chain mux or not the delay should 
+    #  be measured between the n_1_1 and n_1_3 and not between n_1_1 and n_local_out.
     
     # Create directories
     if not os.path.exists(name):
@@ -4745,7 +4768,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
 
 
 def generate_cc_mux_top(name, use_tgate):
-    """ """
+    """ Creating the SPICE netlist for calculating the delay of the carry chain mux"""
     
     # Create directories
     if not os.path.exists(name):
@@ -4755,7 +4778,7 @@ def generate_cc_mux_top(name, use_tgate):
     
     filename = name + ".sp"
     top_file = open(filename, 'w')
-    top_file.write(".TITLE General BLE output\n\n") 
+    top_file.write(".TITLE Carry chain mux\n\n") 
     
     top_file.write("********************************************************************************\n")
     top_file.write("** Include libraries, parameters and other\n")
