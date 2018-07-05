@@ -100,10 +100,10 @@ total_start_time = time.time()
 fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
                      
 
+
 ###############################################################
 ## GENERATE FILES
 ###############################################################
-
 
 # Change to the architecture directory
 os.chdir(arch_folder)  
@@ -126,6 +126,8 @@ report_file.close()
 
 # Go to architecture directory
 os.chdir(arch_folder)
+
+
 
 ###############################################################
 ## TRANSISTOR SIZING

@@ -101,66 +101,65 @@ class _Specs:
                      #enable_bram_block, ram_local_mux_size, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
         
         # FPGA architecture specs
-        self.N = arch_params_dict['N']
-        self.K = arch_params_dict['K']
-        self.W = arch_params_dict['W']
-        self.L = arch_params_dict['L']
-        self.I = arch_params_dict['I']
-        self.Fs = arch_params_dict['Fs']
-        self.Fcin = arch_params_dict['Fcin']
-        self.Fcout = arch_params_dict['Fcout']
-        self.Fclocal = arch_params_dict['Fclocal']
+        self.N                       = arch_params_dict['N']
+        self.K                       = arch_params_dict['K']
+        self.W                       = arch_params_dict['W']
+        self.L                       = arch_params_dict['L']
+        self.I                       = arch_params_dict['I']
+        self.Fs                      = arch_params_dict['Fs']
+        self.Fcin                    = arch_params_dict['Fcin']
+        self.Fcout                   = arch_params_dict['Fcout']
+        self.Fclocal                 = arch_params_dict['Fclocal']
         self.num_ble_general_outputs = arch_params_dict['Or']
-        self.num_ble_local_outputs = arch_params_dict['Ofb']
-        self.num_cluster_outputs = self.N*self.num_ble_general_outputs
-        self.Rsel = arch_params_dict['Rsel']
-        self.Rfb = arch_params_dict['Rfb']
-        self.use_fluts = arch_params_dict['use_fluts']
-        self.independent_inputs = arch_params_dict['independent_inputs']
-        self.enable_carry_chain = arch_params_dict['enable_carry_chain']
-        self.carry_chain_type = arch_params_dict['carry_chain_type']
-        self.FAs_per_flut = arch_params_dict['FAs_per_flut']
+        self.num_ble_local_outputs   = arch_params_dict['Ofb']
+        self.num_cluster_outputs     = self.N*self.num_ble_general_outputs
+        self.Rsel                    = arch_params_dict['Rsel']
+        self.Rfb                     = arch_params_dict['Rfb']
+        self.use_fluts               = arch_params_dict['use_fluts']
+        self.independent_inputs      = arch_params_dict['independent_inputs']
+        self.enable_carry_chain      = arch_params_dict['enable_carry_chain']
+        self.carry_chain_type        = arch_params_dict['carry_chain_type']
+        self.FAs_per_flut            = arch_params_dict['FAs_per_flut']
 
 
         # BRAM specs
-        self.row_decoder_bits = arch_params_dict['row_decoder_bits']
-        self.col_decoder_bits = arch_params_dict['col_decoder_bits']
-        self.conf_decoder_bits = arch_params_dict['conf_decoder_bits']
-        self.sense_dv = arch_params_dict['sense_dv']
-        self.worst_read_current = arch_params_dict['worst_read_current']
+        self.row_decoder_bits     = arch_params_dict['row_decoder_bits']
+        self.col_decoder_bits     = arch_params_dict['col_decoder_bits']
+        self.conf_decoder_bits    = arch_params_dict['conf_decoder_bits']
+        self.sense_dv             = arch_params_dict['sense_dv']
+        self.worst_read_current   = arch_params_dict['worst_read_current']
         self.quick_mode_threshold = quick_mode_threshold
-        self.vdd_low_power = arch_params_dict['vdd_low_power']
-        self.vref = arch_params_dict['vref']
-        self.number_of_banks = arch_params_dict['number_of_banks']
-        self.memory_technology = arch_params_dict['memory_technology']
+        self.vdd_low_power        = arch_params_dict['vdd_low_power']
+        self.vref                 = arch_params_dict['vref']
+        self.number_of_banks      = arch_params_dict['number_of_banks']
+        self.memory_technology    = arch_params_dict['memory_technology']
         self.SRAM_nominal_current = arch_params_dict['SRAM_nominal_current']
-        self.MTJ_Rlow_nominal = arch_params_dict['MTJ_Rlow_nominal']
-        self.MTJ_Rlow_worstcase = arch_params_dict['MTJ_Rlow_worstcase']
-        self.MTJ_Rhigh_worstcase = arch_params_dict['MTJ_Rhigh_worstcase']
-        self.MTJ_Rhigh_nominal = arch_params_dict['MTJ_Rhigh_nominal']
-        self.vclmp = arch_params_dict['vclmp']
-        self.read_to_write_ratio = arch_params_dict['read_to_write_ratio']
-        self.enable_bram_block = arch_params_dict['enable_bram_module']
-        self.ram_local_mux_size = arch_params_dict['ram_local_mux_size']
+        self.MTJ_Rlow_nominal     = arch_params_dict['MTJ_Rlow_nominal']
+        self.MTJ_Rlow_worstcase   = arch_params_dict['MTJ_Rlow_worstcase']
+        self.MTJ_Rhigh_worstcase  = arch_params_dict['MTJ_Rhigh_worstcase']
+        self.MTJ_Rhigh_nominal    = arch_params_dict['MTJ_Rhigh_nominal']
+        self.vclmp                = arch_params_dict['vclmp']
+        self.read_to_write_ratio  = arch_params_dict['read_to_write_ratio']
+        self.enable_bram_block    = arch_params_dict['enable_bram_module']
+        self.ram_local_mux_size   = arch_params_dict['ram_local_mux_size']
 
 
-        # general specs
-        self.vdd = arch_params_dict['vdd']
-        self.vsram = arch_params_dict['vsram']
-        self.vsram_n = arch_params_dict['vsram_n']
-        self.gate_length = arch_params_dict['gate_length']
-        self.min_tran_width = arch_params_dict['min_tran_width']
-        self.min_width_tran_area = arch_params_dict['min_width_tran_area']
-        self.sram_cell_area = arch_params_dict['sram_cell_area']
+        # Technology specs
+        self.vdd                    = arch_params_dict['vdd']
+        self.vsram                  = arch_params_dict['vsram']
+        self.vsram_n                = arch_params_dict['vsram_n']
+        self.gate_length            = arch_params_dict['gate_length']
+        self.min_tran_width         = arch_params_dict['min_tran_width']
+        self.min_width_tran_area    = arch_params_dict['min_width_tran_area']
+        self.sram_cell_area         = arch_params_dict['sram_cell_area']
         self.trans_diffusion_length = arch_params_dict['trans_diffusion_length']
-        self.metal_stack = arch_params_dict['metal']
-        self.model_path = arch_params_dict['model_path']
-        self.model_library = arch_params_dict['model_library']
-        self.rest_length_factor = arch_params_dict['rest_length_factor']
-        self.hb_files = arch_params_dict['hb_files']
-
-        self.use_tgate = arch_params_dict['use_tgate']
-        self.use_finfet = arch_params_dict['use_finfet']
+        self.metal_stack            = arch_params_dict['metal']
+        self.model_path             = arch_params_dict['model_path']
+        self.model_library          = arch_params_dict['model_library']
+        self.rest_length_factor     = arch_params_dict['rest_length_factor']
+        self.hb_files               = arch_params_dict['hb_files']
+        self.use_tgate              = arch_params_dict['use_tgate']
+        self.use_finfet             = arch_params_dict['use_finfet']
 
         
 
@@ -5214,14 +5213,29 @@ class FPGA:
           
         # Initialize the specs
         self.specs = _Specs(arch_params_dict, run_options.quick_mode)
-                                        
 
-        ### CREATE SWITCH BLOCK OBJECT
+
+        ######################################
+        ### INITIALIZE SPICE LIBRARY NAMES ###
+        ######################################
+
+        self.wire_RC_filename           = "wire_RC.l"
+        self.process_data_filename      = "process_data.l"
+        self.includes_filename          = "includes.l"
+        self.basic_subcircuits_filename = "basic_subcircuits.l"
+        self.subcircuits_filename       = "subcircuits.l"
+        self.sweep_data_filename        = "sweep_data.l"
+
+                                        
+        ##################################
+        ### CREATE SWITCH BLOCK OBJECT ###
+        ##################################
+
         # Calculate switch block mux size (for direct-drive routing)
         # The mux will need Fs + (Fs-1)(L-1) inputs for routing-to-routing connections
         # The Fs term comes from starting wires, the (Fs-1) term comes from non-starting wires, of which there are (L-1)
         r_to_r_sb_mux_size = self.specs.Fs + (self.specs.Fs-1)*(self.specs.L-1)
-        # Then, each mux needs No*Fcout*L/2 additional inputs for logic cluster outputs (No = number of cluster outputs)
+        # Then, each mux needs No*Fcout*L/2 additional inputs for logic cluster outputs (No = number of cluster outputs (Or))
         No = self.specs.num_cluster_outputs
         clb_to_r_sb_mux_size = No*self.specs.Fcout*self.specs.L/2
         sb_mux_size_required = int(r_to_r_sb_mux_size + clb_to_r_sb_mux_size)
@@ -5229,81 +5243,91 @@ class FPGA:
         num_sb_mux_per_tile = 2*self.specs.W/self.specs.L
         # Initialize the switch block
         self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, self.specs.use_tgate)
+
         
-        
-        ### CREATE CONNECTION BLOCK OBJECT
+        ######################################
+        ### CREATE CONNECTION BLOCK OBJECT ###
+        ######################################
+
         # Calculate connection block mux size
         # Size is W*Fcin
         cb_mux_size_required = int(self.specs.W*self.specs.Fcin)
         num_cb_mux_per_tile = self.specs.I
         # Initialize the connection block
         self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile, self.specs.use_tgate)
+
         
-        
-        ### CREATE LOGIC CLUSTER OBJECT
+        ###################################
+        ### CREATE LOGIC CLUSTER OBJECT ###
+        ###################################
+
         # Calculate local mux size
         # Local mux size is (inputs + feedback) * population
         local_mux_size_required = int((self.specs.I + self.specs.num_ble_local_outputs*self.specs.N) * self.specs.Fclocal)
         num_local_mux_per_tile = self.specs.N*(self.specs.K+self.specs.independent_inputs)
 
-
         # Todo: make this a parameter
-        skip_size = 5
         inter_wire_length = 0.5
-        self.skip_size = skip_size
+        self.skip_size = 5
         self.carry_skip_periphery_count = 0
         if self.specs.enable_carry_chain == 1 and self.specs.carry_chain_type == "skip":
-            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/skip_size))
-        # Create the logic cluster object            
+            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
+        # initialize the logic cluster
         self.logic_cluster = _LogicCluster(self.specs.N, self.specs.K, self.specs.num_ble_general_outputs, self.specs.num_ble_local_outputs, self.specs.Rsel, self.specs.Rfb, 
-                                           local_mux_size_required, num_local_mux_per_tile, self.specs.use_tgate, 
-                                           self.specs.use_finfet, self.specs.use_fluts, self.specs.enable_carry_chain, self.specs.FAs_per_flut, 
-                                           self.carry_skip_periphery_count)
+                                           local_mux_size_required, num_local_mux_per_tile, self.specs.use_tgate, self.specs.use_finfet, self.specs.use_fluts, 
+                                           self.specs.enable_carry_chain, self.specs.FAs_per_flut, self.carry_skip_periphery_count)
         
-        ### CREATE LOAD OBJECTS
+        ###########################
+        ### CREATE LOAD OBJECTS ###
+        ###########################
+
         # Create cluster output load object
         self.cluster_output_load = _GeneralBLEOutputLoad()
         # Create routing wire load object
         self.routing_wire_load = _RoutingWireLoad(self.specs.L)
 
-        # Create the Carry Chain Object
 
-        #print carry_chain_type
+        ##################################
+        ### CREATE CARRY CHAIN OBJECTS ###
+        ##################################
+
         if self.specs.enable_carry_chain == 1:
             self.carrychain = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut)
             self.carrychainperf = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate)
             self.carrychainmux = _CarryChainMux(self.specs.use_finfet, self.specs.use_fluts, self.specs.use_tgate)
             self.carrychaininter = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length)
             if self.specs.carry_chain_type == "skip":
-                self.carrychainand = _CarryChainSkipAnd(self.specs.use_finfet, self.specs.use_tgate, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, skip_size)
+                self.carrychainand = _CarryChainSkipAnd(self.specs.use_finfet, self.specs.use_tgate, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.skip_size)
                 self.carrychainskipmux = _CarryChainSkipMux(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.use_tgate)
+        
 
-        ### INITIALIZE OTHER VARIABLES, LISTS AND DICTIONARIES
-        # Initialize SPICE library filenames
-        self.wire_RC_filename = "wire_RC.l"
-        self.process_data_filename = "process_data.l"
-        self.includes_filename = "includes.l"
-        self.basic_subcircuits_filename = "basic_subcircuits.l"
-        self.subcircuits_filename = "subcircuits.l"
-        self.sweep_data_filename = "sweep_data.l"
+        #########################
+        ### CREATE RAM OBJECT ###
+        #########################
 
-        # CREATE RAM object
         RAM_local_mux_size_required = float(self.specs.ram_local_mux_size)
-
         RAM_num_mux_per_tile = (3 + 2*(self.specs.row_decoder_bits + self.specs.col_decoder_bits + self.specs.conf_decoder_bits ) + 2** (self.specs.conf_decoder_bits))
-
         self.RAM = _RAM(self.specs.row_decoder_bits, self.specs.col_decoder_bits, self.specs.conf_decoder_bits, RAM_local_mux_size_required, 
                         RAM_num_mux_per_tile , self.specs.use_tgate, self.specs.sram_cell_area*self.specs.min_width_tran_area, self.specs.number_of_banks,
                         self.specs.memory_technology, self.specs, self.process_data_filename, self.specs.read_to_write_ratio)
         self.number_of_banks = self.specs.number_of_banks
 
-        # Hard blocks
+        
+        ################################
+        ### CREATE HARD BLOCK OBJECT ###
+        ################################
+
         self.hardblocklist = []
         self.hard_block_files = self.specs.hb_files
         #self.hard_block_files = {}
         for name in self.hard_block_files:
             hard_block = _hard_block(name, self.specs.use_tgate)
             self.hardblocklist.append(hard_block)
+
+
+        ##########################################################
+        ### INITIALIZE OTHER VARIABLES, LISTS AND DICTIONARIES ###
+        ##########################################################
 
         self.area_opt_weight = run_options.area_opt_weight
         self.delay_opt_weight = run_options.delay_opt_weight
@@ -5365,13 +5389,11 @@ class FPGA:
         # e.g. metal_stack[0] = (R0, C0)
         self.metal_stack = self.specs.metal_stack
         
-        # weather or not to use transmission gates
+        # whether or not to use transmission gates
         self.use_tgate = self.specs.use_tgate
 
         # This is the height of the logic block, once an initial floorplanning solution has been determined, it will be assigned a non-zero value.
         self.lb_height =  0.0
-
-        # actual widths of blocks after floorplanning
 
 
 

@@ -2180,9 +2180,9 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		"""
 
 
-	opt_type  = run_options.opt_type 
-	re_erf = run_options.re_erf
-	max_iterations  = run_options.max_iterations 
+	opt_type         = run_options.opt_type 
+	re_erf           = run_options.re_erf
+	max_iterations   = run_options.max_iterations 
 	area_opt_weight  = run_options.area_opt_weight 
 	delay_opt_weight = run_options.delay_opt_weight
    

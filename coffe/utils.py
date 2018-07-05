@@ -909,13 +909,12 @@ def print_error(value, argument, filename):
 def print_run_options(args, report_file_path):
     """ 
     This function prints the run options entered by the user
-    when running COFFE in the terminal and in the report file  
+    when running COFFE, in the terminal and the report file  
     """
 
     report_file = open(report_file_path, 'w')
     report_file.write("Created " + str(datetime.datetime.now()) + "\n\n")
     
-    # TODO: check if the report_file is open or not
     print_and_write(report_file, "----------------------------------------------")
     print_and_write(report_file, "  RUN OPTIONS:")
     print_and_write(report_file, "----------------------------------------------" + "\n")
