@@ -436,6 +436,8 @@ def load_arch_params(filename):
         'Rfb': "",
         'transistor_type': "",
         'switch_type': "",
+        'use_tgate': False,
+        'use_finfet': False,
         'memory_technology': "SRAM",
         'enable_bram_module': 0,
         'ram_local_mux_size': 25,
@@ -535,20 +537,15 @@ def load_arch_params(filename):
             arch_params['number_of_banks'] = int(value)
         elif param == 'conf_decoder_bits':
             arch_params['conf_decoder_bits'] = int(value) 
-
         #process technology parameters
         elif param == 'transistor_type':
             arch_params['transistor_type'] = value
             if value == 'finfet':
                 arch_params['use_finfet'] = True
-            else:
-                arch_params['use_finfet'] = False
         elif param == 'switch_type':  
             arch_params['switch_type'] = value        
             if value == 'transmission_gate':
                 arch_params['use_tgate'] = True
-            else:
-                arch_params['use_tgate'] = False
         elif param == 'memory_technology':
             arch_params['memory_technology'] = value
         elif param == 'vdd':

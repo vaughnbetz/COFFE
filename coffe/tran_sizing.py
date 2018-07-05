@@ -2079,7 +2079,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 		total_area = area_results["tile"]
 		total_delay = delay_results["rep_crit_path"]
 		total_cost = total_area*total_delay
-		totals_strings.append((str(total_area)).ljust(20) + (str(total_delay)).ljust(2) + (str(total_cost)).ljust(20))
+		totals_strings.append((str(total_area)).ljust(20) + (str(total_delay)).ljust(20) + (str(total_cost)).ljust(20))
 	for total_str in totals_strings:
 		results_file.write(total_str + "\n")
 	results_file.write("\n")
