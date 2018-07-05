@@ -2639,9 +2639,6 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 
 	vpr_file.write("</complexblocklist>\n")
 	vpr_file.write("</architecture>\n")
-<<<<<<< HEAD
-=======
-
 
 
 def print_vpr_file(fpga_inst, arch_folder, enable_bram_module):
@@ -2654,4 +2651,3 @@ def print_vpr_file(fpga_inst, arch_folder, enable_bram_module):
 		print_vpr_file_flut_hard(vpr_file, fpga_inst)
 		
 	vpr_file.close()
->>>>>>> 81dd531205f0240148700fc888471da8ee762fb6
