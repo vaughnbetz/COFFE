@@ -3202,11 +3202,11 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			is_done = True
 			final_result_index = iteration - 1
 
-		iteration += 1
 		sys.stdout.flush()
 		final_report_file = open("sizing_results/sizes_iteration_" + str(iteration) + ".txt", 'w')
 		print_final_transistor_size(fpga_inst, final_report_file)
 		final_report_file.close()
+		iteration += 1
 
 
 	# There are two ways we can terminate the above while loop

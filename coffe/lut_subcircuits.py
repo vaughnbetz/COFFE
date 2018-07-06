@@ -7,6 +7,11 @@ import math
 # a 6-LUT, but in the 5-LUT case, there is nothing connected to "n_f" inside the LUT
 # netlist itself.
 
+
+# TODO: combine all the LUT generatins into one function that takes the lut
+#		size to reduce the amount of code repetition and make differences
+#		between them more obvious
+
 def generate_ptran_lut6(spice_filename, min_tran_width, use_finfet):
 	""" Generates a 6LUT SPICE deck """
 	
@@ -459,23 +464,6 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	wire_names_list.append("wire_lut_" + lut_input_name + "_driver_load")
 	
 	return wire_names_list
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def generate_tgate_lut6(spice_filename, min_tran_width, use_finfet):

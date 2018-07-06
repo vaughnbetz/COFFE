@@ -264,6 +264,7 @@ class _SwitchBlockMUX(_SizableCircuit):
         self.num_unused_inputs = self.implemented_size - self.required_size
         self.sram_per_mux = self.level1_size + self.level2_size
         
+        # TODO: wouldn't be better for inv 1 to start with pmos = 8 and nmos = 4
         # Call MUX generation function
         if not self.use_tgate :
             self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
@@ -1046,7 +1047,9 @@ class _LUT(_SizableCircuit):
         # Generate LUT differently based on K
         tempK = self.K
 
-        # TODO: level of fracturability could be checked here
+        # *TODO: this - 1 should depend on the level of fracturability
+        #        if the level is one a 6 lut will be two 5 luts if its
+        #        a 6 lut will be four 4 input luts
         if self.use_fluts:
             tempK = self.K - 1
 
@@ -1379,10 +1382,12 @@ class _LUT(_SizableCircuit):
         
     
     def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
+        """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
         print "Generating 6-LUT"
 
+        # COFFE doesn't support 7-input LUTs check_arch_params in utils.py will handle this
         # we currently don't support 7-input LUTs that are fracturable, that would require more code changes but can be done with reasonable effort.
-        assert use_fluts == False
+        # assert use_fluts == False
         
         # Call the generation function
         if not use_tgate :
@@ -1458,6 +1463,7 @@ class _LUT(_SizableCircuit):
 
         
     def _generate_5lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
+        """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
         print "Generating 5-LUT"
         
         # Call the generation function
@@ -1532,6 +1538,7 @@ class _LUT(_SizableCircuit):
 
   
     def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
+        """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
         print "Generating 4-LUT"
         
         # Call the generation function
@@ -1583,11 +1590,6 @@ class _LUT(_SizableCircuit):
         self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
         self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
         self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
-
-        # If this is one level fracutrable LUT then the e input will still be used
-        #TODO: when increasing the level of fructurability the f input will be used too
-        if use_fluts:
-            self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
         
         # Generate input driver loads
         self.input_driver_loads["a"].generate(subcircuit_filename, self.K)
@@ -1595,8 +1597,10 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["c"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
 
+        # *TODO: Add the second level of fracturability where the input f also will be used
         # If this is one level fracutrable LUT then the e input will still be used
         if use_fluts:
+            self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
             self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
         
         return self.initial_transistor_sizes
@@ -5422,24 +5426,11 @@ class FPGA:
         # |                               subcircuits.l                                   |
         # |                                                                               |
         # ---------------------------------------------------------------------------------
-        # |                  |                       |                      |             |
-        # |  process_data.l  |  basic_subcircuits.l  |  transistor_sizes.l  |  wire_RC.l  |
-        # |                  |                       |                      |             |
+        # |                         |                               |                     |
+        # |     process_data.l      |     basic_subcircuits.l       |     sweep_data.l    |
+        # |                         |                               |                     |
         # ---------------------------------------------------------------------------------
     
-    
-        # TODO: We don't use the transistor_sizes.l file anymore.
-        # But, we could add some kind of input file for transistor sizes...
-
-        # If transistor sizing is turned off, we want to keep the transistor sizes
-        # that are in 'transistor_sizes.l'. To do this, we keep a copy of the original file
-        # as COFFE will overwrite the original, and then we replace the overwritten file with
-        # our copy near the end of this function.
-        #if is_size_transistors:
-        #    print "TRANSISTOR SIZING MODE"
-        #else:
-        #    print "UPDATE MODE"
-        #    os.rename("transistor_sizes.l", "transistor_sizes_hold.l")
         
         # Generate basic subcircuit library (pass-transistor, inverter, wire, etc.).
         # This library will be used to build other netlists.

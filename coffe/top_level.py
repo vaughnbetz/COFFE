@@ -4478,38 +4478,32 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("Xcb_mux_on_1 n_in_gate n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
     spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
     spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n")
+
+    # Connect a load to n_rsel node
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
-        # Connect a load to n_rsel node
         spice_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
     spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
 
-    # Connect the LUT driver to a different LUT input based on LUT driver name
-    if not use_tgate :
-        if input_driver_name == "lut_a_driver":
-            spice_file.write("Xlut n_in_sram n_out n_3_1 vdd vdd vdd vdd vdd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_b_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd n_3_1 vdd vdd vdd vdd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_c_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd n_3_1 vdd vdd vdd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_d_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd n_3_1 vdd vdd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_e_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd n_3_1 vdd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_f_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd vdd vdd vdd vdd n_3_1 vdd_lut gnd lut\n")
-    else :
-        if input_driver_name == "lut_a_driver":
-            spice_file.write("Xlut n_in_sram n_out n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_b_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd gnd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_c_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd gnd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_d_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd gnd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_e_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd gnd vdd_lut gnd lut\n")
-        elif input_driver_name == "lut_f_driver":
-            spice_file.write("Xlut n_in_sram n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd n_3_1 n_1_4 vdd_lut gnd lut\n")
+    # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
+    # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
+    # transmission gate ---> "Xlut n_in_sram n_out a a_not b b_not c c_not d d_not e e_not f f_not vdd_lut gnd lut"
+    lut_letter = input_driver_name.replace("_driver", "")
+    lut_letter = lut_letter.replace("lut_", "")
+    # string holding lut input connections depending on the driver letter
+    lut_input_nodes = ""
+    # loop over the letters a -> f
+    for letter in range(97,103):
+        # if this is the driver connect it to n_3_1 else connect it to vdd
+        if chr(letter) == lut_letter:
+            lut_input_nodes += "n_3_1 "
+            # if tgate connect the complement input to n_1_4
+            if use_tgate: lut_input_nodes += "n_1_4 "
+        else:
+            lut_input_nodes += "vdd "
+            # if tgate connect the complement to gnd
+            if use_tgate: lut_input_nodes += "gnd "
+
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
     
     if use_fluts:
         spice_file.write("Xwireflut n_out n_out2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
