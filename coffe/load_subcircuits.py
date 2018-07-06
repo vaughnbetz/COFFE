@@ -360,9 +360,10 @@ def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
     
     
 def generate_lut_output_load(spice_filename, num_local_out, num_gen_out):
-    """ Create the LUT output load subcircuit. It consists of a FF and all BLE outputs. """
+    """ Create the LUT output load subcircuit. It consists of a FF which 
+        has the register select mux at its input and all BLE outputs which 
+        include the output routing mux (Or) and the output feedback mux (Ofb) """
 
-    #TODO: How is the output of the lut not connected to a mux before the FF?!
     # Total number of BLE outputs
     total_outputs = num_local_out + num_gen_out
 

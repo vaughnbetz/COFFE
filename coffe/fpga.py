@@ -94,11 +94,6 @@ class _Specs:
     """ General FPGA specs. """
  
     def __init__(self, arch_params_dict, quick_mode_threshold):
-                     #N, K, W, L, I, Fs, Fcin, Fcout, Fclocal, Or, Ofb, Rsel, Rfb,
-                     #vdd, vsram, vsram_n, gate_length, min_tran_width, min_width_tran_area, sram_cell_area, trans_diffusion_length, model_path, model_library,
-                     #use_finfet, rest_length_factor, row_decoder_bits, col_decoder_bits, conf_decoder_bits, sense_dv, worst_read_current, vdd_low_power, vref, number_of_banks,
-                     #memory_technology, SRAM_nominal_current, MTJ_Rlow_nominal, MTJ_Rhigh_nominal, MTJ_Rlow_worstcase, MTJ_Rhigh_worstcase, vclmp, read_to_write_ratio,
-                     #enable_bram_block, ram_local_mux_size, use_fluts, independent_inputs, enable_carry_chain, carry_chain_type, FAs_per_flut, hb_files):
         
         # FPGA architecture specs
         self.N                       = arch_params_dict['N']
@@ -506,7 +501,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
         
         
 class _LocalMUX(_SizableCircuit):
-    """ Local MUX Class: Pass-transistor 2-level mux with no driver """
+    """ Local Routing MUX Class: Pass-transistor 2-level mux with no driver """
     
     def __init__(self, required_size, num_per_tile, use_tgate):
         # Subcircuit name
@@ -846,6 +841,7 @@ class _LUTInput(_CompoundCircuit):
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
         # In addition, the input can (optionally) drive the register input 'default_rsel' or do both 'reg_fb_rsel'
         # Therefore, there are 4 different types, which are controlled by Rsel and Rfb
+        # The register select (Rsel) could only be one signal. While the feedback could be used with multiple signals
         if name in Rfb:
             if Rsel == name:
                 self.type = "reg_fb_rsel"
@@ -1608,15 +1604,14 @@ class _LUT(_SizableCircuit):
 
 
 class _CarryChainMux(_SizableCircuit):
-    """ Carry Chain Peripherals class.    """
+    """ Carry Chain Multiplexer class.    """
     def __init__(self, use_finfet, use_fluts, use_tgate):
         self.name = "carry_chain_mux"
         self.use_finfet = use_finfet
         self.use_fluts = use_fluts
-        self.use_tgate = use_tgate
-        
-        # Currently, I only generate the circuit assuming we have a fracturable lut. It can easily be changed to support nonfracturable luts as well.
-        assert use_fluts
+        self.use_tgate = use_tgate      
+        # handled in the check_arch_params function in the utils.py file
+        # assert use_fluts
         
 
     def generate(self, subcircuit_filename, min_tran_width, use_finfet):
@@ -1684,13 +1679,13 @@ class _CarryChainMux(_SizableCircuit):
         wire_layers["wire_" + self.name + "_driver"] = 0
 
 class _CarryChainPer(_SizableCircuit):
-    """ Carry Chain Peripherals class.    """
+    """ Carry Chain Peripherals class. Used to measure the delay from the Cin to Sout.  """
     def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, use_tgate):
         self.name = "carry_chain_perf"
         self.use_finfet = use_finfet
         self.carry_chain_type = carry_chain_type
-        # 1 FA per FA or 2?
-        assert FAs_per_flut <= 2
+        # handled in the check_arch_params funciton in utils.py
+        # assert FAs_per_flut <= 2
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N        
@@ -1742,12 +1737,11 @@ class _CarryChain(_SizableCircuit):
         self.use_finfet = use_finfet
         # ripple or skip?
         self.carry_chain_type = carry_chain_type
-        # 1 FA per FA or 2?
-        assert FAs_per_flut <= 2
+        # added to the check_arch_params function
+        # assert FAs_per_flut <= 2      
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N
-
 
 
     def generate(self, subcircuit_filename, min_tran_width, use_finfet):
@@ -1886,7 +1880,7 @@ class _CarryChainSkipAnd(_SizableCircuit):
         print " Carry Chain DETAILS:"
 
 class _CarryChainInterCluster(_SizableCircuit):
-    """ Part Driving wires to another cluster    """
+    """ Wire dirvers of carry chain path between clusters"""
     def __init__(self, use_finfet, carry_chain_type, inter_wire_length):
         # Carry chain name
         self.name = "carry_chain_inter"
@@ -2354,6 +2348,9 @@ class _GeneralBLEOutput(_SizableCircuit):
 
         
 class _LUTOutputLoad:
+    """ LUT output load is the load seen by the output of the LUT in the basic case if Or = 1 and Ofb = 1 (see [1])
+        then the output load will be the regster select mux of the flip-flop, the mux connecting the output signal
+        to the output routing and the mux connecting the output signal to the feedback mux """
 
     def __init__(self, num_local_outputs, num_general_outputs):
         self.name = "lut_output_load"
@@ -2392,7 +2389,11 @@ class _flut_mux(_CompoundCircuit):
         # use finfet
         self.use_finfet = use_finfet 
         self.enable_carry_chain = enable_carry_chain
-        assert use_finfet == False
+        
+        # this condition was added to the check_arch_params in utils.py
+        # assert use_finfet == False
+
+
     def generate(self, subcircuit_filename, min_tran_width):
         print "Generating flut added mux"   
 
@@ -2465,6 +2466,8 @@ class _BLE(_CompoundCircuit):
     def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, N):
         # BLE name
         self.name = "ble"
+        # number of bles in a cluster
+        self.N = N
         # Size of LUT
         self.K = K
         # Number of inputs to the BLE
@@ -2489,10 +2492,10 @@ class _BLE(_CompoundCircuit):
         if use_fluts:
             self.fmux = _flut_mux(use_tgate, use_finfet, enable_carry_chain)
 
+        # TODO: why is the carry chain object not defined here?
         self.enable_carry_chain = enable_carry_chain
         self.FAs_per_flut = FAs_per_flut
         self.carry_skip_periphery_count = carry_skip_periphery_count
-        self.N = N
 
         
         
@@ -5268,8 +5271,8 @@ class FPGA:
         local_mux_size_required = int((self.specs.I + self.specs.num_ble_local_outputs*self.specs.N) * self.specs.Fclocal)
         num_local_mux_per_tile = self.specs.N*(self.specs.K+self.specs.independent_inputs)
 
-        # Todo: make this a parameter
         inter_wire_length = 0.5
+        # Todo: make this a parameter
         self.skip_size = 5
         self.carry_skip_periphery_count = 0
         if self.specs.enable_carry_chain == 1 and self.specs.carry_chain_type == "skip":
@@ -5292,6 +5295,7 @@ class FPGA:
         ##################################
         ### CREATE CARRY CHAIN OBJECTS ###
         ##################################
+        # TODO: Why is the carry chain created here and not in the logic cluster object?
 
         if self.specs.enable_carry_chain == 1:
             self.carrychain = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut)
@@ -5525,9 +5529,11 @@ class FPGA:
         
         # We use the self.transistor_sizes to compute area. This dictionary has the form 'name': 'size'
         # And it knows the transistor sizes of all transistors in the FPGA
-        # We first need to calculate the area for each transistor. 
+        # We first need to calculate the area for each transistor.
+        # This function stores the areas in the transistor_area_list
         self._update_area_per_transistor()
         # Now, we have to update area_dict and width_dict with the new transistor area values
+        # for the basic subcircuits which are inverteres, ptran, tgate, restorers and transistors
         self._update_area_and_width_dicts()
         
 
@@ -5536,7 +5542,6 @@ class FPGA:
         self.area_dict["ramsram"] = 5 * self.specs.min_width_tran_area
         #MTJ in terms of min transistor width
         self.area_dict["rammtj"] = 1.23494 * self.specs.min_width_tran_area
-
         self.area_dict["mininv"] =  3 * self.specs.min_width_tran_area
         self.area_dict["ramtgate"] =  3 * self.area_dict["mininv"]
 
@@ -7334,10 +7339,10 @@ class FPGA:
                 # Get width of transistor in nm
                 tran_width = math.sqrt(tran_area_nm)
                 # Add this as a tuple to the tran_area_list
+                # TODO: tran_size and tran_drive are the same thing?!
                 tran_area_list.append((tran_name, tran_size, tran_drive, tran_area, 
                                                 tran_area_nm, tran_width))
                                                 
-    
         # Assign list to FPGA object
         self.transistor_area_list = tran_area_list
         
@@ -7346,22 +7351,27 @@ class FPGA:
         """ Calculate area for basic subcircuits like inverters, pass transistor, 
             transmission gates, etc. Update area_dict and width_dict with this data."""
         
-        # Initialize component area list
+        # Initialize component area list of tuples (component name, component are, component width)
         comp_area_list = []
         
         # Create a dictionary to store component sizes for multi-transistor components
         comp_dict = {}
         
         # For each transistor in the transistor_area_list
+        # tran is a tuple having the following formate (tran_name, tran_channel_width_nm, 
+        # tran_drive_strength, tran_area_min_areas, tran_area_nm, tran_width_nm)
         for tran in self.transistor_area_list:
+            # those components should have an nmos and a pmos transistors in them
             if "inv_" in tran[0] or "tgate_" in tran[0]:
-                # Get the component name
+                # Get the component name; transistors full name example: inv_lut_out_buffer_2_nmos.
+                # so the component name after the next two lines will be inv_lut_out_buffe_2.
                 comp_name = tran[0].replace("_nmos", "")
                 comp_name = comp_name.replace("_pmos", "")
                 
                 # If the component is already in the dictionary
                 if comp_name in comp_dict:
                     if "_nmos" in tran[0]:
+                        # tran[4] is tran_area_nm
                         comp_dict[comp_name]["nmos"] = tran[4]
                     else:
                         comp_dict[comp_name]["pmos"] = tran[4]
@@ -7370,8 +7380,7 @@ class FPGA:
                     # We can calculate the area of the inverter or tgate by doing the sum
                     comp_area = comp_dict[comp_name]["nmos"] + comp_dict[comp_name]["pmos"]
                     comp_width = math.sqrt(comp_area)
-                    comp_area_list.append((comp_name, comp_area, comp_width))         
-                        
+                    comp_area_list.append((comp_name, comp_area, comp_width))                 
                 else:
                     # Create a dict for this component to store nmos and pmos sizes
                     comp_area_dict = {}
@@ -7383,12 +7392,11 @@ class FPGA:
                         
                     # Add this inverter to the inverter dictionary    
                     comp_dict[comp_name] = comp_area_dict
-                    
+            # those components only have one transistor in them
             elif "ptran_" in tran[0] or "rest_" in tran[0] or "tran_" in tran[0]:   
                 # Get the comp name
                 comp_name = tran[0].replace("_nmos", "")
-                comp_name = comp_name.replace("_pmos", "")
-                
+                comp_name = comp_name.replace("_pmos", "")               
                 # Add this to comp_area_list directly
                 comp_area_list.append((comp_name, tran[4], tran[5]))            
         

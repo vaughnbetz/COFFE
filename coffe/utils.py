@@ -857,19 +857,23 @@ def check_arch_params (arch_params, filename):
     if arch_params['Rfb'] == 'z':
         pass    
     elif len(arch_params['Rfb']) > arch_params['K']:
-        print "ERROR: Invalid value (" + str(arch_params['Rfb']) + ") for Rfb in " + filename + " (you specified more Rfb LUT inputs than there are LUT inputs)"
-        sys.exit()
+        print_error (arch_params['Rfb'], "Rfb", filename, "(you specified more Rfb LUT inputs than there are LUT inputs)")
     else:
         # Now, let's make sure all these characters are valid characters
         for character in arch_params['Rfb']:
             # The character has to be a valid LUT input
             if (character < 'a' or character > chr(arch_params['K']+96)):
-                print "ERROR: Invalid value (" + str(arch_params['Rfb']) + ") for Rfb in " + filename + " (" + character + " is not a valid LUT input)"
-                sys.exit()
+                print_error (arch_params['Rfb'], "Rfb", filename, " (" + character + " is not a valid LUT input)")
             # The character should not appear twice
             elif arch_params['Rfb'].count(character) > 1:
-                print "ERROR: Invalid value (" + str(arch_params['Rfb']) + ") for Rfb in " + filename + " (" + character + " appears more than once)"
-                sys.exit()
+                print_error (arch_params['Rfb'], "Rfb", filename, " (" + character + " appears more than once)")
+    # only one or two FAs are allowed per ble
+    if arch_params['FAs_per_flut'] > 2:
+        print_error (str(arch_params['FAs_per_flut']), "FAs_per_flut", filename, "(number of FA per ble should be 2 or less)")
+    # Currently, I only generate the circuit assuming we have a fracturable lut. It can easily be changed to support nonfracturable luts as well.
+    if arch_params['enable_carry_chain'] == 1 and arch_params['use_fluts'] == False:
+        print_error_not_compatable("carry chains", "non fracturable lut")           
+
 
     # Check process technology parameters
     if arch_params['transistor_type'] != 'bulk' and arch_params['transistor_type'] != 'finfet':
@@ -891,17 +895,20 @@ def check_arch_params (arch_params, filename):
     if arch_params['trans_diffusion_length'] <= 0 :
         print_error (str(arch_params['trans_diffusion_length']), "trans_diffusion_length", filename)  
     if arch_params['enable_bram_module'] == 1 and arch_params['use_finfet'] == True:
-        print "finfet and BRAM simulations are not compatible"
-        sys.exit()             
+        print_error_not_compatable("finfet", "BRAM")           
+    if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
+        print_error_not_compatable("finfet", "flut")           
 
-    return
 
 
-def print_error(value, argument, filename):
-    print "ERROR: Invalid value (" + value + ") for " + argument + " in " + filename
+def print_error(value, argument, filename, msg = ""):
+    print "ERROR: Invalid value (" + value + ") for " + argument + " in " + filename + " " + msg
     sys.exit()
-    return
 
+
+def print_error_not_compatable(value1, value2):
+    print "ERROR: " + value1 + " and " + value2 + " simulations are not compatible.\n"
+    sys.exit()    
 
 
 def print_run_options(args, report_file_path):

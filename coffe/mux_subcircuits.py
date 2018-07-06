@@ -283,23 +283,6 @@ def generate_ptran_2_to_1_mux(spice_filename, mux_name):
 	return tran_names_list, wire_names_list 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _generate_tgate_driver(spice_file, mux_name, implemented_mux_size):
 	""" Generate mux driver for pass-transistor based MUX (it has a level restorer) """
 	
