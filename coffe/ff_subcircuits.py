@@ -1,5 +1,5 @@
 def generate_ptran_2_input_select_d_ff(spice_filename, use_finfet):
-	""" Generates a D Flip-Flop SPICE deck """
+	""" Generates a D Flip-Flop SPICE deck with a Rsel mux at its input """
 	
 	# This script has to create the SPICE subcircuits required.
 	# It has to return a list of the transistor names used as well as a list of the wire names used.
@@ -168,17 +168,8 @@ def generate_ptran_d_ff(spice_filename, use_finfet):
 
 
 
-
-
-
-
-
-
-
-
-
 def generate_tgate_2_input_select_d_ff(spice_filename, use_finfet):
-	""" Generates a D Flip-Flop SPICE deck """
+	""" Generates a D Flip-Flop SPICE deck with a Rsel mux at its input """
 	
 	# This script has to create the SPICE subcircuits required.
 	# It has to return a list of the transistor names used as well as a list of the wire names used.

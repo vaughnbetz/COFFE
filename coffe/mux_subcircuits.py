@@ -27,7 +27,9 @@ def _generate_ptran_sense_only(spice_file, mux_name, implemented_mux_size):
 	
 	
 def _generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size):
-	""" Generate off pass-transistor 2-level mux """
+	""" Generate off pass-transistor 2-level mux,meaning that the incoming 
+	    signal will see the drain of a ptran with its gate connected to groud 
+	    Note: only used in the load subcircuits """
 	
 	# Create the off MUX circuit
 	spice_file.write("******************************************************************************************\n")
@@ -39,7 +41,9 @@ def _generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size):
 	
 
 def _generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size):
-	""" Generate partially on pass-transistor 2-level mux """
+	""" Generate partially-on pass-transistor 2-level mux with only level 1 turned on, meaning that the
+		incoming signal will only go through one ptran connect to another ptran with its gate connected to ground 
+		Note: only used in the load subcircuits"""
 
 	# Create the partially-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
@@ -71,7 +75,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (mux only)\n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (mux only - no sense inverter or driver)\n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + "_on_mux_only n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
 	# Write level 1 netlist
@@ -167,7 +171,7 @@ def generate_ptran_2lvl_mux(spice_filename, mux_name, implemented_mux_size, leve
 	
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on \n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (with sense inverter and output driver) \n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + "_on n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
 	spice_file.write("X" + mux_name + "_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
@@ -218,7 +222,7 @@ def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on \n")
+	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (with sense inverter only) \n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + "_on n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
 	spice_file.write("X" + mux_name + "_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
@@ -252,7 +256,7 @@ def generate_ptran_2_to_1_mux(spice_filename, mux_name):
 	
 	# Create the 2:1 MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (2:1)\n")
+	spice_file.write("* " + mux_name + " subcircuit (2:1) (with sense inverter and output dirver) \n") 
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + " n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
 	spice_file.write("Xptran_" + mux_name + " n_in n_1_1 n_gate n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n")
@@ -311,7 +315,8 @@ def _generate_tgate_sense_only(spice_file, mux_name, implemented_mux_size):
 	spice_file.write(".ENDS\n\n\n")
 	
 def _generate_tgate_2lvl_mux_off(spice_file, mux_name, implemented_mux_size):
-	""" Generate off pass-transistor 2-level mux """
+	""" Generate off pass-transistor 2-level mux.
+	    Note: only used in the load subcircuits """
 	
 	# Create the off MUX circuit
 	spice_file.write("******************************************************************************************\n")
@@ -322,7 +327,8 @@ def _generate_tgate_2lvl_mux_off(spice_file, mux_name, implemented_mux_size):
 	spice_file.write(".ENDS\n\n\n")
 	
 def _generate_tgate_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size):
-	""" Generate partially on pass-transistor 2-level mux """
+	""" Generate partially on pass-transistor 2-level mux 
+		Note: only used in the load subcircuits """
 
 	# Create the partially-on MUX circuit
 	spice_file.write("******************************************************************************************\n")

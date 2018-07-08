@@ -1,4 +1,5 @@
 import os
+import utils
 
 def generate_switch_block_top(mux_name):
     """ Generate the top level switch block SPICE file """
@@ -73,6 +74,7 @@ def generate_switch_block_top(mux_name):
     
 def generate_connection_block_top(mux_name):
     """ Generate the top level switch block SPICE file """
+    # TODO: why is the connection block using the switch block mux!!!
     
     # Create directories
     if not os.path.exists(mux_name):
@@ -129,6 +131,7 @@ def generate_connection_block_top(mux_name):
     cb_file.write("********************************************************************************\n")
     cb_file.write("** Circuit\n")
     cb_file.write("********************************************************************************\n\n")
+    # BUG: This should be a cb_mux not an sb_mux. Tried out without sizing and showed worse delay
     cb_file.write("Xsb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd sb_mux_on\n")
     cb_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd_cb_mux routing_wire_load\n")
     cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
@@ -4668,13 +4671,23 @@ def generate_general_ble_output_top(name, use_tgate):
     
 
 
-def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
+def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, updates = False, input_name = "", output_name = ""):
     
     #TODO: 
     #- I think the general ble output load should be removed from this ciruit in case of an ALM
     #  with carry chain. Since, the load in this case is only the carry chain mux. 
     #- I also think that in both cases whether there is a carry chain mux or not the delay should 
     #  be measured between the n_1_1 and n_1_3 and not between n_1_1 and n_local_out.
+
+    lut_input_nodes = ""
+    if use_tgate: 
+        lut_input_nodes += "vdd gnd "*6
+    else:
+        lut_input_nodes += "vdd "*6
+
+    output = "n_local_out"
+    if updates:
+        output = "n_1_3" 
     
     # Create directories
     if not os.path.exists(name):
@@ -4705,23 +4718,23 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
     top_file.write("********************************************************************************\n")
     top_file.write("** Measurement\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write("* inv_"+ name +"_1 delay\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_1_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
+    top_file.write("* inv_"+name+"_1 delay\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V(Xthemux.n_2_1) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_1_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V(Xthemux.n_2_1) VAL='supply_v/2' RISE=1\n\n")
-    top_file.write("* inv_"+ name +"_2 delays\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_2_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+ name +"_2_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("* inv_"+name+"_2 delays\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* Total delays\n")
     top_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
     #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
     top_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
     #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' RISE=1\n\n")
-    top_file.write("+    TARG V(n_local_out) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n\n")
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
@@ -4732,8 +4745,8 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     # lut, wire from lut to the mux, the mux, and the load same output load as before
-    if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
+    if not updates:
+        top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n")
         top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n")  
         top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")       
         if enable_carry_chain == 1:
@@ -4741,17 +4754,22 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
             top_file.write("Xccmux n_1_4 n_local_out vdd gnd vdd gnd carry_chain_mux\n")   
         else:
             top_file.write("Xlut_output_load n_1_3 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
-    else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
-        top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")  
-        if enable_carry_chain == 1:
-            top_file.write("Xwireovercc n_1_3 n_1_4 wire Rw=wire_carry_chain_5_res Cw=wire_carry_chain_5_cap\n") 
-            top_file.write("Xccmux n_1_4 n_local_out vdd gnd vdd gnd carry_chain_mux\n")
-        else:
-            top_file.write("Xlut_output_load n_1_3 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
+            top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
+    else:
+        # TODO: each subcircuit should already have an input wire connected to it to avoid confusion
+        top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n")
+        top_file.write(utils.create_wire("n_1_1", "n_1_2", input_name, name))  
+        top_file.write("X"+name+" n_1_2 n_1_3 vdd gnd vdd_f gnd "+name+"\n")
+        if enable_carry_chain:
+            # TODO: figure out what is the suitable inputs for this
+            top_file.write(utils.create_wire("n_1_1", "n_2_2", input_name, "carry_chain"))
+            top_file.write("Xcarrychain n_2_3 gnd gnd nout_2_3 nout_2_4 n_p_1 vdd gnd FA_carry_chain\n")
+        top_file.write(utils.create_wire("n_1_1", "n_3_2", input_name, name+"_duplicate"))
+        top_file.write("X" +name+"_duplicate n_3_2 nout_3_3 vdd gnd vdd_f gnd "+name+"\n")
+        top_file.write(utils.create_wire("n_1_3", "n_1_4", name, output_name))
+        top_file.write("X" +output_name+" n_1_4 nout_1_5 vdd gnd vdd gnd "+output_name+"\n")
 
-    top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
+
     top_file.write(".END")
     top_file.close()
 
@@ -4841,7 +4859,8 @@ def generate_cc_mux_top(name, use_tgate):
 
 """
 def generate_carrychain_top(name, architecture):
-    """ """
+""" 
+"""
     
     # Create directories
     if not os.path.exists(name):
