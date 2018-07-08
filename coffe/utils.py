@@ -1163,3 +1163,14 @@ def print_summary(arch_folder, fpga_inst, start_time):
     
     report_file.write("\n")
     report_file.close() 
+
+
+
+def wire_name(from_node, to_node):
+    """ created a wire name coming from from_node to to_node """
+    return "wire_" + from_node + "_to_" + to_node
+
+def create_wire(node_1, node_2, from_node, to_node):
+    """ Creates the line of adding a wire to the netlist """
+    name = wire_name(from_node, to_node)
+    return "X"+name+" "+node_1+" "+node_2+" wire Rw="+name+"_res Cw="+name+"_cap\n"

@@ -2322,7 +2322,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
 
-			# update quick mode status and display duration
+		# update quick mode status and display duration
 		if quick_mode_dict[name] == 1:
 			time_after_sizing = time.time()
 			

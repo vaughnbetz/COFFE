@@ -97,6 +97,12 @@ spice_interface = spice.SpiceInterface()
 # Record start time
 total_start_time = time.time()
 
+# this is a temporary parameter it will be checked before executing
+# any change introduced to the code to be able to check if the original 
+# code is working after adding any change
+# this controles appyling or disabling the new updates
+arch_params_dict['updates'] = False
+
 # Create an FPGA instance
 fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
                      

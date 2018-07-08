@@ -82,3 +82,11 @@ sainity_check/sainity_check/
 # hspice_extract file not used anywhere in the code
 # should be deleted later
 coffe/hspice_extract.py
+
+tags/*
+
+.tags
+
+*.sh
+
+coffe.sublime*

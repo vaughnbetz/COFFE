@@ -187,7 +187,8 @@ class SpiceInterface(object):
                 hspice_runs = hspice_runs + 1
                 if hspice_runs > 10 :
                     print "----------------------------------------------------------"
-                    print "                  HSPICE failed to run                    "
+                    #print "                  HSPICE failed to run                    "
+                    print "         Failed to run HSPICE on " + sp_filename
                     print "----------------------------------------------------------"
                     print ""
                     exit(2)
@@ -226,6 +227,9 @@ class SpiceInterface(object):
         # measurements = {meas_name1: [value1, value2, value3, etc...], 
         #                 meas_name2: [value1, value2, value3, etc...],
         #                 etc...}
+
+        # TODO: avoid printing all the sweeping data and reading them again try forcing 
+        # hspice to report the measurments only without the sweeping data
         measurements = {}
         meas_names = []
 
@@ -299,6 +303,9 @@ class SpiceInterface(object):
                     current_meas += 1
                     if current_meas == num_measurements:
                         current_meas = 0
+
+        #for param, value in measurements.items():
+        #    print(param + ", " + str(value))
 
 
         
