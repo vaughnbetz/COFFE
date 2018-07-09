@@ -1145,7 +1145,7 @@ class _LUT(_SizableCircuit):
                 area = area + area_dict["flut_mux"]
         else:
             area *= 4
-            area += 2*area_dict["fmux_l1"]
+            area += 3*area_dict["fmux_l1"]
             area += area_dict["fmux_l2"]
 
         width = math.sqrt(area)
@@ -1703,7 +1703,7 @@ class _CarryChainPer(_SizableCircuit):
 
 class _CarryChain(_SizableCircuit):
     """ Carry Chain class.    """
-    def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut):
+    def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, updates = False):
         # Carry chain name
         self.name = "carry_chain"
         self.use_finfet = use_finfet
@@ -1714,6 +1714,9 @@ class _CarryChain(_SizableCircuit):
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N
+
+        # Boolean for applying updates
+        self.updates = updates
 
 
     def generate(self, subcircuit_filename, min_tran_width, use_finfet):
@@ -1732,6 +1735,10 @@ class _CarryChain(_SizableCircuit):
         self.initial_transistor_sizes["tgate_carry_chain_1_pmos"] = 1
         self.initial_transistor_sizes["tgate_carry_chain_2_nmos"] = 1
         self.initial_transistor_sizes["tgate_carry_chain_2_pmos"] = 1
+
+        # this wire is needed in the flut mux simulations of the new architecture
+        if self.updates:
+            self.wire_names.append(utils.wire_name("lut", self.name))
 
         return self.initial_transistor_sizes
 
@@ -1770,6 +1777,13 @@ class _CarryChain(_SizableCircuit):
         wire_layers["wire_" + self.name + "_4"] = 0
         wire_lengths["wire_" + self.name + "_5"] = width_dict[self.name] # Wire for output Sum
         wire_layers["wire_" + self.name + "_5"] = 0
+
+        # TODO: revise those values
+        # this wire is needed in the flut mux simulation for the new architecture
+        if self.updates:
+            wire_lengths[utils.wire_name("lut", self.name)] = width_dict["fmux_l1"]
+            wire_lengths[utils.wire_name("lut", self.name)] = 0
+
 
     def print_details(self):
         print " Carry Chain DETAILS:"
@@ -1980,6 +1994,8 @@ class _FlipFlop:
         used when COFFE measures T_setup and T_clock_to_Q. Those transistor sizes were obtained
         through manual design for PTM 22nm process technology. If you use a different process technology,
         you may need to re-size the FF transistors. """
+
+        #TODO: add the 3:1 register select mux needed for the new architecture here
     
     def __init__(self, Rsel, use_tgate, use_finfet):
         # Flip-Flop name
@@ -2245,41 +2261,62 @@ class _LocalBLEOutput(_SizableCircuit):
 class _GeneralBLEOutput(_SizableCircuit):
     """ General BLE Output is the mux at the output of the ble connecting its output to the general routing """
     
-    def __init__(self, use_tgate):
+    def __init__(self, use_tgate, use_fluts, enable_carry_chain, updates = False, input_size = 2):
         self.name = "general_ble_output"
         self.delay_weight = DELAY_WEIGHT_GENERAL_BLE_OUTPUT
         self.use_tgate = use_tgate
+        self.use_fluts = use_fluts
+        self.enable_carry_chain = enable_carry_chain
+
+        # updates the local ble output class will support creating either a 2:1 mux or a 3:1 mux
+        # it should be called twice in the ble class to create the two output mux types needed
+        self.updates = updates
+        self.input_size = input_size
+
+        if self.updates:
+            self.name = "general_ble_output_" + str(input_size)
         
         
     def generate(self, subcircuit_filename, min_tran_width):
         print "Generating general BLE output"
-        if not self.use_tgate :
-            self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
-            # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-            self.initial_transistor_sizes["ptran_" + self.name + "_nmos"] = 2
-            self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-            self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
-            self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
-            self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
-            self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
-        else :
-            self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2_to_1_mux(subcircuit_filename, self.name)      
-            # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-            self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
-            self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
-            self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
-            self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
-            self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
-            self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
-       
+
+        # if the mux is a 3:1 mux which should happen only for the new design, create the mux using the 2lvl mux function
+        # the mux will one additional ptran or one additional transmission gate for the added level
+        if self.updates and self.input_size == 3:
+            if not self.use_tgate:
+                self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, 4, 2, 2)
+                self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 2
+                self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 2
+                self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+            else: 
+                self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2lvl_mux(subcircuit_filename, self.name, 4, 2, 2)
+                self.initial_transistor_sizes["tgate_" + self.name + "_L1_nmos"] = 2
+                self.initial_transistor_sizes["tgate_" + self.name + "_L1_pmos"] = 2
+                self.initial_transistor_sizes["tgate_" + self.name + "_L2_nmos"] = 2
+                self.initial_transistor_sizes["tgate_" + self.name + "_L2_pmos"] = 2
+        else:
+            if not self.use_tgate:
+                self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
+                self.initial_transistor_sizes["ptran_" + self.name + "_nmos"] = 2
+                self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
+            else:
+                self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2_to_1_mux(subcircuit_filename, self.name)
+                self.initial_transistor_sizes["tgate_" + self.name + "_nmos"] = 2
+                self.initial_transistor_sizes["tgate_" + self.name + "_pmos"] = 2
+
+        self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
+        self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
+        self.initial_transistor_sizes["inv_" + self.name + "_2_nmos"] = 5
+        self.initial_transistor_sizes["inv_" + self.name + "_2_pmos"] = 5
+
         return self.initial_transistor_sizes
 
 
     def generate_top(self):
         print "Generating top-level " + self.name
-        self.top_spice_path = top_level.generate_general_ble_output_top(self.name, self.use_tgate)
-        
-     
+        self.top_spice_path = top_level.generate_general_ble_output_top(self.name, self.use_tgate, self.use_fluts, 
+                                                                        self.enable_carry_chain, self.updates)
+
     def update_area(self, area_dict, width_dict):
         if not self.use_tgate :
             area = (2*area_dict["ptran_" + self.name] +
@@ -2408,8 +2445,10 @@ class _flut_mux(_SizableCircuit):
         # TODO: why not just feed the instance to it?
         self.top_spice_path = top_level.generate_flut_mux_top(self.name, self.use_tgate, self.enable_carry_chain, self.level, 
                                                               self.updates, self.input_node, self.output_node)
-        self.wire_names.append(utils.wire_name("lut", "carry_chain"))
-
+        # add the wire connecting the lut output to the fmux l1 duplicate input
+        if self.updates:
+            self.wire_names.append(utils.wire_name("lut", "fmux_l1_duplicate"))
+            
 
     def update_area(self, area_dict, width_dict):
         """ updates the area according to the current transistor areas """
@@ -2447,8 +2486,6 @@ class _flut_mux(_SizableCircuit):
         wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
 
         if self.updates:
-            wire_lengths[utils.wire_name("lut", "carry_chain")] = width_dict["lut"]/2 * lut_ratio
-            wire_layers[utils.wire_name("lut", "carry_chain")] = 0
             wire_lengths[utils.wire_name("lut", "fmux_l1_duplicate")] = width_dict["lut"]/2 * lut_ratio
             wire_layers[utils.wire_name("lut", "fmux_l1_duplicate")] = 0
         
@@ -2478,7 +2515,7 @@ class _BLE(_CompoundCircuit):
         # Create BLE local output object
         self.local_output = _LocalBLEOutput(use_tgate)
         # Create BLE general output object
-        self.general_output = _GeneralBLEOutput(use_tgate)
+        self.general_output = _GeneralBLEOutput(use_tgate, use_fluts, enable_carry_chain, updates)
         # Create LUT object
         self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, updates)
         # Create FF object
@@ -5337,7 +5374,7 @@ class FPGA:
         # TODO: Why is the carry chain created here and not in the logic cluster object?
 
         if self.specs.enable_carry_chain == 1:
-            self.carrychain = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut)
+            self.carrychain = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.updates)
             self.carrychainperf = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate)
             self.carrychainmux = _CarryChainMux(self.specs.use_finfet, self.specs.use_fluts, self.specs.use_tgate)
             self.carrychaininter = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length)
