@@ -169,11 +169,15 @@ def generate_ptran_2lvl_mux(spice_filename, mux_name, implemented_mux_size, leve
 	_generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
 	_generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
 	
+
+	on = "_on"
+	if "general" in mux_name:
+		on = ""
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (with sense inverter and output driver) \n")
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write(".SUBCKT " + mux_name + "_on n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
+	spice_file.write(".SUBCKT " + mux_name + on + " n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
 	spice_file.write("X" + mux_name + "_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
 	spice_file.write("X" + mux_name + "_driver n_1_1 n_out n_vdd n_gnd " + mux_name + "_driver\n")
 	spice_file.write(".ENDS\n\n\n")
@@ -295,7 +299,6 @@ def _generate_tgate_driver(spice_file, mux_name, implemented_mux_size):
 	spice_file.write("* " + mux_name + " driver subcircuit (" + str(implemented_mux_size) + ":1)\n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + "_driver n_in n_out n_vdd n_gnd\n")
-	# spice_file.write("Xrest_" + mux_name + " n_in n_1_1 n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
 	spice_file.write("Xinv_" + mux_name + "_1 n_in n_1_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
 	spice_file.write("Xwire_" + mux_name + "_driver n_1_1 n_1_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
 	spice_file.write("Xinv_" + mux_name + "_2 n_1_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
@@ -310,7 +313,6 @@ def _generate_tgate_sense_only(spice_file, mux_name, implemented_mux_size):
 	spice_file.write("* " + mux_name + " sense inverter subcircuit (" + str(implemented_mux_size) + ":1)\n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + "_sense n_in n_out n_vdd n_gnd\n")
-	# spice_file.write("Xrest_" + mux_name + " n_in n_out n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
 	spice_file.write("Xinv_" + mux_name + "_1 n_in n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
 	spice_file.write(".ENDS\n\n\n")
 	

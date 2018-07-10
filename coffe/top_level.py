@@ -1171,7 +1171,7 @@ def generate_pgateoutputcrossbar_top(name, maxwidth, def_use_tgate):
     #the actual circuit
     the_file.write("xoutputcrossbar n_1_1 n_1_2 vdd_nand2 vsram gnd pgateoutputcrossbar\n")
     #the load (a flip flop in this case)
-    the_file.write("Xff n_1_2 n_hang2 vdd gnd vdd nnd gnd vdd gnd vdd vdd gnd ff\n")
+    the_file.write("Xff n_1_2 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n")
 
 
     the_file.write(".END")
@@ -4178,7 +4178,7 @@ def generate_lut5_top(lut_name, use_tgate):
     return (lut_name + "/" + lut_name + ".sp") 
  
 
-def generate_lut4_top(lut_name, use_tgate):
+def generate_lut4_top(lut_name, use_tgate, updates = False):
     """ Generate the top level 4-LUT SPICE file """
 
     
@@ -4192,6 +4192,9 @@ def generate_lut4_top(lut_name, use_tgate):
         os.makedirs(lut_name)  
     # Change to directory    
     os.chdir(lut_name) 
+
+    lut_input_nodes = "vdd "*6
+    if use_tgate: lut_input_nodes = "vdd gnd "*6
     
     lut_filename = lut_name + ".sp"
     lut_file = open(lut_filename, 'w')
@@ -4253,12 +4256,13 @@ def generate_lut4_top(lut_name, use_tgate):
     lut_file.write("********************************************************************************\n")
     lut_file.write("** Circuit\n")
     lut_file.write("********************************************************************************\n\n")
-    if not use_tgate :
-        lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+
+    lut_file.write("Xlut n_in n_out " + lut_input_nodes + "vdd gnd lut\n\n")
+    if updates:
+        lut_file.write("Xflut_output_load n_out nout2 nout3 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    else:
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
-    else :
-        lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
+   
 
     lut_file.write(".END")
     lut_file.close()
@@ -4427,7 +4431,7 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
     return (input_driver_name_no_not + "/" + input_driver_name + ".sp")    
    
   
-def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate, use_fluts):
+def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate, use_fluts, updates = False):
     """ Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
     
     # Create directories
@@ -4435,6 +4439,27 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
         os.makedirs(input_driver_name)  
     # Change to directory    
     os.chdir(input_driver_name)  
+
+
+    # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
+    # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
+    # transmission gate ---> "Xlut n_in_sram n_out a a_not b b_not c c_not d d_not e e_not f f_not vdd_lut gnd lut"
+    lut_letter = input_driver_name.replace("_driver", "")
+    lut_letter = lut_letter.replace("lut_", "")
+    # string holding lut input connections depending on the driver letter
+    lut_input_nodes = ""
+    # loop over the letters a -> f
+    for letter in range(97,103):
+        # if this is the driver connect it to n_3_1 else connect it to vdd
+        if chr(letter) == lut_letter:
+            lut_input_nodes += "n_3_1 "
+            # if tgate connect the complement input to n_1_4
+            if use_tgate: lut_input_nodes += "n_1_4 "
+        else:
+            lut_input_nodes += "vdd "
+            # if tgate connect the complement to gnd
+            if use_tgate: lut_input_nodes += "gnd "
+
     
     lut_driver_filename = input_driver_name + "_with_lut.sp"
     spice_file = open(lut_driver_filename, 'w')
@@ -4486,33 +4511,19 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
         spice_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
     spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
 
-    # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
-    # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
-    # transmission gate ---> "Xlut n_in_sram n_out a a_not b b_not c c_not d d_not e e_not f f_not vdd_lut gnd lut"
-    lut_letter = input_driver_name.replace("_driver", "")
-    lut_letter = lut_letter.replace("lut_", "")
-    # string holding lut input connections depending on the driver letter
-    lut_input_nodes = ""
-    # loop over the letters a -> f
-    for letter in range(97,103):
-        # if this is the driver connect it to n_3_1 else connect it to vdd
-        if chr(letter) == lut_letter:
-            lut_input_nodes += "n_3_1 "
-            # if tgate connect the complement input to n_1_4
-            if use_tgate: lut_input_nodes += "n_1_4 "
-        else:
-            lut_input_nodes += "vdd "
-            # if tgate connect the complement to gnd
-            if use_tgate: lut_input_nodes += "gnd "
-
+    
     spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
     
-    if use_fluts:
-        spice_file.write("Xwireflut n_out n_out2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
-        spice_file.write("Xthemux n_out2 n_out3 vdd gnd vdd gnd flut_mux\n") 
+    if not updates:
+        if use_fluts:
+            spice_file.write("Xwireflut n_out n_out2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
+            spice_file.write("Xthemux n_out2 n_out3 vdd gnd vdd gnd flut_mux\n")
+            # BUG: this is a big fix the two lines above should be removed and replace with the next line
+            # top_file.write("Xflut_output_load n_out n_out1 n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+        else:
+            spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else:
-        spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
-    
+        spice_file.write("Xflut_output_load n_out n_out1 n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
     
     spice_file.write(".END")
     spice_file.close()
@@ -4521,7 +4532,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     os.chdir("../")  
   
     
-def generate_local_ble_output_top(name, use_tgate):
+def generate_local_ble_output_top(name, use_tgate, use_fluts, updates = False):
     """ Generate the top level local ble output SPICE file """
     
     # Create directories
@@ -4529,6 +4540,10 @@ def generate_local_ble_output_top(name, use_tgate):
         os.makedirs(name)  
     # Change to directory    
     os.chdir(name)   
+
+    lut_input_nodes = "vdd "*6
+    if use_tgate: lut_input_nodes = "vdd gnd "*6
+
     
     local_ble_output_filename = name + ".sp"
     top_file = open(local_ble_output_filename, 'w')
@@ -4578,13 +4593,15 @@ def generate_local_ble_output_top(name, use_tgate):
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
-    if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
-        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
-    else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
-        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
 
+    # BUG: This was a bug fix for coffe 2.0 should be uncommented
+    #if use_fluts:
+    #    top_file.write("Xlut n_in n_0_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
+    #    top_file.write("Xflut_output_load n_0_1 n_1_1 n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    #else:
+    top_file.write("Xlut n_in n_1_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
+    
+    top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
     top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n vdd gnd local_ble_output_load\n")
     top_file.write(".END")
     top_file.close()
@@ -4595,7 +4612,7 @@ def generate_local_ble_output_top(name, use_tgate):
     return (name + "/" + name + ".sp")
     
     
-def generate_general_ble_output_top(name, use_tgate, use_fluts, enable_carry_chain, updates = False):
+def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False, input_size = 2):
     """ """
     
     # Create directories
@@ -4656,35 +4673,31 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, enable_carry_cha
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
 
-    top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-
-    # TODO: put this back in
-    #if not updates:
-    #    if use_fluts:
-    #        top_file.write("Xflut_mux n_0_1 n_0_2 vdd gnd vdd gnd flut_mux\n")
-    #        if enable_carry_chain:
-    #            top_file.write("Xccmux n_0_2 n_1_1 vdd gnd vdd gnd carry_chain_mux\n") 
-    #    top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
+    # BUG: This is a bug fix for COFFE 2.0 uncomment it and push it to the master
+    #if use_fluts:
+    #    top_file.write("Xlut n_in n_0_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
+    #    top_file.write("Xflut_output_load n_0_1 n_1_1 n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
     #else:
-    #    top_file.write(utils.create_wire("n_0_1", "n_0_2", "lut", "fmux_l1")) 
-    #    top_file.write("Xfmux_l1 n_0_2 n_0_3 vdd gnd vdd gnd fmux_l1\n\n")
-
-        # loading at the output of the lut (n_0_1)
-    #    if enable_carry_chain:
-    #        top_file.write(utils.create_wire("n_0_1", "n_2_2", "lut", "carry_chain"))
-    #        # TODO: figure out what are the suitable inputs for this
-    #        top_file.write("Xcarrychain n_2_2 gnd gnd nout_2_3 nout_2_4 n_p_1 vdd gnd FA_carry_chain\n\n")
-    #    # duplicate 5-LUT output flut mux
-    #    top_file.write(utils.create_wire("n_0_1", "n_3_2", "lut", "fmux_l1_duplicate"))
-    #    top_file.write("Xfmux_l1_duplicate n_3_2 nout_3_3 vdd gnd vdd_f gnd fmux_l1\n\n")
-
-    #    top_file.write(utils.create_wire("n_0_3", "n_0_4", "fmux_l1", "fmux_l2"))
-    #    top_file.write("Xfmux_l2 n_0_4 n_0_5 vdd gnd vdd gnd fmux_l2\n\n")
-    #    # TODO: the loading of the reister select mux should be added here
-    #    top_file.write(utils.create_wire("n_0_5", "n_1_1", "fmux_l1", "fmux_l2"))
-    #    top_file.write("Xgeneral_ble_output_3 n_1_1 n_general_out vdd gnd vdd gnd general_ble_output_3\n\n")
-
-    top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
+    
+    if updates:
+        if input_size == 2:
+            top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+            top_file.write("Xflut_output_load n_0_1 nout2 n_0_2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+            # add ff load to node n_0_2
+            top_file.write("Xff2 n_0_2 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n")
+            top_file.write(utils.create_wire("n_0_2", "n_1_1", "fmux_l2", "ble_output_0"))
+            top_file.write("Xgeneral_ble_output n_1_1 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+        elif input_size == 3:
+            top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+            top_file.write("Xflut_output_load n_0_1 n_0_2 n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1", "fmux_l2"))
+            top_file.write("Xfmux_l2 n_0_3 n_0_4 vdd gnd vdd gnd fmux_l2\n\n")
+            # TODO: the loading of the register select mux should be added here
+            top_file.write(utils.create_wire("n_0_5", "n_1_1", "fmux_l2", "ble_output_0"))
+            top_file.write("Xgeneral_ble_output3 n_1_1 n_general_out vdd gnd vdd gnd general_ble_output3\n\n")
+    else:
+        top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+        top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
     # the general output 
     top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     top_file.write(".END")
@@ -4698,12 +4711,12 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, enable_carry_cha
 
 
 def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, updates = False, input_name = "", output_name = ""):
-    
-    #TODO: 
-    #- I think the general ble output load should be removed from this ciruit in case of an ALM
-    #  with carry chain. Since, the load in this case is only the carry chain mux. 
-    #- I also think that in both cases whether there is a carry chain mux or not the delay should 
-    #  be measured between the n_1_1 and n_1_3 and not between n_1_1 and n_local_out.
+    """ This function creates the netlist for the flut mux. This spice file should measure the delay of an flut mux, or 
+        an flut mux and a the carry chain mux after it, or the flut level 1 mux and flut level 2 mux together depending
+        on the architectural parameters"""
+
+    # TODO: make the total delay calculation the delay of the two flut muxes insted of only one.
+    # we could still measure the delay of each mux idividually if we want by adding meaure statements
 
     lut_input_nodes = ""
     if use_tgate: 
@@ -4712,6 +4725,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
         lut_input_nodes += "vdd "*6
 
     input_node = "n_1_1"
+    output = "n_local_out"
     if updates:
         if level == 1:
             output = "n_1_3"
@@ -4722,8 +4736,6 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
             output = "n_1_5"
             vdd_f1 = "vdd"
             vdd_f2 = "vdd_f"
-    else:
-        output = "n_local_out"
     
     # Create directories
     if not os.path.exists(name):
@@ -4733,7 +4745,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
     
     filename = name + ".sp"
     top_file = open(filename, 'w')
-    top_file.write(".TITLE General BLE output\n\n") 
+    top_file.write(".TITLE Flut mux\n\n") 
     
     top_file.write("********************************************************************************\n")
     top_file.write("** Include libraries, parameters and other\n")
@@ -4782,39 +4794,35 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     # lut, wire from lut to the mux, the mux, and the load same output load as before
+
+    top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n")
+
+    # TODO: combine the updates with the old desing more neatly
     if not updates:
-        top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n")
+        # TODO: remove this and use the general case of the udpated design. This netlist lacks the connection 
+        # to the input of the carry chain at the output of the lut
         top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n")  
         top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")       
         if enable_carry_chain == 1:
             top_file.write("Xwireovercc n_1_3 n_1_4 wire Rw=wire_carry_chain_5_res Cw=wire_carry_chain_5_cap\n")
             top_file.write("Xccmux n_1_4 n_local_out vdd gnd vdd gnd carry_chain_mux\n")   
-            # TODO: uncomment the next line in a seperate commit to cherry pick it to the master
+            # BUG: This is a bug fix for COFFE 2.0 uncomment this and push it to the master
             # top_file.write("Xlut_output_load n_local_out n_local_out_2 n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
         else:
             top_file.write("Xlut_output_load n_1_3 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
             top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     else:
         # TODO: each subcircuit should already have an input wire connected to it to avoid confusion
-        top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-        top_file.write(utils.create_wire("n_1_1", "n_1_2", "lut", "fmux_l1"))  
-        top_file.write("Xfmux_l1 n_1_2 n_1_3 vdd gnd vdd_f gnd fmux_l1\n\n")
-        if enable_carry_chain:
-            top_file.write(utils.create_wire("n_1_1", "n_2_2", "lut", "carry_chain"))
-            # TODO: figure out what are the suitable inputs for this
-            top_file.write("Xcarrychain n_2_2 gnd gnd nout_2_3 nout_2_4 n_p_1 vdd gnd FA_carry_chain\n\n")
-        # duplicate 5-LUT output flut mux
-        top_file.write(utils.create_wire("n_1_1", "n_3_2", "lut", "fmux_l1_duplicate"))
-        top_file.write("Xfmux_l1_duplicate n_3_2 nout_3_3 vdd gnd "+vdd_f1+" gnd fmux_l1\n\n")
+        top_file.write("Xflut_output_load n_1_1 n_1_4 n_out2 vdd gnd "+vdd_f1+" vdd vdd flut_output_load\n\n")
+
         top_file.write(utils.create_wire("n_1_3", "n_1_4", "fmux_l1", "fmux_l2"))
-        if level == 1:
-            top_file.write("Xfmux_l2 n_1_4 nout_1_5 vdd gnd vdd gnd fmux_l2\n\n")
-        elif level == 2:
-            top_file.write("Xfmux_l2 n_1_4 n_1_5 vdd gnd "+vdd_f2+" gnd fmux_l2\n\n")
+        top_file.write("Xfmux_l2 n_1_4 n_1_5 vdd gnd "+vdd_f2+" gnd fmux_l2\n\n")
+
+        if level == 2:
             top_file.write(utils.create_wire("n_1_5", "n_1_6", "fmux_l2", "ble_output_0"))
-            top_file.write("Xgeneral_ble_output_3 n_1_6 nout_1_7 vdd gnd vdd gnd general_ble_output_3\n\n")
-            top_file.write(utils.create_wire("n_1_5", "n_1_7", "fmux_l2", "reg2_sel"))
-            # TODO: add the ble output mux 0 and the reg2 select mux
+            top_file.write("Xgeneral_ble_output3 n_1_6 nout_1_7 vdd gnd vdd gnd general_ble_output3\n\n")
+            # TODO: add the reg2 select mux
+            #top_file.write(utils.create_wire("n_1_5", "n_1_7", "fmux_l2", "reg2_sel"))
 
 
     top_file.write(".END")
@@ -5615,7 +5623,7 @@ def generate_dedicated_driver_top (name, top_name, num_bufs):
     top_file.write("Xdriver n_1_1 n_1_2 vdd_test gnd "+name+"\n")   
     # typical load
     top_file.write("Xwirer_edi n_1_2 n_1_3 wire Rw=wire_"+top_name+"_2_res Cw=wire_"+top_name+"_2_cap \n")
-    top_file.write("Xff n_1_3 n_hang2 vdd gnd vdd nnd gnd vdd gnd vdd vdd gnd ff\n")
+    top_file.write("Xff n_1_3 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n")
    
     top_file.write(".END")
     top_file.close()
