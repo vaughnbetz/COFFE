@@ -413,7 +413,7 @@ def generate_ptran_lut_not_driver(spice_filename, lut_input_name):
 	return tran_names_list, wire_names_list
    
    
-def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts):
+def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts, updates = False):
 	""" Generates LUT input load SPICE deck 
 		Note: the input K incase of fluts is still input comming from the architecure file.
 		For a 5-FLUT K = 5"""
@@ -422,25 +422,14 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	# on whether this is an independent input of not
 
 	# Calculate number of pass-transistors loading this input
-	max_num_ptran = math.pow(2, K)
-	if lut_input_name == "a":
-		num_ptran_load = int(max_num_ptran/2)
-		ptran_level = "L1"
-	elif lut_input_name == "b":
-		num_ptran_load = int(max_num_ptran/4)
-		ptran_level = "L2"
-	elif lut_input_name == "c":
-		num_ptran_load = int(max_num_ptran/8)
-		ptran_level = "L3"
-	elif lut_input_name == "d":
-		num_ptran_load = int(max_num_ptran/16)
-		ptran_level = "L4"
-	elif lut_input_name == "e":
-		num_ptran_load = int(max_num_ptran/32)
-		ptran_level = "L5"
-	elif lut_input_name == "f":
-		num_ptran_load = int(max_num_ptran/64)
-		ptran_level = "L6"
+	input_level = ord(lut_input_name) - 96  # "a" --> 1, "b" --> 2, and so on
+	num_ptran_load = int(math.pow(2, K - input_level)) 
+	ptran_level = "L" + str(input_level)
+
+	if (use_fluts and input_level == K) or (updates and input_level >= K - 1): 
+		finput = True
+	else:
+		finput = False
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -450,11 +439,13 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	spice_file.write("* LUT " + lut_input_name + "-input load subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n")
-	for ptran in range(num_ptran_load):
-		ptran += 1
+	for ptran in range(1, num_ptran_load + 1):
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
-		if use_fluts and num_ptran_load == 1:
+		# TODO: clean those conditions
+		if not updates and (use_fluts and num_ptran_load == 1):
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n") 
+		elif updates and finput:
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_fmux_l" + str(num_ptran_load) + "_nmos\n") 
 		else:
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n") 
 	spice_file.write(".ENDS\n\n\n")

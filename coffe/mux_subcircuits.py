@@ -1,18 +1,33 @@
-def _generate_ptran_driver(spice_file, mux_name, implemented_mux_size):
-	""" Generate mux driver for pass-transistor based MUX (it has a level restorer) """
+import math
+
+
+def _generate_ptran_driver(spice_file, mux_name, implemented_mux_size, with_driver = True):
+	""" Generate mux driver for pass-transistor based MUX with the option to have a restorer 
+	 	and a driver or a driver only """
 	
+	if with_driver:
+		n_1_1 = "n_1_1"
+	else:
+		n_1_1 = "n_out"
+
 	# Create the MUX output driver circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " driver subcircuit (" + str(implemented_mux_size) + ":1)\n")
+	if with_driver:
+		spice_file.write("* " + mux_name + " driver subcircuit (" + str(implemented_mux_size) + ":1)\n")
+	else:
+		spice_file.write("* " + mux_name + " sense inverter subcircuit (" + str(implemented_mux_size) + ":1)\n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + "_driver n_in n_out n_vdd n_gnd\n")
-	spice_file.write("Xrest_" + mux_name + " n_in n_1_1 n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
-	spice_file.write("Xinv_" + mux_name + "_1 n_in n_1_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
-	spice_file.write("Xwire_" + mux_name + "_driver n_1_1 n_1_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
-	spice_file.write("Xinv_" + mux_name + "_2 n_1_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
+	spice_file.write("Xrest_" + mux_name + " n_in "+n_1_1+" n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
+	spice_file.write("Xinv_" + mux_name + "_1 n_in "+n_1_1+" n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n\n")
+	if with_driver:
+		spice_file.write("Xwire_" + mux_name + "_driver n_1_1 n_1_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
+		spice_file.write("Xinv_" + mux_name + "_2 n_1_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
+
 	spice_file.write(".ENDS\n\n\n")
 	
 	
+# TODO: remove this function the above function should play both roles	
 def _generate_ptran_sense_only(spice_file, mux_name, implemented_mux_size):
 	""" Generate mux driver for pass-transistor based MUX (it has a level restorer) """
 	
@@ -70,9 +85,10 @@ def _generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size,
 	spice_file.write(".ENDS\n\n\n") 
 
 
-def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size):
-	""" Generate on pass-transistor 2-level mux, never call this outside this file """
+def _generate_ptran_2lvl_mux_on(spice_file, mux_name, level1_size, level2_size):
+	""" Generate on pass-transistor 2-level mux only without a sense inverter or a driver """
 
+	implemented_mux_size = level1_size * level2_size
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (mux only - no sense inverter or driver)\n")
@@ -151,7 +167,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 	spice_file.write(".ENDS\n\n\n")
 
 
-def generate_ptran_2lvl_mux(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
+def generate_ptran_2lvl_mux(spice_filename, mux_name, level1_size, level2_size, loads = True, with_driver = True):
 	""" 
 	Creates two-level MUX circuits
 	There are 3 different types of MUX that are generated depending on how 'on' the mux is
@@ -159,27 +175,40 @@ def generate_ptran_2lvl_mux(spice_filename, mux_name, implemented_mux_size, leve
 		2. Partially on (only level 1 is on) circuit name: mux_name + "_partial"
 		3. Off (both levels are off) circuit name: mux_name + "_off"
 	"""
+
+	implemented_mux_size = level1_size * level2_size
    
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
 	
 	# Generate SPICE subcircuits
-	_generate_ptran_driver(spice_file, mux_name, implemented_mux_size)
-	_generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
-	_generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
-	_generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
+	if with_driver:
+		_generate_ptran_driver(spice_file, mux_name, implemented_mux_size)
+	if loads:
+		_generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
+		_generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
+	_generate_ptran_2lvl_mux_on(spice_file, mux_name, level1_size, level2_size)
 	
 
 	on = "_on"
-	if "general" in mux_name:
+	if ("general" in mux_name) or not with_driver:
 		on = ""
+
+	if with_driver:
+		n_1_1 = "n_1_1"
+	else:
+		n_1_1 = "n_out"
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (with sense inverter and output driver) \n")
+	if with_driver:
+		spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (with sense inverter and output driver) \n")
+	else:
+		spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (mux only) \n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + on + " n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
-	spice_file.write("X" + mux_name + "_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
-	spice_file.write("X" + mux_name + "_driver n_1_1 n_out n_vdd n_gnd " + mux_name + "_driver\n")
+	spice_file.write("X" + mux_name + "_on_mux_only n_in " + n_1_1 + " n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
+	if with_driver:
+		spice_file.write("X" + mux_name + "_driver n_1_1 n_out n_vdd n_gnd " + mux_name + "_driver\n")
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Close SPICE file
@@ -189,22 +218,24 @@ def generate_ptran_2lvl_mux(spice_filename, mux_name, implemented_mux_size, leve
 	tran_names_list = []
 	tran_names_list.append("ptran_" + mux_name + "_L1_nmos")
 	tran_names_list.append("ptran_" + mux_name + "_L2_nmos")
-	tran_names_list.append("rest_" + mux_name + "_pmos")
-	tran_names_list.append("inv_" + mux_name + "_1_nmos")
-	tran_names_list.append("inv_" + mux_name + "_1_pmos")
-	tran_names_list.append("inv_" + mux_name + "_2_nmos")
-	tran_names_list.append("inv_" + mux_name + "_2_pmos")
+	if with_driver:
+		tran_names_list.append("rest_" + mux_name + "_pmos")
+		tran_names_list.append("inv_" + mux_name + "_1_nmos")
+		tran_names_list.append("inv_" + mux_name + "_1_pmos")
+		tran_names_list.append("inv_" + mux_name + "_2_nmos")
+		tran_names_list.append("inv_" + mux_name + "_2_pmos")
 	
 	# Create a list of all wires used in this subcircuit
 	wire_names_list = []
-	wire_names_list.append("wire_" + mux_name + "_driver")
+	if with_driver:
+		wire_names_list.append("wire_" + mux_name + "_driver")
 	wire_names_list.append("wire_" + mux_name + "_L1")
 	wire_names_list.append("wire_" + mux_name + "_L2")
 	
 	return tran_names_list, wire_names_list
 	
-	
-def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
+# TODO: the above function could be used instead of this one	
+def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, level1_size, level2_size):
 	""" 
 	Creates two-level MUX files
 	There are 3 different types of MUX that are generated depending on how 'on' the mux is
@@ -215,6 +246,8 @@ def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	No driver is attached to the on mux (we need this for the local routing mux)
 	"""
 	
+	implemented_mux_size = level1_size * level2_size
+
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
 	
@@ -222,7 +255,7 @@ def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	_generate_ptran_sense_only(spice_file, mux_name, implemented_mux_size)
 	_generate_ptran_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
 	_generate_ptran_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
-	_generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
+	_generate_ptran_2lvl_mux_on(spice_file, mux_name, level1_size, level2_size)
 	
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
@@ -250,45 +283,139 @@ def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	wire_names_list.append("wire_" + mux_name + "_L2")
 	
 	return tran_names_list, wire_names_list
+
+
+
+def generate_mux(spice_filename, mux_name, use_tgate, input_size = 2, loads = False, with_driver = True):
+	""" This function creates any type of mux available in this file """
+
+	level2_size = int(math.sqrt(input_size))
+	level1_size = int(math.ceil(float(input_size)/level2_size))
+	implemented_size = level1_size * level2_size
+	num_unused_inputs = implemented_size - input_size
+	sram_per_mux = level1_size + level2_size
+
+	if use_tgate:
+		if input_size == 2:
+			return generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver)
+		else:
+			return generate_tgate_2lvl_mux(spice_filename, mux_name, level1_size, level2_size, loads, with_driver)
+	else:
+		if input_size == 2:
+			return generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver)
+		else:
+			return generate_ptran_2lvl_mux(spice_filename, mux_name, level1_size, level2_size, loads, with_driver)
+
 	
  
-def generate_ptran_2_to_1_mux(spice_filename, mux_name):
-	""" Generate a 2:1 pass-transistor MUX with shared SRAM """
+def generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver = True):
+	""" Generate a 2:1 pass-transistor MUX with shared SRAM with the option to be implemented
+		with or without sense inveter and output driver """
 
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
+
+	if with_driver:
+		n_1_2 = "n_1_2"
+	else:
+		n_1_2 = "n_out"
 	
 	# Create the 2:1 MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (2:1) (with sense inverter and output dirver) \n") 
+	if with_driver:
+		spice_file.write("* " + mux_name + " subcircuit (2:1) (with sense inverter and output dirver) \n") 
+	else: 
+		spice_file.write("* " + mux_name + " subcircuit (2:1) (mux only) \n") 		
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT " + mux_name + " n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
 	spice_file.write("Xptran_" + mux_name + " n_in n_1_1 n_gate n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n")
-	spice_file.write("Xwire_" + mux_name + " n_1_1 n_1_2 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
-	spice_file.write("Xwire_" + mux_name + "_h n_1_2 n_1_3 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
-	spice_file.write("Xptran_" + mux_name + "_h n_gnd n_1_3 n_gnd n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n")
-	spice_file.write("Xrest_" + mux_name + " n_1_2 n_2_1 n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
-	spice_file.write("Xinv_" + mux_name + "_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
-	spice_file.write("Xwire_" + mux_name + "_driver n_2_1 n_2_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
-	spice_file.write("Xinv_" + mux_name + "_2 n_2_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
+	spice_file.write("Xwire_" + mux_name + " n_1_1 " + n_1_2 + " wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
+	spice_file.write("Xwire_" + mux_name + "_h "+ n_1_2 + " n_1_3 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
+	spice_file.write("Xptran_" + mux_name + "_h n_gnd n_1_3 n_gnd n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n\n")
+
+	if with_driver:
+		spice_file.write("Xrest_" + mux_name + " n_1_2 n_2_1 n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
+		spice_file.write("Xinv_" + mux_name + "_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
+		spice_file.write("Xwire_" + mux_name + "_driver n_2_1 n_2_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
+		spice_file.write("Xinv_" + mux_name + "_2 n_2_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
+
 	spice_file.write(".ENDS\n\n\n")
 	spice_file.close()
 	
 	# Create a list of all transistors used in this subcircuit
 	tran_names_list = []
 	tran_names_list.append("ptran_" + mux_name + "_nmos")
-	tran_names_list.append("rest_" + mux_name + "_pmos")
-	tran_names_list.append("inv_" + mux_name + "_1_nmos")
-	tran_names_list.append("inv_" + mux_name + "_1_pmos")
-	tran_names_list.append("inv_" + mux_name + "_2_nmos")
-	tran_names_list.append("inv_" + mux_name + "_2_pmos")
+
+	if with_driver:
+		tran_names_list.append("rest_" + mux_name + "_pmos")
+		tran_names_list.append("inv_" + mux_name + "_1_nmos")
+		tran_names_list.append("inv_" + mux_name + "_1_pmos")
+		tran_names_list.append("inv_" + mux_name + "_2_nmos")
+		tran_names_list.append("inv_" + mux_name + "_2_pmos")
 	
 	# Create a list of all wires used in this subcircuit
 	wire_names_list = []
 	wire_names_list.append("wire_" + mux_name)
-	wire_names_list.append("wire_" + mux_name + "_driver")
+	if with_driver:
+		wire_names_list.append("wire_" + mux_name + "_driver")
 	
 	return tran_names_list, wire_names_list 
+
+
+def generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver = True):
+	""" Generate a 2:1 transmission gate MUX with shared SRAM, with the option 
+		of having an output driver or not """
+
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+
+
+	if with_driver:
+		n_1_2 = "n_1_2"
+	else:
+		n_1_2 = "n_out"
+
+	
+	# Create the 2:1 MUX circuit
+	spice_file.write("******************************************************************************************\n")
+	if with_driver:
+		spice_file.write("* " + mux_name + " subcircuit (2:1)  (with and output driver)\n") 
+	else:
+		spice_file.write("* " + mux_name + " subcircuit (2:1)  (mux only)\n") 
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT " + mux_name + " n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
+	spice_file.write("Xtgate_" + mux_name + " n_in n_1_1 n_gate n_gate_n n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n")
+	spice_file.write("Xwire_" + mux_name + " n_1_1 " + n_1_2 + " wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
+	spice_file.write("Xwire_" + mux_name + "_h " + n_1_2 + " n_1_3 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
+	spice_file.write("Xtgate_" + mux_name + "_h n_gnd n_1_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n\n")
+
+	if with_driver:
+		spice_file.write("Xinv_" + mux_name + "_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
+		spice_file.write("Xwire_" + mux_name + "_driver n_2_1 n_2_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
+		spice_file.write("Xinv_" + mux_name + "_2 n_2_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
+
+	spice_file.write(".ENDS\n\n\n")
+	spice_file.close()
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	tran_names_list.append("tgate_" + mux_name + "_nmos")
+	tran_names_list.append("tgate_" + mux_name + "_pmos")
+
+	if with_driver:
+		tran_names_list.append("inv_" + mux_name + "_1_nmos")
+		tran_names_list.append("inv_" + mux_name + "_1_pmos")
+		tran_names_list.append("inv_" + mux_name + "_2_nmos")
+		tran_names_list.append("inv_" + mux_name + "_2_pmos")
+	
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+	wire_names_list.append("wire_" + mux_name)
+
+	if with_driver:
+		wire_names_list.append("wire_" + mux_name + "_driver")
+	
+	return tran_names_list, wire_names_list  
 
 
 def _generate_tgate_driver(spice_file, mux_name, implemented_mux_size):
@@ -357,8 +484,10 @@ def _generate_tgate_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size,
 	spice_file.write(".ENDS\n\n\n") 
 
 
-def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size):
+def _generate_tgate_2lvl_mux_on(spice_file, mux_name, level1_size, level2_size):
 	""" Generate on pass-transistor 2-level mux, never call this outside this file """
+
+	implemented_mux_size = level1_size * level2_size
 
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
@@ -438,7 +567,7 @@ def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 	spice_file.write(".ENDS\n\n\n")
 
 	
-def generate_tgate_2lvl_mux(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
+def generate_tgate_2lvl_mux(spice_filename, mux_name, level1_size, level2_size, loads = True, with_driver = True):
 	""" 
 	Creates two-level MUX circuits
 	There are 3 different types of MUX that are generated depending on how 'on' the mux is
@@ -447,22 +576,38 @@ def generate_tgate_2lvl_mux(spice_filename, mux_name, implemented_mux_size, leve
 		3. Off (both levels are off) circuit name: mux_name + "_off"
 	"""
    
+   	implemented_mux_size = level1_size * level2_size
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
+
+	if with_driver:
+		n_1_1 = "n_1_1"
+	else:
+		n_1_1 = "n_out"
+
+	on = "_on"
+	if ("general" in mux_name) or (not with_driver):
+		on = ""
 	
 	# Generate SPICE subcircuits
-	_generate_tgate_driver(spice_file, mux_name, implemented_mux_size)
-	_generate_tgate_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
-	_generate_tgate_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
-	_generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
+	if with_driver:
+		_generate_tgate_driver(spice_file, mux_name, implemented_mux_size)
+	if loads:
+		_generate_tgate_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
+		_generate_tgate_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
+	_generate_tgate_2lvl_mux_on(spice_file, mux_name, level1_size, level2_size)
 	
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on \n")
+	if with_driver:
+		spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (with dirver) \n")
+	else:
+		spice_file.write("* " + mux_name + " subcircuit (" + str(implemented_mux_size) + ":1), fully turned on (mux only) \n")
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write(".SUBCKT " + mux_name + "_on n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
-	spice_file.write("X" + mux_name + "_on_mux_only n_in n_1_1 n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
-	spice_file.write("X" + mux_name + "_driver n_1_1 n_out n_vdd n_gnd " + mux_name + "_driver\n")
+	spice_file.write(".SUBCKT " + mux_name + on+" n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
+	spice_file.write("X" + mux_name + "_on_mux_only n_in "+n_1_1+" n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on_mux_only\n")
+	if with_driver:
+		spice_file.write("X" + mux_name + "_driver n_1_1 n_out n_vdd n_gnd " + mux_name + "_driver\n")
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Close SPICE file
@@ -474,22 +619,25 @@ def generate_tgate_2lvl_mux(spice_filename, mux_name, implemented_mux_size, leve
 	tran_names_list.append("tgate_" + mux_name + "_L1_pmos")
 	tran_names_list.append("tgate_" + mux_name + "_L2_nmos")
 	tran_names_list.append("tgate_" + mux_name + "_L2_pmos")
-	# tran_names_list.append("rest_" + mux_name + "_pmos")
-	tran_names_list.append("inv_" + mux_name + "_1_nmos")
-	tran_names_list.append("inv_" + mux_name + "_1_pmos")
-	tran_names_list.append("inv_" + mux_name + "_2_nmos")
-	tran_names_list.append("inv_" + mux_name + "_2_pmos")
+
+	if with_driver:
+		tran_names_list.append("inv_" + mux_name + "_1_nmos")
+		tran_names_list.append("inv_" + mux_name + "_1_pmos")
+		tran_names_list.append("inv_" + mux_name + "_2_nmos")
+		tran_names_list.append("inv_" + mux_name + "_2_pmos")
 	
 	# Create a list of all wires used in this subcircuit
 	wire_names_list = []
-	wire_names_list.append("wire_" + mux_name + "_driver")
+	if with_driver:
+		wire_names_list.append("wire_" + mux_name + "_driver")
 	wire_names_list.append("wire_" + mux_name + "_L1")
 	wire_names_list.append("wire_" + mux_name + "_L2")
 	
 	return tran_names_list, wire_names_list
 	
-	
-def generate_tgate_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_size, level1_size, level2_size):
+
+# TODO: remove this the previous function could handle it	
+def generate_tgate_2lvl_mux_no_driver(spice_filename, mux_name, level1_size, level2_size):
 	""" 
 	Creates two-level MUX files
 	There are 3 different types of MUX that are generated depending on how 'on' the mux is
@@ -500,6 +648,7 @@ def generate_tgate_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	No driver is attached to the on mux (we need this for the local routing mux)
 	"""
 	
+	implemented_mux_size = level1_size * level2_size
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
 	
@@ -507,7 +656,7 @@ def generate_tgate_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	_generate_tgate_sense_only(spice_file, mux_name, implemented_mux_size)
 	_generate_tgate_2lvl_mux_off(spice_file, mux_name, implemented_mux_size)
 	_generate_tgate_2lvl_mux_partial(spice_file, mux_name, implemented_mux_size, level1_size)
-	_generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, level1_size, level2_size)
+	_generate_tgate_2lvl_mux_on(spice_file, mux_name, level1_size, level2_size)
 	
 	# Create the fully-on MUX circuit
 	spice_file.write("******************************************************************************************\n")
@@ -538,45 +687,6 @@ def generate_tgate_2lvl_mux_no_driver(spice_filename, mux_name, implemented_mux_
 	
 	return tran_names_list, wire_names_list
 	
- 
-def generate_tgate_2_to_1_mux(spice_filename, mux_name):
-	""" Generate a 2:1 pass-transistor MUX with shared SRAM """
-
-	# Open SPICE file for appending
-	spice_file = open(spice_filename, 'a')
-	
-	# Create the 2:1 MUX circuit
-	spice_file.write("******************************************************************************************\n")
-	spice_file.write("* " + mux_name + " subcircuit (2:1)\n")
-	spice_file.write("******************************************************************************************\n")
-	spice_file.write(".SUBCKT " + mux_name + " n_in n_out n_gate n_gate_n n_vdd n_gnd\n")
-	spice_file.write("Xtgate_" + mux_name + " n_in n_1_1 n_gate n_gate_n n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n")
-	spice_file.write("Xwire_" + mux_name + " n_1_1 n_1_2 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
-	spice_file.write("Xwire_" + mux_name + "_h n_1_2 n_1_3 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
-	spice_file.write("Xtgate_" + mux_name + "_h n_gnd n_1_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n")
-	# spice_file.write("Xrest_" + mux_name + " n_1_2 n_2_1 n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
-	spice_file.write("Xinv_" + mux_name + "_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
-	spice_file.write("Xwire_" + mux_name + "_driver n_2_1 n_2_2 wire Rw=wire_" + mux_name + "_driver_res Cw=wire_" + mux_name + "_driver_cap\n")
-	spice_file.write("Xinv_" + mux_name + "_2 n_2_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
-	spice_file.write(".ENDS\n\n\n")
-	spice_file.close()
-	
-	# Create a list of all transistors used in this subcircuit
-	tran_names_list = []
-	tran_names_list.append("tgate_" + mux_name + "_nmos")
-	tran_names_list.append("tgate_" + mux_name + "_pmos")
-	# tran_names_list.append("rest_" + mux_name + "_pmos")
-	tran_names_list.append("inv_" + mux_name + "_1_nmos")
-	tran_names_list.append("inv_" + mux_name + "_1_pmos")
-	tran_names_list.append("inv_" + mux_name + "_2_nmos")
-	tran_names_list.append("inv_" + mux_name + "_2_pmos")
-	
-	# Create a list of all wires used in this subcircuit
-	wire_names_list = []
-	wire_names_list.append("wire_" + mux_name)
-	wire_names_list.append("wire_" + mux_name + "_driver")
-	
-	return tran_names_list, wire_names_list  
 
 
 def generate_dedicated_driver(spice_filename, driver_name, num_bufs, top_name):

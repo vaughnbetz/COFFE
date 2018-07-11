@@ -1,3 +1,5 @@
+import mux_subcircuits
+
 def generate_ptran_2_input_select_d_ff(spice_filename, use_finfet):
 	""" Generates a D Flip-Flop SPICE deck with a Rsel mux at its input """
 	
@@ -18,6 +20,7 @@ def generate_ptran_2_input_select_d_ff(spice_filename, use_finfet):
 	spice_file.write("Xwire_ff_input_select_h n_1_2 n_1_3 wire Rw='wire_ff_input_select_res/2' Cw='wire_ff_input_select_cap/2'\n")
 	spice_file.write("Xptran_ff_input_select_h n_gnd n_1_3 n_gate_n n_gnd ptran Wn=ptran_ff_input_select_nmos\n")
 	spice_file.write("Xrest_ff_input_select n_1_2 n_2_1 n_vdd n_gnd rest Wp=rest_ff_input_select_pmos\n")
+	spice_file.write("* FF input driver\n")
 	spice_file.write("Xinv_ff_input_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_ff_input_1_nmos Wp=inv_ff_input_1_pmos\n\n")
 	spice_file.write("* First T-gate and cross-coupled inverters\n") 
 	spice_file.write("Xwire_ff_input_out n_2_1 n_2_2 wire Rw=wire_ff_input_out_res Cw=wire_ff_input_out_cap\n")    
@@ -123,8 +126,8 @@ def generate_ptran_d_ff(spice_filename, use_finfet):
 		spice_file.write("MPtran_ff_reset_n n_5_1 n_reset_n n_vdd n_vdd pmos L=gate_length W=tran_ff_reset_n_pmos\n")
 		spice_file.write("MNtran_ff_set n_5_1 n_set n_gnd n_gnd nmos L=gate_length W=tran_ff_set_nmos\n")
 	else :
-		spice_file.write("MPtran_ff_reset_n n_5_1 n_reset_n n_vdd n_vdd pmos L=gate_length W=tran_ff_reset_n_pmos\n")
-		spice_file.write("MNtran_ff_set n_5_1 n_set n_gnd n_gnd nmos L=gate_length W=tran_ff_set_nmos\n")
+		spice_file.write("MPtran_ff_reset_n n_5_1 n_reset_n n_vdd n_vdd pmos L=gate_length nfin=tran_ff_reset_n_pmos\n")
+		spice_file.write("MNtran_ff_set n_5_1 n_set n_gnd n_gnd nmos L=gate_length nfin=tran_ff_set_nmos\n")
 	spice_file.write("Xwire_ff_tgate_2_out n_5_1 n_5_2 wire Rw=wire_ff_tgate_2_out_res Cw=wire_ff_tgate_2_out_cap\n")
 	spice_file.write("Xinv_ff_cc2_1 n_5_2 n_6_1 n_vdd n_gnd inv Wn=inv_ff_cc2_1_nmos Wp=inv_ff_cc2_1_pmos\n")
 	spice_file.write("Xinv_ff_cc2_2 n_6_1 n_5_2 n_vdd n_gnd inv Wn=inv_ff_cc2_2_nmos Wp=inv_ff_cc2_2_pmos\n")
@@ -168,6 +171,29 @@ def generate_ptran_d_ff(spice_filename, use_finfet):
 
 
 
+def generate_ptran_input_select_dff(spice_filename, use_finfet, use_tgate, Rsel = False, input_size = 2):
+
+	transistor_name_list = []
+	wire_names_list = []
+
+	if use_tgate:
+		transistor_name_list, wire_names_list = generate_tgate_d_ff(spice_filename, use_finfet)
+	else:
+		transistor_name_list, wire_names_list = generate_ptran_d_ff(spice_filename, use_finfet)
+
+	mux_transistor_list = []
+	mux_wire_list = []
+	if Rsel:
+		if input_size == 2:
+			mux_transistor_list, mux_wire_list = generate_2_to_1_mux(spice_filename, "reg_sel2_mux", use_tgate)
+		elif input_size == 3:
+			mux_transistor_list, mux_wire_list = generate_2lvl_mux(spice_filename, "reg_sel3_mux", 4, 2, 2, use_tgate)
+		transistor_name_list.extend(mux_transistor_list)
+		wire_names_list.extend(mux_wire_list)
+
+	return transistor_name_list, wire_names_list
+
+
 def generate_tgate_2_input_select_d_ff(spice_filename, use_finfet):
 	""" Generates a D Flip-Flop SPICE deck with a Rsel mux at its input """
 	
@@ -190,7 +216,6 @@ def generate_tgate_2_input_select_d_ff(spice_filename, use_finfet):
 	spice_file.write("Xwire_ff_input_select_h n_1_2 n_1_3 wire Rw='wire_ff_input_select_res/2' Cw='wire_ff_input_select_cap/2'\n")
 
 	spice_file.write("Xtgate_ff_input_select_h n_gnd n_1_3 n_gate_n n_gate n_vdd n_gnd tgate Wn=tgate_ff_input_select_nmos Wp=tgate_ff_input_select_pmos\n")
-	# spice_file.write("Xrest_ff_input_select n_1_2 n_2_1 n_vdd n_gnd rest Wp=rest_ff_input_select_pmos\n")
 
 	spice_file.write("Xinv_ff_input_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_ff_input_1_nmos Wp=inv_ff_input_1_pmos\n\n")
 	spice_file.write("* First T-gate and cross-coupled inverters\n") 

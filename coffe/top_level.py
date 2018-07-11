@@ -4726,16 +4726,22 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
 
     input_node = "n_1_1"
     output = "n_local_out"
+    n_out = "n_general_out"
     if updates:
         if level == 1:
             output = "n_1_3"
             vdd_f1 = "vdd_f"
             vdd_f2 = "vdd"
+            n_out = "n_1_5"
         elif level == 2:
             input_node = "n_1_3" 
             output = "n_1_5"
             vdd_f1 = "vdd"
             vdd_f2 = "vdd_f"
+            n_out = "nout_1_7"
+    elif enable_carry_chain:
+        n_out = "n_local_out"
+
     
     # Create directories
     if not os.path.exists(name):
@@ -4783,8 +4789,8 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
     top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
     top_file.write(".MEASURE TRAN meas_total_trise TRIG V("+input_node+") VAL='supply_v/2' RISE=1\n")
     #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' RISE=1\n\n")
-    top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n\n")
-    top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n")
+    top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V("+n_out+") AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
     top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_FLUT) FROM=0ns TO=4ns\n")
@@ -4802,7 +4808,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
         # TODO: remove this and use the general case of the udpated design. This netlist lacks the connection 
         # to the input of the carry chain at the output of the lut
         top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n")  
-        top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")       
+        top_file.write("X"+name+" n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")       
         if enable_carry_chain == 1:
             top_file.write("Xwireovercc n_1_3 n_1_4 wire Rw=wire_carry_chain_5_res Cw=wire_carry_chain_5_cap\n")
             top_file.write("Xccmux n_1_4 n_local_out vdd gnd vdd gnd carry_chain_mux\n")   
