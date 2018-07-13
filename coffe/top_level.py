@@ -4684,7 +4684,7 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
             top_file.write("Xflut_output_load n_0_1 nout2 n_0_2 vdd gnd vdd vdd vdd flut_output_load\n\n")
             # add ff load to node n_0_2
-            top_file.write("Xff2 n_0_2 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n")
+            top_file.write("Xff3 n_0_2 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n")
             top_file.write(utils.create_wire("n_0_2", "n_1_1", "fmux_l2", "ble_output_0"))
             top_file.write("Xgeneral_ble_output n_1_1 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
         elif input_size == 3:
@@ -4710,7 +4710,7 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     
 
 
-def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, updates = False, input_name = "", output_name = ""):
+def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, updates = False):
     """ This function creates the netlist for the flut mux. This spice file should measure the delay of an flut mux, or 
         an flut mux and a the carry chain mux after it, or the flut level 1 mux and flut level 2 mux together depending
         on the architectural parameters"""
@@ -4898,16 +4898,14 @@ def generate_cc_mux_top(name, use_tgate):
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
-    # lut, wire from lut to the mux, the mux, and the load same output load as before
-    
+
+    # TODO: add wires between the components
     top_file.write("Xcarrychain_shape1 vdd gnd n_in n_1_1 n_hang n_p_1 vdd gnd FA_carry_chain\n")
     top_file.write("Xcarrychain_shape2 vdd gnd n_1_1 n_1_2 n_hang_2 n_p_2 vdd gnd FA_carry_chain\n")
-    top_file.write("Xcarrychain_shape3 vdd gnd n_1_2 n_hang_3 n_1_3 n_p_3 vdd gnd FA_carry_chain\n")
+    top_file.write("Xcarrychain_shape3 vdd gnd n_1_2 n_hang_3 n_1_3 n_p_3 vdd gnd FA_carry_chain\n\n")
     top_file.write("Xinv_shape n_1_3 n_1_4 vdd gnd carry_chain_perf\n")
-    top_file.write("Xthemux n_1_4 n_1_5 vdd gnd vdd_test gnd carry_chain_mux\n")       
-    top_file.write("Xlut_output_load n_1_5 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
-
-
+    top_file.write("Xthemux n_1_4 n_1_5 vdd gnd vdd_test gnd carry_chain_mux\n\n")       
+    top_file.write("Xlut_output_load n_1_5 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n")
     top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     top_file.write(".END")
     top_file.close()
@@ -5054,7 +5052,7 @@ def generate_carrychain_top(name, architecture):
     return (name + "/" + name + ".sp")
     """
 
-def generate_carry_chain_ripple_top(name):
+def generate_carry_chain_ripple_top(name, updates = False):
 
     # Create directories
     if not os.path.exists(name):
@@ -5109,17 +5107,26 @@ def generate_carry_chain_ripple_top(name):
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
 
+    # TODO: add wires between the components
     # Generate Cin as part of wave-shaping circuitry:
+    top_file.write("* Signal shaping carry chains\n")
     top_file.write("Xcarrychain_shape1 vdd gnd n_in n_1_1 n_hang n_p_1 vdd gnd FA_carry_chain\n")
-    top_file.write("Xcarrychain_shape2 vdd gnd n_1_1 n_1_2 n_hang_s n_p_2 vdd gnd FA_carry_chain\n")
+    #top_file.write(utils.create_wire("", "", "carrychain_1", "carrychain_2"))
+    top_file.write("Xcarrychain_shape2 vdd gnd n_1_1 n_1_2 n_hang_s n_p_2 vdd gnd FA_carry_chain\n\n")
     
     
     # Generate the uni under test:
     top_file.write("Xcarrychain_main vdd gnd n_1_2 n_hang_2 n_1_3 n_p_3 vdd gnd FA_carry_chain\n")
-    top_file.write("Xinv n_1_3 n_out vdd_test gnd carry_chain_perf\n")
+    top_file.write("Xinv n_1_3 n_out vdd_test gnd carry_chain_perf\n\n")
     
-    # generate typical load
-    top_file.write("Xthemux n_out n_out2 vdd gnd vdd gnd carry_chain_mux\n")  
+    top_file.write("* Loading at the sum out port of the carry chain full adder\n")
+    if updates:
+        top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg2_sel"))
+        top_file.write("\n* Reg2 in Stratix 10 architecture with a 3:1 mux at its input\n")
+        top_file.write("Xff3 n_1_4 n_1_5 n_gate n_gate_n n_clk n_clk_n n_set n_set_n n_reset n_reset_n n_vdd n_gnd ff3\n")
+    else:
+        # generate typical load
+        top_file.write("Xthemux n_out n_out2 vdd gnd vdd gnd carry_chain_mux\n\n")  
 
     top_file.write(".END")
     top_file.close()
@@ -5554,7 +5561,7 @@ def generate_skip_mux_top(name, use_tgate):
     return (name + "/" + name + ".sp")
 
 
-def generate_dedicated_driver_top (name, top_name, num_bufs):
+def generate_dedicated_driver_top(name, top_name, num_bufs):
 
     # Create directories
     if not os.path.exists(name):

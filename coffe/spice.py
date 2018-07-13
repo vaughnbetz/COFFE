@@ -52,7 +52,8 @@ class SpiceInterface(object):
         dashes = "-"*60
         data_file.write(dashes+ "\n")
         for param in param_list :
-            data_file.write(param.ljust(40, '-'))
+            #data_file.write(param.ljust(40, '-'))
+            data_file.write(param.ljust(40))
             for i in range(len(parameter_dict[param])) :
                 data_file.write(str(parameter_dict[param][i]).ljust(20))
 

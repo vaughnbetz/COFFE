@@ -286,7 +286,7 @@ def generate_ptran_2lvl_mux_no_driver(spice_filename, mux_name, level1_size, lev
 
 
 
-def generate_mux(spice_filename, mux_name, use_tgate, input_size = 2, loads = False, with_driver = True):
+def generate_mux(spice_filename, mux_name, use_tgate, input_size = 2, with_driver = True, FF = False, loads = False):
 	""" This function creates any type of mux available in this file """
 
 	level2_size = int(math.sqrt(input_size))
@@ -297,18 +297,26 @@ def generate_mux(spice_filename, mux_name, use_tgate, input_size = 2, loads = Fa
 
 	if use_tgate:
 		if input_size == 2:
-			return generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver)
+			# If this is a flip flop then connect the first transistor gate to n_gate and the second
+			# to n_gate_n since this is how it was done in the ff_subcircuits file. While all the other
+			# transistor implementations in the past connected the gate signal to the input transistor
+			# and turned off the other transistor. Now we are differentiating between them to make sure
+			# we still get the same results as the old implementation for easier comparision.
+			# Note: the right thing to do is to go with the approach of connecting one switch to n_gate
+			# and the other to n_gate_n
+			# TODO: follow the note above
+			return generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver, FF)
 		else:
 			return generate_tgate_2lvl_mux(spice_filename, mux_name, level1_size, level2_size, loads, with_driver)
 	else:
 		if input_size == 2:
-			return generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver)
+			return generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver, FF)
 		else:
 			return generate_ptran_2lvl_mux(spice_filename, mux_name, level1_size, level2_size, loads, with_driver)
 
 	
  
-def generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver = True):
+def generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver = True, FF = False):
 	""" Generate a 2:1 pass-transistor MUX with shared SRAM with the option to be implemented
 		with or without sense inveter and output driver """
 
@@ -331,7 +339,11 @@ def generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver = True):
 	spice_file.write("Xptran_" + mux_name + " n_in n_1_1 n_gate n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n")
 	spice_file.write("Xwire_" + mux_name + " n_1_1 " + n_1_2 + " wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
 	spice_file.write("Xwire_" + mux_name + "_h "+ n_1_2 + " n_1_3 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
-	spice_file.write("Xptran_" + mux_name + "_h n_gnd n_1_3 n_gnd n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n\n")
+	# TODO: leave the updates one only
+	if FF: 
+		spice_file.write("Xptran_" + mux_name + "_h n_gnd n_1_3 n_gate_n n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n\n")
+	else:
+		spice_file.write("Xptran_" + mux_name + "_h n_gnd n_1_3 n_gnd n_gnd ptran Wn=ptran_" + mux_name + "_nmos\n\n")
 
 	if with_driver:
 		spice_file.write("Xrest_" + mux_name + " n_1_2 n_2_1 n_vdd n_gnd rest Wp=rest_" + mux_name + "_pmos\n")
@@ -340,6 +352,8 @@ def generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver = True):
 		spice_file.write("Xinv_" + mux_name + "_2 n_2_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
 
 	spice_file.write(".ENDS\n\n\n")
+
+	# Close SPICE file
 	spice_file.close()
 	
 	# Create a list of all transistors used in this subcircuit
@@ -362,7 +376,7 @@ def generate_ptran_2_to_1_mux(spice_filename, mux_name, with_driver = True):
 	return tran_names_list, wire_names_list 
 
 
-def generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver = True):
+def generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver = True, FF = False):
 	""" Generate a 2:1 transmission gate MUX with shared SRAM, with the option 
 		of having an output driver or not """
 
@@ -387,7 +401,11 @@ def generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver = True):
 	spice_file.write("Xtgate_" + mux_name + " n_in n_1_1 n_gate n_gate_n n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n")
 	spice_file.write("Xwire_" + mux_name + " n_1_1 " + n_1_2 + " wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
 	spice_file.write("Xwire_" + mux_name + "_h " + n_1_2 + " n_1_3 wire Rw='wire_" + mux_name + "_res/2' Cw='wire_" + mux_name + "_cap/2'\n")
-	spice_file.write("Xtgate_" + mux_name + "_h n_gnd n_1_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n\n")
+	# TODO: leave the updates one only
+	if FF:
+		spice_file.write("Xtgate_" + mux_name + "_h n_gnd n_1_3 n_gate_n n_gate n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n\n")
+	else:
+		spice_file.write("Xtgate_" + mux_name + "_h n_gnd n_1_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_nmos Wp=tgate_" + mux_name + "_pmos\n\n")
 
 	if with_driver:
 		spice_file.write("Xinv_" + mux_name + "_1 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_" + mux_name + "_1_nmos Wp=inv_" + mux_name + "_1_pmos\n")
@@ -395,6 +413,8 @@ def generate_tgate_2_to_1_mux(spice_filename, mux_name, with_driver = True):
 		spice_file.write("Xinv_" + mux_name + "_2 n_2_2 n_out n_vdd n_gnd inv Wn=inv_" + mux_name + "_2_nmos Wp=inv_" + mux_name + "_2_pmos\n")
 
 	spice_file.write(".ENDS\n\n\n")
+
+	# Close SPICE file
 	spice_file.close()
 	
 	# Create a list of all transistors used in this subcircuit
@@ -711,6 +731,8 @@ def generate_dedicated_driver(spice_filename, driver_name, num_bufs, top_name):
 	spice_file.write("Xwirer_edi_"+str(num_bufs * 2 + 1)+" n_1_"+str(count + 1)+" n_out wire Rw=wire_"+top_name+"_2_res/"+str(num_bufs*2)+" Cw=wire_"+top_name+"_2_cap/"+str(num_bufs*2)+" \n")
 
 	spice_file.write(".ENDS\n\n\n")
+
+	# Close SPICE file
 	spice_file.close()
 	
 	# Create a list of all transistors used in this subcircuit
