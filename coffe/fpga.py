@@ -2070,7 +2070,6 @@ class _FlipFlop(_CompoundCircuit):
             with_driver = False
             FF = True
             self.input_mux = _MUX(self.MUX_NAME, use_tgate, input_size, with_driver, True)
-        
          
     def generate(self, subcircuit_filename):
         """ Generate FF SPICE netlists. Optionally includes register select. """
@@ -2457,6 +2456,7 @@ class _LUTOutputLoad:
 
         self.num_local_outputs = num_local_outputs
         self.num_general_outputs = num_general_outputs
+
 
         self.use_fluts = use_fluts
         self.level = level
