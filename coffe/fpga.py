@@ -74,6 +74,8 @@ DELAY_WEIGHT_LUT_C = 0.0704 # This one is higher because we had register-feedbac
 DELAY_WEIGHT_LUT_D = 0.0202
 DELAY_WEIGHT_LUT_E = 0.0121
 DELAY_WEIGHT_LUT_F = 0.0186
+DELAY_WEIGHT_LUT_G = 0.0186
+DELAY_WEIGHT_LUT_H = 0.0186
 DELAY_WEIGHT_LUT_FRAC = 0.0186
 DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0267
 DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0326
@@ -165,29 +167,7 @@ class _SizableCircuit:
     """ This is a base class used to identify FPGA circuits that can be sized (e.g. transistor sizing on lut)
         and declare attributes common to all SizableCircuits.
         If a class inherits _SizableCircuit, it should override all methods (error is raised otherwise). """
-      
-    # TODO: uncomment this and use inheritence in the right way    
-    #def __init__(self, use_tgate, use_finfet):    
-    #    # A list of the names of transistors in this subcircuit. This list should be logically sorted such 
-    #    # that transistor names appear in the order that they should be sized.
-    #    self.transistor_names = []
-    #    # A list of the names of wires in this subcircuit
-    #    self.wire_names = []
-    #    # A dictionary of the initial transistor sizes
-    #    self.initial_transistor_sizes = {}
-    #    # Path to the top level spice file
-    #    self.top_spice_path = ""    
-    #    # Fall time for this subcircuit
-    #    self.tfall = 1
-    #    # Rise time for this subcircuit
-    #    self.trise = 1
-    #    # Delay to be used for this subcircuit
-    #    self.delay = 1
-    #    # Delay weight used to calculate delay of representative critical path
-    #    self.delay_weight = 1
-    #    # Dynamic power for this subcircuit
-    #    self.power = 1
-
+        
     # A list of the names of transistors in this subcircuit. This list should be logically sorted such 
     # that transistor names appear in the order that they should be sized.
     transistor_names = []
@@ -249,15 +229,7 @@ class _CompoundCircuit:
         
         
 class _SwitchBlockMUX(_SizableCircuit):
-    """ Switch Block MUX Class: Pass-transistor 2-level mux with output driver 
-
-        Attributes:
-
-        required_size:
-        num_per_tile:
-        use_tgate:
-
-    """
+    """ Switch Block MUX Class: Pass-transistor 2-level mux with output driver """
     
     def __init__(self, required_size, num_per_tile, use_tgate):
         # Subcircuit name
@@ -709,7 +681,7 @@ class _LUTInputDriver(_SizableCircuit):
         """ Generate top-level SPICE file based on type of LUT input driver. """
         
         # Generate top level files based on what type of driver this is.
-        self.top_spice_path = top_level.generate_lut_driver_top(self.name, self.type)
+        self.top_spice_path = top_level.generate_lut_driver_top(self.name, self.type, self.updates)
         # And, generate the LUT driver + LUT path top level file. We use this file to measure total delay through the LUT.
         top_level.generate_lut_and_driver_top(self.name, self.type, self.use_tgate, self.use_fluts, self.updates)       
      
@@ -805,7 +777,7 @@ class _LUTInputDriver(_SizableCircuit):
 class _LUTInputNotDriver(_SizableCircuit):
     """ LUT input not-driver. This is the complement driver. """
 
-    def __init__(self, name, type, delay_weight, use_tgate):
+    def __init__(self, name, type, delay_weight, use_tgate, updates):
         self.name = "lut_" + name + "_driver_not"
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
@@ -813,6 +785,7 @@ class _LUTInputNotDriver(_SizableCircuit):
         self.delay_weight = delay_weight
         # use pass transistor or transmission gates
         self.use_tgate = use_tgate
+        self.updates = updates
    
     
     def generate(self, subcircuit_filename):
@@ -834,7 +807,7 @@ class _LUTInputNotDriver(_SizableCircuit):
     def generate_top(self):
         """ Generate top-level SPICE file for LUT not driver """
 
-        self.top_spice_path = top_level.generate_lut_driver_not_top(self.name, self.type)
+        self.top_spice_path = top_level.generate_lut_driver_not_top(self.name, self.type, self.updates)
         
     
     def update_area(self, area_dict, width_dict):
@@ -885,7 +858,7 @@ class _LUTInput(_CompoundCircuit):
         # Create LUT input driver
         self.driver = _LUTInputDriver(name, self.type, delay_weight, use_tgate, use_fluts, updates)
         # Create LUT input not driver
-        self.not_driver = _LUTInputNotDriver(name, self.type, delay_weight, use_tgate)
+        self.not_driver = _LUTInputNotDriver(name, self.type, delay_weight, use_tgate, updates)
         
         # LUT input delays are the delays through the LUT for specific input (doesn't include input driver delay)
         self.tfall = 1
@@ -955,7 +928,6 @@ class _LUTInputDriverLoad:
         self.use_tgate = use_tgate
         self.use_fluts = use_fluts
         self.updates = updates
-        self.wire_names = []
     
     
     def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
@@ -1020,7 +992,13 @@ class _LUT(_SizableCircuit):
             name = chr(i)
             delay_weight = DELAY_WEIGHT_LUT_INPUTS[i-97]
             self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, use_tgate, use_fluts, updates)
-            self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts, updates)  
+            self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts, updates)
+
+        if updates:
+            self.input_drivers['g'] = _LUTInput('g', 'z', 'z', DELAY_WEIGHT_LUT_G, use_tgate, use_fluts, updates)
+            self.input_driver_loads['g'] = _LUTInputDriverLoad('g', use_tgate, use_fluts, updates)
+            self.input_drivers['h'] = _LUTInput('h', 'z', 'z', DELAY_WEIGHT_LUT_H, use_tgate, use_fluts, updates)
+            self.input_driver_loads['h'] = _LUTInputDriverLoad('h', use_tgate, use_fluts, updates)
 
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -2069,7 +2047,8 @@ class _FlipFlop(_CompoundCircuit):
             # we need a mux without driver since the ff has its own dirver already
             with_driver = False
             FF = True
-            self.input_mux = _MUX(self.MUX_NAME, use_tgate, input_size, with_driver, True)
+            self.input_mux = _MUX(self.MUX_NAME, use_tgate, input_size, with_driver, FF)
+
          
     def generate(self, subcircuit_filename):
         """ Generate FF SPICE netlists. Optionally includes register select. """
@@ -2082,6 +2061,25 @@ class _FlipFlop(_CompoundCircuit):
         self.transistor_names, self.wire_names = ff_subcircuits.generate_dff(subcircuit_filename, self.name, 
                                                         self.use_finfet, self.use_tgate, self.Rsel, self.input_size, 
                                                         self.MUX_NAME, _FlipFlop.ff_generated)    
+        
+        # TODO: there is a tiny changes in values when uncommenting this and commenting the above one
+        # couldn't figure out why. This  chage is only in the dummy_lut6 test!
+        
+        # Generate FF with optional register select
+        #if self.register_select == 'z':
+        #    print "Generating FF"
+        #    if not self.use_tgate:
+        #        self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_d_ff(subcircuit_filename, self.use_finfet)
+        #    else :
+        #        self.transistor_names, self.wire_names = ff_subcircuits.generate_tgate_d_ff(subcircuit_filename, self.use_finfet)
+
+        #else:
+        #    print "Generating FF with register select on BLE input " + self.register_select
+        #    if not self.use_tgate:
+        #        self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
+        #    else :
+        #        self.transistor_names, self.wire_names = ff_subcircuits.generate_tgate_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
+        
 
         # Give initial transistor sizes
         if self.Rsel:
@@ -2159,9 +2157,9 @@ class _FlipFlop(_CompoundCircuit):
 
         area = 0.0
         if self.Rsel:
-            area = self.input_mux.update_area(area_dict, width_dict)
-            if not self.use_tgate:
-                area += area_dict["rest_" + self.MUX_NAME]
+           area = self.input_mux.update_area(area_dict, width_dict)
+           if not self.use_tgate:
+               area += area_dict["rest_" + self.MUX_NAME]
 
         # Add area of FF circuitry
         area += (area_dict["inv_ff_input_1"] +
@@ -2191,7 +2189,7 @@ class _FlipFlop(_CompoundCircuit):
         
     def update_wires(self, width_dict, wire_lengths, wire_layers):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
-            
+
         if self.Rsel:
             self.input_mux.update_wires(width_dict, wire_lengths, wire_layers)
 
@@ -2201,7 +2199,6 @@ class _FlipFlop(_CompoundCircuit):
         wire_lengths["wire_ff_tgate_2_out"] = (width_dict["tgate_ff_2"] + width_dict["inv_ff_cc1_2"])/4
         wire_lengths["wire_ff_cc2_out"] = (width_dict["inv_ff_cc1_2"] + width_dict["inv_ff_output_driver"])/4
     
-
         for wire in self.wire_names:
             wire_layers[wire] = 0
         

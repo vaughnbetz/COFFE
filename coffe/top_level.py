@@ -4273,9 +4273,21 @@ def generate_lut4_top(lut_name, use_tgate, updates = False):
     return (lut_name + "/" + lut_name + ".sp")
     
  
-def generate_lut_driver_top(input_driver_name, input_driver_type):
+def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
     """ Generate the top level lut input driver SPICE file """
-    
+
+    lut_letter = input_driver_name.replace("_driver", "")
+    lut_letter = lut_letter.replace("lut_", "")
+
+    n = ""
+    # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
+    # while b is connected to a ff with a 3:1 input select mux (called ff3)
+    if updates:
+        if lut_letter == 'a':
+            n = "2"
+        elif lut_letter == 'b':
+            n = "3"
+
     # Create directories
     if not os.path.exists(input_driver_name):
         os.makedirs(input_driver_name)  
@@ -4342,7 +4354,8 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
     input_driver_file.write("X" + input_driver_name + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd_lut_driver gnd " + input_driver_name + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
-        input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
+        # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
+        input_driver_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     input_driver_file.write("X" + input_driver_name + "_not_1 n_2_1 n_out_n vdd gnd " + input_driver_name + "_not\n")
     input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n")
     input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd gnd " + input_driver_name + "_load\n\n")
@@ -4355,11 +4368,23 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
     return (input_driver_name + "/" + input_driver_name + ".sp")
     
 
-def generate_lut_driver_not_top(input_driver_name, input_driver_type):
+def generate_lut_driver_not_top(input_driver_name, input_driver_type, updates):
     """ Generate the top level lut input not driver SPICE file """
     
-    # Create directories
     input_driver_name_no_not = input_driver_name.replace("_not", "")
+    lut_letter = input_driver_name_no_not.replace("_driver", "")
+    lut_letter = lut_letter.replace("lut_", "")
+
+    n = ""
+    # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
+    # while b is connected to a ff with a 3:1 input select mux (called ff3)
+    if updates:
+        if lut_letter == 'a':
+            n = "2"
+        elif lut_letter == 'b':
+            n = "3"
+
+    # Create directories
     if not os.path.exists(input_driver_name_no_not):
         os.makedirs(input_driver_name_no_not)  
     # Change to directory    
@@ -4418,7 +4443,8 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
     input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name_no_not + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
-        input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
+        # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
+        input_driver_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     input_driver_file.write("X" + input_driver_name + "_1 n_2_1 n_out_n vdd_lut_driver gnd " + input_driver_name + "\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out n_vdd n_gnd " + input_driver_name_no_not + "_load\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
@@ -4440,12 +4466,26 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     # Change to directory    
     os.chdir(input_driver_name)  
 
+    lut_letter = input_driver_name.replace("_driver", "")
+    lut_letter = lut_letter.replace("lut_", "")
+
+    
+
+    n = ""
+    # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
+    # while b is connected to a ff with a 3:1 input select mux (called ff3)
+    if updates:
+        if lut_letter == 'a':
+            n = "2"
+        elif lut_letter == 'b':
+            n = "3"
+
+    # TODO: for the new design the inputs are connected in a different way update that
 
     # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
     # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
     # transmission gate ---> "Xlut n_in_sram n_out a a_not b b_not c c_not d d_not e e_not f f_not vdd_lut gnd lut"
-    lut_letter = input_driver_name.replace("_driver", "")
-    lut_letter = lut_letter.replace("lut_", "")
+
     # string holding lut input connections depending on the driver letter
     lut_input_nodes = ""
     # loop over the letters a -> f
@@ -4508,11 +4548,14 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
 
     # Connect a load to n_rsel node
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
-        spice_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
+        # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
+        spice_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
-
-    
     spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
+    # The lut module only has one input ptran as loading the real loading depends on the input level and 
+    # is most of the time higher than that. Adding the whole loading is still a rough estimation.
+    # BUG: Uncomment the next line to add the loading minus one ptran which is already connected from inside the lut
+    #spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 n_vdd n_gnd lut_"+lut_letter+"_driver_load\n")
     
     if not updates:
         if use_fluts:

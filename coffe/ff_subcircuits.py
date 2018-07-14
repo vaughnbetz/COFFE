@@ -192,7 +192,7 @@ def generate_ptran_d_ff(spice_filename, use_finfet, with_driver = True):
 
 
 
-def generate_dff(spice_filename, name, use_finfet, use_tgate, Rsel = False, input_size = 2, mux_name = "ff_input_select", ff_generated = False):
+def generate_dff(spice_filename, name, use_finfet, use_tgate, Rsel, input_size, mux_name, ff_generated):
 	""" This function creates a d flip flop and optionally an input select mux of any
 		size could be added to it. This supports either pass-transistor or transmission gates"""
 	# TODO: add a mux name as an input since for different ff the ff itself is the same but the  input 

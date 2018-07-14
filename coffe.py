@@ -144,6 +144,8 @@ os.chdir(arch_folder)
 
 sys.stdout.flush()
 
+
+
 # Size FPGA transistors
 if is_size_transistors:
     # TODO: pass the args object instead of passing all its memebers
@@ -168,6 +170,7 @@ else:
   #fpga_inst.determine_height()
 
   fpga_inst.update_delays(spice_interface)
+  tran_sizing.print_final_transistor_size(fpga_inst, "transistor_sizes.txt")
 
 # Obtain Memory core power
 if arch_params_dict['enable_bram_module'] == 1:

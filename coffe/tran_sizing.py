@@ -83,6 +83,7 @@ def get_middle_value_config(param_names, spice_ranges):
 	return config
    
 
+# This function is not used anywhere in the code
 def find_best_config(spice_results, area_exp, delay_exp):
 	""" """
 	
@@ -107,6 +108,7 @@ def find_best_config(spice_results, area_exp, delay_exp):
 	return best_area_delay_config
 
 	
+# This function is not used anywhere in the code
 def export_spice_configs(results_filename, spice_param_names, spice_configs, lvl_rest_names, lvl_rest_configs):
 	""" Export all transistor sizing combinations to a file """
 	
@@ -142,6 +144,8 @@ def export_spice_configs(results_filename, spice_param_names, spice_configs, lvl
 	results_file.write("\n\n\n")
 	results_file.close()   
 
+
+# This function is not used anywhere in the code
 def export_transistor_sizes(filename, transistor_sizes):
 
 	tran_size_file = open(filename, 'w')
@@ -151,7 +155,8 @@ def export_transistor_sizes(filename, transistor_sizes):
 	
 	tran_size_file.close()
 	
-	
+
+# This function is not used anywhere in the code		
 def export_all_results(results_filename, element_names, sizing_combos, cost_list, area_list, eval_delay_list, tfall_trise_list):
 	""" Write all area and delay results to a file. """
 	
@@ -188,6 +193,7 @@ def export_all_results(results_filename, element_names, sizing_combos, cost_list
 	results_file.close()
 	
 
+# This function is not used anywhere in the code
 def export_erf_results(results_filename, element_names, sizing_combos, best_results):
 	""" Export the post-erfed results to a CSV file.
 		best_results is a tuple: (cost, combo_index, area, delay, tfall, trise, erf_ratios)"""
@@ -2477,7 +2483,11 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		## Size LUT input drivers
 		############################################
 		for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
-			# Driver
+
+			##########
+			# Driver #
+			##########
+
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 			if iteration == 1:
@@ -2493,7 +2503,10 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				sizing_results_dict[input_driver.driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
 				sizing_results_detailed_dict[input_driver.driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.driver.name]   
 
-			# Not driver
+			##############	
+			# Not driver #
+			##############
+
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 			if iteration == 1:
@@ -2506,7 +2519,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[input_driver.not_driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
-				sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name]      
+				sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name]   
+
 
 		if quick_mode_dict["input_drivers"] == 1:
 			time_after_sizing = time.time()
@@ -2798,6 +2812,9 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 
 
+		##################
+		### Sizing RAM ###
+		##################	
 
 		if fpga_inst.specs.enable_bram_block == 1:
 			############################################
@@ -3163,9 +3180,10 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 			time_before_sizing = time.time()
 
-			############################################
-			## Done sizing, update results lists
-			############################################
+			
+		#########################################
+		### Done sizing, update results lists ###
+		#########################################
 
 		print "FPGA transistor sizing iteration complete!\n"
 		
@@ -3203,9 +3221,9 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			final_result_index = iteration - 1
 
 		sys.stdout.flush()
-		final_report_file = open("sizing_results/sizes_iteration_" + str(iteration) + ".txt", 'w')
+		final_report_file = "sizing_results/sizes_iteration_" + str(iteration) + ".txt"
 		print_final_transistor_size(fpga_inst, final_report_file)
-		final_report_file.close()
+
 		iteration += 1
 
 
@@ -3237,9 +3255,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		   
 	print "FPGA transistor sizing complete!\n"
 	
-	final_report_file = open("sizing_results_final.txt", 'w')
-	print_final_transistor_size(fpga_inst, final_report_file)
-	final_report_file.close()
+	print_final_transistor_size(fpga_inst, "sizing_results_final.txt")
 
 	return 
 
@@ -3289,14 +3305,15 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 	return 
 
 
-def print_final_transistor_size(fpga_inst, report_file):
+def print_final_transistor_size(fpga_inst, report_file_name):
 	"""
 	Dump FPGA transistor sizes to a file.
 	"""
-
+	report_file = open(report_file_name, 'w')
 	report_file.write("#final sizes\n")
 	for trans in fpga_inst.transistor_sizes:
-		report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
+		report_file.write(trans.ljust(35) + "=  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
+	report_file.close()
 
 	return 
 

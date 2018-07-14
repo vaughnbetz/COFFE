@@ -421,15 +421,45 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	#TODO: how come the number of loading transistors doesn't depend 
 	# on whether this is an independent input of not
 
+	# The loading of the inputs of the stratix10 architecture is a bit different:
+	# A and B inputs are connected to all of the 4x 4-LUTs so they are the same as before
+	# however, c, d, e, and f each of them is connected to only 2 of the 4 4-LUTs. While f, 
+	# and g are a bit different as they are connected to the gates of the fluts and not of
+	# the lut itself. The full table of loadings should be as follows:
+	# Total loading of each input and its complement:
+	# ----------------------------------------------------------
+	# A -----> 32		A' -----> 32  L1 }    Connected to all
+	# B -----> 16		B' -----> 16  L2 }    of the four 4-LUTs
+	# ----------------------------------------------------------
+	# C -----> 4		C' -----> 4	  L4 }	  Connected to 
+	# D -----> 2 		D' -----> 2   L5 }    only two 
+	# E -----> 4 		E' -----> 4   L4 }    of the 
+	# F -----> 2		F' -----> 2   L5 }    4-LUTs
+	# ----------------------------------------------------------
+	# G -----> 2        G' -----> 2		 }    Connected to the ptran
+	# H -----> 1        H' -----> 1		 }	  in the flut muxes
+
 	# Calculate number of pass-transistors loading this input
 	input_level = ord(lut_input_name) - 96  # "a" --> 1, "b" --> 2, and so on
+
+	# do the right level mapping for the new architecture
+	if updates:
+		if lut_input_name == 'c' or lut_input_name == 'e':
+			input_level = 4
+		elif lut_input_name == 'd' or lut_input_name == 'f' or lut_input_name == 'g':
+			input_level = 5
+		elif lut_input_name == 'h':
+			input_level = 6
+
+
 	num_ptran_load = int(math.pow(2, K - input_level)) 
 	ptran_level = "L" + str(input_level)
 
-	if (use_fluts and input_level == K) or (updates and input_level >= K - 1): 
-		finput = True
-	else:
-		finput = False
+	# A condition for identifiing the independent inputs of the new architecture
+	finput = False
+	if updates:
+		if lut_input_name == 'g' or lut_input_name == 'h':
+			finput == True
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -443,11 +473,12 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
 		# TODO: clean those conditions
 		if not updates and (use_fluts and num_ptran_load == 1):
-			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n") 
-		elif updates and finput:
-			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_fmux_l" + str(num_ptran_load) + "_nmos\n") 
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n\n") 
+		elif finput:
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_fmux_l" + str(3 - num_ptran_load) + "_nmos\n\n") 
 		else:
-			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n") 
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n\n") 
+
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Create a list of all wires used in this subcircuit
@@ -877,29 +908,51 @@ def generate_tgate_lut_not_driver(spice_filename, lut_input_name):
 	return tran_names_list, wire_names_list
 
 
-def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts):
+def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts, updates = False):
 	""" Generates LUT input load SPICE deck """
 	
+	#TODO: how come the number of loading transistors doesn't depend 
+	# on whether this is an independent input of not
+
+	# The loading of the inputs of the stratix10 architecture is a bit different:
+	# A and B inputs are connected to all of the 4x 4-LUTs so they are the same as before
+	# however, c, d, e, and f each of them is connected to only 2 of the 4 4-LUTs. While f, 
+	# and g are a bit different as they are connected to the gates of the fluts and not of
+	# the lut itself. The full table of loadings should be as follows:
+	# Total loading of each input and its complement:
+	# ----------------------------------------------------------
+	# A -----> 32		A' -----> 32  L1 }    Connected to all
+	# B -----> 16		B' -----> 16  L2 }    of the four 4-LUTs
+	# ----------------------------------------------------------
+	# C -----> 4		C' -----> 4	  L4 }	  Connected to 
+	# D -----> 2 		D' -----> 2   L5 }    only two 
+	# E -----> 4 		E' -----> 4   L4 }    of the 
+	# F -----> 2		F' -----> 2   L5 }    4-LUTs
+	# ----------------------------------------------------------
+	# G -----> 2        G' -----> 2		 }    Connected to the ptran
+	# H -----> 1        H' -----> 1		 }	  in the flut muxes
+
 	# Calculate number of pass-transistors loading this input
-	max_num_tgate = math.pow(2, K)
-	if lut_input_name == "a":
-		num_tgate_load = int(max_num_tgate/2)
-		tgate_level = "L1"
-	elif lut_input_name == "b":
-		num_tgate_load = int(max_num_tgate/4)
-		tgate_level = "L2"
-	elif lut_input_name == "c":
-		num_tgate_load = int(max_num_tgate/8)
-		tgate_level = "L3"
-	elif lut_input_name == "d":
-		num_tgate_load = int(max_num_tgate/16)
-		tgate_level = "L4"
-	elif lut_input_name == "e":
-		num_tgate_load = int(max_num_tgate/32)
-		tgate_level = "L5"
-	elif lut_input_name == "f":
-		num_tgate_load = int(max_num_tgate/64)
-		tgate_level = "L6"
+	input_level = ord(lut_input_name) - 96  # "a" --> 1, "b" --> 2, and so on
+
+	# do the right level mapping for the new architecture
+	if updates:
+		if lut_input_name == 'c' or lut_input_name == 'e':
+			input_level = 4
+		elif lut_input_name == 'd' or lut_input_name == 'f' or lut_input_name == 'g':
+			input_level = 5
+		elif lut_input_name == 'h':
+			input_level = 6
+
+
+	num_ptran_load = int(math.pow(2, K - input_level)) 
+	ptran_level = "L" + str(input_level)
+
+	# A condition for identifiing the independent inputs of the new architecture
+	finput = False
+	if updates:
+		if lut_input_name == 'g' or lut_input_name == 'h':
+			finput == True
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -909,11 +962,13 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	spice_file.write("* LUT " + lut_input_name + "-input load subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n")
-	for tgate in range(num_tgate_load):
-		tgate += 1
-		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_" + str(tgate) + " n_" + str(tgate+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_tgate_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_tgate_load) + "'\n")
-		if use_fluts and num_tgate_load == 1:
+	for tgate in range(1, num_tgate_load + 1):
+		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_" + str(tgate) + " n_" + str(tgate+1) + 
+		" wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_tgate_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_tgate_load) + "'\n")
+		if not updates and (use_fluts and num_tgate_load == 1):
 			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_flut_mux_nmos Wp=tgate_flut_mux_pmos\n") 
+		elif finput:
+			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_gnd n_" + str(tgate+1) + " n_gnd tgate Wn=tgate_fmux_l" + str(3 - num_ptran_load) + "_nmos\n\n") 
 		else:
 			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 
 		
