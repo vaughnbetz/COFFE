@@ -413,9 +413,9 @@ def generate_ptran_lut_not_driver(spice_filename, lut_input_name):
 	return tran_names_list, wire_names_list
    
    
-def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts, updates = False):
+def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts, updates):
 	""" Generates LUT input load SPICE deck 
-		Note: the input K incase of fluts is still input comming from the architecure file.
+		Note: the input K in case of fluts is still input comming from the architecure file.
 		For a 5-FLUT K = 5"""
 	
 	#TODO: how come the number of loading transistors doesn't depend 
@@ -431,10 +431,10 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# A -----> 32		A' -----> 32  L1 }    Connected to all
 	# B -----> 16		B' -----> 16  L2 }    of the four 4-LUTs
 	# ----------------------------------------------------------
-	# C -----> 4		C' -----> 4	  L4 }	  Connected to 
-	# D -----> 2 		D' -----> 2   L5 }    only two 
-	# E -----> 4 		E' -----> 4   L4 }    of the 
-	# F -----> 2		F' -----> 2   L5 }    4-LUTs
+	# C -----> 4		C' -----> 4	  L3 }	  Connected to 
+	# D -----> 2 		D' -----> 2   L4 }    only two 
+	# E -----> 4 		E' -----> 4   L3 }    of the 
+	# F -----> 2		F' -----> 2   L4 }    4-LUTs
 	# ----------------------------------------------------------
 	# G -----> 2        G' -----> 2		 }    Connected to the ptran
 	# H -----> 1        H' -----> 1		 }	  in the flut muxes
@@ -445,11 +445,14 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# do the right level mapping for the new architecture
 	if updates:
 		if lut_input_name == 'c' or lut_input_name == 'e':
-			input_level = 4
+			input_level = 3
+			K = 5
 		elif lut_input_name == 'd' or lut_input_name == 'f' or lut_input_name == 'g':
-			input_level = 5
+			input_level = 4
+			K = 5
 		elif lut_input_name == 'h':
 			input_level = 6
+
 
 
 	num_ptran_load = int(math.pow(2, K - input_level)) 
@@ -459,7 +462,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	finput = False
 	if updates:
 		if lut_input_name == 'g' or lut_input_name == 'h':
-			finput == True
+			finput = True
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -468,7 +471,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write("* LUT " + lut_input_name + "-input load subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n")
+	spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n\n")
 	for ptran in range(1, num_ptran_load + 1):
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
 		# TODO: clean those conditions
@@ -478,6 +481,10 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_fmux_l" + str(3 - num_ptran_load) + "_nmos\n\n") 
 		else:
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n\n") 
+
+	# the duplicate fmux_l1 loading
+	if lut_input_name == 'h':
+		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l1_nmos\n\n") 
 
 	spice_file.write(".ENDS\n\n\n")
 	

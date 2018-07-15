@@ -73,6 +73,12 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(13) + 
         str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(13) + 
         str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6))
+
+    # General BLE output 3:1
+    if fpga_inst.updates:
+        print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.general_output3.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output3.name]/1e6,3)).ljust(13) + 
+            str(round(fpga_inst.logic_cluster.ble.general_output3.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output3.tfall/1e-12,4)).ljust(13) + 
+            str(round(fpga_inst.logic_cluster.ble.general_output3.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output3.power/1e-6))
     
     # LUT
     print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(13) + 

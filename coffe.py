@@ -102,7 +102,7 @@ total_start_time = time.time()
 # code is working after adding any change
 # this controles appyling or disabling the new updates
 
-arch_params_dict['updates'] = False
+arch_params_dict['updates'] = True
 
 
 # Create an FPGA instance

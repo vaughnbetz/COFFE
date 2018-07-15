@@ -2316,8 +2316,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		# of the previous iteration as the starting sizes.
 		if iteration == 1:
 			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(
-											fpga_inst.sb_mux.initial_transistor_sizes)
+			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.sb_mux.initial_transistor_sizes)
 		else:
 			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 
