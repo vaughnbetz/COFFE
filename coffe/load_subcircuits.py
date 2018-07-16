@@ -453,7 +453,7 @@ def generate_fmux_l2_output_load(spice_filename):
 
     spice_file.write("* Wire connecting the output of the level 2 fmux and the input of the 3:1 general ble output mux\n")
     spice_file.write(utils.create_wire("n_in", "n_1_1", "fmux_l2", "gbo3"))
-    spice_file.write("Xgeneral_ble_output3 n_1_1 n_out n_vdd n_gnd n_vdd_gbo n_gnd general_ble_output3\n\n")
+    spice_file.write("Xgeneral_ble_output3 n_1_1 n_out1 n_vdd n_gnd n_vdd_gbo n_gnd general_ble_output3\n\n")
 
     spice_file.write("* Wire connecting the output of the level 2 fmux and the input of the 3:1 register input selct mux \n")
     spice_file.write(utils.create_wire("n_in", "n_2_1", "fmux_l2", "ff3"))

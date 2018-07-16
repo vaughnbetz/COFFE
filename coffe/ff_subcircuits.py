@@ -102,6 +102,8 @@ def generate_ptran_d_ff(spice_filename, use_finfet, with_driver = True):
 	
 	# This script has to create the SPICE subcircuits required.
 	# It has to return a list of the transistor names used as well as a list of the wire names used.
+
+	# TODO: why do we need the clk, set and reset signal to be accessed from outside
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -192,7 +194,7 @@ def generate_ptran_d_ff(spice_filename, use_finfet, with_driver = True):
 
 
 
-def generate_dff(spice_filename, name, use_finfet, use_tgate, Rsel, input_size, mux_name, ff_generated):
+def generate_dff(spice_filename, name, use_finfet, use_tgate, Rsel, mux_name, ff_generated):
 	""" This function creates a d flip flop and optionally an input select mux of any
 		size could be added to it. This supports either pass-transistor or transmission gates"""
 	# TODO: add a mux name as an input since for different ff the ff itself is the same but the  input 

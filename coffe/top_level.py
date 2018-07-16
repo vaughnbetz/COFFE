@@ -24,6 +24,8 @@ def generate_switch_block_top(mux_name):
     sb_file.write("********************************************************************************\n\n")
     sb_file.write(".TRAN 1p 8n SWEEP DATA=sweep_data\n")
     sb_file.write(".OPTIONS BRIEF=1\n\n")
+    sb_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    sb_file.write("*.OPTIONS POST=2\n\n")
     sb_file.write("* Input signal\n")
     sb_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 8n)\n\n")
 
@@ -96,6 +98,8 @@ def generate_connection_block_top(mux_name):
     cb_file.write("********************************************************************************\n\n")
     cb_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     cb_file.write(".OPTIONS BRIEF=1\n\n")
+    cb_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    cb_file.write("*.OPTIONS POST=2\n\n")
     cb_file.write("* Input signal\n")
     cb_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
@@ -167,6 +171,8 @@ def generate_local_mux_top(mux_name):
     local_mux_file.write("********************************************************************************\n\n")
     local_mux_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     local_mux_file.write(".OPTIONS BRIEF=1\n\n")
+    local_mux_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    local_mux_file.write("*.OPTIONS POST=2\n\n")
     local_mux_file.write("* Input signal\n")
     local_mux_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
@@ -3999,6 +4005,9 @@ def generate_lut6_top(lut_name, use_tgate):
     lut_file.write("********************************************************************************\n\n")
     lut_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     lut_file.write(".OPTIONS BRIEF=1\n\n")
+    lut_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    lut_file.write("*.OPTIONS POST=2\n\n")
+
     lut_file.write("* Input signal\n")
     lut_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
@@ -4118,6 +4127,9 @@ def generate_lut5_top(lut_name, use_tgate):
     lut_file.write("********************************************************************************\n\n")
     lut_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     lut_file.write(".OPTIONS BRIEF=1\n\n")
+    lut_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    lut_file.write("*.OPTIONS POST=2\n\n")
+
     lut_file.write("* Input signal\n")
     lut_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
@@ -4167,7 +4179,7 @@ def generate_lut5_top(lut_name, use_tgate):
     lut_file.write("Xlut n_in n_out "+lut_input_nodes+" vdd gnd lut\n\n")
     # BUG: this should be the loading in case of fluts
     #if use_fluts:
-    #    lut_file.write("Xflut_output_load n_out n_vdd nout2 n_vdd nout3 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    #    lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 vdd gnd vdd vdd vdd flut_output_load\n\n")
     #else:
     lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
@@ -4206,6 +4218,9 @@ def generate_lut4_top(lut_name, use_tgate, updates):
     lut_file.write("********************************************************************************\n\n")
     lut_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     lut_file.write(".OPTIONS BRIEF=1\n\n")
+    lut_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    lut_file.write("*.OPTIONS POST=2\n\n")
+
     lut_file.write("* Input signal\n")
     lut_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     
@@ -4256,7 +4271,7 @@ def generate_lut4_top(lut_name, use_tgate, updates):
     lut_file.write("Xlut n_in n_out " + lut_input_nodes + "vdd gnd lut\n\n")
     # BUG: this should be if updates or use_fluts since this is he right loading for the lut output in case of fluts
     if updates:
-        lut_file.write("Xflut_output_load n_out n_vdd nout2 n_vdd nout3 vdd gnd vdd vdd vdd flut_output_load\n\n")
+        lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 vdd gnd vdd vdd vdd flut_output_load\n\n")
     else:
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
    
@@ -4305,6 +4320,9 @@ def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     input_driver_file.write(".OPTIONS BRIEF=1\n\n")
+    input_driver_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    input_driver_file.write("*.OPTIONS POST=2\n\n")
+
     input_driver_file.write("* Input signal\n")
     input_driver_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     input_driver_file.write("* Power rail for the circuit under test.\n")
@@ -4347,14 +4365,14 @@ def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
     input_driver_file.write("** Circuit\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
+    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
     input_driver_file.write("X" + input_driver_name + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd_lut_driver gnd " + input_driver_name + "\n")
+    input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
         input_driver_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     input_driver_file.write("X" + input_driver_name + "_not_1 n_2_1 n_out_n vdd gnd " + input_driver_name + "_not\n")
-    input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n")
     input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd gnd " + input_driver_name + "_load\n\n")
     input_driver_file.write(".END")
     input_driver_file.close()
@@ -4401,6 +4419,9 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type, updates):
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     input_driver_file.write(".OPTIONS BRIEF=1\n\n")
+    input_driver_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    input_driver_file.write("*.OPTIONS POST=2\n\n")
+
     input_driver_file.write("* Input signal\n")
     input_driver_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     input_driver_file.write("* Power rail for the circuit under test.\n")
@@ -4436,14 +4457,16 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type, updates):
     input_driver_file.write("** Circuit\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
+    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name_no_not + "\n")
+    # BUG: the n_vdd should be changes to vdd
+    input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
         input_driver_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     input_driver_file.write("X" + input_driver_name + "_1 n_2_1 n_out_n vdd_lut_driver gnd " + input_driver_name + "\n")
-    input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out n_vdd n_gnd " + input_driver_name_no_not + "_load\n")
+    # BUG: the n_vdd should be changes to vdd
     input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
     input_driver_file.write(".END")
     input_driver_file.close()
@@ -4467,8 +4490,8 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     lut_letter = lut_letter.replace("lut_", "")
 
     n = ""
-    n_g_f1 = "n_vdd"
-    n_g_f2 = "n_vdd"
+    n_g_f1 = "vdd"
+    n_g_f2 = "vdd"
     n_out = "n_out"
     # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
     # while b is connected to a ff with a 3:1 input select mux (called ff3)
@@ -4479,10 +4502,10 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             n = "3"
         if lut_letter == 'g':
             n_g_f1 = "n_3_1"
-            n_out = "n_out3"
+            n_out = "n_out1"
         elif lut_letter == 'h':
             n_g_f2 = "n_3_1"
-            n_out = "n_out4"
+            n_out = "n_out3"
 
     # TODO: for the new design the inputs are connected in a different way update that
 
@@ -4522,13 +4545,15 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("** Include libraries, parameters and other\n")
     spice_file.write("********************************************************************************\n\n")
     spice_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
-    # spice_file.write(".OPTIONS POST=2\n\n")
     
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Setup and input\n")
     spice_file.write("********************************************************************************\n\n")
     spice_file.write(".TRAN 1p 16n SWEEP DATA=sweep_data\n")
     spice_file.write(".OPTIONS BRIEF=1\n\n")
+    spice_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    spice_file.write("*.OPTIONS POST=2\n\n")
+    
     spice_file.write("* Input signal\n")
     spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 supply_v 4n 0 0 4n 8n)\n")
     spice_file.write("VIN_GATE n_in_gate gnd PULSE (supply_v 0 3n 0 0 2n 4n)\n\n")
@@ -4556,37 +4581,41 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("** Circuit\n")
     spice_file.write("********************************************************************************\n\n")    
     spice_file.write("Xcb_mux_on_1 n_in_gate n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
-    spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n")
+    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
+    spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n\n")
 
     # Connect a load to n_rsel node
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
-        spice_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
-    spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
-    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
+        spice_file.write("Xff"+n+" n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n\n")
+
+    spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n\n")
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n\n")
     # The lut module only has one input ptran as loading the real loading depends on the input level and 
     # is most of the time higher than that. Adding the whole loading is still a rough estimation.
     # BUG: Uncomment the next line to add the loading minus one ptran which is already connected from inside the lut
-    #spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 n_vdd n_gnd lut_"+lut_letter+"_driver_load\n")
+    #spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
     
     if not updates:
         if use_fluts:
             spice_file.write("Xwireflut n_out n_out2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
             spice_file.write("Xthemux n_out2 n_out3 vdd gnd vdd gnd flut_mux\n")
             # BUG: this is a big fix the two lines above should be removed and replace with the next line
-            # top_file.write("Xflut_output_load n_out n_vdd n_out1 n_vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+            # top_file.write("Xflut_output_load n_out vdd n_out1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
         else:
             spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else:
-        spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 n_vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+        # since h, f and d only see one transistor as loading no need to add the loading to this circuit
+        # however, for the other inputs ther is at least one more transistor that needs to be added as loading
+        # at the lut input node since the lut component only has on transistor in it connected to the input
+        if lut_letter != 'h' and lut_letter != 'f' and lut_letter != 'd':
+            spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
+        spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
         if lut_letter == 'g' or lut_letter == 'h':
-            spice_file.write(utils.create_wire("n_1_3", "n_1_4", "fmux_l1", "fmux_l2"))
-            spice_file.write("Xfmux_l2 n_out1 n_out3 "+n_g_f2+" n_gnd n_vdd n_gnd fmux_l2\n")
+            spice_file.write(utils.create_wire("n_out1", "n_1_4", "fmux_l1", "fmux_l2"))
+            spice_file.write("Xfmux_l2 n_1_4 n_out3 "+n_g_f2+" gnd vdd gnd fmux_l2\n\n")
             if lut_letter == 'h':
-                spice_file.write("Xfmux_l2_load n_out3 n_out4 n_out5 n_vdd n_gnd n_vdd n_gnd v_dd fmux_l2_load\n\n")
-
-
+                spice_file.write("Xfmux_l2_load n_out3 n_out4 n_out5 vdd gnd vdd gnd v_dd fmux_l2_load\n\n")
     
     spice_file.write(".END")
     spice_file.close()
@@ -4622,6 +4651,9 @@ def generate_local_ble_output_top(name, use_tgate, use_fluts, updates = False):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signal\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
@@ -4660,7 +4692,7 @@ def generate_local_ble_output_top(name, use_tgate, use_fluts, updates = False):
     # BUG: This was a bug fix for coffe 2.0 should be uncommented
     #if use_fluts:
     #    top_file.write("Xlut n_in n_0_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
-    #    top_file.write("Xflut_output_load n_0_1 n_vdd n_1_1 n_vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    #    top_file.write("Xflut_output_load n_0_1 vdd n_1_1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
     #else:
     top_file.write("Xlut n_in n_1_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
     
@@ -4686,6 +4718,14 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
 
     lut_input_nodes = "vdd "*6
     if use_tgate: lut_input_nodes = "vdd gnd "*6
+
+    targ1 = "Xlut_output_load.Xble_outputs.Xgeneral_ble_output_1.n_2_1"
+
+    if updates:
+        if input_size == 2:
+            targ1 = "Xgeneral_ble_output.n_2_1"
+        elif input_size == 3:
+            targ1 = "Xfmux_l2_load.Xgeneral_ble_output3.Xgeneral_ble_output3_driver.n_1_1"
     
     general_ble_output_filename = name + ".sp"
     top_file = open(general_ble_output_filename, 'w')
@@ -4701,6 +4741,9 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signal\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
@@ -4712,9 +4755,9 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     top_file.write("********************************************************************************\n\n")
     top_file.write("* inv_general_ble_output_1 delay\n")
     top_file.write(".MEASURE TRAN meas_inv_general_ble_output_1_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V(Xlut_output_load.Xble_outputs.Xgeneral_ble_output_1.n_2_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V("+targ1+") VAL='supply_v/2' FALL=1\n")
     top_file.write(".MEASURE TRAN meas_inv_general_ble_output_1_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(Xlut_output_load.Xble_outputs.Xgeneral_ble_output_1.n_2_1) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("+    TARG V("+targ1+") VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* inv_general_ble_output_2 delays\n")
     top_file.write(".MEASURE TRAN meas_inv_general_ble_output_2_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' FALL=1\n")
@@ -4739,23 +4782,23 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     # BUG: This is a bug fix for COFFE 2.0 uncomment it and push it to the master
     #if use_fluts:
     #    top_file.write("Xlut n_in n_0_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
-    #    top_file.write("Xflut_output_load n_0_1 n_vdd n_1_1 n_vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    #    top_file.write("Xflut_output_load n_0_1 vdd n_1_1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
     #else:
     
     if updates:
         if input_size == 2:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-            top_file.write("Xflut_output_load n_0_1 n_vdd nout2 n_vdd n_0_2 vdd gnd vdd vdd vdd flut_output_load\n\n")
-            top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1_duplicte", "ff"))
-            top_file.write("Xff n_0_2 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
-            top_file.write(utils.create_wire("n_0_2", "n_1_1", "ffin", "gbo2"))
-            top_file.write("Xgeneral_ble_output n_1_1 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+            top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_0_2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write(utils.create_wire("n_0_2", "n_1_1", "fmux_l1_duplicte", "ff"))
+            top_file.write("Xff n_1_1 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
+            top_file.write(utils.create_wire("n_1_1", "n_1_2", "ffin", "gbo2"))
+            top_file.write("Xgeneral_ble_output n_1_2 n_general_out vdd gnd vdd_general_output gnd general_ble_output\n\n")
         elif input_size == 3:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-            top_file.write("Xflut_output_load n_0_1 n_vdd n_0_2 n_vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
             top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1", "fmux_l2"))
-            top_file.write("Xfmux_l2 n_0_3 n_0_4 vdd gnd vdd gnd fmux_l2\n\n")
-            top_file.write("Xfmux_l2_load n_0_4 n_general_out n_out_ff n_vdd n_gnd n_vdd n_gnd vdd_general_output fmux_l2_load\n\n")
+            top_file.write("Xfmux_l2 n_0_3 n_1_1 vdd gnd vdd gnd fmux_l2\n\n")
+            top_file.write("Xfmux_l2_load n_1_1 n_general_out n_out_ff vdd gnd vdd gnd vdd_general_output fmux_l2_load\n\n")
     else:
         top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
@@ -4824,6 +4867,9 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signal\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
@@ -4880,13 +4926,13 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
             top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     else:
         # TODO: each subcircuit should already have an input wire connected to it to avoid confusion
-        top_file.write("Xflut_output_load n_1_1 n_vdd n_1_4 n_vdd n_out2 vdd gnd "+vdd_f1+" vdd vdd flut_output_load\n\n")
+        top_file.write("Xflut_output_load n_1_1 vdd n_1_4 vdd n_out2 vdd gnd "+vdd_f1+" vdd vdd flut_output_load\n\n")
 
         top_file.write(utils.create_wire("n_1_3", "n_1_4", "fmux_l1", "fmux_l2"))
         top_file.write("Xfmux_l2 n_1_4 n_1_5 vdd gnd "+vdd_f2+" gnd fmux_l2\n\n")
 
         if level == 2:
-            top_file.write("Xfmux_l2_load n_1_5 n_out1 n_out2 n_vdd n_gnd n_vdd n_gnd n_vdd fmux_l2_load\n\n")
+            top_file.write("Xfmux_l2_load n_1_5 n_out1 n_out2 vdd gnd vdd gnd vdd fmux_l2_load\n\n")
 
 
     top_file.write(".END")
@@ -5132,9 +5178,10 @@ def generate_carry_chain_ripple_top(name, updates = False):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signals\n")
-
-
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
     top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -5181,7 +5228,7 @@ def generate_carry_chain_ripple_top(name, updates = False):
     if updates:
         top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg2_sel"))
         top_file.write("\n* Reg2 in Stratix 10 architecture with a 3:1 mux at its input\n")
-        top_file.write("Xff3 n_1_4 n_1_5 n_gate n_gate_n n_clk n_clk_n n_set n_set_n n_reset n_reset_n n_vdd n_gnd ff3\n")
+        top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n")
     else:
         # generate typical load
         top_file.write("Xthemux n_out n_out2 vdd gnd vdd gnd carry_chain_mux\n\n")  
@@ -5218,9 +5265,10 @@ def generate_carry_chain_skip_top(name, use_tgate):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signals\n")
-
-
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
     top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -5296,6 +5344,9 @@ def generate_carrychain_top(name):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signals\n")
 
     #top_file.write("VIN n_a gnd PWL (0 0 1.999n 0 2n 'supply_v' 3.999n 'supply_v' 4n 0 13.999n 0 14n 'supply_v' 23.999n 'supply_v' 24n 0)\n\n")
@@ -5384,8 +5435,10 @@ def generate_carry_inter_top(name):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
-    top_file.write("* Input signals\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
 
+    top_file.write("* Input signals\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
     top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -5463,8 +5516,10 @@ def generate_carrychainand_top(name, use_tgate, nand1_size, nand2_size):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
-    top_file.write("* Input signals\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
 
+    top_file.write("* Input signals\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
     top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -5560,6 +5615,9 @@ def generate_skip_mux_top(name, use_tgate):
     top_file.write("********************************************************************************\n\n")
     top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
     top_file.write("* Input signal\n")
     top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")

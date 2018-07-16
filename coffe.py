@@ -102,7 +102,7 @@ total_start_time = time.time()
 # code is working after adding any change
 # this controles appyling or disabling the new updates
 
-arch_params_dict['updates'] = True
+arch_params_dict['updates'] = False
 
 
 # Create an FPGA instance
@@ -118,7 +118,7 @@ fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
 os.chdir(arch_folder)  
 
 # Generate FPGA and associated SPICE files
-fpga_inst.generate(is_size_transistors) 
+fpga_inst.generate() 
 
 # Go back to the base directory
 os.chdir(default_dir)
@@ -184,4 +184,6 @@ os.chdir(default_dir)
 utils.print_summary(arch_folder, fpga_inst, total_start_time)
 
 # Print vpr architecure file
-coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])
+# The architecture description file should be changes for vpr
+if not fpga_inst.updates:
+  coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])
