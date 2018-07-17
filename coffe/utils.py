@@ -47,6 +47,7 @@ def print_area_and_delay(report_file, fpga_inst):
     # I'm using 'ljust' to create neat columns for printing this data. 
     # If subcircuit names are changed, it might make this printing function 
     # not work as well. The 'ljust' constants would have to be adjusted accordingly.
+    BLE = fpga_inst.logic_cluster.ble
     
     # Print the header
     print_and_write(report_file, "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22)) 
@@ -66,42 +67,48 @@ def print_area_and_delay(report_file, fpga_inst):
     
     # Local BLE output
     if not fpga_inst.updates:
-        print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.local_output.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.logic_cluster.ble.local_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.logic_cluster.ble.local_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6))
+        print_and_write(report_file, "  " + BLE.local_output.name.ljust(22) + str(round(area_dict[BLE.local_output.name]/1e6,3)).ljust(13) + 
+            str(round(BLE.local_output.delay/1e-12,4)).ljust(13) + str(round(BLE.local_output.tfall/1e-12,4)).ljust(13) + 
+            str(round(BLE.local_output.trise/1e-12,4)).ljust(13) + str(BLE.local_output.power/1e-6))
     
     # General BLE output
-    print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6))
+    print_and_write(report_file, "  " + BLE.general_output.name.ljust(22) + str(round(area_dict[BLE.general_output.name]/1e6,3)).ljust(13) + 
+        str(round(BLE.general_output.delay/1e-12,4)).ljust(13) + str(round(BLE.general_output.tfall/1e-12,4)).ljust(13) + 
+        str(round(BLE.general_output.trise/1e-12,4)).ljust(13) + str(BLE.general_output.power/1e-6))
 
     # General BLE output 3:1
     if fpga_inst.updates:
-        print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.general_output3.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output3.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.logic_cluster.ble.general_output3.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output3.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.logic_cluster.ble.general_output3.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output3.power/1e-6))
+        print_and_write(report_file, "  " + BLE.general_output3.name.ljust(22) + str(round(area_dict[BLE.general_output3.name]/1e6,3)).ljust(13) + 
+            str(round(BLE.general_output3.delay/1e-12,4)).ljust(13) + str(round(BLE.general_output3.tfall/1e-12,4)).ljust(13) + 
+            str(round(BLE.general_output3.trise/1e-12,4)).ljust(13) + str(BLE.general_output3.power/1e-6))
     
     # LUT
-    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.lut.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+    print_and_write(report_file, "  " + (BLE.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[BLE.lut.name]/1e6,3)).ljust(13) + 
+        str(round(BLE.lut.delay/1e-12,4)).ljust(13) + str(round(BLE.lut.tfall/1e-12,4)).ljust(13) + 
+        str(round(BLE.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
     
     # Get LUT input names so that we can print inputs in sorted order
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = BLE.lut.input_drivers.keys()
     lut_input_names.sort()
       
     # LUT input drivers
     for input_name in lut_input_names:
-        lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
+        lut_input = BLE.lut.input_drivers[input_name]
         print_and_write(report_file, "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + 
             str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22))
 
-        driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].driver
-        not_driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].not_driver
+        driver = BLE.lut.input_drivers[input_name].driver
+        not_driver = BLE.lut.input_drivers[input_name].not_driver
         print_and_write(report_file, "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + 
             str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22))
         print_and_write(report_file, "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + 
             str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22))
+
+    if fpga_inst.updates:
+        print_and_write(report_file, "  " + BLE.fmux.name.ljust(22) + str(round(area_dict[BLE.fmux.name]/1e6,3)).ljust(13) + str(round(BLE.fmux.delay/1e-12,4)).ljust(13) + 
+            str(round(BLE.fmux.tfall/1e-12,4)).ljust(13) + str(round(BLE.fmux.trise/1e-12,4)).ljust(13) + str(BLE.fmux.power/1e-6).ljust(22))
+        print_and_write(report_file, "  " + BLE.fmux_l2.name.ljust(22) + str(round(area_dict[BLE.fmux_l2.name]/1e6,3)).ljust(13) + str(round(BLE.fmux_l2.delay/1e-12,4)).ljust(13) + 
+            str(round(BLE.fmux_l2.tfall/1e-12,4)).ljust(13) + str(round(BLE.fmux_l2.trise/1e-12,4)).ljust(13) + str(BLE.fmux_l2.power/1e-6).ljust(22))
 
     # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
@@ -863,6 +870,9 @@ def check_arch_params (arch_params, filename):
     # Rsel can 'a' the last LUT input. For example for a 6-LUT Rsel can be 'a' to 'f' or 'z' which means no Rsel.
     if arch_params['Rsel'] != 'z' and (arch_params['Rsel'] < 'a' or arch_params['Rsel'] > chr(arch_params['K']+96)):
         print_error (arch_params['Rsel'], "Fclocal", filename)
+    # COFFE supports only on register select input right now
+    if len(arch_params['Rsel']) > 1:
+        print_error (arch_params['Rsel'], "Fclocal", filename, "COFFE supports only on register select input right now")
     # Rfb can be 'z' which means to Rfb. If not 'z', Rfb is a string of the letters of all the LUT inputs that are Rfb.
     if arch_params['Rfb'] == 'z':
         pass    

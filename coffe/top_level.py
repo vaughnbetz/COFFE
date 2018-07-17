@@ -4500,10 +4500,10 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             n = "2"
         elif lut_letter == 'b':
             n = "3"
-        if lut_letter == 'g':
+        if lut_letter == 'e':
             n_g_f1 = "n_3_1"
             n_out = "n_out1"
-        elif lut_letter == 'h':
+        elif lut_letter == 'f':
             n_g_f2 = "n_3_1"
             n_out = "n_out3"
 
@@ -4513,21 +4513,12 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
     # transmission gate ---> "Xlut n_in_sram n_out a a_not b b_not c c_not d d_not e e_not f f_not vdd_lut gnd lut"
 
-    # In the new design c and e are connected to the third input while d and f are connected to the fourth input of
-    # 4-LUT
-    eLetter = lut_letter
-    if updates:
-        if lut_letter == 'e':
-            eLetter = 'c'
-        elif lut_letter == 'f':
-            eLetter = 'd'
-
     # string holding lut input connections depending on the driver letter
     lut_input_nodes = ""
     # loop over the letters a -> f
     for letter in range(97,103):
         # if this is the driver connect it to n_3_1 else connect it to vdd
-        if chr(letter) == eLetter:
+        if chr(letter) == lut_letter:
             lut_input_nodes += "n_3_1 "
             # if tgate connect the complement input to n_1_4
             if use_tgate: lut_input_nodes += "n_1_4 "
@@ -4553,7 +4544,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write(".OPTIONS BRIEF=1\n\n")
     spice_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
     spice_file.write("*.OPTIONS POST=2\n\n")
-    
+
     spice_file.write("* Input signal\n")
     spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 supply_v 4n 0 0 4n 8n)\n")
     spice_file.write("VIN_GATE n_in_gate gnd PULSE (supply_v 0 3n 0 0 2n 4n)\n\n")
@@ -4605,16 +4596,16 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
         else:
             spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else:
-        # since h, f and d only see one transistor as loading no need to add the loading to this circuit
-        # however, for the other inputs ther is at least one more transistor that needs to be added as loading
+        # since d only see one transistor as loading no need to add the loading to this circuit
+        # however, for the other inputs there is at least one more transistor that needs to be added as loading
         # at the lut input node since the lut component only has on transistor in it connected to the input
-        if lut_letter != 'h' and lut_letter != 'f' and lut_letter != 'd':
+        if lut_letter != 'f' and lut_letter != 'd':
             spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
         spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
-        if lut_letter == 'g' or lut_letter == 'h':
+        if lut_letter == 'e' or lut_letter == 'f':
             spice_file.write(utils.create_wire("n_out1", "n_1_4", "fmux_l1", "fmux_l2"))
             spice_file.write("Xfmux_l2 n_1_4 n_out3 "+n_g_f2+" gnd vdd gnd fmux_l2\n\n")
-            if lut_letter == 'h':
+            if lut_letter == 'f':
                 spice_file.write("Xfmux_l2_load n_out3 n_out4 n_out5 vdd gnd vdd gnd v_dd fmux_l2_load\n\n")
     
     spice_file.write(".END")

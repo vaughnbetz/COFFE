@@ -431,26 +431,27 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# A -----> 32		A' -----> 32  L1 }    Connected to all
 	# B -----> 16		B' -----> 16  L2 }    of the four 4-LUTs
 	# ----------------------------------------------------------
-	# C -----> 4		C' -----> 4	  L3 }	  Connected to 
-	# D -----> 2 		D' -----> 2   L4 }    only two 
-	# E -----> 4 		E' -----> 4   L3 }    of the 
-	# F -----> 2		F' -----> 2   L4 }    4-LUTs
+	# C0 -----> 4		C0' -----> 4  L3 }	  Connected to only
+	# D0 -----> 2 		D0' -----> 2  L4 }    two of the 4-LUTs
 	# ----------------------------------------------------------
-	# G -----> 2        G' -----> 2		 }    Connected to the ptran
-	# H -----> 1        H' -----> 1		 }	  in the flut muxes
+	# C1 -----> 4 		C1' -----> 4  L3 }    Not implemented only  
+	# D1 -----> 2		D1' -----> 2  L4 }    considered in area 
+	# ----------------------------------------------------------
+	# E -----> 2        E' -----> 2	  F1 }    Connected to the ptran
+	# F -----> 1        F' -----> 1	  F2 }	  in the flut muxes
 
 	# Calculate number of pass-transistors loading this input
 	input_level = ord(lut_input_name) - 96  # "a" --> 1, "b" --> 2, and so on
 
 	# do the right level mapping for the new architecture
 	if updates:
-		if lut_input_name == 'c' or lut_input_name == 'e':
+		if lut_input_name == 'c':
 			input_level = 3
 			K = 5
-		elif lut_input_name == 'd' or lut_input_name == 'f' or lut_input_name == 'g':
+		elif lut_input_name == 'd' or lut_input_name == 'e':
 			input_level = 4
 			K = 5
-		elif lut_input_name == 'h':
+		elif lut_input_name == 'f':
 			input_level = 6
 
 
@@ -461,7 +462,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# A condition for identifiing the independent inputs of the new architecture
 	finput = False
 	if updates:
-		if lut_input_name == 'g' or lut_input_name == 'h':
+		if lut_input_name == 'e' or lut_input_name == 'f':
 			finput = True
 	
 	# Open SPICE file for appending
@@ -483,7 +484,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n\n") 
 
 	# the duplicate fmux_l1 loading
-	if lut_input_name == 'h':
+	if updates and lut_input_name == 'f':
 		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l1_nmos\n\n") 
 
 	spice_file.write(".ENDS\n\n\n")
@@ -931,25 +932,29 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# A -----> 32		A' -----> 32  L1 }    Connected to all
 	# B -----> 16		B' -----> 16  L2 }    of the four 4-LUTs
 	# ----------------------------------------------------------
-	# C -----> 4		C' -----> 4	  L4 }	  Connected to 
-	# D -----> 2 		D' -----> 2   L5 }    only two 
-	# E -----> 4 		E' -----> 4   L4 }    of the 
-	# F -----> 2		F' -----> 2   L5 }    4-LUTs
+	# C0 -----> 4		C0' -----> 4  L3 }	  Connected to only
+	# D0 -----> 2 		D0' -----> 2  L4 }    two of the 4-LUTs
 	# ----------------------------------------------------------
-	# G -----> 2        G' -----> 2		 }    Connected to the ptran
-	# H -----> 1        H' -----> 1		 }	  in the flut muxes
+	# C1 -----> 4 		C1' -----> 4  L3 }    Not implemented only  
+	# D1 -----> 2		D1' -----> 2  L4 }    considered in area 
+	# ----------------------------------------------------------
+	# E -----> 2        E' -----> 2	  F1 }    Connected to the ptran
+	# F -----> 1        F' -----> 1	  F2 }	  in the flut muxes
 
 	# Calculate number of pass-transistors loading this input
 	input_level = ord(lut_input_name) - 96  # "a" --> 1, "b" --> 2, and so on
 
 	# do the right level mapping for the new architecture
 	if updates:
-		if lut_input_name == 'c' or lut_input_name == 'e':
+		if lut_input_name == 'c':
+			input_level = 3
+			K = 5
+		elif lut_input_name == 'd' or lut_input_name == 'e':
 			input_level = 4
-		elif lut_input_name == 'd' or lut_input_name == 'f' or lut_input_name == 'g':
-			input_level = 5
-		elif lut_input_name == 'h':
+			K = 5
+		elif lut_input_name == 'f':
 			input_level = 6
+
 
 
 	num_ptran_load = int(math.pow(2, K - input_level)) 
@@ -958,8 +963,8 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# A condition for identifiing the independent inputs of the new architecture
 	finput = False
 	if updates:
-		if lut_input_name == 'g' or lut_input_name == 'h':
-			finput == True
+		if lut_input_name == 'e' or lut_input_name == 'f':
+			finput = True
 	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -979,6 +984,10 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 		else:
 			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 
 		
+	# the duplicate fmux_l1 loading
+	if updates and lut_input_name == 'f':
+		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l1_nmos\n\n") 
+
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Create a list of all wires used in this subcircuit

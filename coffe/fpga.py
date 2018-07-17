@@ -53,6 +53,7 @@ import memory_subcircuits
 import utils
 import hardblock_functions
 import tran_sizing
+import collections
 
 # Top level file generation module
 import top_level
@@ -74,8 +75,6 @@ DELAY_WEIGHT_LUT_C = 0.0704 # This one is higher because we had register-feedbac
 DELAY_WEIGHT_LUT_D = 0.0202
 DELAY_WEIGHT_LUT_E = 0.0121
 DELAY_WEIGHT_LUT_F = 0.0186
-DELAY_WEIGHT_LUT_G = 0.0186
-DELAY_WEIGHT_LUT_H = 0.0186
 DELAY_WEIGHT_LUT_FRAC = 0.0186
 DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0267
 DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0326
@@ -168,28 +167,36 @@ class _SizableCircuit:
         and declare attributes common to all SizableCircuits.
         If a class inherits _SizableCircuit, it should override all methods (error is raised otherwise). """
         
+    def __init__(self, name, use_tgate = False, use_finfet = False):    
+        
+        # Component name
+        self.name = name
+        # A list of the names of transistors in this subcircuit. This list should be logically sorted such 
+        # that transistor names appear in the order that they should be sized
+        self.transistor_names = []
+        # A list of the names of wires in this subcircuit
+        self.wire_names = []
+        # A dictionary of the initial transistor sizes
+        self.initial_transistor_sizes = {}
+        # Path to the top level spice file
+        self.top_spice_path = ""    
+        # Fall time for this subcircuit
+        self.tfall = 1
+        # Rise time for this subcircuit
+        self.trise = 1
+        # Delay to be used for this subcircuit
+        self.delay = 1
+        # Delay weight used to calculate delay of representative critical path
+        self.delay_weight = 1
+        # Dynamic power for this subcircuit
+        self.power = 1
+        # Boolean for using tranmission gate switches
+        self.use_tgate = use_tgate
+        # Boolean for using finfet transistors
+        self.use_finfet = use_finfet
 
-    # TODO: uncomment this and use inheritence in the right way    
-    #def __init__(self, use_tgate, use_finfet):    
-    #    # A list of the names of transistors in this subcircuit. This list should be logically sorted such 
-    #    # that transistor names appear in the order that they should be sized.
-    #    self.transistor_names = []
-    #    # A list of the names of wires in this subcircuit
-    #    self.wire_names = []
-    #    # A dictionary of the initial transistor sizes
-    #    self.initial_transistor_sizes = {}
-    #    # Path to the top level spice file
-    #    self.top_spice_path = ""    
-    #    # Fall time for this subcircuit
-    #    self.tfall = 1
-    #    # Rise time for this subcircuit
-    #    self.trise = 1
-    #    # Delay to be used for this subcircuit
-    #    self.delay = 1
-    #    # Delay weight used to calculate delay of representative critical path
-    #    self.delay_weight = 1
-    #    # Dynamic power for this subcircuit
-    #    self.power = 1
+    # TODO: call the constructor of this base calss from all the child classes and remove those class
+    # variables there is no need to have them as class variables at all
 
     # A list of the names of transistors in this subcircuit. This list should be logically sorted such 
     # that transistor names appear in the order that they should be sized.
@@ -255,8 +262,9 @@ class _SwitchBlockMUX(_SizableCircuit):
     """ Switch Block MUX Class: Pass-transistor 2-level mux with output driver """
     
     def __init__(self, required_size, num_per_tile, use_tgate):
-        # Subcircuit name
-        self.name = "sb_mux"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "sb_mux", use_tgate)
         # How big should this mux be (dictated by architecture specs)
         self.required_size = required_size 
         # How big did we make the mux (it is possible that we had to make the mux bigger for level sizes to work out, this is how big the mux turned out)
@@ -273,8 +281,6 @@ class _SwitchBlockMUX(_SizableCircuit):
         self.level2_size = -1
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_SB_MUX
-        # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
         
         
     def generate(self, subcircuit_filename):
@@ -393,8 +399,9 @@ class _ConnectionBlockMUX(_SizableCircuit):
     """ Connection Block MUX Class: Pass-transistor 2-level mux """
     
     def __init__(self, required_size, num_per_tile, use_tgate):
-        # Subcircuit name
-        self.name = "cb_mux"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "cb_mux", use_tgate)
         # How big should this mux be (dictated by architecture specs)
         self.required_size = required_size 
         # How big did we make the mux (it is possible that we had to make the mux bigger for level sizes to work out, this is how big the mux turned out)
@@ -411,8 +418,6 @@ class _ConnectionBlockMUX(_SizableCircuit):
         self.level2_size = -1
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_CB_MUX
-        # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
         
     
     def generate(self, subcircuit_filename):
@@ -526,8 +531,9 @@ class _LocalMUX(_SizableCircuit):
     """ Local Routing MUX Class: Pass-transistor 2-level mux with no driver """
     
     def __init__(self, required_size, num_per_tile, use_tgate):
-        # Subcircuit name
-        self.name = "local_mux"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "local_mux", use_tgate)
         # How big should this mux be (dictated by architecture specs)
         self.required_size = required_size 
         # How big did we make the mux (it is possible that we had to make the mux bigger for level sizes to work out, this is how big the mux turned out)
@@ -544,8 +550,6 @@ class _LocalMUX(_SizableCircuit):
         self.level2_size = -1
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_LOCAL_MUX
-        # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
     
     
     def generate(self, subcircuit_filename):
@@ -653,13 +657,13 @@ class _LUTInputDriver(_SizableCircuit):
         """
 
     def __init__(self, name, type, delay_weight, use_tgate, use_fluts, updates):
-        self.name = "lut_" + name + "_driver"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "lut_" + name + "_driver", use_tgate)
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
         # Delay weight in a representative critical path
         self.delay_weight = delay_weight
-        # use pass transistor or transmission gate
-        self.use_tgate = use_tgate
         self.use_fluts = use_fluts
         self.updates = updates
 
@@ -801,13 +805,14 @@ class _LUTInputNotDriver(_SizableCircuit):
     """ LUT input not-driver. This is the complement driver. """
 
     def __init__(self, name, type, delay_weight, use_tgate, updates):
-        self.name = "lut_" + name + "_driver_not"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "lut_" + name + "_driver_not", use_tgate)
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
         # Delay weight in a representative critical path
         self.delay_weight = delay_weight
-        # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+
         self.updates = updates
    
     
@@ -869,19 +874,13 @@ class _LUTInput(_CompoundCircuit):
         # Therefore, there are 4 different types, which are controlled by Rsel and Rfb
         # The register select (Rsel) could only be one signal. While the feedback could be used with multiple signals
         if name in Rfb:
-            if Rsel == name:
+            if name in Rsel:
                 self.type = "reg_fb_rsel"
             else:
                 self.type = "reg_fb"
         else:
-            if Rsel == name:
+            if name in Rsel:
                 self.type = "default_rsel"
-            else:
-                self.type = "default"
-
-        if updates:
-            if (name == 'a' or name == 'b'):
-                self.type = "reg_fb_rsel"
             else:
                 self.type = "default"
 
@@ -992,13 +991,13 @@ class _LUT(_SizableCircuit):
     """ Lookup table. """
 
     def __init__(self, K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, updates):
-        # Name of LUT 
-        self.name = "lut"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "lut", use_tgate, use_finfet)
+        
         self.use_fluts = use_fluts
         # Size of LUT
         self.K = K
-        # Register feedback parameter
-        self.Rfb = Rfb
         # Dictionary of input drivers (keys: "a", "b", etc...)
         self.input_drivers = {}
         # Dictionary of input driver loads
@@ -1008,35 +1007,33 @@ class _LUT(_SizableCircuit):
         # Delay weight in a representative critical path
         # sum the delay weights of the used inputs
         self.delay_weight = sum(DELAY_WEIGHT_LUT_INPUTS[:K])
-        # Booleans to use transmission gates and finfet 
-        self.use_tgate = use_tgate
-        self.use_finfet = use_finfet
         # Boolean to indicate we are implementing the new architecture
         self.updates = updates
 
         self.lutSize = K
+        # for the new design the 6-LUT is fractured into 4 4-LUTs with only
+        # inputs a and b used as feedback inputs and register select inputs
         if updates:
             self.lutSize -= 2
+            Rsel = 'ab'
+            Rfb = 'ab'
         elif use_fluts: 
             self.lutSize -= 1
           
-        # TODO: in the new design inputs c is identical to e, and input
-        # d is identical to f. There is no need to recalculate the delay 
-        # howeve, the area for those drivers should be added  
         # Create a LUT input driver and load for each LUT input
         # note that even in case of fluts all the K input drivers are
         # needed since the K represents the lut size before fracturing
+        # Note: for the new design we still have 6 distincitve inputs
+        # which are a, b, c, d, e, and f. Keeping in mind that c and d
+        # are actually repeated in the actual design (c0, c1 and d0, d1)
+        # which should be taken into consideration when calculating the
+        # area of the drivers
         for i in range(97, K+97):
             name = chr(i)
             delay_weight = DELAY_WEIGHT_LUT_INPUTS[i-97]
             self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, use_tgate, use_fluts, updates)
             self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts, updates)
 
-        if updates:
-            self.input_drivers['g'] = _LUTInput('g', 'z', 'z', DELAY_WEIGHT_LUT_G, use_tgate, use_fluts, updates)
-            self.input_driver_loads['g'] = _LUTInputDriverLoad('g', use_tgate, use_fluts, updates)
-            self.input_drivers['h'] = _LUTInput('h', 'z', 'z', DELAY_WEIGHT_LUT_H, use_tgate, use_fluts, updates)
-            self.input_driver_loads['h'] = _LUTInputDriverLoad('h', use_tgate, use_fluts, updates)
 
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -1182,13 +1179,18 @@ class _LUT(_SizableCircuit):
         width_dict[self.name] = width
         
         # Calculate LUT driver areas
+        # for the new design the drivers for c and d are present twice since
+        # the design has c0 and d0 inputs in addition to c1 and d1.
         total_lut_area = 0.0
         for driver_name, input_driver in self.input_drivers.iteritems():
             driver_area = input_driver.update_area(area_dict, width_dict)
-            total_lut_area +=  driver_area
+            if self.updates and (driver_name == 'c' or driver_name == 'd'):
+                total_lut_area += 2*driver_area
+            else:
+                total_lut_area +=  driver_area
        
         # Now we calculate total LUT area
-        total_lut_area = total_lut_area + area_dict["lut"]
+        total_lut_area = total_lut_area + area_dict[self.name]
 
         area_dict["lut_and_drivers"] = total_lut_area
         width_dict["lut_and_drivers"] = math.sqrt(total_lut_area)
@@ -1455,10 +1457,11 @@ class _CarryChainMux(_SizableCircuit):
     """ Carry Chain Multiplexer class.    """
 
     def __init__(self, use_finfet, use_fluts, use_tgate):
-        self.name = "carry_chain_mux"
-        self.use_finfet = use_finfet
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "carry_chain_mux", use_tgate, use_finfet)
+          
         self.use_fluts = use_fluts
-        self.use_tgate = use_tgate      
         
 
     def generate(self, subcircuit_filename, use_finfet):
@@ -1525,15 +1528,17 @@ class _CarryChainMux(_SizableCircuit):
 class _CarryChainPer(_SizableCircuit):
     """ Carry Chain Peripherals class. Used to measure the delay from the Cin to Sout.  """
     def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, use_tgate, updates):
-        self.name = "carry_chain_perf"
-        self.use_finfet = use_finfet
+         # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "carry_chain_perf", use_tgate, use_finfet)
+        
+        # carry chain type either ripple or skip
         self.carry_chain_type = carry_chain_type
         # handled in the check_arch_params funciton in utils.py
         # assert FAs_per_flut <= 2
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N        
-        self.use_tgate = use_tgate
 
         self.updates = updates
 
@@ -1583,9 +1588,9 @@ class _CarryChainPer(_SizableCircuit):
 class _CarryChain(_SizableCircuit):
     """ Carry Chain class.    """
     def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, updates = False):
-        # Carry chain name
-        self.name = "carry_chain"
-        self.use_finfet = use_finfet
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "carry_chain", False, use_finfet)
         # ripple or skip?
         self.carry_chain_type = carry_chain_type
         # added to the check_arch_params function
@@ -1756,6 +1761,7 @@ class _CarryChainInterCluster(_SizableCircuit):
         self.carry_chain_type = carry_chain_type
         # length of the wire between cout of a cluster to cin of the other
         self.inter_wire_length = inter_wire_length
+        #self.delay_weight = 1
 
     def generate(self, subcircuit_filename, use_finfet):
         """ Generate Carry chain SPICE netlists."""  
@@ -2087,19 +2093,13 @@ class _LocalBLEOutput(_SizableCircuit):
         as feedback signal """
     
     def __init__(self, use_tgate, use_fluts):
-        self.name = "local_ble_output"
-
-        # that transistor names appear in the order that they should be sized.
-        self.transistor_names = []
-        # A list of the names of wires in this subcircuit
-        self.wire_names = []
-        # A dictionary of the initial transistor sizes
-        self.initial_transistor_sizes = {}
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "local_ble_output", use_tgate)
 
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_LOCAL_BLE_OUTPUT
-        # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+
         self.use_fluts = use_fluts
         
         
@@ -2175,17 +2175,11 @@ class _GeneralBLEOutput(_SizableCircuit):
     """ General BLE Output is the mux at the output of the ble connecting its output to the general routing """
     
     def __init__(self, use_tgate, use_fluts, enable_carry_chain, updates = False, input_size = 2):
-        self.name = "general_ble_output"
-
-        # that transistor names appear in the order that they should be sized.
-        self.transistor_names = []
-        # A list of the names of wires in this subcircuit
-        self.wire_names = []
-        # A dictionary of the initial transistor sizes
-        self.initial_transistor_sizes = {}
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "general_ble_output", use_tgate)
 
         self.delay_weight = DELAY_WEIGHT_GENERAL_BLE_OUTPUT
-        self.use_tgate = use_tgate
         self.use_fluts = use_fluts
         self.enable_carry_chain = enable_carry_chain
 
@@ -2294,6 +2288,7 @@ class _GeneralBLEOutput(_SizableCircuit):
         # Update wire lengths
         wire_lengths["wire_" + self.name + level] = width_dict[switch + self.name + level]
         wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
+
         if self.updates:
             # TODO: revise all these lengths
             wire_lengths[utils.wire_name("fmux_l1_duplicte", "ff")] = width_dict["ff"]*2
@@ -2381,28 +2376,19 @@ class _flut_mux(_SizableCircuit):
     
     def __init__(self, use_tgate, use_finfet, enable_carry_chain, updates = False, level = 1):
 
+
+        # TODO: change to enable finfet support, should be rather straightforward as it's just a mux
+        # use finfet
         # TODO: unify the names of the flut_mux; make it always fmux_l#n for easier implementation
         # name
-        self.name = "flut_mux"
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, "flut_mux", use_tgate, use_finfet)
 
-        # that transistor names appear in the order that they should be sized.
-        self.transistor_names = []
-        # A list of the names of wires in this subcircuit
-        self.wire_names = []
-        # A dictionary of the initial transistor sizes
-        self.initial_transistor_sizes = {}
-
-        # use tgate
-        self.use_tgate = use_tgate
-        # todo: change to enable finfet support, should be rather straightforward as it's just a mux
-        # use finfet
-        self.use_finfet = use_finfet 
         self.enable_carry_chain = enable_carry_chain
-
-        # if no updates keep the input wire name as it was
-        self.input_wire_name = "wire_lut_to_flut_mux"
         #add the level of the flut to its name and define some new variables
         self.updates = updates
+        # fmux level either 1 or 2
         self.level = level
 
         if updates:
@@ -2472,17 +2458,10 @@ class _MUX(_SizableCircuit):
     
     def __init__(self, name, use_tgate, input_size = 2, with_driver = True, FF = False, loads = False):
 
-        self.name = name
+        # Call the constructor of the base class to initialize all
+        # its local variables
+        _SizableCircuit.__init__(self, name, use_tgate)
 
-        # that transistor names appear in the order that they should be sized.
-        self.transistor_names = []
-        # A list of the names of wires in this subcircuit
-        self.wire_names = []
-        # A dictionary of the initial transistor sizes
-        self.initial_transistor_sizes = {}
-
-        # use tgate
-        self.use_tgate = use_tgate
         #add the level of the flut to its name and define some new variables
         self.input_size = input_size
         self.loads = loads
@@ -2494,10 +2473,10 @@ class _MUX(_SizableCircuit):
         self.level2_size = int(math.sqrt(self.input_size))
         self.level1_size = int(math.ceil(float(self.input_size)/self.level2_size))
         self.implemented_size = self.level1_size*self.level2_size
-        print("{}: {}".format(self.name, self.implemented_size))
         self.num_unused_inputs = self.implemented_size - self.input_size
         self.sram_per_mux = self.level1_size + self.level2_size
         self.FF = FF
+
         if use_tgate:
             self.switch = "tgate_"
         else:
@@ -2545,10 +2524,7 @@ class _MUX(_SizableCircuit):
 
 
     def generate_top(self):       
-
-        print "Generating top-level " + self.name
-        
-            
+        pass
 
     def update_area(self, area_dict, width_dict):
         """ updates the area according to the current transistor areas """
@@ -2813,7 +2789,7 @@ class _BLE(_CompoundCircuit):
 
         # Wire connecting all BLE output mux-inputs together, in the net list this wire is divided into different wires
         # depending on the number of muxes we have. The number of individual wires equals to the total number of muxes - 1
-        # TODO: the new architecture won't really have this wire
+        # TODO: the new architecture won't have this wire
         if not self.updates:
             wire_lengths["wire_ble_outputs"] = self.num_local_outputs*width_dict[self.local_output.name] + self.num_general_outputs*width_dict[self.general_output.name]
             wire_layers["wire_ble_outputs"] = 0
@@ -6324,7 +6300,7 @@ class FPGA:
         This function returns "False" if any of the HSPICE simulations failed.
         """
         
-        print "*** UPDATING DELAYS ***"
+        print("*** UPDATING DELAYS ***")
         crit_path_delay = 0
         valid_delay = True
 
@@ -6347,240 +6323,141 @@ class FPGA:
         # were "failed". If that is the case, we set the delay of that subcircuit to 1
         # second and set our valid_delay flag to False.
 
-        #########################
-        ### Switch Block MUX  ###
-        #########################
+        # All subcircuits should be added to this dictionary except for the input drivers
+        subcircuits = collections.OrderedDict()
 
-        print "  Updating delay for " + self.sb_mux.name
-        spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict)
-        if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-            valid_delay = False
-            tfall = 1
-            trise = 1
-        else :  
-            tfall = float(spice_meas["meas_total_tfall"][0])
-            trise = float(spice_meas["meas_total_trise"][0])
-        if tfall < 0 or trise < 0 :
-            valid_delay = False
-        self.sb_mux.tfall = tfall
-        self.sb_mux.trise = trise
-        self.sb_mux.delay = max(tfall, trise)
-        crit_path_delay += self.sb_mux.delay*self.sb_mux.delay_weight
-        self.delay_dict[self.sb_mux.name] = self.sb_mux.delay 
-        self.sb_mux.power = float(spice_meas["meas_avg_power"][0])
+        # Switch Block Mux Subcircuit
+        subcircuits[self.sb_mux.name] = self.sb_mux
+        # Connection Block Mux Subcircuit
+        subcircuits[self.cb_mux.name] = self.cb_mux
+        # Local Interconnect Mux Subcircuit
+        subcircuits[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux
+        # General Output Mux Subcircuit
+        subcircuits[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output
+        # LUT Subcircuit
+        subcircuits[self.logic_cluster.ble.lut.name] = self.logic_cluster.ble.lut
 
-        
-        ############################
-        ### Connection Block MUX ###
-        ############################
-
-        print "  Updating delay for " + self.cb_mux.name
-        spice_meas = spice_interface.run(self.cb_mux.top_spice_path, parameter_dict) 
-        if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-            valid_delay = False
-            tfall = 1
-            trise = 1
-        else :  
-            tfall = float(spice_meas["meas_total_tfall"][0])
-            trise = float(spice_meas["meas_total_trise"][0])
-        if tfall < 0 or trise < 0 :
-            valid_delay = False
-        self.cb_mux.tfall = tfall
-        self.cb_mux.trise = trise
-        self.cb_mux.delay = max(tfall, trise)
-        crit_path_delay += self.cb_mux.delay*self.cb_mux.delay_weight
-        self.delay_dict[self.cb_mux.name] = self.cb_mux.delay
-        self.cb_mux.power = float(spice_meas["meas_avg_power"][0])
-
-        
-        #####################################
-        ### Local MUX (local inteconnect) ###
-        #####################################
-
-        print "  Updating delay for " + self.logic_cluster.local_mux.name
-        spice_meas = spice_interface.run(self.logic_cluster.local_mux.top_spice_path, 
-                                         parameter_dict) 
-        if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-            valid_delay = False
-            tfall = 1
-            trise = 1
-        else :  
-            tfall = float(spice_meas["meas_total_tfall"][0])
-            trise = float(spice_meas["meas_total_trise"][0])
-        if tfall < 0 or trise < 0 :
-            valid_delay = False
-        self.logic_cluster.local_mux.tfall = tfall
-        self.logic_cluster.local_mux.trise = trise
-        self.logic_cluster.local_mux.delay = max(tfall, trise)
-        crit_path_delay += (self.logic_cluster.local_mux.delay*
-                            self.logic_cluster.local_mux.delay_weight)
-        self.delay_dict[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux.delay
-        self.logic_cluster.local_mux.power = float(spice_meas["meas_avg_power"][0])
-        
-        ########################
-        ### Local BLE output ###
-        ########################
-
-        # the Stratix 10 has no local feedback
+        # Local Output Mux Subcircuit, not used in the Stratix10 design
         if not self.updates:
-            print "  Updating delay for " + self.logic_cluster.ble.local_output.name 
-            spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
-                                             parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            self.logic_cluster.ble.local_output.tfall = tfall
-            self.logic_cluster.ble.local_output.trise = trise
-            self.logic_cluster.ble.local_output.delay = max(tfall, trise)
-            crit_path_delay += (self.logic_cluster.ble.local_output.delay*
-                                self.logic_cluster.ble.local_output.delay_weight)
-            self.delay_dict[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output.delay
-            self.logic_cluster.ble.local_output.power = float(spice_meas["meas_avg_power"][0])
+            subcircuits[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output
 
-        ##########################
-        ### General BLE output ###
-        ##########################
-
-        print "  Updating delay for " + self.logic_cluster.ble.general_output.name
-        spice_meas = spice_interface.run(self.logic_cluster.ble.general_output.top_spice_path, parameter_dict) 
-        if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-            valid_delay = False
-            tfall = 1
-            trise = 1
-        else :  
-            tfall = float(spice_meas["meas_total_tfall"][0])
-            trise = float(spice_meas["meas_total_trise"][0])
-        if tfall < 0 or trise < 0 :
-            valid_delay = False
-        self.logic_cluster.ble.general_output.tfall = tfall
-        self.logic_cluster.ble.general_output.trise = trise
-        self.logic_cluster.ble.general_output.delay = max(tfall, trise)
-        crit_path_delay += (self.logic_cluster.ble.general_output.delay*
-                            self.logic_cluster.ble.general_output.delay_weight)
-        self.delay_dict[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output.delay
-        self.logic_cluster.ble.general_output.power = float(spice_meas["meas_avg_power"][0])
-
-        ##############################################
-        ### The 3:1 general ouput mux (Stratix 10) ###
-        ##############################################
-
-        if self.updates:
-            print "  Updating delay for " + self.logic_cluster.ble.general_output3.name
-            spice_meas = spice_interface.run(self.logic_cluster.ble.general_output3.top_spice_path, parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            self.logic_cluster.ble.general_output3.tfall = tfall
-            self.logic_cluster.ble.general_output3.trise = trise
-            self.logic_cluster.ble.general_output3.delay = max(tfall, trise)
-            crit_path_delay += (self.logic_cluster.ble.general_output3.delay*
-                                self.logic_cluster.ble.general_output3.delay_weight)
-            self.delay_dict[self.logic_cluster.ble.general_output3.name] = self.logic_cluster.ble.general_output3.delay
-            self.logic_cluster.ble.general_output3.power = float(spice_meas["meas_avg_power"][0])
-
-        ###################################
-        ### Level 1 fracturable lut mux ###
-        ###################################
-
+        # Level 1 FLUT Mux Subcircuit
         if self.specs.use_fluts:
-            print "  Updating delay for " + self.logic_cluster.ble.fmux.name
-            spice_meas = spice_interface.run(self.logic_cluster.ble.fmux.top_spice_path, 
-                                             parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            self.logic_cluster.ble.fmux.tfall = tfall
-            self.logic_cluster.ble.fmux.trise = trise
-            self.logic_cluster.ble.fmux.delay = max(tfall, trise)
-            self.delay_dict[self.logic_cluster.ble.fmux.name] = self.logic_cluster.ble.fmux.delay
-            self.logic_cluster.ble.fmux.power = float(spice_meas["meas_avg_power"][0])
+            subcircuits[self.logic_cluster.ble.fmux.name] = self.logic_cluster.ble.fmux
 
-        ###################################
-        ### Level 2 fracturable lut mux ###
-        ###################################
-
+        # Added subcircuits for the new design
         if self.updates:
-            print "  Updating delay for " + self.logic_cluster.ble.fmux_l2.name
-            spice_meas = spice_interface.run(self.logic_cluster.ble.fmux_l2.top_spice_path, 
-                                             parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+            # General Output 3:1 Mux Subcircuit
+            subcircuits[self.logic_cluster.ble.general_output3.name] = self.logic_cluster.ble.general_output3
+            # Level 2 FLUT Mux Subcircuti
+            subcircuits[self.logic_cluster.ble.fmux_l2.name] = self.logic_cluster.ble.fmux_l2
+
+        # Carry Chain Subcircuits
+        if self.specs.enable_carry_chain:
+            # Carry Chain Subcircuit, Cin to Cout
+            subcircuits[self.carrychain.name] = self.carrychain
+            # Carry Chain Pereferal Subcircuit, Cin to Sout
+            subcircuits[self.carrychainperf.name] = self.carrychainperf
+            # Carry Chain Inter Subcircuit, Cout to Cin (drivers between clusters)
+            subcircuits[self.carrychaininter.name] = self.carrychaininter
+            # Stratix10 design doesn't have this mux
+            if not self.updates:
+                # Carry Chain Mux Subcircuit (Mux choosing between lut output and carry chain output)
+                subcircuits[self.carrychainmux.name] = self.carrychainmux
+            if self.specs.carry_chain_type == "skip":
+                subcircuits[self.carrychainskipmux.name] = self.carrychainskipmux
+                subcircutis[self.carrychainand.name] = self.carrychainand
+
+        # This loop calculates the delay for all the subcircuits in the subcircuits dictionary
+        # adding any new subcircuit to COFFE should be added to this dictionary and the function
+        # _adds_to_critical_path should be moditfied to inidicate whether this new subcircuit
+        # should add to the overall critical path or not
+        # TODO: Remove the adds_critical_path parameter and make it a parameter in all the 
+        # resizable circuits
+        for name, subcircuit in subcircuits.iteritems():
+
+            print("  Updating delay for " + name)
+
+            spice_meas = spice_interface.run(subcircuit.top_spice_path, parameter_dict) 
+
+            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed":
                 valid_delay = False
                 tfall = 1
                 trise = 1
-            else :  
+            else:  
                 tfall = float(spice_meas["meas_total_tfall"][0])
                 trise = float(spice_meas["meas_total_trise"][0])
+
             if tfall < 0 or trise < 0 :
                 valid_delay = False
-            self.logic_cluster.ble.fmux_l2.tfall = tfall
-            self.logic_cluster.ble.fmux_l2.trise = trise
-            self.logic_cluster.ble.fmux_l2.delay = max(tfall, trise)
-            self.delay_dict[self.logic_cluster.ble.fmux_l2.name] = self.logic_cluster.ble.fmux_l2.delay
-            self.logic_cluster.ble.fmux_l2.power = float(spice_meas["meas_avg_power"][0])
 
- 
-        #################    
-        ### LUT delay ###
-        #################
+            subcircuit.tfall = tfall
+            subcircuit.trise = trise
+            subcircuit.delay = max(tfall, trise)
 
-        print "  Updating delay for " + self.logic_cluster.ble.lut.name
-        spice_meas = spice_interface.run(self.logic_cluster.ble.lut.top_spice_path, 
-                                         parameter_dict) 
-        if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-            valid_delay = False
-            tfall = 1
-            trise = 1
-        else :  
-            tfall = float(spice_meas["meas_total_tfall"][0])
-            trise = float(spice_meas["meas_total_trise"][0])
-        if tfall < 0 or trise < 0 :
-            valid_delay = False
-        self.logic_cluster.ble.lut.tfall = tfall
-        self.logic_cluster.ble.lut.trise = trise
-        self.logic_cluster.ble.lut.delay = max(tfall, trise)
-        self.delay_dict[self.logic_cluster.ble.lut.name] = self.logic_cluster.ble.lut.delay
+            self.delay_dict[name] = subcircuit.delay
+            # lut delay (SRAM to output) is not added to the crictical path
+            # also the power of it is not added. Both are calculated for
+            # all the input drivers seperatly
+            if subcircuit != self.logic_cluster.ble.lut:
+                subcircuit.power = float(spice_meas["meas_avg_power"][0])
+            # checks if the delay of the circuit should be added to the overall crictical path
+            if self._adds_to_critical_path(subcircuit):
+                crit_path_delay += (subcircuit.delay * subcircuit.delay_weight)
 
 
-        ########################
-        ### LUT inputs delay ###
-        ########################
+        ##############################################
+        ### LUT Input Driver and Driver Not Delays ###
+        ##############################################
+
+        for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
+            for driver in [lut_input.driver, lut_input.not_driver]:
+
+                print("  Updating delay for " + driver.name) 
+                spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
+                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+                    valid_delay = False
+                    tfall = 1
+                    trise = 1
+                else :  
+                    tfall = float(spice_meas["meas_total_tfall"][0])
+                    trise = float(spice_meas["meas_total_trise"][0])
+                if tfall < 0 or trise < 0 :
+                    valid_delay = False
+                driver.tfall = tfall
+                driver.trise = trise
+                driver.delay = max(tfall, trise)
+                driver.power = float(spice_meas["meas_avg_power"][0])
+                self.delay_dict[driver.name] = driver.delay
+
+                if driver.delay < 0 :
+                    print("*** "+driver.name+"is negative : " + str(driver.delay) + " ***")
+                    exit(2)                
+
+
+        ####################################
+        ### LUT (Inputs to Output) Delay ###
+        ####################################
 
         # Get delay for all paths through the LUT.
         # We get delay for each path through the LUT as well as for the LUT input drivers.
         for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
+
             driver = lut_input.driver
             not_driver = lut_input.not_driver
-            print "  Updating delay for " + driver.name.replace("_driver", "")
+            print("  Updating delay for " + driver.name.replace("_driver", ""))
             driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
 
-            # TODO: revise this
             if (not self.updates and ((lut_input_name == "f" and self.specs.use_fluts and self.specs.K == 6) or (lut_input_name == "e" and self.specs.use_fluts and self.specs.K == 5))): 
-                # or (self.updates and (lut_input_name == "e" or lut_input_name == "f"))):
+                # TODO: the fmux delay is the delay of propagating through the mux and not the delay of switching the mux
+                # how is this used as the input delay. I think it should calculated as the new design where the delay is
+                # clculated from the change in the input of the fmux gate to its output
                 lut_input.tfall = self.logic_cluster.ble.fmux.tfall
                 lut_input.trise = self.logic_cluster.ble.fmux.trise
-                tfall = lut_input.tfall
-                trise = lut_input.trise
-                lut_input.delay = max(tfall, trise)
+                lut_input.delay = max(lut_input.tfall, lut_input.trise)
+                # TODO: revise this
+                lut_input.power = self.logic_cluster.ble.fmux.power
             else:
-
                 # Get the delay for a path through the LUT (we do it for each input)
                 spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
                 if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6593,16 +6470,28 @@ class FPGA:
                 if tfall < 0 or trise < 0 :
                     valid_delay = False
 
-                # TODO: revise this
-                if not self.updates:    
+                # For the Stratix10 design add the delay for the signal propagation through fmux_l1 and
+                # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals
+                # input f delay will be only the delay of switching the ptran of the level 2 fmux
+                # TODO: add to the delay dictionary the delay of a to d without the fmux delays might be useful
+                if self.updates: 
+                    if lut_input_name != 'e' and lut_input_name != 'f' :
+                        tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall
+                        trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise
+                    # input e will see the delay of switching the gates of the fmux_l1 inaddition to the
+                    # propagation delay through fmux_l2
+                    elif lut_input_name == 'e':
+                        tfall += self.logic_cluster.ble.fmux_l2.tfall
+                        trise += self.logic_cluster.ble.fmux_l2.trise
+                else:    
                     if self.specs.use_fluts:
-                        tfall = tfall + self.logic_cluster.ble.fmux.tfall
-                        trise = trise + self.logic_cluster.ble.fmux.trise
+                        tfall += self.logic_cluster.ble.fmux.tfall
+                        trise += self.logic_cluster.ble.fmux.trise
                 lut_input.tfall = tfall
                 lut_input.trise = trise
                 lut_input.delay = max(tfall, trise)
-
-            lut_input.power = float(spice_meas["meas_avg_power"][0])
+                # TODO: this was outside the else block (revise this)
+                lut_input.power = float(spice_meas["meas_avg_power"][0])
 
             if lut_input.delay < 0 :
                 print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
@@ -6610,199 +6499,30 @@ class FPGA:
 
             self.delay_dict[lut_input.name] = lut_input.delay
             
-            # Now, we want to get the delay and power for the driver
-            print "  Updating delay for " + driver.name 
-            spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            driver.tfall = tfall
-            driver.trise = trise
-            driver.delay = max(tfall, trise)
-            driver.power = float(spice_meas["meas_avg_power"][0])
-            self.delay_dict[driver.name] = driver.delay
-
-            if driver.delay < 0 :
-                print "*** Lut driver delay is negative : " + str(lut_input.delay) + " ***"
-                exit(2)
-
-            # ... and the not_driver
-            print "  Updating delay for " + not_driver.name
-            spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            not_driver.tfall = tfall
-            not_driver.trise = trise
-            not_driver.delay = max(tfall, trise)
-            not_driver.power = float(spice_meas["meas_avg_power"][0])
-            self.delay_dict[not_driver.name] = not_driver.delay
-            if not_driver.delay < 0 :
-                print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"
-                exit(2)
-            
             lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
             if self.specs.use_fluts:
                 lut_delay += self.logic_cluster.ble.fmux.delay
 
             if lut_delay < 0 :
-                print "*** Lut delay is negative : " + str(lut_input.delay) + " ***"
+                print("*** Lut delay is negative : " + str(lut_delay) + " ***")
                 exit(2)
-            #print lut_delay
+
             crit_path_delay += lut_delay*lut_input.delay_weight
-        
-        if self.specs.use_fluts:
-            crit_path_delay += self.logic_cluster.ble.fmux.delay * DELAY_WEIGHT_LUT_FRAC
+
+
+        # TODO: the actual delay weights should be calculated from vpr and used here
+        if self.updates:
+            crit_path_delay += (self.logic_cluster.ble.fmux.delay + self.logic_cluster.ble.fmux_l2.delay) * DELAY_WEIGHT_LUT_FRAC
+        else:
+            if self.specs.use_fluts:
+                crit_path_delay += self.logic_cluster.ble.fmux.delay * DELAY_WEIGHT_LUT_FRAC
+
         self.delay_dict["rep_crit_path"] = crit_path_delay  
-
-
-        ###################
-        ### Carry Chain ###
-        ###################
-        
-        if self.specs.enable_carry_chain == 1:
-
-            # Evaluate the delay from Cin to Cout
-            print "  Updating delay for " + self.carrychain.name
-            spice_meas = spice_interface.run(self.carrychain.top_spice_path, 
-                                             parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            self.carrychain.tfall = tfall
-            self.carrychain.trise = trise
-            self.carrychain.delay = max(tfall, trise)
-            crit_path_delay += (self.carrychain.delay*
-                                self.carrychain.delay_weight)
-            self.delay_dict[self.carrychain.name] = self.carrychain.delay
-            self.carrychain.power = float(spice_meas["meas_avg_power"][0])
-
-            # Evaluate delay from Cout to Sout
-            spice_meas = spice_interface.run(self.carrychainperf.top_spice_path, 
-                                             parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            self.carrychainperf.tfall = tfall
-            self.carrychainperf.trise = trise
-            self.carrychainperf.delay = max(tfall, trise)
-            crit_path_delay += (self.carrychainperf.delay*
-                                self.carrychainperf.delay_weight)
-            self.delay_dict[self.carrychainperf.name] = self.carrychainperf.delay
-            self.carrychainperf.power = float(spice_meas["meas_avg_power"][0])
-
-            # the new architecture doesn't have a carry chain mux
-            if not self.updates:
-                # Evaluate the delay from Sout to the output of the carry chain mux
-                spice_meas = spice_interface.run(self.carrychainmux.top_spice_path, 
-                                                 parameter_dict) 
-                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                    valid_delay = False
-                    tfall = 1
-                    trise = 1
-                else :  
-                    tfall = float(spice_meas["meas_total_tfall"][0])
-                    trise = float(spice_meas["meas_total_trise"][0])
-                if tfall < 0 or trise < 0 :
-                    valid_delay = False
-                self.carrychainmux.tfall = tfall
-                self.carrychainmux.trise = trise
-                self.carrychainmux.delay = max(tfall, trise)
-                crit_path_delay += (self.carrychainmux.delay*
-                                    self.carrychainmux.delay_weight)
-                self.delay_dict[self.carrychainmux.name] = self.carrychainmux.delay
-                self.carrychainmux.power = float(spice_meas["meas_avg_power"][0])
-
-
-            # evaluate the dedicated routing delay of the carry chain
-            spice_meas = spice_interface.run(self.carrychaininter.top_spice_path, 
-                                             parameter_dict) 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else :  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
-            self.carrychaininter.tfall = tfall
-            self.carrychaininter.trise = trise
-            self.carrychaininter.delay = max(tfall, trise)
-            crit_path_delay += (self.carrychaininter.delay*
-                                self.carrychaininter.delay_weight)
-            self.delay_dict[self.carrychaininter.name] = self.carrychaininter.delay
-            self.carrychaininter.power = float(spice_meas["meas_avg_power"][0])
-
-
-            if self.specs.carry_chain_type == "skip":
-
-                spice_meas = spice_interface.run(self.carrychainand.top_spice_path, 
-                                                 parameter_dict) 
-                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                    valid_delay = False
-                    tfall = 1
-                    trise = 1
-                else :  
-                    tfall = float(spice_meas["meas_total_tfall"][0])
-                    trise = float(spice_meas["meas_total_trise"][0])
-                if tfall < 0 or trise < 0 :
-                    valid_delay = False
-                self.carrychainand.tfall = tfall
-                self.carrychainand.trise = trise
-                self.carrychainand.delay = max(tfall, trise)
-                crit_path_delay += (self.carrychainand.delay*
-                                    self.carrychainand.delay_weight)
-                self.delay_dict[self.carrychainand.name] = self.carrychainand.delay
-                self.carrychainand.power = float(spice_meas["meas_avg_power"][0])
-
-                spice_meas = spice_interface.run(self.carrychainskipmux.top_spice_path, 
-                                                 parameter_dict) 
-                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                    valid_delay = False
-                    tfall = 1
-                    trise = 1
-                else :  
-                    tfall = float(spice_meas["meas_total_tfall"][0])
-                    trise = float(spice_meas["meas_total_trise"][0])
-                if tfall < 0 or trise < 0 :
-                    valid_delay = False
-                self.carrychainskipmux.tfall = tfall
-                self.carrychainskipmux.trise = trise
-                self.carrychainskipmux.delay = max(tfall, trise)
-                crit_path_delay += (self.carrychainskipmux.delay*
-                                    self.carrychainskipmux.delay_weight)
-                self.delay_dict[self.carrychainskipmux.name] = self.carrychainskipmux.delay
-                self.carrychainskipmux.power = float(spice_meas["meas_avg_power"][0])
         
 
-        #################        
-        ### Hardblock ###
-        #################
+        #######################        
+        ### Hardblock Delay ###
+        #######################
 
         for hardblock in self.hardblocklist:
 
@@ -6848,9 +6568,9 @@ class FPGA:
         if self.specs.enable_bram_block == 0:
             return valid_delay
 
-        ###########    
-        ### RAM ###
-        ###########
+        #################    
+        ### RAM Delay ###
+        #################
 
         # Local RAM MUX
         print "  Updating delay for " + self.RAM.RAM_local_mux.name
@@ -7749,4 +7469,38 @@ class FPGA:
         self.width_dict = width_dict
   
         return
+
+
+    def _adds_to_critical_path(self, subcircuit):
+        """ This function returns true if the given subcircuit
+            delay should be added to the critical path, and false
+            otherwise """
+
+        BLE = self.logic_cluster.ble
+        if subcircuit == BLE.lut:
+            return False
+
+        if self.specs.use_fluts:
+            if subcircuit == BLE.fmux:
+                return False
+
+        if self.updates:
+            if subcircuit == BLE.fmux_l2:
+                return False
+
+        if self.specs.enable_carry_chain:
+            if (subcircuit == self.carrychain or
+                subcircuit == self.carrychainperf or
+                subcircuit == self.carrychaininter): 
+                return False
+            if self.specs.carry_chain_type == "skip":
+                if (subcircuit == self.carrychainand or
+                    subcircuit == self.carrychainskipmux):
+                    return False
+            if not self.updates:
+                if subcircuit == self.carrychainmux:
+                    return False
+
+        return True
+
 

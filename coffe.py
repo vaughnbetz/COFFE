@@ -144,8 +144,6 @@ os.chdir(arch_folder)
 
 sys.stdout.flush()
 
-
-
 # Size FPGA transistors
 if is_size_transistors:
     # TODO: pass the args object instead of passing all its memebers
