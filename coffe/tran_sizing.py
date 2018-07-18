@@ -1691,12 +1691,21 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
   
 	# We have to figure out what ranges to use.
 	set_length = len(transistor_names)
+	#if set_length >= 6:
+	#	sizes_per_element = 4
+	#elif set_length == 5:
+	#	sizes_per_element = 5
+	#else:
+	#	sizes_per_element = 8
+
+	# TODO: this is only for debugging remove it
+	# and uncomment the previous one
 	if set_length >= 6:
-		sizes_per_element = 4
+		sizes_per_element = 2
 	elif set_length == 5:
-		sizes_per_element = 5
+		sizes_per_element = 2
 	else:
-		sizes_per_element = 8
+		sizes_per_element = 2
 		
 	# Figure out sizing ranges
 	# If the transistor is a level-restorer, keep the size at 1.
@@ -1781,8 +1790,13 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 	
 	# Now, we need to have an upper limit on sizing ranges. For example, if we only have one transistor,
 	# we might try thousands of sizes, which doesnt really make sense to do.
-	if sizes_per_element > 20:
-		sizes_per_element = 20
+	
+	# TODO: uncomment this it's only for debuggin
+	#if sizes_per_element > 20:
+	#	sizes_per_element = 20
+
+	if sizes_per_element > 4:
+		sizes_per_element = 4
 	
 	if sizes_per_element < 3:
 		sizes_per_element = 3
@@ -2177,7 +2191,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		pre-computed P/N ratios for inverters, delays of subcircuits other than the
 		one we are sizing, etc.). So, solution i might look better than solution i-1
 		during sizing, but in the end, when we update delays and re-balance P/N
-		ratios, we find that i is actually worse than i-1. These solutions will
+		ratios, we find that it is actually worse than i-1. These solutions will
 		generally have very similar cost, and I think this suggests that we have a 
 		fairly minimal solution, but it's not necessarily globally minimal as we can't
 		guarantee that with this algorithm.
@@ -2215,6 +2229,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	# 2 - The max number of iterations of this while loop have been performed (max_iterations)
 	is_done = False
 	iteration = 1
+
 	while not is_done:
 	
 		if iteration > max_iterations:
@@ -2236,20 +2251,21 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 		print "determining a floorplan for this sizing iteration"
 		
+		# TODO: umcomment this only commented for testing purposes
 		
-		fpga_inst.update_area()
-		if fpga_inst.lb_height == 0.0:
-			fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
-			fpga_inst.update_area()
+		#fpga_inst.update_area()
+		#if fpga_inst.lb_height == 0.0:
+		#	fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
+		#	fpga_inst.update_area()
 
-		fpga_inst.update_wires()
-		fpga_inst.update_wire_rc()
-		fpga_inst.determine_height()
-		fpga_inst.update_area()
-		fpga_inst.compute_distance()
-		fpga_inst.update_wires()
-		fpga_inst.update_wire_rc()
-		fpga_inst.update_delays(spice_interface)
+		#fpga_inst.update_wires()
+		#fpga_inst.update_wire_rc()
+		#fpga_inst.determine_height()
+		#fpga_inst.update_area()
+		#fpga_inst.compute_distance()
+		#fpga_inst.update_wires()
+		#fpga_inst.update_wire_rc()
+		#fpga_inst.update_delays(spice_interface)
 		
 		
 		print "Sizing will begin now."

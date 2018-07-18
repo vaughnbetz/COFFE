@@ -251,6 +251,15 @@ class _CompoundCircuit:
         usually composed of multiple smaller circuits, so we call them 'compound' circuits.
         Examples: circuits representing routing wires and loads. 
         If a class inherits _CompoundCircuit, it should override all methods."""
+    def __init__(self, name, use_tgate = False, use_finfet = False):
+        # Compound Circuit's name
+        self.name = name
+        # Boolean for using tgate switches
+        self.use_tgate = use_tgate
+        # Boolean for using finfet transistors
+        self.use_finfet = use_finfet
+        # A Subcircuits dictionary holding all the subcircuits in this compound circuit
+        self.subcircuits = collections.OrderedDict()
 
     def generate(self):
         """ Generate method for base class must be overridden by child. """
@@ -868,7 +877,7 @@ class _LUTInput(_CompoundCircuit):
 
     def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate, use_fluts, updates = False):
         # Subcircuit name (should be driver letter like a, b, c...)
-        self.name = name
+        _CompoundCircuit.__init__(self, name, use_tgate)
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
         # In addition, the input can (optionally) drive the register input 'default_rsel' or do both 'reg_fb_rsel'
         # Therefore, there are 4 different types, which are controlled by Rsel and Rfb
@@ -990,7 +999,7 @@ class _LUTInputDriverLoad:
 class _LUT(_SizableCircuit):
     """ Lookup table. """
 
-    def __init__(self, K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, updates):
+    def __init__(self, K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, min_tran_width, updates):
         # Call the constructor of the base class to initialize all
         # its local variables
         _SizableCircuit.__init__(self, "lut", use_tgate, use_finfet)
@@ -1009,6 +1018,8 @@ class _LUT(_SizableCircuit):
         self.delay_weight = sum(DELAY_WEIGHT_LUT_INPUTS[:K])
         # Boolean to indicate we are implementing the new architecture
         self.updates = updates
+
+        self.min_tran_width = min_tran_width
 
         self.lutSize = K
         # for the new design the 6-LUT is fractured into 4 4-LUTs with only
@@ -1036,16 +1047,16 @@ class _LUT(_SizableCircuit):
 
 
     
-    def generate(self, subcircuit_filename, min_tran_width):
+    def generate(self, subcircuit_filename):
         """ Generate LUT SPICE netlist based on LUT size. """
         
         # Generate LUT differently based on K
         if self.lutSize == 6:
-            self.initial_transistor_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
+            self.initial_transistor_sizes = self._generate_6lut(subcircuit_filename, self.min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
         elif self.lutSize == 5:
-            self.initial_transistor_sizes = self._generate_5lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
+            self.initial_transistor_sizes = self._generate_5lut(subcircuit_filename, self.min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
         elif self.lutSize == 4:
-            self.initial_transistor_sizes = self._generate_4lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
+            self.initial_transistor_sizes = self._generate_4lut(subcircuit_filename, self.min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
 
         # generate all the drivers added to the input drivers list in the constructor
         for name in self.input_drivers:
@@ -1598,7 +1609,6 @@ class _CarryChain(_SizableCircuit):
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N
-
         # Boolean for applying updates
         self.updates = updates
 
@@ -1633,7 +1643,9 @@ class _CarryChain(_SizableCircuit):
         self.top_spice_path = top_level.generate_carrychain_top(self.name)
 
     def update_area(self, area_dict, width_dict):
-        """ Calculate Carry Chain area and update dictionaries. """
+        """ Calculate Carry Chain area including the inverter 
+            at the Sout port and update dictionaries. """
+
         area = area_dict["inv_carry_chain_1"] * 2 + area_dict["inv_carry_chain_2"] + area_dict["tgate_carry_chain_1"] * 4 + area_dict["tgate_carry_chain_2"] * 4
         area = area + area_dict["carry_chain_perf"]
         area_with_sram = area
@@ -1754,14 +1766,13 @@ class _CarryChainSkipAnd(_SizableCircuit):
 class _CarryChainInterCluster(_SizableCircuit):
     """ Wire dirvers of carry chain path between clusters"""
     def __init__(self, use_finfet, carry_chain_type, inter_wire_length):
-        # Carry chain name
-        self.name = "carry_chain_inter"
-        self.use_finfet = use_finfet
+        # Call the constructor of the base class
+        _SizableCircuit.__init__(self, "carry_chain_inter", False, use_finfet)
         # Ripple or Skip?
         self.carry_chain_type = carry_chain_type
         # length of the wire between cout of a cluster to cin of the other
         self.inter_wire_length = inter_wire_length
-        #self.delay_weight = 1
+
 
     def generate(self, subcircuit_filename, use_finfet):
         """ Generate Carry chain SPICE netlists."""  
@@ -1886,8 +1897,8 @@ class _FlipFlop(_CompoundCircuit):
     ff_generated = False
     
     def __init__(self, Rsel, use_tgate, use_finfet, input_size = 2, updates = False):
-        # Flip-Flop name
-        self.name = "ff"
+        # Call the constructor of the base class
+        _CompoundCircuit.__init__(self, "ff", use_tgate, use_finfet)
         # Register select mux, Rsel = LUT input (e.g. 'a', 'b', etc.) or 'z' if no register select 
         self.register_select = Rsel
         # A list of the names of transistors in this subcircuit.
@@ -1905,8 +1916,6 @@ class _FlipFlop(_CompoundCircuit):
         # Delay weight used to calculate delay of representative critical path
         self.delay_weight = 1
 
-        self.use_finfet = use_finfet
-        self.use_tgate = use_tgate
         self.input_size = input_size
         self.updates = updates
         self.MUX_NAME = ""
@@ -2580,9 +2589,9 @@ class _MUX(_SizableCircuit):
 class _BLE(_CompoundCircuit):
 
     def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, 
-                 carry_skip_periphery_count, N, updates = False):
-        # BLE name
-        self.name = "ble"
+                 carry_skip_periphery_count, N, min_tran_width, updates):
+        # Calling the constructor of the base class
+        _CompoundCircuit.__init__(self, "ble", use_tgate, use_finfet)
         # number of bles in a cluster
         self.N = N
         # Size of LUT
@@ -2591,29 +2600,23 @@ class _BLE(_CompoundCircuit):
         self.num_inputs = K
         # Number of local outputs
         self.num_local_outputs = Ofb
-
-        if updates:
-            self.num_local_outputs = 0
         # Number of general outputs
         self.num_general_outputs = Or
         # TODO: why is the carry chain object not defined here?
         self.enable_carry_chain = enable_carry_chain
+        # Number of FAs in an BLE
         self.FAs_per_flut = FAs_per_flut
         self.carry_skip_periphery_count = carry_skip_periphery_count
         # Boolean indicating that we are applying the new architecture
         self.updates = updates
-
         # Are the LUTs fracturable?
         self.use_fluts = use_fluts
 
         # fracturability level
-        self.level = 1
-        if updates: self.level = 2
-
-
-        # Create BLE local output object
-        if not updates:
-            self.local_output = _LocalBLEOutput(use_tgate, use_fluts)
+        if updates: 
+            self.level = 2
+        else:
+            self.level = 1
 
         # Create BLE general output object
         self.general_output = _GeneralBLEOutput(use_tgate, use_fluts, enable_carry_chain, updates)
@@ -2622,16 +2625,24 @@ class _BLE(_CompoundCircuit):
         if updates:
             self.general_output3 = _GeneralBLEOutput(use_tgate, use_fluts, enable_carry_chain, updates, 3)
 
+        # Create BLE local output object
+        if not updates:
+            self.local_output = _LocalBLEOutput(use_tgate, use_fluts)
+
         # Create LUT object
-        self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, updates)
+        self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, min_tran_width, updates)
+
         # Create FF object
         if not updates:
             self.ff = _FlipFlop(Rsel, use_tgate, use_finfet)
 
+        # Stratix10 has 3 different types of FF, a FF without an input select mux (self.ff)
+        # a FF with a 2:1 input select mux (self.ff2), and a FF with 3:1 input select mux (self.ff3)
         if updates:
             self.ff  = _FlipFlop('z', use_tgate, use_finfet)
             self.ff2 = _FlipFlop('a', use_tgate, use_finfet, 2, True)
             self.ff3 = _FlipFlop('b', use_tgate, use_finfet, 3, True)
+
         # Create LUT output load object
         self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs, self.use_fluts,
                                               self.enable_carry_chain, self.updates, self.level)
@@ -2640,22 +2651,18 @@ class _BLE(_CompoundCircuit):
         if use_fluts:
             self.fmux = _flut_mux(use_tgate, use_finfet, enable_carry_chain, updates, 1)
 
+        # Stratix10 has two levels of flut mux
         if updates:
-            # for the new design we should have 4 flut muxes, however if we ignored the duplicate
-            # mux and assume symmetry 
             self.fmux_l2 = _flut_mux(use_tgate, use_finfet, enable_carry_chain, updates, 2)
-            # cannot pass the output node to fmux before creating fmux_l2 and 
-            # cannot create fmux_l2 before breating fmux to get its name!!
-            self.fmux.output_node = self.fmux_l2.name
 
         
         
-    def generate(self, subcircuit_filename, min_tran_width):
+    def generate(self, subcircuit_filename):
         print "Generating BLE"
         
         # Generate LUT and FF
         init_tran_sizes = {}
-        init_tran_sizes.update(self.lut.generate(subcircuit_filename, min_tran_width))
+        init_tran_sizes.update(self.lut.generate(subcircuit_filename))
         init_tran_sizes.update(self.ff.generate(subcircuit_filename))
 
         if self.updates:
@@ -2686,6 +2693,7 @@ class _BLE(_CompoundCircuit):
 
      
     def generate_top(self):
+
         self.lut.generate_top()
         if not self.updates:
             self.local_output.generate_top()
@@ -2707,18 +2715,14 @@ class _BLE(_CompoundCircuit):
         ff_area = self.ff.update_area(area_dict, width_dict)
 
         if self.updates:
-            ff3_area = self.ff3.update_area(area_dict, width_dict)
             ff2_area = self.ff2.update_area(area_dict, width_dict)
+            ff3_area = self.ff3.update_area(area_dict, width_dict)
 
         if self.use_fluts:
             fmux_area = self.fmux.update_area(area_dict, width_dict) 
-            area_dict[self.fmux.name] = fmux_area
-            width_dict[self.fmux.name] = math.sqrt(fmux_area) 
 
         if self.updates:
             fmux_l2_area = self.fmux_l2.update_area(area_dict, width_dict)
-            area_dict[self.fmux_l2.name] = fmux_l2_area
-            width_dict[self.fmux_l2.name] = math.sqrt(fmux_l2_area)
 
         lut_area = self.lut.update_area(area_dict, width_dict)
 
@@ -2733,6 +2737,7 @@ class _BLE(_CompoundCircuit):
         else:
             general_ble_output_area = 3*self.general_output.update_area(area_dict, width_dict) + self.general_output3.update_area(area_dict, width_dict)
 
+
         ble_output_area = local_ble_output_area + general_ble_output_area
         ble_output_width = math.sqrt(ble_output_area)
         area_dict["ble_output"] = ble_output_area
@@ -2741,24 +2746,19 @@ class _BLE(_CompoundCircuit):
         # TODO: update the area for the new design
         if self.updates:
             ble_area = lut_area + 2*ff_area + ff2_area + ff3_area + ble_output_area
+        elif self.use_fluts:
+            ble_area = lut_area + 2*ff_area + ble_output_area
         else:
-            if self.use_fluts:
-                # TODO: why is the fmux area commented and why isn't the lut area mutliplied by 2
-                ble_area = lut_area + 2*ff_area + ble_output_area# + fmux_area
-            else:
-                ble_area = lut_area + ff_area + ble_output_area
+            ble_area = lut_area + ff_area + ble_output_area
+
 
         if self.enable_carry_chain == 1 and not self.updates:
-            if self.carry_skip_periphery_count == 0:
-                ble_area += area_dict["carry_chain"] * self.FAs_per_flut + (self.FAs_per_flut) * area_dict["carry_chain_mux"]
-            else:
-                ble_area += area_dict["carry_chain"] * self.FAs_per_flut + (self.FAs_per_flut) * area_dict["carry_chain_mux"]
+            ble_area += self.FAs_per_flut * (area_dict["carry_chain"] + area_dict["carry_chain_mux"])
+            if self.carry_skip_periphery_count:
                 ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
         elif self.updates:
-            if self.carry_skip_periphery_count == 0:
-                ble_area += area_dict["carry_chain"] * self.FAs_per_flut
-            else:
-                ble_area += area_dict["carry_chain"] * self.FAs_per_flut
+            ble_area += area_dict["carry_chain"] * self.FAs_per_flut
+            if self.carry_skip_periphery_count:
                 ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
 
 
@@ -2998,30 +2998,32 @@ class _LocalRoutingWireLoad:
 class _LogicCluster(_CompoundCircuit):
     
     def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, 
-        use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, updates =  False):
-        # Name of logic cluster
-        self.name = "logic_cluster"
-        # Cluster size
+        use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, min_tran_width, updates):
+        # Call the constructor of the base class
+        _CompoundCircuit.__init__(self, "logic_cluster", use_tgate, use_finfet)
+        # Number of BLEs in the logic cluster
         self.N = N
         # Create BLE object
-        self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, N, updates)
+        self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, 
+            FAs_per_flut, carry_skip_periphery_count, N, min_tran_width, updates)
         # Create local mux object
         self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, use_tgate)
         # Create local routing wire load object
         self.local_routing_wire_load = _LocalRoutingWireLoad()
         # Create local BLE output load object
         self.local_ble_output_load = _LocalBLEOutputLoad()
+        # Boolean for using fracturable luts
         self.use_fluts = use_fluts
+        # Boolean for enabling carry chains in the logic blocks
         self.enable_carry_chain = enable_carry_chain
-
         # Boolean indicationg that we are applying the new updates
         self.updates = updates
 
         
-    def generate(self, subcircuits_filename, min_tran_width, specs):
+    def generate(self, subcircuits_filename, specs):
         print "Generating logic cluster"
         init_tran_sizes = {}
-        init_tran_sizes.update(self.ble.generate(subcircuits_filename, min_tran_width))
+        init_tran_sizes.update(self.ble.generate(subcircuits_filename))
         init_tran_sizes.update(self.local_mux.generate(subcircuits_filename))
         self.local_routing_wire_load.generate(subcircuits_filename, specs, self.local_mux)
         self.local_ble_output_load.generate(subcircuits_filename)
@@ -5498,7 +5500,7 @@ class FPGA:
         # initialize the logic cluster
         self.logic_cluster = _LogicCluster(self.specs.N, self.specs.K, self.specs.num_ble_general_outputs, self.specs.num_ble_local_outputs, self.specs.Rsel, self.specs.Rfb, 
                                            local_mux_size_required, num_local_mux_per_tile, self.specs.use_tgate, self.specs.use_finfet, self.specs.use_fluts, 
-                                           self.specs.enable_carry_chain, self.specs.FAs_per_flut, self.carry_skip_periphery_count, self.updates)
+                                           self.specs.enable_carry_chain, self.specs.FAs_per_flut, self.carry_skip_periphery_count, self.specs.min_tran_width, self.updates)
         
         ###########################
         ### CREATE LOAD OBJECTS ###
@@ -5553,6 +5555,7 @@ class FPGA:
         ##########################################################
         ### INITIALIZE OTHER VARIABLES, LISTS AND DICTIONARIES ###
         ##########################################################
+
 
         self.area_opt_weight = run_options.area_opt_weight
         self.delay_opt_weight = run_options.delay_opt_weight
@@ -5621,6 +5624,58 @@ class FPGA:
         self.lb_height =  0.0
 
 
+        ########################################################################################
+        ###  Add all subcircuits that needs delays calculations are added to the ordered     ###
+        ###  dictionary. All the the subcircuits in the design except for the LUT, LUT       ###   
+        ###  drivers, Hardblocks and RAMs should be added to this dictionary.                ###   
+        ########################################################################################  
+
+        # Subcircutis Ordered Dictionary
+        self.subcircuits = collections.OrderedDict()
+
+        # Switch Block Mux Subcircuit
+        self.subcircuits[self.sb_mux.name] = self.sb_mux
+        # Connection Block Mux Subcircuit
+        self.subcircuits[self.cb_mux.name] = self.cb_mux
+        # Local Interconnect Mux Subcircuit
+        self.subcircuits[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux
+        # General Output Mux Subcircuit
+        self.subcircuits[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output
+        # LUT Subcircuit
+        self.subcircuits[self.logic_cluster.ble.lut.name] = self.logic_cluster.ble.lut
+
+        # Local Output Mux Subcircuit, not used in the Stratix10 design
+        if not self.updates:
+            self.subcircuits[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output
+
+        # Level 1 FLUT Mux Subcircuit
+        if self.specs.use_fluts:
+            self.subcircuits[self.logic_cluster.ble.fmux.name] = self.logic_cluster.ble.fmux
+
+        # Added subcircuits for the new design
+        if self.updates:
+            # General Output 3:1 Mux Subcircuit
+            self.subcircuits[self.logic_cluster.ble.general_output3.name] = self.logic_cluster.ble.general_output3
+            # Level 2 FLUT Mux Subcircuti
+            self.subcircuits[self.logic_cluster.ble.fmux_l2.name] = self.logic_cluster.ble.fmux_l2
+
+        # Carry Chain Subcircuits
+        if self.specs.enable_carry_chain:
+            # Carry Chain Subcircuit, Cin to Cout
+            self.subcircuits[self.carrychain.name] = self.carrychain
+            # Carry Chain Pereferal Subcircuit, Cin to Sout
+            self.subcircuits[self.carrychainperf.name] = self.carrychainperf
+            # Carry Chain Inter Subcircuit, Cout to Cin (drivers between clusters)
+            self.subcircuits[self.carrychaininter.name] = self.carrychaininter
+            # Stratix10 design doesn't have this mux
+            if not self.updates:
+                # Carry Chain Mux Subcircuit (Mux choosing between lut output and carry chain output)
+                self.subcircuits[self.carrychainmux.name] = self.carrychainmux
+            if self.specs.carry_chain_type == "skip":
+                self.subcircuits[self.carrychainskipmux.name] = self.carrychainskipmux
+                self.subcircutis[self.carrychainand.name] = self.carrychainand    
+
+
 
     def generate(self):
         """ This function generates all SPICE netlists and library files. """
@@ -5660,9 +5715,7 @@ class FPGA:
         self.transistor_sizes.update(self.sb_mux.generate(self.subcircuits_filename))                                        
         self.transistor_sizes.update(self.cb_mux.generate(self.subcircuits_filename)) 
                                                           
-        self.transistor_sizes.update(self.logic_cluster.generate(self.subcircuits_filename, 
-                                                                 self.specs.min_tran_width, 
-                                                                 self.specs))
+        self.transistor_sizes.update(self.logic_cluster.generate(self.subcircuits_filename, self.specs))
         self.cluster_output_load.generate(self.subcircuits_filename, self.specs, self.sb_mux)
         self.routing_wire_load.generate(self.subcircuits_filename, self.specs, self.sb_mux, self.cb_mux)
 
@@ -5825,7 +5878,7 @@ class FPGA:
             local_mux_area = self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name]            
             local_mux_sram_area = self.logic_cluster.local_mux.num_per_tile* (self.area_dict[self.logic_cluster.local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.local_mux.name])
 
-            lut_area = self.specs.N*self.area_dict["lut_and_drivers"] - self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
+            lut_area = self.specs.N * self.area_dict["lut_and_drivers"] - self.specs.N * (2**self.specs.K) * self.area_dict["sram"]
             lut_area_sram = self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
 
             ffableout_area_total = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
@@ -5838,14 +5891,15 @@ class FPGA:
             self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/skip_size))
             # TODO: clean this up
             if self.specs.enable_carry_chain == 1 and not self.updates:
-                if self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple":
-                    cc_area_total =  self.specs.N* (self.area_dict["carry_chain"] * self.specs.FAs_per_flut + (self.specs.FAs_per_flut) * self.area_dict["carry_chain_mux"])
-                else:
-                    cc_area_total =  self.specs.N*(self.area_dict["carry_chain"] * self.specs.FAs_per_flut + (self.specs.FAs_per_flut) * self.area_dict["carry_chain_mux"])
-                    cc_area_total = cc_area_total + ((self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)
-                cc_area_total = cc_area_total + self.area_dict["carry_chain_inter"]
+                cc_area_total =  self.specs.N * self.specs.FAs_per_flut * (self.area_dict["carry_chain"] + self.area_dict["carry_chain_mux"])
+                if not (self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple"):
+                    cc_area_total +=  self.carry_skip_periphery_count * (self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
+                cc_area_total += self.area_dict["carry_chain_inter"]
             elif self.updates:
                 cc_area_total = self.specs.N * self.specs.FAs_per_flut * self.area_dict["carry_chain"] + self.area_dict["carry_chain_inter"]
+                if not (self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple"):
+                    cc_area_total +=  self.carry_skip_periphery_count * (self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
+
 
             cluster_area = local_mux_area + local_mux_sram_area + ffableout_area_total + cc_area_total + lut_area + lut_area_sram
 
@@ -5872,18 +5926,17 @@ class FPGA:
         self.width_dict["logic_cluster"] = math.sqrt(cluster_area)
 
         # TODO: clean this up
-        if self.specs.enable_carry_chain == 1 and not self.updates:
-            # Calculate Carry Chain Area
-            # already included in bles, extracting for the report
+        # Calculate Carry Chain Area
+        # already included in bles, extracting for the report
+        if self.updates:
+            carry_chain_area = self.specs.N * 2 * self.area_dict["carry_chain"] + self.area_dict["carry_chain_inter"]
+            self.area_dict["total_carry_chain"] = carry_chain_area
+        elif self.specs.enable_carry_chain:
             carry_chain_area = self.specs.N*( self.specs.FAs_per_flut * self.area_dict["carry_chain"] + (self.specs.FAs_per_flut) *  self.area_dict["carry_chain_mux"]) + self.area_dict["carry_chain_inter"]
             if self.specs.carry_chain_type == "skip":
                 self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
                 carry_chain_area += self.carry_skip_periphery_count *(self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
             self.area_dict["total_carry_chain"] = carry_chain_area
-        elif self.updates:
-            carry_chain_area = self.specs.N* self.specs.FAs_per_flut * self.area_dict["carry_chain"] + self.area_dict["carry_chain_inter"]
-            self.area_dict["total_carry_chain"] = carry_chain_area
-
 
         
         # Calculate tile area
@@ -6323,50 +6376,13 @@ class FPGA:
         # were "failed". If that is the case, we set the delay of that subcircuit to 1
         # second and set our valid_delay flag to False.
 
-        # All subcircuits should be added to this dictionary except for the input drivers
-        subcircuits = collections.OrderedDict()
 
-        # Switch Block Mux Subcircuit
-        subcircuits[self.sb_mux.name] = self.sb_mux
-        # Connection Block Mux Subcircuit
-        subcircuits[self.cb_mux.name] = self.cb_mux
-        # Local Interconnect Mux Subcircuit
-        subcircuits[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux
-        # General Output Mux Subcircuit
-        subcircuits[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output
-        # LUT Subcircuit
-        subcircuits[self.logic_cluster.ble.lut.name] = self.logic_cluster.ble.lut
-
-        # Local Output Mux Subcircuit, not used in the Stratix10 design
-        if not self.updates:
-            subcircuits[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output
-
-        # Level 1 FLUT Mux Subcircuit
-        if self.specs.use_fluts:
-            subcircuits[self.logic_cluster.ble.fmux.name] = self.logic_cluster.ble.fmux
-
-        # Added subcircuits for the new design
-        if self.updates:
-            # General Output 3:1 Mux Subcircuit
-            subcircuits[self.logic_cluster.ble.general_output3.name] = self.logic_cluster.ble.general_output3
-            # Level 2 FLUT Mux Subcircuti
-            subcircuits[self.logic_cluster.ble.fmux_l2.name] = self.logic_cluster.ble.fmux_l2
-
-        # Carry Chain Subcircuits
-        if self.specs.enable_carry_chain:
-            # Carry Chain Subcircuit, Cin to Cout
-            subcircuits[self.carrychain.name] = self.carrychain
-            # Carry Chain Pereferal Subcircuit, Cin to Sout
-            subcircuits[self.carrychainperf.name] = self.carrychainperf
-            # Carry Chain Inter Subcircuit, Cout to Cin (drivers between clusters)
-            subcircuits[self.carrychaininter.name] = self.carrychaininter
-            # Stratix10 design doesn't have this mux
-            if not self.updates:
-                # Carry Chain Mux Subcircuit (Mux choosing between lut output and carry chain output)
-                subcircuits[self.carrychainmux.name] = self.carrychainmux
-            if self.specs.carry_chain_type == "skip":
-                subcircuits[self.carrychainskipmux.name] = self.carrychainskipmux
-                subcircutis[self.carrychainand.name] = self.carrychainand
+        ###########################################################################################
+        ###                                                                                     ### 
+        ###                       Calculate Delays For All Subcircuits                          ###
+        ###                 (except for LUT, LUT drivers, Hardblocks and RAMs)                  ###
+        ###                                                                                     ###
+        ###########################################################################################
 
         # This loop calculates the delay for all the subcircuits in the subcircuits dictionary
         # adding any new subcircuit to COFFE should be added to this dictionary and the function
@@ -6374,22 +6390,13 @@ class FPGA:
         # should add to the overall critical path or not
         # TODO: Remove the adds_critical_path parameter and make it a parameter in all the 
         # resizable circuits
-        for name, subcircuit in subcircuits.iteritems():
+        for name, subcircuit in self.subcircuits.iteritems():
 
             print("  Updating delay for " + name)
 
             spice_meas = spice_interface.run(subcircuit.top_spice_path, parameter_dict) 
 
-            if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed":
-                valid_delay = False
-                tfall = 1
-                trise = 1
-            else:  
-                tfall = float(spice_meas["meas_total_tfall"][0])
-                trise = float(spice_meas["meas_total_trise"][0])
-
-            if tfall < 0 or trise < 0 :
-                valid_delay = False
+            trise, tfall, valid_delay = utils.get_delays(spice_meas)
 
             subcircuit.tfall = tfall
             subcircuit.trise = trise
@@ -6406,24 +6413,18 @@ class FPGA:
                 crit_path_delay += (subcircuit.delay * subcircuit.delay_weight)
 
 
-        ##############################################
-        ### LUT Input Driver and Driver Not Delays ###
-        ##############################################
+        ###########################################################################################
+        ###                                                                                     ### 
+        ###                     LUT Input Driver and Driver Not Delays                          ###
+        ###                                                                                     ###
+        ###########################################################################################
 
         for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
             for driver in [lut_input.driver, lut_input.not_driver]:
 
                 print("  Updating delay for " + driver.name) 
                 spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
-                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                    valid_delay = False
-                    tfall = 1
-                    trise = 1
-                else :  
-                    tfall = float(spice_meas["meas_total_tfall"][0])
-                    trise = float(spice_meas["meas_total_trise"][0])
-                if tfall < 0 or trise < 0 :
-                    valid_delay = False
+                trise, tfall, valid_delay = utils.get_delays(spice_meas)
                 driver.tfall = tfall
                 driver.trise = trise
                 driver.delay = max(tfall, trise)
@@ -6435,9 +6436,11 @@ class FPGA:
                     exit(2)                
 
 
-        ####################################
-        ### LUT (Inputs to Output) Delay ###
-        ####################################
+        ###########################################################################################
+        ###                                                                                     ### 
+        ###                          LUT Delay (Input to Output)                                ###
+        ###                                                                                     ###
+        ###########################################################################################
 
         # Get delay for all paths through the LUT.
         # We get delay for each path through the LUT as well as for the LUT input drivers.
@@ -6448,27 +6451,25 @@ class FPGA:
             print("  Updating delay for " + driver.name.replace("_driver", ""))
             driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
 
-            if (not self.updates and ((lut_input_name == "f" and self.specs.use_fluts and self.specs.K == 6) or (lut_input_name == "e" and self.specs.use_fluts and self.specs.K == 5))): 
-                # TODO: the fmux delay is the delay of propagating through the mux and not the delay of switching the mux
-                # how is this used as the input delay. I think it should calculated as the new design where the delay is
-                # clculated from the change in the input of the fmux gate to its output
+            # If this is a fracturable input, input controlling one of the fracturable muxes
+            # then its delay is the delay of the signal propagation in the mux.
+            # TODO: the fmux delay is the delay of propagating through the mux and not the 
+            # delay of switching the mux how is this used as the input delay. I think it 
+            # should calculated as the new design where the delay is calculated from the 
+            # change in the input of the fmux gate to its output.
+            if (not self.updates and 
+               ((lut_input_name == "f" and self.specs.use_fluts and self.specs.K == 6) or 
+                (lut_input_name == "e" and self.specs.use_fluts and self.specs.K == 5))): 
+
                 lut_input.tfall = self.logic_cluster.ble.fmux.tfall
                 lut_input.trise = self.logic_cluster.ble.fmux.trise
                 lut_input.delay = max(lut_input.tfall, lut_input.trise)
-                # TODO: revise this
                 lut_input.power = self.logic_cluster.ble.fmux.power
+
             else:
                 # Get the delay for a path through the LUT (we do it for each input)
                 spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
-                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-                    valid_delay = False
-                    tfall = 1
-                    trise = 1
-                else :  
-                    tfall = float(spice_meas["meas_total_tfall"][0])
-                    trise = float(spice_meas["meas_total_trise"][0])
-                if tfall < 0 or trise < 0 :
-                    valid_delay = False
+                trise, tfall, valid_delay = utils.get_delays(spice_meas)
 
                 # For the Stratix10 design add the delay for the signal propagation through fmux_l1 and
                 # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals
@@ -6478,20 +6479,20 @@ class FPGA:
                     if lut_input_name != 'e' and lut_input_name != 'f' :
                         tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall
                         trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise
-                    # input e will see the delay of switching the gates of the fmux_l1 inaddition to the
+                    # input e will see the delay of switching the gates of the fmux_l1 in addition to the
                     # propagation delay through fmux_l2
                     elif lut_input_name == 'e':
                         tfall += self.logic_cluster.ble.fmux_l2.tfall
                         trise += self.logic_cluster.ble.fmux_l2.trise
-                else:    
-                    if self.specs.use_fluts:
-                        tfall += self.logic_cluster.ble.fmux.tfall
-                        trise += self.logic_cluster.ble.fmux.trise
+                elif self.specs.use_fluts:
+                    tfall += self.logic_cluster.ble.fmux.tfall
+                    trise += self.logic_cluster.ble.fmux.trise
+
                 lut_input.tfall = tfall
                 lut_input.trise = trise
                 lut_input.delay = max(tfall, trise)
-                # TODO: this was outside the else block (revise this)
                 lut_input.power = float(spice_meas["meas_avg_power"][0])
+
 
             if lut_input.delay < 0 :
                 print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
@@ -6500,8 +6501,12 @@ class FPGA:
             self.delay_dict[lut_input.name] = lut_input.delay
             
             lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
-            if self.specs.use_fluts:
-                lut_delay += self.logic_cluster.ble.fmux.delay
+
+            if not self.updates:
+                # TODO: remove this it's a repetition, lut_delay already has 
+                # the fmux delay added to it!
+                if self.specs.use_fluts:
+                    lut_delay += self.logic_cluster.ble.fmux.delay
 
             if lut_delay < 0 :
                 print("*** Lut delay is negative : " + str(lut_delay) + " ***")
@@ -6510,19 +6515,22 @@ class FPGA:
             crit_path_delay += lut_delay*lut_input.delay_weight
 
 
+
+
         # TODO: the actual delay weights should be calculated from vpr and used here
         if self.updates:
             crit_path_delay += (self.logic_cluster.ble.fmux.delay + self.logic_cluster.ble.fmux_l2.delay) * DELAY_WEIGHT_LUT_FRAC
-        else:
-            if self.specs.use_fluts:
-                crit_path_delay += self.logic_cluster.ble.fmux.delay * DELAY_WEIGHT_LUT_FRAC
+        elif self.specs.use_fluts:
+            crit_path_delay += self.logic_cluster.ble.fmux.delay * DELAY_WEIGHT_LUT_FRAC
 
         self.delay_dict["rep_crit_path"] = crit_path_delay  
         
 
-        #######################        
-        ### Hardblock Delay ###
-        #######################
+        ###########################################################################################
+        ###                                                                                     ### 
+        ###                                Hardblock Delays                                     ###
+        ###                                                                                     ###
+        ###########################################################################################
 
         for hardblock in self.hardblocklist:
 
@@ -6568,9 +6576,12 @@ class FPGA:
         if self.specs.enable_bram_block == 0:
             return valid_delay
 
-        #################    
-        ### RAM Delay ###
-        #################
+
+        ###########################################################################################
+        ###                                                                                     ### 
+        ###                                RAM Block Delays                                     ###
+        ###                                                                                     ###
+        ###########################################################################################
 
         # Local RAM MUX
         print "  Updating delay for " + self.RAM.RAM_local_mux.name

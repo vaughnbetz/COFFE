@@ -1194,3 +1194,20 @@ def create_wire(node_1, node_2, from_node, to_node):
     """ Creates the line of adding a wire to the netlist """
     name = wire_name(from_node, to_node)
     return "X"+name+" "+node_1+" "+node_2+" wire Rw="+name+"_res Cw="+name+"_cap\n"
+
+def get_delays(spice_meas):
+    """ Checks for failed simulation and returns the rise and fall delays from the 
+        spice_meas dictionary """
+    valid_delay = True
+    tfall = float(spice_meas["meas_total_tfall"][0])
+    trise = float(spice_meas["meas_total_trise"][0])
+
+    if "failed" in (trise, tfall):
+        valid_delay = False
+        tfall = 1
+        trise = 1
+
+    if tfall < 0 or trise < 0 :
+        valid_delay = False
+
+    return trise, tfall, valid_delay
