@@ -4720,7 +4720,7 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     
     general_ble_output_filename = name + ".sp"
     top_file = open(general_ble_output_filename, 'w')
-    top_file.write(".TITLE General BLE output\n\n") 
+    top_file.write(".TITLE General BLE output 3:1\n\n") 
     
     top_file.write("********************************************************************************\n")
     top_file.write("** Include libraries, parameters and other\n")
@@ -4744,15 +4744,15 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     top_file.write("********************************************************************************\n")
     top_file.write("** Measurement\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write("* inv_general_ble_output_1 delay\n")
-    top_file.write(".MEASURE TRAN meas_inv_general_ble_output_1_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
+    top_file.write("* inv_"+name+"_1 delay\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V("+targ1+") VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_general_ble_output_1_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V("+targ1+") VAL='supply_v/2' RISE=1\n\n")
-    top_file.write("* inv_general_ble_output_2 delays\n")
-    top_file.write(".MEASURE TRAN meas_inv_general_ble_output_2_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write("* inv_"+name+"_2 delays\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_general_ble_output_2_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V(Xgeneral_ble_output_load.n_meas_point) VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* Total delays\n")
     top_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
@@ -4822,18 +4822,24 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
     input_node = "n_1_1"
     output = "n_local_out"
     n_out = "n_general_out"
+    fname = name
+    # Should be always connected directly to the flut input
+    n_1_2 = "n_1_2"
     if updates:
         if level == 1:
             output = "n_1_3"
             vdd_f1 = "vdd_f"
             vdd_f2 = "vdd"
             n_out = "n_1_5"
+            n_1_2 = "Xflut_output_load.n_1_2"
+            fname = "flut_output_load.Xfmux_l1"
         elif level == 2:
             input_node = "n_1_3" 
             output = "n_1_5"
             vdd_f1 = "vdd"
             vdd_f2 = "vdd_f"
-            n_out = "nout_1_7"
+            n_out = "n_out1"
+            n_1_2 = "n_1_4"
     elif enable_carry_chain:
         n_out = "n_local_out"
 
@@ -4872,21 +4878,19 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
     top_file.write("********************************************************************************\n\n")
     top_file.write("* inv_"+name+"_1 delay\n")
     # TODO: this n_1_2 is not always right!
-    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V(X"+name+".n_2_1) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(X"+name+".n_2_1) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V("+n_1_2+") VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V(X"+fname+".n_2_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V("+n_1_2+") VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(X"+fname+".n_2_1) VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* inv_"+name+"_2 delays\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_tfall TRIG V("+n_1_2+") VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_trise TRIG V("+n_1_2+") VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* Total delays\n")
     top_file.write(".MEASURE TRAN meas_total_tfall TRIG V("+input_node+") VAL='supply_v/2' FALL=1\n")
-    #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
     top_file.write(".MEASURE TRAN meas_total_trise TRIG V("+input_node+") VAL='supply_v/2' RISE=1\n")
-    #top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' RISE=1\n\n")
     top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n")
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V("+n_out+") AT=3n\n\n")
 

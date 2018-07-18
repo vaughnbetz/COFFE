@@ -5852,7 +5852,12 @@ class FPGA:
             self.width_dict["lut_total"] = math.sqrt(lut_area)
             
             # Calculate total ff area
-            ff_area = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
+            if self.updates:
+                ff_area = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff2.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff3.name])
+            else:
+                ff_area = self.specs.N * self.area_dict[self.logic_cluster.ble.ff.name]
             self.area_dict["ff_total"] = ff_area
             self.width_dict["ff_total"] = math.sqrt(ff_area)
             
@@ -5862,7 +5867,6 @@ class FPGA:
             self.width_dict["ble_output_total"] = math.sqrt(ble_output_area)
             
             # Calculate area of logic cluster
-            #if self.specs.use_fluts:
             cluster_area = local_mux_area + self.specs.N*self.area_dict["ble"]
             if self.specs.enable_carry_chain == 1:
                 cluster_area += self.area_dict["carry_chain_inter"]
@@ -5881,10 +5885,17 @@ class FPGA:
             lut_area = self.specs.N * self.area_dict["lut_and_drivers"] - self.specs.N * (2**self.specs.K) * self.area_dict["sram"]
             lut_area_sram = self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
 
-            ffableout_area_total = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
-            if self.specs.use_fluts:
-                ffableout_area_total = 2 * ffableout_area_total
-            ffableout_area_total = ffableout_area_total + self.specs.N*(self.area_dict["ble_output"])
+            if not self.updates:
+                ffableout_area_total = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
+                if self.specs.use_fluts:
+                    ffableout_area_total = 2 * ffableout_area_total
+            else:
+                ffableout_area_total = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
+                                                         self.area_dict[self.logic_cluster.ble.ff2.name] +
+                                                         self.area_dict[self.logic_cluster.ble.ff3.name])
+
+            ffableout_area_total += self.specs.N*(self.area_dict["ble_output"])
+
 
             cc_area_total = 0.0
             skip_size = 5
@@ -5913,8 +5924,16 @@ class FPGA:
             self.area_dict["lut_total"] = lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
             self.width_dict["lut_total"] = math.sqrt(lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"])
 
-            self.area_dict["ff_total"] = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
-            self.width_dict["ff_total"] = math.sqrt(self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name])
+            # Calculate total ff area
+            if self.updates:
+                ff_area = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff2.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff3.name])
+            else:
+                ff_area = self.specs.N * self.area_dict[self.logic_cluster.ble.ff.name]
+
+            self.area_dict["ff_total"] = ff_area
+            self.width_dict["ff_total"] = math.sqrt(ff_area)
 
             self.area_dict["ffableout_area_total"] = ffableout_area_total
             self.width_dict["ffableout_area_total"] = math.sqrt(ffableout_area_total)            
