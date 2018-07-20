@@ -1199,14 +1199,15 @@ def get_delays(spice_meas):
     """ Checks for failed simulation and returns the rise and fall delays from the 
         spice_meas dictionary """
     valid_delay = True
-    tfall = float(spice_meas["meas_total_tfall"][0])
-    trise = float(spice_meas["meas_total_trise"][0])
+    tfall = spice_meas["meas_total_tfall"][0]
+    trise = spice_meas["meas_total_trise"][0]
 
     if "failed" in (trise, tfall):
         valid_delay = False
         tfall = 1
         trise = 1
-
+    tfall = float(tfall)
+    trise = float(trise)
     if tfall < 0 or trise < 0 :
         valid_delay = False
 

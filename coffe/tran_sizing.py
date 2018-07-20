@@ -310,7 +310,7 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		subcircuit.tfall = tfall
 
 		if delayworst > subcircuit.lowerbounddelay:
-			return subcircuit.delay + 10* (delayworst - subcircuit.lowerbounddelay)
+			return subcircuit.delay + 10 * (delayworst - subcircuit.lowerbounddelay)
 		else:
 			return subcircuit.delay
 
@@ -361,8 +361,8 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 
 		# TODO: I don't know if this is right or not
 		if fpga_inst.updates:
-			path_delay += fpga_inst.logic_cluster.ble.fmux_l2 * fpga_inst.logic_cluster.ble.lut.delay_weight
-			path_delay += fpga_inst.logic_cluster.ble.general_output3 * fpga_inst.logic_cluster.ble.general_output3.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.fmux_l2.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.general_output3.delay * fpga_inst.logic_cluster.ble.general_output3.delay_weight
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -657,8 +657,8 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 
 		# TODO: I don't know if this is right or not
 		if fpga_inst.updates:
-			path_delay += fpga_inst.logic_cluster.ble.fmux_l2 * fpga_inst.logic_cluster.ble.lut.delay_weight
-			path_delay += fpga_inst.logic_cluster.ble.general_output3 * fpga_inst.logic_cluster.ble.general_output3.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.fmux_l2.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.general_output3.delay * fpga_inst.logic_cluster.ble.general_output3.delay_weight
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -1820,6 +1820,7 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 	elif set_length == 5:
 		sizes_per_element = 5
 	else:
+		# TODO: decrease this it's too much for a length of 4 or even 3
 		sizes_per_element = 8
 
 	# TODO: this is only for debugging remove it

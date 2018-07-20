@@ -160,6 +160,8 @@ class _Specs:
         self.use_tgate              = arch_params_dict['use_tgate']
         self.use_finfet             = arch_params_dict['use_finfet']
 
+        self.updates                = arch_params_dict['updates']
+
         
         
 class _SizableCircuit:
@@ -260,6 +262,8 @@ class _CompoundCircuit:
         self.use_finfet = use_finfet
         # A Subcircuits dictionary holding all the subcircuits in this compound circuit
         self.subcircuits = collections.OrderedDict()
+        # A Loads dictionary holding all the load circuits in this compound circuit
+        self.loads = collections.OrderedDict()
 
     def generate(self):
         """ Generate method for base class must be overridden by child. """
@@ -559,17 +563,17 @@ class _LocalMUX(_SizableCircuit):
         self.level2_size = -1
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_LOCAL_MUX
-    
-    
-    def generate(self, subcircuit_filename):
-        print "Generating local mux"
-        
+
         # Calculate level sizes and number of SRAMs per mux
         self.level2_size = int(math.sqrt(self.required_size))
         self.level1_size = int(math.ceil(float(self.required_size)/self.level2_size))
         self.implemented_size = self.level1_size*self.level2_size
         self.num_unused_inputs = self.implemented_size - self.required_size
         self.sram_per_mux = self.level1_size + self.level2_size
+        
+    
+    def generate(self, subcircuit_filename):
+        print "Generating local mux"
         
         if not self.use_tgate :
             # Call MUX generation function
@@ -2327,12 +2331,8 @@ class _LUTOutputLoad:
     def __init__(self, num_local_outputs, num_general_outputs, use_fluts, enable_carry_chain, updates = False, level = 1):
         self.name = "lut_output_load"
 
-        # that transistor names appear in the order that they should be sized.
-        self.transistor_names = []
         # A list of the names of wires in this subcircuit
         self.wire_names = []
-        # A dictionary of the initial transistor sizes
-        self.initial_transistor_sizes = {}
 
         self.num_local_outputs = num_local_outputs
         self.num_general_outputs = num_general_outputs
@@ -2588,72 +2588,83 @@ class _MUX(_SizableCircuit):
 
 class _BLE(_CompoundCircuit):
 
-    def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, 
-                 carry_skip_periphery_count, N, min_tran_width, updates):
+    def __init__(self, specs, carry_skip_periphery_count):
         # Calling the constructor of the base class
-        _CompoundCircuit.__init__(self, "ble", use_tgate, use_finfet)
+        _CompoundCircuit.__init__(self, "ble", specs.use_tgate, specs.use_finfet)
         # number of bles in a cluster
-        self.N = N
+        self.N = specs.N
         # Size of LUT
-        self.K = K
+        self.K = specs.K
         # Number of inputs to the BLE
-        self.num_inputs = K
+        self.num_inputs = specs.K
         # Number of local outputs
-        self.num_local_outputs = Ofb
+        self.num_local_outputs = specs.num_ble_local_outputs
         # Number of general outputs
-        self.num_general_outputs = Or
+        self.num_general_outputs = specs.num_ble_general_outputs
         # TODO: why is the carry chain object not defined here?
-        self.enable_carry_chain = enable_carry_chain
+        self.enable_carry_chain = specs.enable_carry_chain
         # Number of FAs in an BLE
-        self.FAs_per_flut = FAs_per_flut
+        self.FAs_per_flut = specs.FAs_per_flut
+        # Carry skip periphery count
         self.carry_skip_periphery_count = carry_skip_periphery_count
         # Boolean indicating that we are applying the new architecture
-        self.updates = updates
+        self.updates = specs.updates
         # Are the LUTs fracturable?
-        self.use_fluts = use_fluts
+        self.use_fluts = specs.use_fluts
 
         # fracturability level
-        if updates: 
+        if specs.updates: 
             self.level = 2
         else:
             self.level = 1
 
         # Create BLE general output object
-        self.general_output = _GeneralBLEOutput(use_tgate, use_fluts, enable_carry_chain, updates)
+        self.general_output = _GeneralBLEOutput(specs.use_tgate, specs.use_fluts, specs.enable_carry_chain, specs.updates)
+        self.subcircuits[self.general_output.name] = self.general_output
 
         # for the new architecture we need another general ble output mux which is a 3:1 mux
-        if updates:
-            self.general_output3 = _GeneralBLEOutput(use_tgate, use_fluts, enable_carry_chain, updates, 3)
+        if specs.updates:
+            self.general_output3 = _GeneralBLEOutput(specs.use_tgate, specs.use_fluts, specs.enable_carry_chain, specs.updates, 3)
+            self.subcircuits[self.general_output3.name] = self.general_output3
 
         # Create BLE local output object
-        if not updates:
-            self.local_output = _LocalBLEOutput(use_tgate, use_fluts)
+        if not specs.updates:
+            self.local_output = _LocalBLEOutput(specs.use_tgate, specs.use_fluts)
+            self.subcircuits[self.local_output] = self.local_output
+
+         # The extra mux for the fracturable luts
+        if specs.use_fluts:
+            self.fmux = _flut_mux(specs.use_tgate, specs.use_finfet, specs.enable_carry_chain, specs.updates, 1)
+            self.subcircuits[self.fmux.name] = self.fmux
+
+        # Stratix10 has two levels of flut mux
+        if specs.updates:
+            self.fmux_l2 = _flut_mux(specs.use_tgate, specs.use_finfet, specs.enable_carry_chain, specs.updates, 2)
+            self.subcircuits[self.fmux_l2.name] = self.fmux_l2
 
         # Create LUT object
-        self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet, use_fluts, min_tran_width, updates)
+        self.lut = _LUT(specs.K, specs.Rsel, specs.Rfb, specs.use_tgate, specs.use_finfet, specs.use_fluts, specs.min_tran_width, specs.updates)
+        self.subcircuits[self.lut.name] = self.lut
 
         # Create FF object
-        if not updates:
-            self.ff = _FlipFlop(Rsel, use_tgate, use_finfet)
+        if not specs.updates:
+            self.ff = _FlipFlop(specs.Rsel, specs.use_tgate, specs.use_finfet)
+            self.subcircuits[self.ff.name] = self.ff
 
         # Stratix10 has 3 different types of FF, a FF without an input select mux (self.ff)
         # a FF with a 2:1 input select mux (self.ff2), and a FF with 3:1 input select mux (self.ff3)
-        if updates:
-            self.ff  = _FlipFlop('z', use_tgate, use_finfet)
-            self.ff2 = _FlipFlop('a', use_tgate, use_finfet, 2, True)
-            self.ff3 = _FlipFlop('b', use_tgate, use_finfet, 3, True)
+        if specs.updates:
+            self.ff  = _FlipFlop('z', specs.use_tgate, specs.use_finfet)
+            self.subcircuits[self.ff.name] = self.ff
+            self.ff2 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 2, True)
+            self.subcircuits[self.ff2.name] = self.ff2
+            self.ff3 = _FlipFlop('b', specs.use_tgate, specs.use_finfet, 3, True)
+            self.subcircuits[self.ff3.name] = self.ff3
 
         # Create LUT output load object
         self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs, self.use_fluts,
                                               self.enable_carry_chain, self.updates, self.level)
-
-        # The extra mux for the fracturable luts
-        if use_fluts:
-            self.fmux = _flut_mux(use_tgate, use_finfet, enable_carry_chain, updates, 1)
-
-        # Stratix10 has two levels of flut mux
-        if updates:
-            self.fmux_l2 = _flut_mux(use_tgate, use_finfet, enable_carry_chain, updates, 2)
+        self.loads[self.lut_output_load.name] = self.lut_output_load
 
         
         
@@ -2662,29 +2673,13 @@ class _BLE(_CompoundCircuit):
         
         # Generate LUT and FF
         init_tran_sizes = {}
-        init_tran_sizes.update(self.lut.generate(subcircuit_filename))
-        init_tran_sizes.update(self.ff.generate(subcircuit_filename))
 
-        if self.updates:
-            init_tran_sizes.update(self.ff2.generate(subcircuit_filename))
-            init_tran_sizes.update(self.ff3.generate(subcircuit_filename))
+        # Generate all the subciruits
+        for subcircuit in self.subcircuits.values():
+            init_tran_sizes.update(subcircuit.generate(subcircuit_filename))
 
-        # Generate BLE outputs
-        if not self.updates:
-            init_tran_sizes.update(self.local_output.generate(subcircuit_filename))                                                           
-        init_tran_sizes.update(self.general_output.generate(subcircuit_filename)) 
-                                                        
-        if self.updates:
-            init_tran_sizes.update(self.general_output3.generate(subcircuit_filename)) 
-
+        # Generate ble outputs load which
         load_subcircuits.generate_ble_outputs(subcircuit_filename, self.num_local_outputs, self.num_general_outputs)
-
-        #flut mux
-        if self.use_fluts:
-            init_tran_sizes.update(self.fmux.generate(subcircuit_filename))
-
-        if self.updates:
-            init_tran_sizes.update(self.fmux_l2.generate(subcircuit_filename))  
 
         # Generate LUT load
         self.lut_output_load.generate(subcircuit_filename)
@@ -2693,49 +2688,28 @@ class _BLE(_CompoundCircuit):
 
      
     def generate_top(self):
-
-        self.lut.generate_top()
-        if not self.updates:
-            self.local_output.generate_top()
-        self.general_output.generate_top()
-
-        if self.updates:
-            self.general_output3.generate_top()
-
-        if self.use_fluts:
-            self.fmux.generate_top()
-
-        if self.updates:
-            self.fmux_l2.generate_top()   
+        """ Generate all the SPICE top files for all the subcircuits """
+        for subcircuit in self.subcircuits.values():
+            subcircuit.generate_top()
     
     def update_area(self, area_dict, width_dict):
-    
+        """ Update the areas for all the subcircuits """
+        areas = {}
 
-        # Calculate area of BLE outputs
-        ff_area = self.ff.update_area(area_dict, width_dict)
-
-        if self.updates:
-            ff2_area = self.ff2.update_area(area_dict, width_dict)
-            ff3_area = self.ff3.update_area(area_dict, width_dict)
-
-        if self.use_fluts:
-            fmux_area = self.fmux.update_area(area_dict, width_dict) 
-
-        if self.updates:
-            fmux_l2_area = self.fmux_l2.update_area(area_dict, width_dict)
-
-        lut_area = self.lut.update_area(area_dict, width_dict)
+        # Update the areas for all the subcircuits
+        for subcircuit in self.subcircuits.values():
+            areas[subcircuit.name] = subcircuit.update_area(area_dict, width_dict)
 
         # new design doesn't have a local feedback mux
         if not self.updates:
-            local_ble_output_area = self.num_local_outputs*self.local_output.update_area(area_dict, width_dict)
+            local_ble_output_area = self.num_local_outputs * areas[self.local_output.name]
         else:
             local_ble_output_area = 0
 
         if not self.updates:
-            general_ble_output_area = self.num_general_outputs*self.general_output.update_area(area_dict, width_dict)
+            general_ble_output_area = self.num_general_outputs * areas[self.general_output.name]
         else:
-            general_ble_output_area = 3*self.general_output.update_area(area_dict, width_dict) + self.general_output3.update_area(area_dict, width_dict)
+            general_ble_output_area = 3 * areas[self.general_output.name] + areas[self.general_output3.name]
 
 
         ble_output_area = local_ble_output_area + general_ble_output_area
@@ -2743,28 +2717,28 @@ class _BLE(_CompoundCircuit):
         area_dict["ble_output"] = ble_output_area
         width_dict["ble_output"] = ble_output_width
 
-        # TODO: update the area for the new design
         if self.updates:
-            ble_area = lut_area + 2*ff_area + ff2_area + ff3_area + ble_output_area
+            ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + areas[self.ff2.name] + areas[self.ff3.name] + ble_output_area
         elif self.use_fluts:
-            ble_area = lut_area + 2*ff_area + ble_output_area
+            ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + ble_output_area
         else:
-            ble_area = lut_area + ff_area + ble_output_area
+            ble_area = areas[self.lut.name] + areas[self.ff.name] + ble_output_area
 
-
-        if self.enable_carry_chain == 1 and not self.updates:
-            ble_area += self.FAs_per_flut * (area_dict["carry_chain"] + area_dict["carry_chain_mux"])
-            if self.carry_skip_periphery_count:
-                ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
-        elif self.updates:
+        if not self.updates:
+            if self.enable_carry_chain == 1:
+                ble_area += self.FAs_per_flut * (area_dict["carry_chain"] + area_dict["carry_chain_mux"])
+                if self.carry_skip_periphery_count:
+                    ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
+        else:
             ble_area += area_dict["carry_chain"] * self.FAs_per_flut
-            if self.carry_skip_periphery_count:
+            if self.carry_skip_periphery_count == 1:
                 ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
 
 
         ble_width = math.sqrt(ble_area)
         area_dict["ble"] = ble_area
         width_dict["ble"] = ble_width
+
 
         
         
@@ -2926,7 +2900,7 @@ class _GeneralBLEOutputLoad:
 class _LocalRoutingWireLoad:
     """ Local routing wire load """
     
-    def __init__(self):
+    def __init__(self, I, N, K, num_ble_local_outputs, local_mux_l2_size, local_mux_implemented_size):
         # Name of this wire
         self.name = "local_routing_wire_load"
         # How many LUT inputs are we assuming are used in this logic cluster? (%)
@@ -2941,12 +2915,24 @@ class _LocalRoutingWireLoad:
         self.off_inputs_per_wire = -1
         # List of wire names in the SPICE circuit
         self.wire_names = []
+        # Cluster input size
+        self.I = I
+        # Number of BLEs in the cluster
+        self.N = N
+        # LUT size
+        self.K = K
+        # number of ble feedback outputs
+        self.num_ble_local_outputs = num_ble_local_outputs
+        # Local routing mux instance
+        self.local_mux_l2_size = local_mux_l2_size
+        # Local mux implemented size
+        self.local_mux_implemented_size = local_mux_implemented_size
     
 
-    def generate(self, subcircuit_filename, specs, local_mux):
+    def generate(self, subcircuit_filename):
         print "Generating local routing wire load"
         # Compute load (number of on/partial/off per wire)
-        self._compute_load(specs, local_mux)
+        self._compute_load()
         # Generate SPICE deck
         self.wire_names = load_subcircuits.local_routing_load_generate(subcircuit_filename, self.on_inputs_per_wire, self.partial_inputs_per_wire, self.off_inputs_per_wire)
     
@@ -2967,17 +2953,17 @@ class _LocalRoutingWireLoad:
         print ""
         
         
-    def _compute_load(self, specs, local_mux):
+    def _compute_load(self):
         """ Compute the load on a local routing wire (number of on/partial/off) """
         
         # The first thing we are going to compute is how many local mux inputs are connected to a local routing wire
         # This is a function of local_mux size, N, K, I and Ofb
-        num_local_routing_wires = specs.I+specs.N*specs.num_ble_local_outputs
-        self.mux_inputs_per_wire = local_mux.implemented_size*specs.N*specs.K/num_local_routing_wires
+        num_local_routing_wires = self.I+self.N*self.num_ble_local_outputs
+        self.mux_inputs_per_wire = self.local_mux_implemented_size*self.N*self.K/num_local_routing_wires
         
         # Now we compute how many "on" inputs are connected to each routing wire
         # This is a funtion of lut input usage, number of lut inputs and number of local routing wires
-        num_local_muxes_used = self.lut_input_usage_assumption*specs.N*specs.K
+        num_local_muxes_used = self.lut_input_usage_assumption*self.N*self.K
         self.on_inputs_per_wire = int(num_local_muxes_used/num_local_routing_wires)
         # We want to model for the case where at least one "on" input is connected to the local wire, so make sure it's at least 1
         if self.on_inputs_per_wire < 1:
@@ -2986,7 +2972,7 @@ class _LocalRoutingWireLoad:
         # Now we compute how many partially on muxes are connected to each wire
         # The number of partially on muxes is equal to (level2_size - 1)*num_local_muxes_used/num_local_routing_wire
         # We can figure out the number of muxes used by using the "on" assumption and the number of local routing wires.
-        self.partial_inputs_per_wire = int((local_mux.level2_size - 1.0)*num_local_muxes_used/num_local_routing_wires)
+        self.partial_inputs_per_wire = int((self.local_mux_l2_size - 1.0)*num_local_muxes_used/num_local_routing_wires)
         # Make it at least 1
         if self.partial_inputs_per_wire < 1:
             self.partial_inputs_per_wire = 1
@@ -2997,49 +2983,71 @@ class _LocalRoutingWireLoad:
 
 class _LogicCluster(_CompoundCircuit):
     
-    def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, 
-        use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, min_tran_width, updates):
+    def __init__(self, specs, carry_skip_periphery_count, local_mux_size_required, num_local_mux_per_tile):
+
         # Call the constructor of the base class
-        _CompoundCircuit.__init__(self, "logic_cluster", use_tgate, use_finfet)
+        _CompoundCircuit.__init__(self, "logic_cluster", specs.use_tgate, specs.use_finfet)
+
         # Number of BLEs in the logic cluster
-        self.N = N
+        self.N = specs.N
+
         # Create BLE object
-        self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, 
-            FAs_per_flut, carry_skip_periphery_count, N, min_tran_width, updates)
+        self.ble = _BLE(specs, carry_skip_periphery_count)
+        # Adding the BLE subcircuit to the subcircuits dictionary
+        self.subcircuits[self.ble.name] = self.ble
+
         # Create local mux object
-        self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, use_tgate)
+        self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, specs.use_tgate)
+        # Adding the local mux subcircuit to the subcircuits dictionary
+        self.subcircuits[self.local_mux.name] = self.local_mux
+
         # Create local routing wire load object
-        self.local_routing_wire_load = _LocalRoutingWireLoad()
-        # Create local BLE output load object
-        self.local_ble_output_load = _LocalBLEOutputLoad()
+        self.local_routing_wire_load = _LocalRoutingWireLoad(specs.I, specs.N, specs.K, 
+            specs.num_ble_local_outputs, self.local_mux.level2_size, self.local_mux.implemented_size)
+        # Adding the local routing wire load to the loads dictionary
+        self.loads[self.local_routing_wire_load.name] = self.local_routing_wire_load
+
+        if not specs.updates:
+            # Create local BLE output load object
+            self.local_ble_output_load = _LocalBLEOutputLoad()
+            # Adding the local ble output load to the loads dictionary
+            self.loads[self.local_ble_output_load.name] = self.local_ble_output_load
+
         # Boolean for using fracturable luts
-        self.use_fluts = use_fluts
+        self.use_fluts = specs.use_fluts
         # Boolean for enabling carry chains in the logic blocks
-        self.enable_carry_chain = enable_carry_chain
+        self.enable_carry_chain = specs.enable_carry_chain
         # Boolean indicationg that we are applying the new updates
-        self.updates = updates
+        self.updates = specs.updates
 
         
     def generate(self, subcircuits_filename, specs):
         print "Generating logic cluster"
         init_tran_sizes = {}
-        init_tran_sizes.update(self.ble.generate(subcircuits_filename))
-        init_tran_sizes.update(self.local_mux.generate(subcircuits_filename))
-        self.local_routing_wire_load.generate(subcircuits_filename, specs, self.local_mux)
-        self.local_ble_output_load.generate(subcircuits_filename)
-        
+
+        # Generate all the subcircuits and update the initial tran sizes dictionary
+        for subcircuit in self.subcircuits.values():
+            init_tran_sizes.update(subcircuit.generate(subcircuits_filename))
+
+        # Generate all the loads
+        for load in self.loads.values():
+            load.generate(subcircuits_filename)
+
         return init_tran_sizes
 
 
     def generate_top(self):
-        self.local_mux.generate_top()
-        self.ble.generate_top()
+        """ Generate the top SPICE file for all subcircuits """
+
+        for subcircuit in self.subcircuits.values():
+            subcircuit.generate_top()
         
         
     def update_area(self, area_dict, width_dict):
-        self.ble.update_area(area_dict, width_dict)
-        self.local_mux.update_area(area_dict, width_dict)       
-        
+        """ Update areas for all subcircuits """ 
+
+        for subcircuit in self.subcircuits.values():       
+            subcircuit.update_area(area_dict, width_dict)
     
     def update_wires(self, width_dict, wire_lengths, wire_layers, ic_ratio, lut_ratio, ble_ic_dis, local_routing_wire_load_length):
         """ Update wires of things inside the logic cluster. """
@@ -3052,6 +3060,8 @@ class _LogicCluster(_CompoundCircuit):
         
         
     def print_details(self, report_file):
+        """ Print the details of all the subcircuits """
+
         self.local_mux.print_details(report_file)
         self.ble.print_details(report_file)
     
@@ -5498,9 +5508,7 @@ class FPGA:
         if self.specs.enable_carry_chain == 1 and self.specs.carry_chain_type == "skip":
             self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
         # initialize the logic cluster
-        self.logic_cluster = _LogicCluster(self.specs.N, self.specs.K, self.specs.num_ble_general_outputs, self.specs.num_ble_local_outputs, self.specs.Rsel, self.specs.Rfb, 
-                                           local_mux_size_required, num_local_mux_per_tile, self.specs.use_tgate, self.specs.use_finfet, self.specs.use_fluts, 
-                                           self.specs.enable_carry_chain, self.specs.FAs_per_flut, self.carry_skip_periphery_count, self.specs.min_tran_width, self.updates)
+        self.logic_cluster = _LogicCluster(self.specs, self.carry_skip_periphery_count, local_mux_size_required, num_local_mux_per_tile)
         
         ###########################
         ### CREATE LOAD OBJECTS ###
@@ -6281,9 +6289,6 @@ class FPGA:
             objects (like sb_mux) to update their wire lengths and layers. """
         
         # Update wire lengths and layers for all subcircuits
-
-
-
         if self.lb_height == 0:
             self.cluster_output_load.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 0.0, 0.0)
             self.sb_mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers, 1.0)
