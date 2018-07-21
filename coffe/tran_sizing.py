@@ -1819,9 +1819,13 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 		sizes_per_element = 4
 	elif set_length == 5:
 		sizes_per_element = 5
-	else:
+	#else:
 		# TODO: decrease this it's too much for a length of 4 or even 3
-		sizes_per_element = 8
+		#sizes_per_element = 8
+	elif set_length == 4:
+		sizes_per_element = 6
+	elif set_length == 3:
+		sizes_per_element = 7
 
 	# TODO: this is only for debugging remove it
 	# and uncomment the previous one
@@ -3534,7 +3538,23 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 		if trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes and trans in initial_sizes:
 			fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes[trans] = initial_sizes[trans]
 
-	return 
+
+	if fpga_inst.updates:
+		# general ble output 3:1 transistors
+		for trans in fpga_inst.logic_cluster.ble.general_output3.initial_transistor_sizes :
+			if trans in fpga_inst.logic_cluster.ble.general_output3.initial_transistor_sizes and trans in initial_sizes:
+				fpga_inst.logic_cluster.ble.general_output3.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+		# flut l1 mux
+		for trans in fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes :
+			if trans in fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes and trans in initial_sizes:
+				fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes[trans] = initial_sizes[trans]
+
+		# flut l2 mux
+		for trans in fpga_inst.logic_cluster.ble.fmux_l2.initial_transistor_sizes :
+			if trans in fpga_inst.logic_cluster.ble.fmux_l2.initial_transistor_sizes and trans in initial_sizes:
+				fpga_inst.logic_cluster.ble.fmux_l2.initial_transistor_sizes[trans] = initial_sizes[trans]
+ 
 
 
 def print_final_transistor_size(fpga_inst, report_file_name):

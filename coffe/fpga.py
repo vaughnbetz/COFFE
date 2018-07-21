@@ -3056,7 +3056,9 @@ class _LogicCluster(_CompoundCircuit):
         self.ble.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
         self.local_mux.update_wires(width_dict, wire_lengths, wire_layers, ic_ratio)
         self.local_routing_wire_load.update_wires(width_dict, wire_lengths, wire_layers, local_routing_wire_load_length)
-        self.local_ble_output_load.update_wires(width_dict, wire_lengths, wire_layers, ble_ic_dis)
+
+        if not self.updates:
+            self.local_ble_output_load.update_wires(width_dict, wire_lengths, wire_layers, ble_ic_dis)
         
         
     def print_details(self, report_file):
@@ -6519,7 +6521,7 @@ class FPGA:
 
 
             if lut_input.delay < 0 :
-                print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
+                print "*** Lut input delay is negative : " + str(lut_input.delay) + "  in path: " + driver_and_lut_sp_path +  "***"
                 exit(2)
 
             self.delay_dict[lut_input.name] = lut_input.delay

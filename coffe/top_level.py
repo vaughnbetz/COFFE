@@ -4603,8 +4603,8 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
         spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
         if lut_letter == 'e' or lut_letter == 'f':
-            spice_file.write(utils.create_wire("n_out1", "n_1_4", "fmux_l1", "fmux_l2"))
-            spice_file.write("Xfmux_l2 n_1_4 n_out3 "+n_g_f2+" gnd vdd gnd fmux_l2\n\n")
+            spice_file.write(utils.create_wire("n_out1", "n_1_5", "fmux_l1", "fmux_l2"))
+            spice_file.write("Xfmux_l2 n_1_5 n_out3 "+n_g_f2+" gnd vdd gnd fmux_l2\n\n")
             if lut_letter == 'f':
                 spice_file.write("Xfmux_l2_load n_out3 n_out4 n_out5 vdd gnd vdd gnd v_dd fmux_l2_load\n\n")
     
@@ -4921,7 +4921,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level = 1, update
             top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     else:
         # TODO: each subcircuit should already have an input wire connected to it to avoid confusion
-        top_file.write("Xflut_output_load n_1_1 vdd n_1_4 vdd n_out2 vdd gnd "+vdd_f1+" vdd vdd flut_output_load\n\n")
+        top_file.write("Xflut_output_load n_1_1 vdd n_1_3 vdd n_out2 vdd gnd "+vdd_f1+" vdd vdd flut_output_load\n\n")
 
         top_file.write(utils.create_wire("n_1_3", "n_1_4", "fmux_l1", "fmux_l2"))
         top_file.write("Xfmux_l2 n_1_4 n_1_5 vdd gnd "+vdd_f2+" gnd fmux_l2\n\n")
@@ -5171,7 +5171,7 @@ def generate_carry_chain_ripple_top(name, updates = False):
     top_file.write("********************************************************************************\n")
     top_file.write("** Setup and input\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
+    top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
     top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
     top_file.write("*.OPTIONS POST=2\n\n")
@@ -5200,8 +5200,8 @@ def generate_carry_chain_ripple_top(name, updates = False):
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(gnd) AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_test) FROM=0ns TO=26ns\n")
-    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/26n)*supply_v'\n\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_test) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
 
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
@@ -5337,7 +5337,7 @@ def generate_carrychain_top(name):
     top_file.write("********************************************************************************\n")
     top_file.write("** Setup and input\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
+    top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
     top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
     top_file.write("*.OPTIONS POST=2\n\n")
@@ -5381,8 +5381,8 @@ def generate_carrychain_top(name):
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(gnd) AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_test) FROM=0ns TO=26ns\n")
-    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/26n)*supply_v'\n\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_test) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
 
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
@@ -5428,13 +5428,13 @@ def generate_carry_inter_top(name):
     top_file.write("********************************************************************************\n")
     top_file.write("** Setup and input\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write(".TRAN 1p 26n SWEEP DATA=sweep_data\n")
+    top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
     top_file.write(".OPTIONS BRIEF=1\n\n")
     top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
     top_file.write("*.OPTIONS POST=2\n\n")
 
     top_file.write("* Input signals\n")
-    top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    top_file.write("VIN n_in gnd PULSE (supply_v 0 0 0 0 2n 4n)\n\n")
     top_file.write("* Power rail for the circuit under test.\n")
     top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
     top_file.write("V_test vdd_test gnd supply_v\n\n")
@@ -5463,8 +5463,8 @@ def generate_carry_inter_top(name):
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(gnd) AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_test) FROM=0ns TO=26ns\n")
-    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/26n)*supply_v'\n\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_test) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
 
     top_file.write("********************************************************************************\n")
     top_file.write("** Circuit\n")
