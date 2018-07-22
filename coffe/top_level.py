@@ -5151,17 +5151,21 @@ def generate_carrychain_top(name, architecture):
     return (name + "/" + name + ".sp")
     """
 
-def generate_carry_chain_ripple_top(name, updates = False):
+def generate_carry_chain_ripple_top(name, updates, id):
 
     # Create directories
     if not os.path.exists(name):
         os.makedirs(name)  
     # Change to directory    
-    os.chdir(name)  
+    os.chdir(name)
+
+    n = ""
+    if id == 2:
+        n = "2"  
     
     filename = name + ".sp"
     top_file = open(filename, 'w')
-    top_file.write(".TITLE Carry Chain\n\n") 
+    top_file.write(".TITLE Carry Chain Perf\n\n") 
     
     top_file.write("********************************************************************************\n")
     top_file.write("** Include libraries, parameters and other\n")
@@ -5185,10 +5189,10 @@ def generate_carry_chain_ripple_top(name, updates = False):
     top_file.write("********************************************************************************\n")
     top_file.write("** Measurement\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write("* inv_carry_chain_1 delay\n")
-    top_file.write(".MEASURE TRAN meas_inv_carry_chain_perf_1_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
+    top_file.write("* inv_"+name+"_1 delay\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_carry_chain_perf_1_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
 
 
@@ -5210,20 +5214,24 @@ def generate_carry_chain_ripple_top(name, updates = False):
     # TODO: add wires between the components
     # Generate Cin as part of wave-shaping circuitry:
     top_file.write("* Signal shaping carry chains\n")
-    top_file.write("Xcarrychain_shape1 vdd gnd n_in n_1_1 n_hang n_p_1 vdd gnd FA_carry_chain\n")
+    top_file.write("Xcarrychain"+n+"_shape1 vdd gnd n_in n_1_1 n_hang n_p_1 vdd gnd FA_carry_chain"+n+"\n")
     #top_file.write(utils.create_wire("", "", "carrychain_1", "carrychain_2"))
-    top_file.write("Xcarrychain_shape2 vdd gnd n_1_1 n_1_2 n_hang_s n_p_2 vdd gnd FA_carry_chain\n\n")
+    top_file.write("Xcarrychain"+n+"_shape2 vdd gnd n_1_1 n_1_2 n_hang_s n_p_2 vdd gnd FA_carry_chain"+n+"\n\n")
     
     
     # Generate the uni under test:
-    top_file.write("Xcarrychain_main vdd gnd n_1_2 n_hang_2 n_1_3 n_p_3 vdd gnd FA_carry_chain\n")
-    top_file.write("Xinv n_1_3 n_out vdd_test gnd carry_chain_perf\n\n")
+    top_file.write("Xcarrychain"+n+"_main vdd gnd n_1_2 n_hang_2 n_1_3 n_p_3 vdd gnd FA_carry_chain"+n+"\n")
+    top_file.write("Xinv n_1_3 n_out vdd_test gnd carry_chain_perf"+n+"\n\n")
     
     top_file.write("* Loading at the sum out port of the carry chain full adder\n")
-    if updates:
+    if updates == 1 or (updates == 2 and id == 2):
         top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg2_sel"))
-        top_file.write("\n* Reg2 in Stratix 10 architecture with a 3:1 mux at its input\n")
+        top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
         top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n")
+    elif updates == 2:
+        if id == 1:
+            top_file.write(utils.create_wire("n_out", "n_1_4", "cc1_sout", "cc2"))
+            top_file.write("Xcarrychain2_main n_1_4 gnd gnd n_hang_3 n_hand_4 n_p_4 vdd gnd FA_carry_chain2\n")
     else:
         # generate typical load
         top_file.write("Xthemux n_out n_out2 vdd gnd vdd gnd carry_chain_mux\n\n")  
@@ -5359,16 +5367,16 @@ def generate_carrychain_top(name):
     top_file.write("********************************************************************************\n")
     top_file.write("** Measurement\n")
     top_file.write("********************************************************************************\n\n")
-    top_file.write("* inv_carry_chain_1 delay\n")
-    top_file.write(".MEASURE TRAN meas_inv_carry_chain_1_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V(Xcarrychain.n_cin_in_bar) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_carry_chain_1_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V(Xcarrychain.n_cin_in_bar) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("* inv_"+name+"_1 delay\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V(X"+name+".n_cin_in_bar) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(X"+name+".n_cin_in_bar) VAL='supply_v/2' RISE=1\n\n")
 
-    top_file.write("* inv_carry_chain_2 delays\n")
-    top_file.write(".MEASURE TRAN meas_inv_carry_chain_2_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
+    top_file.write("* inv_"+name+"_2 delays\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_tfall TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V(n_sum_out) VAL='supply_v/2' FALL=1\n")
-    top_file.write(".MEASURE TRAN meas_inv_carry_chain_2_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_trise TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
     top_file.write("+    TARG V(n_sum_out) VAL='supply_v/2' RISE=1\n\n")
     top_file.write("* Total delays\n")
 
@@ -5389,15 +5397,15 @@ def generate_carrychain_top(name):
     top_file.write("********************************************************************************\n\n")
 
     # Generate Cin as part of wave-shaping circuitry:
-    top_file.write("Xcarrychain_shape vdd gnd n_in n_0_1 n_hang n_p_1 vdd gnd FA_carry_chain\n")
-    top_file.write("Xcarrychain_shape1 vdd gnd n_0_1 n_0_2 n_hangz n_p_0 vdd gnd FA_carry_chain\n")
-    top_file.write("Xcarrychain_shape2 vdd gnd n_0_2 n_1_1 n_hangzz n_p_z vdd gnd FA_carry_chain\n")
+    top_file.write("X"+name+"_shape vdd gnd n_in n_0_1 n_hang n_p_1 vdd gnd FA_"+name+"\n")
+    top_file.write("X"+name+"_shape1 vdd gnd n_0_1 n_0_2 n_hangz n_p_0 vdd gnd FA_"+name+"\n")
+    top_file.write("X"+name+"_shape2 vdd gnd n_0_2 n_1_1 n_hangzz n_p_z vdd gnd FA_"+name+"\n")
     
     # Generate the adder under test:
-    top_file.write("Xcarrychain vdd gnd n_1_1 n_1_2 n_sum_out n_p_2 vdd_test gnd FA_carry_chain\n")
+    top_file.write("X"+name+" vdd gnd n_1_1 n_1_2 n_sum_out n_p_2 vdd_test gnd FA_"+name+"\n")
     
     # cout typical load
-    top_file.write("Xcarrychain_load vdd gnd n_1_2 n_1_3 n_sum_out2 n_p_3 vdd gnd FA_carry_chain\n")      
+    top_file.write("X"+name+"_load vdd gnd n_1_2 n_1_3 n_sum_out2 n_p_3 vdd gnd FA_"+name+"\n")      
 
     top_file.write(".END")
     top_file.close()
@@ -5408,13 +5416,17 @@ def generate_carrychain_top(name):
     return (name + "/" + name + ".sp")
     
 
-def generate_carry_inter_top(name):
+def generate_carry_inter_top(name, id):
 
     # Create directories
     if not os.path.exists(name):
         os.makedirs(name)  
     # Change to directory    
     os.chdir(name)  
+
+    n = ""
+    if id == 2:
+        n = "2"
     
     filename = name + ".sp"
     top_file = open(filename, 'w')
@@ -5471,13 +5483,13 @@ def generate_carry_inter_top(name):
     top_file.write("********************************************************************************\n\n")
 
     # Generate Cin as part of wave-shaping circuitry:
-    top_file.write("Xcarrychain_0 vdd gnd n_in n_1_1 n_sum_out n_1p vdd gnd FA_carry_chain\n")   
-    top_file.write("Xcarrychain vdd gnd n_1_1 n_1_2 n_sum_out2 n_2p vdd gnd FA_carry_chain\n")
+    top_file.write("Xcarrychain"+n+"_0 vdd gnd n_in n_1_1 n_sum_out n_1p vdd gnd FA_carry_chain"+n+"\n")   
+    top_file.write("Xcarrychain"+n+" vdd gnd n_1_1 n_1_2 n_sum_out2 n_2p vdd gnd FA_carry_chain"+n+"\n")
 
     # Generate the unit under test:
-    top_file.write("Xdrivers n_1_2 n_1_3 vdd_test gnd carry_chain_inter\n")
+    top_file.write("Xdrivers n_1_2 n_1_3 vdd_test gnd "+name+"\n")
     # typical load (next carry chain)
-    top_file.write("Xcarrychain_l n_1_3 vdd gnd n_hangl n_sum_out3 n_3p vdd gnd FA_carry_chain\n")   
+    top_file.write("Xcarrychain"+n+"_l n_1_3 vdd gnd n_hangl n_sum_out3 n_3p vdd gnd FA_carry_chain"+n+"\n")   
     
 
     top_file.write(".END")

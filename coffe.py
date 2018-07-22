@@ -102,7 +102,9 @@ total_start_time = time.time()
 # code is working after adding any change
 # this controles appyling or disabling the new updates
 
-arch_params_dict['updates'] = True
+# 1 ------> Stratix10
+# 2 ------> Adding second level of adderss
+arch_params_dict['updates'] = 1
 
 
 # Create an FPGA instance

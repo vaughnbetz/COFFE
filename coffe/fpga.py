@@ -879,7 +879,7 @@ class _LUTInput(_CompoundCircuit):
     """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). 
         The muxing on the LUT input is defined here """
 
-    def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate, use_fluts, updates = False):
+    def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate, use_fluts, updates = 0):
         # Subcircuit name (should be driver letter like a, b, c...)
         _CompoundCircuit.__init__(self, name, use_tgate)
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
@@ -1479,7 +1479,7 @@ class _CarryChainMux(_SizableCircuit):
         self.use_fluts = use_fluts
         
 
-    def generate(self, subcircuit_filename, use_finfet):
+    def generate(self, subcircuit_filename):
         """ Generate the SPICE netlists."""  
 
         if not self.use_tgate :
@@ -1542,11 +1542,15 @@ class _CarryChainMux(_SizableCircuit):
 
 class _CarryChainPer(_SizableCircuit):
     """ Carry Chain Peripherals class. Used to measure the delay from the Cin to Sout.  """
+
+    number = 1
+
     def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, use_tgate, updates):
          # Call the constructor of the base class to initialize all
         # its local variables
         _SizableCircuit.__init__(self, "carry_chain_perf", use_tgate, use_finfet)
-        
+        # instance id
+        self.id = str(_CarryChainPer.number)
         # carry chain type either ripple or skip
         self.carry_chain_type = carry_chain_type
         # handled in the check_arch_params funciton in utils.py
@@ -1554,30 +1558,42 @@ class _CarryChainPer(_SizableCircuit):
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N        
-
+        # Holds the updates number
         self.updates = updates
+        # Instance id
+        self.id = _CarryChainPer.number
+        # if this is update 2 and this is the second adder add 2 to its name
+        if updates == 2 and self.id == 2:
+            self.name += self.id
+
+        # Increment the static variable number each time a new instance is created
+        _CarryChainPer.number += 1
 
 
-    def generate(self, subcircuit_filename, use_finfet):
+    def generate(self, subcircuit_filename):
         """ Generate the SPICE netlists."""  
 
 
         # if type is skip, we need to generate two levels of nand + not for the and tree
         # if type is ripple, we need to add the delay of one inverter for the final sum.
-        self.transistor_names, self.wire_names = lut_subcircuits.generate_carry_chain_perf_ripple(subcircuit_filename, self.name, use_finfet)
+        self.transistor_names, self.wire_names = lut_subcircuits.generate_carry_chain_perf_ripple(subcircuit_filename, self.name, self.use_finfet)
         self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
 
-        if self.updates:
+        if self.updates == 1:
             self.wire_names.append(utils.wire_name("cc_sout", "reg2_sel"))
-
-        
+        # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
+        elif self.updates == 2:
+            if self.id == 2:
+                self.wire_names.append(utils.wire_name("cc2_sout", "reg2_sel"))
+                
+    
         return self.initial_transistor_sizes
     def generate_top(self):
         """ Generate Top-level Evaluation Path for the Carry chain """
 
         if self.carry_chain_type == "ripple":
-            self.top_spice_path = top_level.generate_carry_chain_ripple_top(self.name, self.updates)
+            self.top_spice_path = top_level.generate_carry_chain_ripple_top(self.name, self.updates, self.id)
         else:
             self.top_spice_path = top_level.generate_carry_chain_skip_top(self.name, self.use_tgate)
 
@@ -1585,7 +1601,7 @@ class _CarryChainPer(_SizableCircuit):
     def update_area(self, area_dict, width_dict):
         """ Calculate Carry Chain area and update dictionaries. """
 
-        area = area_dict["inv_carry_chain_perf_1"]    
+        area = area_dict["inv_"+self.name+"_1"]    
         area_with_sram = area
         width = math.sqrt(area)
         area_dict[self.name] = area
@@ -1595,14 +1611,22 @@ class _CarryChainPer(_SizableCircuit):
     def update_wires(self, width_dict, wire_lengths, wire_layers):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         # TODO: revise this line 
-        if self.updates:
+        if self.updates == 1:
             wire_lengths[utils.wire_name("cc_sout", "reg2_sel")] = width_dict["lut"]
             wire_layers[utils.wire_name("cc_sout", "reg2_sel")] = 0
+        # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
+        elif self.updates == 2:
+            if self.id == 2:
+                wire_lengths[utils.wire_name("cc2_sout", "reg2_sel")] = width_dict["lut"]/2
+                wire_layers[utils.wire_name("cc2_sout", "reg2_sel")] = 0
 
 
 class _CarryChain(_SizableCircuit):
     """ Carry Chain class.    """
-    def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, updates = False):
+
+    number = 1
+
+    def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, updates = 0):
         # Call the constructor of the base class to initialize all
         # its local variables
         _SizableCircuit.__init__(self, "carry_chain", False, use_finfet)
@@ -1615,28 +1639,40 @@ class _CarryChain(_SizableCircuit):
         self.N = N
         # Boolean for applying updates
         self.updates = updates
+        # Instance id
+        self.id = str(_CarryChain.number)
+        # if this is update 2 and this is the second adder add 2 to its name
+        if updates == 2 and self.id == 2:
+            self.name += self.id
+        # Increment the static varible number with one each time you create instance
+        _CarryChain.number += 1
 
 
-    def generate(self, subcircuit_filename, use_finfet):
+    def generate(self, subcircuit_filename):
         """ Generate Carry chain SPICE netlists."""  
 
-        self.transistor_names, self.wire_names = lut_subcircuits.generate_full_adder_simplified(subcircuit_filename, self.name, use_finfet)
+        self.transistor_names, self.wire_names = lut_subcircuits.generate_full_adder_simplified(subcircuit_filename, self.name, self.use_finfet)
 
         # if type is skip, we need to generate two levels of nand + not for the and tree
         # if type is ripple, we need to add the delay of one inverter for the final sum.
 
-        self.initial_transistor_sizes["inv_carry_chain_1_nmos"] = 1
-        self.initial_transistor_sizes["inv_carry_chain_1_pmos"] = 1
-        self.initial_transistor_sizes["inv_carry_chain_2_nmos"] = 1
-        self.initial_transistor_sizes["inv_carry_chain_2_pmos"] = 1
-        self.initial_transistor_sizes["tgate_carry_chain_1_nmos"] = 1
-        self.initial_transistor_sizes["tgate_carry_chain_1_pmos"] = 1
-        self.initial_transistor_sizes["tgate_carry_chain_2_nmos"] = 1
-        self.initial_transistor_sizes["tgate_carry_chain_2_pmos"] = 1
+        self.initial_transistor_sizes["inv_"+self.name+"_1_nmos"] = 1
+        self.initial_transistor_sizes["inv_"+self.name+"_1_pmos"] = 1
+        self.initial_transistor_sizes["inv_"+self.name+"_2_nmos"] = 1
+        self.initial_transistor_sizes["inv_"+self.name+"_2_pmos"] = 1
+        self.initial_transistor_sizes["tgate_"+self.name+"_1_nmos"] = 1
+        self.initial_transistor_sizes["tgate_"+self.name+"_1_pmos"] = 1
+        self.initial_transistor_sizes["tgate_"+self.name+"_2_nmos"] = 1
+        self.initial_transistor_sizes["tgate_"+self.name+"_2_pmos"] = 1
 
-        # this wire is needed in the flut mux simulations of the new architecture
+
         if self.updates:
-            self.wire_names.append(utils.wire_name("lut", self.name))
+            if self.id == 1:
+                 # this wire is needed in the flut mux simulations of the new architecture
+                self.wire_names.append(utils.wire_name("lut", self.name))
+            elif self.id == 2:
+                # this wire is needed in the simulation of the carry chain perf of carry chain 1
+                self.wire_names.append(utils.wire_name("cc1_sout", self.name))
 
         return self.initial_transistor_sizes
 
@@ -1646,12 +1682,18 @@ class _CarryChain(_SizableCircuit):
 
         self.top_spice_path = top_level.generate_carrychain_top(self.name)
 
+
     def update_area(self, area_dict, width_dict):
         """ Calculate Carry Chain area including the inverter 
             at the Sout port and update dictionaries. """
 
-        area = area_dict["inv_carry_chain_1"] * 2 + area_dict["inv_carry_chain_2"] + area_dict["tgate_carry_chain_1"] * 4 + area_dict["tgate_carry_chain_2"] * 4
-        area = area + area_dict["carry_chain_perf"]
+        area = area_dict["inv_"+self.name+"_1"] * 2 + area_dict["inv_"+self.name+"_2"] + area_dict["tgate_"+self.name+"_1"] * 4 + area_dict["tgate_"+self.name+"_2"] * 4
+
+        if self.updates == 2 and self.id == 2:
+            area += area_dict["carry_chain_perf2"]
+        else:
+            area += area_dict["carry_chain_perf"]
+
         area_with_sram = area
         width = math.sqrt(area)
         area_dict[self.name] = area
@@ -1682,8 +1724,12 @@ class _CarryChain(_SizableCircuit):
         # TODO: revise those values
         # this wire is needed in the flut mux simulation for the new architecture
         if self.updates:
-            wire_lengths[utils.wire_name("lut", self.name)] = width_dict["fmux_l1"]
-            wire_layers[utils.wire_name("lut", self.name)] = 0
+            if self.id == 1:
+                wire_lengths[utils.wire_name("lut", self.name)] = width_dict["fmux_l1"]
+                wire_layers[utils.wire_name("lut", self.name)] = 0
+            elif self.id == 2:
+                wire_lengths[utils.wire_name("cc1_sout", "cc2")] = (width_dict[self.name] + width_dict["carry_chain"])/4
+                wire_layers[utils.wire_name("cc1_sout", "cc2")] = 0
 
 
     def print_details(self):
@@ -1722,10 +1768,10 @@ class _CarryChainSkipAnd(_SizableCircuit):
             self.nand2_size = 3
 
 
-    def generate(self, subcircuit_filename, use_finfet):
+    def generate(self, subcircuit_filename):
         """ Generate Carry chain SPICE netlists."""  
 
-        self.transistor_names, self.wire_names = lut_subcircuits.generate_skip_and_tree(subcircuit_filename, self.name, use_finfet, self.nand1_size, self.nand2_size)
+        self.transistor_names, self.wire_names = lut_subcircuits.generate_skip_and_tree(subcircuit_filename, self.name, self.use_finfet, self.nand1_size, self.nand2_size)
 
         self.initial_transistor_sizes["inv_nand"+str(self.nand1_size)+"_xcarry_chain_and_1_nmos"] = 1
         self.initial_transistor_sizes["inv_nand"+str(self.nand1_size)+"_xcarry_chain_and_1_pmos"] = 1
@@ -1768,20 +1814,29 @@ class _CarryChainSkipAnd(_SizableCircuit):
 
 
 class _CarryChainInterCluster(_SizableCircuit):
+
+    number = 1
     """ Wire dirvers of carry chain path between clusters"""
-    def __init__(self, use_finfet, carry_chain_type, inter_wire_length):
+    def __init__(self, use_finfet, carry_chain_type, inter_wire_length, updates = 0):
         # Call the constructor of the base class
         _SizableCircuit.__init__(self, "carry_chain_inter", False, use_finfet)
         # Ripple or Skip?
         self.carry_chain_type = carry_chain_type
         # length of the wire between cout of a cluster to cin of the other
         self.inter_wire_length = inter_wire_length
+        # Instance id
+        self.id = str(_CarryChainInterCluster.number)
+        # if this is update 2 and this is the second adder add 2 to its name
+        if updates == 2 and _CarryChainInterCluster.number == 2:
+            self.name += self.id
+        # increment the static variable with 1 when creating a new instance
+        _CarryChainInterCluster.number += 1
 
 
-    def generate(self, subcircuit_filename, use_finfet):
+    def generate(self, subcircuit_filename):
         """ Generate Carry chain SPICE netlists."""  
 
-        self.transistor_names, self.wire_names = lut_subcircuits.generate_carry_inter(subcircuit_filename, self.name, use_finfet)
+        self.transistor_names, self.wire_names = lut_subcircuits.generate_carry_inter(subcircuit_filename, self.name)
 
         self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
@@ -1793,7 +1848,7 @@ class _CarryChainInterCluster(_SizableCircuit):
     def generate_top(self):
         """ Generate Top-level Evaluation Path for Carry chain """
 
-        self.top_spice_path = top_level.generate_carry_inter_top(self.name)
+        self.top_spice_path = top_level.generate_carry_inter_top(self.name, self.id)
 
     def update_area(self, area_dict, width_dict):
         """ Calculate Carry Chain area and update dictionaries. """
@@ -1824,7 +1879,7 @@ class _CarryChainSkipMux(_SizableCircuit):
 
 
 
-    def generate(self, subcircuit_filename, use_finfet):
+    def generate(self, subcircuit_filename):
         """ Generate the SPICE netlists."""  
 
         if not self.use_tgate :
@@ -1900,7 +1955,7 @@ class _FlipFlop(_CompoundCircuit):
 
     ff_generated = False
     
-    def __init__(self, Rsel, use_tgate, use_finfet, input_size = 2, updates = False):
+    def __init__(self, Rsel, use_tgate, use_finfet, input_size = 2, updates = 0):
         # Call the constructor of the base class
         _CompoundCircuit.__init__(self, "ff", use_tgate, use_finfet)
         # Register select mux, Rsel = LUT input (e.g. 'a', 'b', etc.) or 'z' if no register select 
@@ -2187,7 +2242,7 @@ class _LocalBLEOutput(_SizableCircuit):
 class _GeneralBLEOutput(_SizableCircuit):
     """ General BLE Output is the mux at the output of the ble connecting its output to the general routing """
     
-    def __init__(self, use_tgate, use_fluts, enable_carry_chain, updates = False, input_size = 2):
+    def __init__(self, use_tgate, use_fluts, enable_carry_chain, updates = 0, input_size = 2):
         # Call the constructor of the base class to initialize all
         # its local variables
         _SizableCircuit.__init__(self, "general_ble_output", use_tgate)
@@ -2328,7 +2383,7 @@ class _LUTOutputLoad:
         then the output load will be the regster select mux of the flip-flop, the mux connecting the output signal
         to the output routing and the mux connecting the output signal to the feedback mux """
 
-    def __init__(self, num_local_outputs, num_general_outputs, use_fluts, enable_carry_chain, updates = False, level = 1):
+    def __init__(self, num_local_outputs, num_general_outputs, use_fluts, enable_carry_chain, updates = 0, level = 1):
         self.name = "lut_output_load"
 
         # A list of the names of wires in this subcircuit
@@ -2383,7 +2438,7 @@ class _LUTOutputLoad:
 class _flut_mux(_SizableCircuit):
     """ TODO: add discreption"""
     
-    def __init__(self, use_tgate, use_finfet, enable_carry_chain, updates = False, level = 1):
+    def __init__(self, use_tgate, use_finfet, enable_carry_chain, updates = 0, level = 1):
 
 
         # TODO: change to enable finfet support, should be rather straightforward as it's just a mux
@@ -5532,12 +5587,23 @@ class FPGA:
             self.carrychainperf = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate, self.updates)
             if not self.updates:
                 self.carrychainmux = _CarryChainMux(self.specs.use_finfet, self.specs.use_fluts, self.specs.use_tgate)
-            self.carrychaininter = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length)
+            self.carrychaininter = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length, self.updates)
             if self.specs.carry_chain_type == "skip":
                 self.carrychainand = _CarryChainSkipAnd(self.specs.use_finfet, self.specs.use_tgate, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.skip_size)
                 self.carrychainskipmux = _CarryChainSkipMux(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.use_tgate)
-        
 
+        ####################################
+        ### CREATE CARRY CHAIN 2 OBJECTS ###
+        ####################################
+
+        # IMPORTANT: this should be always created after the fist carry chain, since its internal name has to do with this oder
+
+        if self.updates == 2:
+            self.carrychain2 = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.updates)
+            self.carrychainperf2 = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate, self.updates)
+            self.carrychaininter2 = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length, self.updates)
+
+        
         #########################
         ### CREATE RAM OBJECT ###
         #########################
@@ -5683,7 +5749,13 @@ class FPGA:
                 self.subcircuits[self.carrychainmux.name] = self.carrychainmux
             if self.specs.carry_chain_type == "skip":
                 self.subcircuits[self.carrychainskipmux.name] = self.carrychainskipmux
-                self.subcircutis[self.carrychainand.name] = self.carrychainand    
+                self.subcircutis[self.carrychainand.name] = self.carrychainand   
+
+        # Carry Chain 2 for the new architecure
+        if self.updates == 2:
+            self.subcircuits[self.carrychain2.name] = self.carrychain2
+            self.subcircuits[self.carrychainperf2.name] = self.carrychainperf2
+            self.subcircuits[self.carrychaininter2.name] = self.carrychaininter2 
 
 
 
@@ -5730,14 +5802,20 @@ class FPGA:
         self.routing_wire_load.generate(self.subcircuits_filename, self.specs, self.sb_mux, self.cb_mux)
 
         if self.specs.enable_carry_chain == 1:
-            self.transistor_sizes.update(self.carrychain.generate(self.subcircuits_filename, self.specs.use_finfet))
-            self.transistor_sizes.update(self.carrychainperf.generate(self.subcircuits_filename, self.specs.use_finfet))
+            self.transistor_sizes.update(self.carrychain.generate(self.subcircuits_filename))
+            self.transistor_sizes.update(self.carrychainperf.generate(self.subcircuits_filename))
             if not self.updates:
-                self.transistor_sizes.update(self.carrychainmux.generate(self.subcircuits_filename, self.specs.use_finfet))
-            self.transistor_sizes.update(self.carrychaininter.generate(self.subcircuits_filename, self.specs.use_finfet))
+                self.transistor_sizes.update(self.carrychainmux.generate(self.subcircuits_filename))
+            self.transistor_sizes.update(self.carrychaininter.generate(self.subcircuits_filename))
             if self.specs.carry_chain_type == "skip":
-                self.transistor_sizes.update(self.carrychainand.generate(self.subcircuits_filename, self.specs.use_finfet))
-                self.transistor_sizes.update(self.carrychainskipmux.generate(self.subcircuits_filename, self.specs.use_finfet))
+                self.transistor_sizes.update(self.carrychainand.generate(self.subcircuits_filename))
+                self.transistor_sizes.update(self.carrychainskipmux.generate(self.subcircuits_filename))
+
+        # generate the carry chain of the new architecture
+        if self.updates == 2:
+            self.transistor_sizes.update(self.carrychain2.generate(self.subcircuits_filename))
+            self.transistor_sizes.update(self.carrychainperf2.generate(self.subcircuits_filename))
+            self.transistor_sizes.update(self.carrychaininter2.generate(self.subcircuits_filename))
 
         if self.specs.enable_bram_block == 1:
             self.transistor_sizes.update(self.RAM.generate(self.subcircuits_filename, self.specs.min_tran_width, self.specs))
@@ -5773,6 +5851,12 @@ class FPGA:
             if self.specs.carry_chain_type == "skip":
                 self.carrychainand.generate_top()
                 self.carrychainskipmux.generate_top()
+
+        # generate the top of second carry chain
+        if self.updates == 2:
+            self.carrychain2.generate_top()
+            self.carrychainperf2.generate_top()
+            self.carrychaininter2.generate_top()
 
         # RAM
         if self.specs.enable_bram_block == 1:
@@ -5827,6 +5911,11 @@ class FPGA:
                 self.carrychainand.update_area(self.area_dict, self.width_dict)
                 self.carrychainskipmux.update_area(self.area_dict, self.width_dict)
 
+        # carry chain 2
+        if self.updates == 2:
+            self.carrychainperf2.update_area(self.area_dict, self.width_dict)
+            self.carrychaininter2.update_area(self.area_dict, self.width_dict)
+            self.carrychain2.update_area(self.area_dict, self.width_dict)
 
         # Call area calculation functions of sub-blocks
         self.sb_mux.update_area(self.area_dict, self.width_dict)
@@ -5879,7 +5968,10 @@ class FPGA:
             # Calculate area of logic cluster
             cluster_area = local_mux_area + self.specs.N*self.area_dict["ble"]
             if self.specs.enable_carry_chain == 1:
-                cluster_area += self.area_dict["carry_chain_inter"]
+                cluster_area += self.area_dict[self.carrychaininter.name]
+
+            if self.updates == 2:
+                cluster_area += self.area_dict[self.carrychaininter2.name]
 
         else:
 
@@ -5910,16 +6002,19 @@ class FPGA:
             cc_area_total = 0.0
             skip_size = 5
             self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/skip_size))
-            # TODO: clean this up
-            if self.specs.enable_carry_chain == 1 and not self.updates:
-                cc_area_total =  self.specs.N * self.specs.FAs_per_flut * (self.area_dict["carry_chain"] + self.area_dict["carry_chain_mux"])
-                if not (self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple"):
-                    cc_area_total +=  self.carry_skip_periphery_count * (self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
-                cc_area_total += self.area_dict["carry_chain_inter"]
+
+            if not self.updates:
+                if self.specs.enable_carry_chain == 1:
+                    cc_area_total =  self.specs.N * self.specs.FAs_per_flut * (self.area_dict[self.carrychain.name] + self.area_dict[self.carrychainmux.name])
+                    if not (self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple"):
+                        cc_area_total +=  self.carry_skip_periphery_count * (self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
+                    cc_area_total += self.area_dict[self.carrychaininter.name]
             elif self.updates:
-                cc_area_total = self.specs.N * self.specs.FAs_per_flut * self.area_dict["carry_chain"] + self.area_dict["carry_chain_inter"]
-                if not (self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple"):
-                    cc_area_total +=  self.carry_skip_periphery_count * (self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
+                cc_area_total = self.specs.N * 2 * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
+
+            # if new architecture add the second carry chain
+            if self.updates == 2:
+                cc_area_total += self.specs.N * 2 * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
 
 
             cluster_area = local_mux_area + local_mux_sram_area + ffableout_area_total + cc_area_total + lut_area + lut_area_sram
@@ -5951,22 +6046,29 @@ class FPGA:
             self.area_dict["ble_output_total"] = self.specs.N*(self.area_dict["ble_output"])
             self.width_dict["ble_output_total"] = math.sqrt(self.specs.N*(self.area_dict["ble_output"]))
 
+
+
         self.area_dict["logic_cluster"] = cluster_area
         self.width_dict["logic_cluster"] = math.sqrt(cluster_area)
 
         # TODO: clean this up
         # Calculate Carry Chain Area
         # already included in bles, extracting for the report
+        if not self.updates:
+            if self.specs.enable_carry_chain:
+                carry_chain_area = (self.specs.N*( self.specs.FAs_per_flut * self.area_dict[self.carrychain.name] + 
+                    (self.specs.FAs_per_flut) *  self.area_dict[self.carrychainmux.name]) + self.area_dict[self.carrychaininter.name])
+                if self.specs.carry_chain_type == "skip":
+                    self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
+                    carry_chain_area += self.carry_skip_periphery_count *(self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
         if self.updates:
-            carry_chain_area = self.specs.N * 2 * self.area_dict["carry_chain"] + self.area_dict["carry_chain_inter"]
-            self.area_dict["total_carry_chain"] = carry_chain_area
-        elif self.specs.enable_carry_chain:
-            carry_chain_area = self.specs.N*( self.specs.FAs_per_flut * self.area_dict["carry_chain"] + (self.specs.FAs_per_flut) *  self.area_dict["carry_chain_mux"]) + self.area_dict["carry_chain_inter"]
-            if self.specs.carry_chain_type == "skip":
-                self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
-                carry_chain_area += self.carry_skip_periphery_count *(self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
-            self.area_dict["total_carry_chain"] = carry_chain_area
+            carry_chain_area = self.specs.N * 2 * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
 
+        if self.updates == 2:
+            carry_chain_area += self.specs.N * 2 * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
+            
+        if self.specs.enable_carry_chain:
+            self.area_dict["total_carry_chain"] = carry_chain_area
         
         # Calculate tile area
         tile_area = switch_block_area + connection_block_area + cluster_area 
@@ -6346,10 +6448,17 @@ class FPGA:
             self.carrychaininter.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
             if self.specs.carry_chain_type == "skip":
                 self.carrychainand.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
-                self.carrychainskipmux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)                
+                self.carrychainskipmux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
+
+        # updates wirs for the new architecture
+        if self.updates == 2:
+            self.carrychain2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
+            self.carrychainperf2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
+            self.carrychaininter2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
+
+
         if self.specs.enable_bram_block == 1:
             self.RAM.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
-
 
         for hardblock in self.hardblocklist:
             hardblock.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)  
@@ -7537,6 +7646,12 @@ class FPGA:
             if not self.updates:
                 if subcircuit == self.carrychainmux:
                     return False
+
+        if self.updates == 2:
+            if (subcircuit == self.carrychain2 or
+                subcircuit == self.carrychainperf2 or
+                subcircuit == self.carrychaininter2): 
+                return False
 
         return True
 

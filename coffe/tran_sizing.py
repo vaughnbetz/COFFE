@@ -1273,7 +1273,7 @@ def erf_combo(fpga_inst,
 		Returns the inverter ratios that give equal rise and fall for this combo. """
    
 	# We want to ERF a transistor sizing combination
-	# Update transistor sizes
+	# Update transistor sizes with the values in the given combo
 	fpga_inst._update_transistor_sizes(element_names, combo, fpga_inst.specs.use_finfet)
 	# Calculate area of everything
 	fpga_inst.update_area()
@@ -1654,9 +1654,12 @@ def format_transistor_names_to_basic_subcircuits(transistor_names):
 		The output is a list of element names without tags. """
 
 	format_names = []
+	# iterate over all transistors in subcircuit
 	for tran_name in transistor_names:
+		# remove the nmos and pmos tags
 		stripped_name = tran_name.replace("_nmos", "")
 		stripped_name = stripped_name.replace("_pmos", "")
+		# if this element wasn't added before add it to the list
 		if stripped_name not in format_names:
 			format_names.append(stripped_name)
 			
@@ -1668,18 +1671,23 @@ def format_transistor_sizes_to_basic_subciruits(transistor_sizes):
 		Also, inverters and transmission gates are given a single size. """
 	  
 	format_sizes = {}  
+	# iterate over all the transistors of this subcircuit
 	for tran_name, size in transistor_sizes.iteritems():
+		# remove the nmos or pmos ending
 		stripped_name = tran_name.replace("_nmos", "")
 		stripped_name = stripped_name.replace("_pmos", "")
+		# if this is an inverter or a tgate check if it was already added
+		# to the dictionary since they have both an nmos and pmos transistors
 		if "inv_" in stripped_name or "tgate_" in stripped_name:
 			if stripped_name in format_sizes.keys():
+				# keep the smaller size
 				if size < format_sizes[stripped_name]:
 					format_sizes[stripped_name] = size
 			else:
 				format_sizes[stripped_name] = size
 		else:
 			format_sizes[stripped_name] = size
-	   
+	# return a dictionary of components (inv, ptran, tgate, or rest)
 	return format_sizes
 	
 	
@@ -1746,6 +1754,7 @@ def _divide_problem_into_sets(transistor_names):
 		In general, groups of 5-6 transistors yields a good balance between these two competing factors.  
 		This function looks at the 'transistor_names' argument and figures out how to divide the transistors to size in 
 		more manageable groups (if indeed they do need to be divided up).
+		If subcircuit has more than 6 elements (execluding level restorer) it will be divided into groups of 5.
 	"""
 
 	# The first thing we are going to do is count how many elements we need to size. 
@@ -1761,7 +1770,8 @@ def _divide_problem_into_sets(transistor_names):
 	tran_names_set_list = []
 	if count > 6:
 		print "Too many elements to size at once..."
-		# Let's divide this into sets of 5, the last set might have less than 5 elements.       
+		# Let's divide this into sets of 5, the last set might have less than 5 elements.
+		# TODO: why not divide it in half instead?       
 		tran_counter = 0
 		tran_names_set = []
 		for tran_name in transistor_names:
@@ -1805,36 +1815,24 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 	""" This function finds the initial transistor sizing ranges.
 		The initial ranges are determined based on 'transistor_sizes'
 		I think it's a good idea for the initial transistor size ranges to be smaller
-		than subsequent ranges. We can look at the initial transistor sizing ranges as more of a test
-		that determines whether the sizes of these transistors will change or not. If we keep the 
-		ranges smaller, we can more quickly perform this test. If we find 
-		that we don't need to change these transistor sizes much, we didn't waste time exploring a 
-		larger range of sizes. If we find that transistor sizes do need to change a lot, we can make 
-		the next transistor size ranges larger.
+		than subsequent ranges. We can look at the initial transistor sizing ranges as 
+		more of a test that determines whether the sizes of these transistors will change 
+		or not. If we keep the ranges smaller, we can more quickly perform this test. If 
+		we find that we don't need to change these transistor sizes much, we didn't waste 
+		time exploring a larger range of sizes. If we find that transistor sizes do need 
+		to change a lot, we can make the next transistor size ranges larger.
 	"""
   
 	# We have to figure out what ranges to use.
+	# number of simulations is sizes_per_element ^ set_length
+	# maximum set length is 6, larger circuits are divided into sets
 	set_length = len(transistor_names)
 	if set_length >= 6:
 		sizes_per_element = 4
 	elif set_length == 5:
 		sizes_per_element = 5
-	#else:
-		# TODO: decrease this it's too much for a length of 4 or even 3
-		#sizes_per_element = 8
-	elif set_length == 4:
-		sizes_per_element = 6
-	elif set_length == 3:
-		sizes_per_element = 7
-
-	# TODO: this is only for debugging remove it
-	# and uncomment the previous one
-	#if set_length >= 6:
-	#	sizes_per_element = 2
-	#elif set_length == 5:
-	#	sizes_per_element = 2
-	#else:
-	#	sizes_per_element = 2
+	else:
+		sizes_per_element = 8
 		
 	# Figure out sizing ranges
 	# If the transistor is a level-restorer, keep the size at 1.
@@ -1842,11 +1840,6 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 	# that keeps the current size near the center.
 	sizing_ranges = {}
 	for name in transistor_names:
-		#if "precharge" in name:
-			#sizes_per_element = 20
-		# Current size of this transistor
-		#print transistor_sizes
-		#size = transistor_sizes[name]
 		defaultsize = 1
 		size = transistor_sizes.get(name, defaultsize)
 
@@ -2013,6 +2006,7 @@ def size_subcircuit_transistors(fpga_inst,
 	for tran_names_set in tran_names_set_list:
 		sizing_ranges_set = _find_initial_sizing_ranges(tran_names_set, 
 														initial_transistor_sizes)
+		# each element of the list will contain a dictionary of all the transistor sizes of one group
 		sizing_ranges_set_list.append(sizing_ranges_set.copy())
 		sizing_ranges_complete.update(sizing_ranges_set)
 
@@ -2468,6 +2462,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		# of the previous iteration as the starting sizes.
 		if iteration == 1:
 			quick_mode_dict[name] = 1
+			# create a dictionary of the components inside the subcircuit and their size (inv, ptran, tgate, rest etc.)
 			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.sb_mux.initial_transistor_sizes)
 		else:
 			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]

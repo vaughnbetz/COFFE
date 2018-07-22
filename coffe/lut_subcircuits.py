@@ -1208,7 +1208,7 @@ def generate_skip_and_tree(spice_filename, circuit_name, use_finfet, nand1_size,
 	return tran_names_list, wire_names_list
 
 
-def generate_carry_inter(spice_filename, circuit_name, use_finfet):
+def generate_carry_inter(spice_filename, circuit_name):
 
 	""" Generates the driver to load "cin" of the next cluster """
 
