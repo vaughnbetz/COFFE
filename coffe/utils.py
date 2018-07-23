@@ -43,49 +43,37 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  ------------------------------")
     
     area_dict = fpga_inst.area_dict
+    BLE = fpga_inst.logic_cluster.ble
 
     # I'm using 'ljust' to create neat columns for printing this data. 
     # If subcircuit names are changed, it might make this printing function 
     # not work as well. The 'ljust' constants would have to be adjusted accordingly.
-    BLE = fpga_inst.logic_cluster.ble
     
     # Print the header
-    print_and_write(report_file, "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22)) 
+    print_and_write(report_file, "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22))    
     
     # Switch block mux
-    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22))
-    
+    print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.sb_mux))
+
     # Connection block mux
-    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6))
-    
+    print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.cb_mux))
+
     # Local mux
-    print_and_write(report_file, "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.local_mux.power/1e-6))
-    
+    print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.logic_cluster.local_mux))
+
     # Local BLE output
     if not fpga_inst.updates:
-        print_and_write(report_file, "  " + BLE.local_output.name.ljust(22) + str(round(area_dict[BLE.local_output.name]/1e6,3)).ljust(13) + 
-            str(round(BLE.local_output.delay/1e-12,4)).ljust(13) + str(round(BLE.local_output.tfall/1e-12,4)).ljust(13) + 
-            str(round(BLE.local_output.trise/1e-12,4)).ljust(13) + str(BLE.local_output.power/1e-6))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.local_output))
     
     # General BLE output
-    print_and_write(report_file, "  " + BLE.general_output.name.ljust(22) + str(round(area_dict[BLE.general_output.name]/1e6,3)).ljust(13) + 
-        str(round(BLE.general_output.delay/1e-12,4)).ljust(13) + str(round(BLE.general_output.tfall/1e-12,4)).ljust(13) + 
-        str(round(BLE.general_output.trise/1e-12,4)).ljust(13) + str(BLE.general_output.power/1e-6))
+    print_and_write(report_file, subcircuit_ADP(area_dict, BLE.general_output))
 
     # General BLE output 3:1
     if fpga_inst.updates:
-        print_and_write(report_file, "  " + BLE.general_output3.name.ljust(22) + str(round(area_dict[BLE.general_output3.name]/1e6,3)).ljust(13) + 
-            str(round(BLE.general_output3.delay/1e-12,4)).ljust(13) + str(round(BLE.general_output3.tfall/1e-12,4)).ljust(13) + 
-            str(round(BLE.general_output3.trise/1e-12,4)).ljust(13) + str(BLE.general_output3.power/1e-6))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.general_output3))
     
     # LUT
-    print_and_write(report_file, "  " + (BLE.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[BLE.lut.name]/1e6,3)).ljust(13) + 
-        str(round(BLE.lut.delay/1e-12,4)).ljust(13) + str(round(BLE.lut.tfall/1e-12,4)).ljust(13) + 
-        str(round(BLE.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+    print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut, BLE.lut.name + " (SRAM to out)", "", "n/a"))
     
     # Get LUT input names so that we can print inputs in sorted order
     lut_input_names = BLE.lut.input_drivers.keys()
@@ -93,61 +81,47 @@ def print_area_and_delay(report_file, fpga_inst):
       
     # LUT input drivers
     for input_name in lut_input_names:
-        lut_input = BLE.lut.input_drivers[input_name]
-        print_and_write(report_file, "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + 
-            str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22))
-
-        driver = BLE.lut.input_drivers[input_name].driver
-        not_driver = BLE.lut.input_drivers[input_name].not_driver
-        print_and_write(report_file, "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + 
-            str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22))
-        print_and_write(report_file, "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + 
-            str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name], "lut_" + input_name, "n/a"))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name].driver))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name].not_driver))
 
     if fpga_inst.updates:
-        print_and_write(report_file, "  " + BLE.fmux.name.ljust(22) + str(round(area_dict[BLE.fmux.name]/1e6,3)).ljust(13) + str(round(BLE.fmux.delay/1e-12,4)).ljust(13) + 
-            str(round(BLE.fmux.tfall/1e-12,4)).ljust(13) + str(round(BLE.fmux.trise/1e-12,4)).ljust(13) + str(BLE.fmux.power/1e-6).ljust(22))
-        print_and_write(report_file, "  " + BLE.fmux_l2.name.ljust(22) + str(round(area_dict[BLE.fmux_l2.name]/1e6,3)).ljust(13) + str(round(BLE.fmux_l2.delay/1e-12,4)).ljust(13) + 
-            str(round(BLE.fmux_l2.tfall/1e-12,4)).ljust(13) + str(round(BLE.fmux_l2.trise/1e-12,4)).ljust(13) + str(BLE.fmux_l2.power/1e-6).ljust(22))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l2))
 
     # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
         #carry path
-        print_and_write(report_file, "  " + (fpga_inst.carrychain.name).ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychain, "", "", "n/a"))
         # Sum inverter
-        print_and_write(report_file, "  " + (fpga_inst.carrychainperf.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainperf, "", "", "n/a"))
         # mux
         if not fpga_inst.updates:
-            print_and_write(report_file, "  " + (fpga_inst.carrychainmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + 
-                str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + 
-                str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+            print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainmux, "", "", "n/a"))
         # Intercluster
-        print_and_write(report_file, "  " + (fpga_inst.carrychaininter.name).ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
-        # total carry chain area
-        print_and_write(report_file, "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13))
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychaininter, "", "", "n/a"))
 
         if fpga_inst.specs.carry_chain_type == "skip":
             # skip and
-            print_and_write(report_file, "  " + (fpga_inst.carrychainand.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + 
-                str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + 
-                str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+            print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainand, "", "", "n/a"))
             # skip mux
-            print_and_write(report_file, "  " + (fpga_inst.carrychainskipmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + 
-                str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + 
-                str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+            print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainskipmux, "", "", "n/a"))
 
+    # Carry chain 2   
+    if fpga_inst.specs.updates == 2:
+        #carry path
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychain2, "", "", "n/a"))
+        # Sum inverter
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainperf2, "", "", "n/a"))
+        # Intercluster
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychaininter2, "", "", "n/a"))
+        
+    if fpga_inst.specs.updates or fpga_inst.specs.enable_carry_chain:
+        # total carry chain area
+        print_and_write(report_file, "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13))
 
 
     for hardblock in fpga_inst.hardblocklist:
-        ############################################
-        ## Size dedicated routing links
-        ############################################
         if hardblock.parameters['num_dedicated_outputs'] > 0:
             print_and_write(report_file, "  dedicated link ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + 
                 str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + 
@@ -158,23 +132,20 @@ def print_area_and_delay(report_file, fpga_inst):
             str(hardblock.mux.power/1e-6).ljust(22))
 
         
-    # Connection block mux
-    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + 
-        str(fpga_inst.cb_mux.power/1e-6))
-    
-    # Switch block mux,
-    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + 
-        str(fpga_inst.sb_mux.power/1e-6).ljust(22))
-    
+    # Connection block mux with sram
+    area = str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3))
+    print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.cb_mux, fpga_inst.cb_mux.name + " with sram", area)) 
+    # Switch block mux with sram
+    area = str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3))
+    print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.sb_mux, fpga_inst.sb_mux.name + " with sram", area)) 
 
     if fpga_inst.specs.enable_bram_block == 0:
         print_and_write(report_file, "\n")
         return 
 
-
-    # RAM
+    ###########    
+    ### RAM ###
+    ###########
 
     # RAM local input mux
     print_and_write(report_file, "  " + fpga_inst.RAM.RAM_local_mux.name.ljust(22) + str(round(fpga_inst.area_dict["ram_local_mux_total"]/1e6,3)).ljust(13) + 
@@ -1212,3 +1183,17 @@ def get_delays(spice_meas):
         valid_delay = False
 
     return trise, tfall, valid_delay
+
+def subcircuit_ADP(area_dict, subcircuit, name = "", area = "", power = ""):
+
+    if name == "":
+        name = subcircuit.name
+    if area == "":
+        area = str(round(area_dict[subcircuit.name]/1e6,3))
+    if power == "":
+        power = str(subcircuit.power/1e-6)
+
+    string = ("  " + name.ljust(22) + area.ljust(13) + str(round(subcircuit.delay/1e-12,4)).ljust(13)
+    + str(round(subcircuit.tfall/1e-12,4)).ljust(13) + str(round(subcircuit.trise/1e-12,4)).ljust(13) + power)
+
+    return string

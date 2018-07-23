@@ -1,4 +1,5 @@
 import math
+import utils
 
 # Note: We generate all LUT netlists with a 6-LUT interface regardless of LUT size.
 # This makes it easier to include the LUT circuitry in other (top-level) netlists.
@@ -485,7 +486,11 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 
 	# the duplicate fmux_l1 loading
 	if updates and lut_input_name == 'f':
-		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l1_nmos\n\n") 
+		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l1_nmos\n\n")
+
+	if updates > 1 and lut_input_name in ('e', 'f'):
+		spice_file.write(utils.create_wire("n_1", "n_1_1", "lut_" + lut_input_name + "_driver", "cc2"))
+		spice_file.write("Xcarry_chain2_load n_1_1 gnd vdd n_cout n_sum_out2 n_p_3 vdd gnd FA_carry_chain2\n") 
 
 	spice_file.write(".ENDS\n\n\n")
 	

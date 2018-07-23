@@ -632,8 +632,6 @@ class _LocalMUX(_SizableCircuit):
         area_dict[self.name + "_sram"] = area_with_sram
         width_dict[self.name + "_sram"] = width_with_sram
 
-
-
     
     def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
@@ -970,16 +968,6 @@ class _LUTInputDriverLoad:
         self.use_tgate = use_tgate
         self.use_fluts = use_fluts
         self.updates = updates
-    
-    
-    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
-        """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
-
-        # Update wire lengths
-        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio
-        
-        # Update set wire layers
-        wire_layers["wire_lut_" + self.name + "_driver_load"] = 0
         
         
     def generate(self, subcircuit_filename, K):
@@ -991,14 +979,27 @@ class _LUTInputDriverLoad:
             self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts, self.updates)
         else :
             self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts, self.updates)
+
+
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
+        """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
+
+        # Update wire lengths
+        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio       
+        # Update set wire layers
+        wire_layers["wire_lut_" + self.name + "_driver_load"] = 0
+
+        # if new design, add the wire connecting the e and f inputs to the second carry chain
+        if self.updates > 1 and self.name in ("e", "f"):
+            # Update wire lengths
+            wire_lengths["wire_lut_" + self.name + "_driver_to_cc2"] = width_dict["lut"] * ratio + width_dict["carry_chain"]      
+            # Update set wire layers
+            wire_layers["wire_lut_" + self.name + "_driver_to_cc2"] = 0
         
         
     def print_details(self):
         print "LUT input driver load details."
-
-
-
-        
+   
         
 class _LUT(_SizableCircuit):
     """ Lookup table. """
@@ -1549,8 +1550,6 @@ class _CarryChainPer(_SizableCircuit):
          # Call the constructor of the base class to initialize all
         # its local variables
         _SizableCircuit.__init__(self, "carry_chain_perf", use_tgate, use_finfet)
-        # instance id
-        self.id = str(_CarryChainPer.number)
         # carry chain type either ripple or skip
         self.carry_chain_type = carry_chain_type
         # handled in the check_arch_params funciton in utils.py
@@ -1564,7 +1563,7 @@ class _CarryChainPer(_SizableCircuit):
         self.id = _CarryChainPer.number
         # if this is update 2 and this is the second adder add 2 to its name
         if updates == 2 and self.id == 2:
-            self.name += self.id
+            self.name += str(self.id)
 
         # Increment the static variable number each time a new instance is created
         _CarryChainPer.number += 1
@@ -1581,11 +1580,11 @@ class _CarryChainPer(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
 
         if self.updates == 1:
-            self.wire_names.append(utils.wire_name("cc_sout", "reg2_sel"))
+            self.wire_names.append(utils.wire_name("cc_sout", "reg3_sel"))
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
-        elif self.updates == 2:
+        elif self.updates > 1:
             if self.id == 2:
-                self.wire_names.append(utils.wire_name("cc2_sout", "reg2_sel"))
+                self.wire_names.append(utils.wire_name("cc2_sout", "reg3_sel"))
                 
     
         return self.initial_transistor_sizes
@@ -1612,13 +1611,13 @@ class _CarryChainPer(_SizableCircuit):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         # TODO: revise this line 
         if self.updates == 1:
-            wire_lengths[utils.wire_name("cc_sout", "reg2_sel")] = width_dict["lut"]
-            wire_layers[utils.wire_name("cc_sout", "reg2_sel")] = 0
+            wire_lengths[utils.wire_name("cc_sout", "reg3_sel")] = width_dict["lut"]
+            wire_layers[utils.wire_name("cc_sout", "reg3_sel")] = 0
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
-        elif self.updates == 2:
+        elif self.updates > 1:
             if self.id == 2:
-                wire_lengths[utils.wire_name("cc2_sout", "reg2_sel")] = width_dict["lut"]/2
-                wire_layers[utils.wire_name("cc2_sout", "reg2_sel")] = 0
+                wire_lengths[utils.wire_name("cc2_sout", "reg3_sel")] = width_dict["lut"]/2
+                wire_layers[utils.wire_name("cc2_sout", "reg3_sel")] = 0
 
 
 class _CarryChain(_SizableCircuit):
@@ -1640,10 +1639,10 @@ class _CarryChain(_SizableCircuit):
         # Boolean for applying updates
         self.updates = updates
         # Instance id
-        self.id = str(_CarryChain.number)
+        self.id = _CarryChain.number
         # if this is update 2 and this is the second adder add 2 to its name
         if updates == 2 and self.id == 2:
-            self.name += self.id
+            self.name += str(self.id)
         # Increment the static varible number with one each time you create instance
         _CarryChain.number += 1
 
@@ -1673,6 +1672,8 @@ class _CarryChain(_SizableCircuit):
             elif self.id == 2:
                 # this wire is needed in the simulation of the carry chain perf of carry chain 1
                 self.wire_names.append(utils.wire_name("cc1_sout", self.name))
+                if self.updates == 3:
+                    self.wire_names.append(utils.wire_name("cc1_sout", "reg4_sel"))
 
         return self.initial_transistor_sizes
 
@@ -1689,7 +1690,7 @@ class _CarryChain(_SizableCircuit):
 
         area = area_dict["inv_"+self.name+"_1"] * 2 + area_dict["inv_"+self.name+"_2"] + area_dict["tgate_"+self.name+"_1"] * 4 + area_dict["tgate_"+self.name+"_2"] * 4
 
-        if self.updates == 2 and self.id == 2:
+        if self.updates > 1 and self.id == 2:
             area += area_dict["carry_chain_perf2"]
         else:
             area += area_dict["carry_chain_perf"]
@@ -1730,6 +1731,9 @@ class _CarryChain(_SizableCircuit):
             elif self.id == 2:
                 wire_lengths[utils.wire_name("cc1_sout", "cc2")] = (width_dict[self.name] + width_dict["carry_chain"])/4
                 wire_layers[utils.wire_name("cc1_sout", "cc2")] = 0
+                if self.updates == 3:
+                    wire_lengths[utils.wire_name("cc1_sout", "reg4_sel")] = width_dict[self.name]
+                    wire_layers[utils.wire_name("cc1_sout", "reg4_sel")] = 0
 
 
     def print_details(self):
@@ -1825,10 +1829,10 @@ class _CarryChainInterCluster(_SizableCircuit):
         # length of the wire between cout of a cluster to cin of the other
         self.inter_wire_length = inter_wire_length
         # Instance id
-        self.id = str(_CarryChainInterCluster.number)
+        self.id = _CarryChainInterCluster.number
         # if this is update 2 and this is the second adder add 2 to its name
-        if updates == 2 and _CarryChainInterCluster.number == 2:
-            self.name += self.id
+        if updates == 2 and self.id == 2:
+            self.name += str(self.id)
         # increment the static variable with 1 when creating a new instance
         _CarryChainInterCluster.number += 1
 
@@ -2711,10 +2715,14 @@ class _BLE(_CompoundCircuit):
         if specs.updates:
             self.ff  = _FlipFlop('z', specs.use_tgate, specs.use_finfet)
             self.subcircuits[self.ff.name] = self.ff
-            self.ff2 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 2, True)
-            self.subcircuits[self.ff2.name] = self.ff2
             self.ff3 = _FlipFlop('b', specs.use_tgate, specs.use_finfet, 3, True)
             self.subcircuits[self.ff3.name] = self.ff3
+            if specs.updates != 3:
+                self.ff2 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 2, True)
+                self.subcircuits[self.ff2.name] = self.ff2
+            else:
+                self.ff4 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 4, True)
+                self.subcircuits[self.ff4.name] = self.ff4
 
         # Create LUT output load object
         self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs, self.use_fluts,
@@ -2772,7 +2780,9 @@ class _BLE(_CompoundCircuit):
         area_dict["ble_output"] = ble_output_area
         width_dict["ble_output"] = ble_output_width
 
-        if self.updates:
+        if self.updates == 3:
+            ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + areas[self.ff3.name] + areas[self.ff4.name] + ble_output_area
+        elif self.updates:
             ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + areas[self.ff2.name] + areas[self.ff3.name] + ble_output_area
         elif self.use_fluts:
             ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + ble_output_area
@@ -2786,8 +2796,9 @@ class _BLE(_CompoundCircuit):
                     ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
         else:
             ble_area += area_dict["carry_chain"] * self.FAs_per_flut
-            if self.carry_skip_periphery_count == 1:
-                ble_area += ((area_dict["xcarry_chain_and"] + area_dict["xcarry_chain_mux"]) * self.carry_skip_periphery_count)/self.N
+            
+            if self.updates > 1:
+                ble_area += area_dict["carry_chain2"] * self.FAs_per_flut
 
 
         ble_width = math.sqrt(ble_area)
@@ -2804,13 +2815,17 @@ class _BLE(_CompoundCircuit):
         self.lut.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
         self.ff.update_wires(width_dict, wire_lengths, wire_layers)
 
-        if self.updates:
+        if self.updates == 3:
+            self.ff4.update_wires(width_dict, wire_lengths, wire_layers)
+            self.ff3.update_wires(width_dict, wire_lengths, wire_layers)
+        elif self.updates:
             self.ff3.update_wires(width_dict, wire_lengths, wire_layers)
             self.ff2.update_wires(width_dict, wire_lengths, wire_layers)
         
         # Update BLE output wires
         if not self.updates:
             self.local_output.update_wires(width_dict, wire_lengths, wire_layers)
+
         self.general_output.update_wires(width_dict, wire_lengths, wire_layers)
         
         if self.updates:
@@ -2818,7 +2833,6 @@ class _BLE(_CompoundCircuit):
 
         # Wire connecting all BLE output mux-inputs together, in the net list this wire is divided into different wires
         # depending on the number of muxes we have. The number of individual wires equals to the total number of muxes - 1
-        # TODO: the new architecture won't have this wire
         if not self.updates:
             wire_lengths["wire_ble_outputs"] = self.num_local_outputs*width_dict[self.local_output.name] + self.num_general_outputs*width_dict[self.general_output.name]
             wire_layers["wire_ble_outputs"] = 0
@@ -5598,7 +5612,7 @@ class FPGA:
 
         # IMPORTANT: this should be always created after the fist carry chain, since its internal name has to do with this oder
 
-        if self.updates == 2:
+        if self.updates > 1:
             self.carrychain2 = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.updates)
             self.carrychainperf2 = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate, self.updates)
             self.carrychaininter2 = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length, self.updates)
@@ -5752,7 +5766,7 @@ class FPGA:
                 self.subcircutis[self.carrychainand.name] = self.carrychainand   
 
         # Carry Chain 2 for the new architecure
-        if self.updates == 2:
+        if self.updates > 1:
             self.subcircuits[self.carrychain2.name] = self.carrychain2
             self.subcircuits[self.carrychainperf2.name] = self.carrychainperf2
             self.subcircuits[self.carrychaininter2.name] = self.carrychaininter2 
@@ -5812,7 +5826,7 @@ class FPGA:
                 self.transistor_sizes.update(self.carrychainskipmux.generate(self.subcircuits_filename))
 
         # generate the carry chain of the new architecture
-        if self.updates == 2:
+        if self.updates > 1:
             self.transistor_sizes.update(self.carrychain2.generate(self.subcircuits_filename))
             self.transistor_sizes.update(self.carrychainperf2.generate(self.subcircuits_filename))
             self.transistor_sizes.update(self.carrychaininter2.generate(self.subcircuits_filename))
@@ -5853,7 +5867,7 @@ class FPGA:
                 self.carrychainskipmux.generate_top()
 
         # generate the top of second carry chain
-        if self.updates == 2:
+        if self.updates > 1:
             self.carrychain2.generate_top()
             self.carrychainperf2.generate_top()
             self.carrychaininter2.generate_top()
@@ -5912,7 +5926,7 @@ class FPGA:
                 self.carrychainskipmux.update_area(self.area_dict, self.width_dict)
 
         # carry chain 2
-        if self.updates == 2:
+        if self.updates > 1:
             self.carrychainperf2.update_area(self.area_dict, self.width_dict)
             self.carrychaininter2.update_area(self.area_dict, self.width_dict)
             self.carrychain2.update_area(self.area_dict, self.width_dict)
@@ -5951,12 +5965,20 @@ class FPGA:
             self.width_dict["lut_total"] = math.sqrt(lut_area)
             
             # Calculate total ff area
-            if self.updates:
+            if self.updates == 3:
+                ff_area = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff3.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff4.name])
+            elif self.updates:
                 ff_area = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
                                           self.area_dict[self.logic_cluster.ble.ff2.name] +
                                           self.area_dict[self.logic_cluster.ble.ff3.name])
             else:
                 ff_area = self.specs.N * self.area_dict[self.logic_cluster.ble.ff.name]
+                # TODO: fluts have double the number of ff
+                #if self.use_fluts:
+                #    ff_area *= 2
+
             self.area_dict["ff_total"] = ff_area
             self.width_dict["ff_total"] = math.sqrt(ff_area)
             
@@ -5970,7 +5992,7 @@ class FPGA:
             if self.specs.enable_carry_chain == 1:
                 cluster_area += self.area_dict[self.carrychaininter.name]
 
-            if self.updates == 2:
+            if self.updates > 1:
                 cluster_area += self.area_dict[self.carrychaininter2.name]
 
         else:
@@ -5991,7 +6013,11 @@ class FPGA:
                 ffableout_area_total = self.specs.N*self.area_dict[self.logic_cluster.ble.ff.name]
                 if self.specs.use_fluts:
                     ffableout_area_total = 2 * ffableout_area_total
-            else:
+            elif self.updates == 3:
+                ffableout_area_total = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
+                                                         self.area_dict[self.logic_cluster.ble.ff3.name] +
+                                                         self.area_dict[self.logic_cluster.ble.ff4.name])
+            elif self.updates:
                 ffableout_area_total = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
                                                          self.area_dict[self.logic_cluster.ble.ff2.name] +
                                                          self.area_dict[self.logic_cluster.ble.ff3.name])
@@ -6013,7 +6039,7 @@ class FPGA:
                 cc_area_total = self.specs.N * 2 * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
 
             # if new architecture add the second carry chain
-            if self.updates == 2:
+            if self.updates > 1:
                 cc_area_total += self.specs.N * 2 * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
 
 
@@ -6030,7 +6056,12 @@ class FPGA:
             self.width_dict["lut_total"] = math.sqrt(lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"])
 
             # Calculate total ff area
-            if self.updates:
+            
+            if self.updates == 3:
+                ff_area = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff3.name] +
+                                          self.area_dict[self.logic_cluster.ble.ff4.name])
+            elif self.updates:
                 ff_area = self.specs.N * (2*self.area_dict[self.logic_cluster.ble.ff.name] +
                                           self.area_dict[self.logic_cluster.ble.ff2.name] +
                                           self.area_dict[self.logic_cluster.ble.ff3.name])
@@ -6056,18 +6087,18 @@ class FPGA:
         # already included in bles, extracting for the report
         if not self.updates:
             if self.specs.enable_carry_chain:
-                carry_chain_area = (self.specs.N*( self.specs.FAs_per_flut * self.area_dict[self.carrychain.name] + 
-                    (self.specs.FAs_per_flut) *  self.area_dict[self.carrychainmux.name]) + self.area_dict[self.carrychaininter.name])
+                carry_chain_area = self.specs.N * self.specs.FAs_per_flut * (self.area_dict[self.carrychain.name] + self.area_dict[self.carrychainmux.name])
+                carry_chain_area +=  self.area_dict[self.carrychaininter.name]
                 if self.specs.carry_chain_type == "skip":
                     self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
                     carry_chain_area += self.carry_skip_periphery_count *(self.area_dict["xcarry_chain_and"] + self.area_dict["xcarry_chain_mux"])
-        if self.updates:
-            carry_chain_area = self.specs.N * 2 * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
+        elif self.updates:
+            carry_chain_area = self.specs.N * self.specs.FAs_per_flut * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
 
-        if self.updates == 2:
-            carry_chain_area += self.specs.N * 2 * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
+        if self.updates > 1:
+            carry_chain_area += self.specs.N * self.specs.FAs_per_flut * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
             
-        if self.specs.enable_carry_chain:
+        if self.updates or self.specs.enable_carry_chain:
             self.area_dict["total_carry_chain"] = carry_chain_area
         
         # Calculate tile area
@@ -6451,7 +6482,7 @@ class FPGA:
                 self.carrychainskipmux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
 
         # updates wirs for the new architecture
-        if self.updates == 2:
+        if self.updates > 1:
             self.carrychain2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
             self.carrychainperf2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
             self.carrychaininter2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
@@ -7647,7 +7678,7 @@ class FPGA:
                 if subcircuit == self.carrychainmux:
                     return False
 
-        if self.updates == 2:
+        if self.updates > 1:
             if (subcircuit == self.carrychain2 or
                 subcircuit == self.carrychainperf2 or
                 subcircuit == self.carrychaininter2): 

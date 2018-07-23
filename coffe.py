@@ -103,7 +103,8 @@ total_start_time = time.time()
 # this controles appyling or disabling the new updates
 
 # 1 ------> Stratix10
-# 2 ------> Adding second level of adderss
+# 2 ------> Adding second level of adders
+# 3 ------> Adding a by pass mux for the second level of adders
 arch_params_dict['updates'] = 1
 
 

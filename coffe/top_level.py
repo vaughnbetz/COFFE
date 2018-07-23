@@ -4294,7 +4294,13 @@ def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
     n = ""
     # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
     # while b is connected to a ff with a 3:1 input select mux (called ff3)
-    if updates:
+    # Adding the second level of carry chains in update 3 the mux sizes has increased by 1
+    if updates == 3:
+        if lut_letter == 'a':
+            n = "3"
+        elif lut_letter == 'b':
+            n = "4"
+    elif updates:
         if lut_letter == 'a':
             n = "2"
         elif lut_letter == 'b':
@@ -4393,7 +4399,13 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type, updates):
     n = ""
     # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
     # while b is connected to a ff with a 3:1 input select mux (called ff3)
-    if updates:
+    # Adding the second level of carry chains, has increased the mux sizes by 1
+    if updates == 3:
+        if lut_letter == 'a':
+            n = "3"
+        elif lut_letter == 'b':
+            n = "4"
+    elif updates:
         if lut_letter == 'a':
             n = "2"
         elif lut_letter == 'b':
@@ -4495,11 +4507,19 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     n_out = "n_out"
     # for the new design the a is connected to a ff with a 2:1 input select mux (called ff2)
     # while b is connected to a ff with a 3:1 input select mux (called ff3)
-    if updates:
+    # Adding the second level of carry chains has increase the mux sizes by 1
+    if updates == 3:
+        if lut_letter == 'a':
+            n = "3"
+        elif lut_letter == 'b':
+            n = "4"
+    elif updates:
         if lut_letter == 'a':
             n = "2"
         elif lut_letter == 'b':
             n = "3"
+
+    if updates:
         if lut_letter == 'e':
             n_g_f1 = "n_3_1"
             n_out = "n_out1"
@@ -4573,6 +4593,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("********************************************************************************\n\n")    
     spice_file.write("Xcb_mux_on_1 n_in_gate n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
     spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
+    spice_file.write("* Note that only the first K inputs of the lut are actually connected to inside the lut subcircuit\n")
     spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n\n")
 
     # Connect a load to n_rsel node
@@ -4599,7 +4620,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
         # since d only see one transistor as loading no need to add the loading to this circuit
         # however, for the other inputs there is at least one more transistor that needs to be added as loading
         # at the lut input node since the lut component only has on transistor in it connected to the input
-        if lut_letter != 'f' and lut_letter != 'd':
+        if lut_letter != 'd':
             spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
         spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
         if lut_letter == 'e' or lut_letter == 'f':
@@ -5224,14 +5245,21 @@ def generate_carry_chain_ripple_top(name, updates, id):
     top_file.write("Xinv n_1_3 n_out vdd_test gnd carry_chain_perf"+n+"\n\n")
     
     top_file.write("* Loading at the sum out port of the carry chain full adder\n")
-    if updates == 1 or (updates == 2 and id == 2):
-        top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg2_sel"))
+    if updates == 1:
+        top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
-        top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n")
-    elif updates == 2:
+        top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
+    elif updates == 2 and id == 2:
+        top_file.write(utils.create_wire("n_out", "n_1_4", "cc2_sout", "reg3_sel"))
+        top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
+        top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
+    elif updates:
         if id == 1:
             top_file.write(utils.create_wire("n_out", "n_1_4", "cc1_sout", "cc2"))
-            top_file.write("Xcarrychain2_main n_1_4 gnd gnd n_hang_3 n_hand_4 n_p_4 vdd gnd FA_carry_chain2\n")
+            top_file.write("Xcarrychain2_load n_1_4 gnd gnd n_hang_3 n_hand_4 n_p_4 vdd gnd FA_carry_chain2\n\n")
+            if updates == 3:
+                top_file.write(utils.create_wire("n_out", "n_1_5", "cc1_sout", "reg4_sel"))
+                top_file.write("Xff4 n_1_5 n_1_6 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
     else:
         # generate typical load
         top_file.write("Xthemux n_out n_out2 vdd gnd vdd gnd carry_chain_mux\n\n")  
