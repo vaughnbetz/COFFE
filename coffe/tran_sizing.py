@@ -12,6 +12,7 @@ import time
 import spice
 from itertools import product
 import sys
+import utils
 
 # This flag controls whether or not to print a bunch of ERF messages to the terminal
 ERF_MONITOR_VERBOSE = True
@@ -321,7 +322,13 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 			# The skip is pretty much dependent on size, I'll just assume 4 skip stages for now. However, it should work for any number of bits.
 		elif fpga_inst.specs.carry_chain_type == "skip":
 			# The critical path is the ripple path and the skip of the first one + the skip path of blocks in between, and the ripple and sum of the last block + the time it takes to load the wire in between
-			path_delay = (fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay
+			path_delay = ((fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + 
+			fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay)
+
+		# if we have a second layer of carry chains add their delay to the critical path
+		if fpga_inst.specs.updates > 1:
+			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain2.delay + fpga_inst.carrychainperf2.delay + fpga_inst.carrychaininter2.delay
+
 		return path_delay
 
 		
@@ -587,7 +594,13 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 			# The skip is pretty much dependent on size, I'll just assume 4 skip stages for now. However, it should work for any number of bits.
 		elif fpga_inst.specs.carry_chain_type == "skip":
 			# The critical path is the ripple path and the skip of the first one + the skip path of blocks in between, and the ripple and sum of the last block + the time it takes to load the wire in between
-			path_delay = (fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay
+			path_delay = ((fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + 
+			fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay)
+
+		# if we have another layer of carry chains add their delay to the critical path
+		if fpga_inst.specs.updates > 1:
+			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain2.delay + fpga_inst.carrychainperf2.delay + fpga_inst.carrychaininter2.delay
+
 		return path_delay
 
 
@@ -2448,7 +2461,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		### Debugging ###
 		#################
 
-	
+
 		#exit()
 
 		
@@ -3041,6 +3054,111 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				time_before_sizing = time.time()
 
 
+		if fpga_inst.specs.updates > 1:
+			############################################
+			## Size Carry Chain 2
+			############################################
+			name = fpga_inst.carrychain2.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychain2.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychain2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size Carry Chain 2 Sum Path
+			############################################
+			name = fpga_inst.carrychainperf2.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainperf2.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainperf2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size Carry Inter 2 Cluster Path
+			############################################
+			name = fpga_inst.carrychaininter2.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychaininter2.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychaininter2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+			time_before_sizing = time.time()
+
 
 		##################
 		### Sizing RAM ###
@@ -3490,66 +3608,15 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	return 
 
 
-def override_transistor_sizes(fpga_inst, initial_sizes) :
-	# switch block mux transistors
-	for trans in fpga_inst.sb_mux.initial_transistor_sizes :
-		if trans in fpga_inst.sb_mux.initial_transistor_sizes and trans in initial_sizes:
-			fpga_inst.sb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-	# connection block mux transistors
-	for trans in fpga_inst.cb_mux.initial_transistor_sizes :
-		if trans in fpga_inst.cb_mux.initial_transistor_sizes and trans in initial_sizes:
-			fpga_inst.cb_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-	# local routing mux transistors
-	for trans in fpga_inst.logic_cluster.local_mux.initial_transistor_sizes :
-		if trans in fpga_inst.logic_cluster.local_mux.initial_transistor_sizes and trans in initial_sizes:
-			fpga_inst.logic_cluster.local_mux.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-	# LUT
-	for trans in fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes :
-		if trans in fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes and trans in initial_sizes:
-			fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-	# LUT input drivers
-	for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
-
-		for trans in input_driver.driver.initial_transistor_sizes :
-			if trans in input_driver.driver.initial_transistor_sizes and trans in initial_sizes:
-				input_driver.driver.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-		for trans in input_driver.not_driver.initial_transistor_sizes :
-			if trans in input_driver.not_driver.initial_transistor_sizes and trans in initial_sizes:
-				input_driver.not_driver.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-	if not fpga_inst.updates:
-		# local ble output transistors
-		for trans in fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes :
-			if trans in fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes and trans in initial_sizes:
-				fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes[trans] = initial_sizes[trans]
+def overwrite_transistor_sizes(fpga_inst, initial_sizes) :
+	""" overwrite all the transisotr sizes given in the initial transistor sizes file"""
 	
-	# general ble output transistors
-	for trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes :
-		if trans in fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes and trans in initial_sizes:
-			fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes[trans] = initial_sizes[trans]
+	for subcircuit in fpga_inst.subcircuits.values():
+		utils.load_tran_sizes(subcircuit, initial_sizes)
 
-
-	if fpga_inst.updates:
-		# general ble output 3:1 transistors
-		for trans in fpga_inst.logic_cluster.ble.general_output3.initial_transistor_sizes :
-			if trans in fpga_inst.logic_cluster.ble.general_output3.initial_transistor_sizes and trans in initial_sizes:
-				fpga_inst.logic_cluster.ble.general_output3.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-		# flut l1 mux
-		for trans in fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes :
-			if trans in fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes and trans in initial_sizes:
-				fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes[trans] = initial_sizes[trans]
-
-		# flut l2 mux
-		for trans in fpga_inst.logic_cluster.ble.fmux_l2.initial_transistor_sizes :
-			if trans in fpga_inst.logic_cluster.ble.fmux_l2.initial_transistor_sizes and trans in initial_sizes:
-				fpga_inst.logic_cluster.ble.fmux_l2.initial_transistor_sizes[trans] = initial_sizes[trans]
- 
+	for input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.values():
+		utils.load_tran_sizes(input_driver.driver, initial_sizes)
+		utils.load_tran_sizes(input_driver.not_driver, initial_sizes)
 
 
 def print_final_transistor_size(fpga_inst, report_file_name):

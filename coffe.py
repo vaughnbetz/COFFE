@@ -102,10 +102,11 @@ total_start_time = time.time()
 # code is working after adding any change
 # this controles appyling or disabling the new updates
 
+# This is commented since it was added to the architecture description file
 # 1 ------> Stratix10
 # 2 ------> Adding second level of adders
 # 3 ------> Adding a by pass mux for the second level of adders
-arch_params_dict['updates'] = 1
+# arch_params_dict['updates'] = 1
 
 
 # Create an FPGA instance
@@ -149,7 +150,6 @@ sys.stdout.flush()
 
 # Size FPGA transistors
 if is_size_transistors:
-    # TODO: pass the args object instead of passing all its memebers
     tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
 else:
   # in case of disabeling floorplanning there is no need to 

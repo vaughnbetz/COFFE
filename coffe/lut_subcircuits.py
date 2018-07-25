@@ -476,7 +476,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n\n")
 	for ptran in range(1, num_ptran_load + 1):
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
-		# TODO: clean those conditions
+
 		if not updates and (use_fluts and num_ptran_load == 1):
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n\n") 
 		elif finput:

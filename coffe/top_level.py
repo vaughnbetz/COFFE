@@ -76,7 +76,6 @@ def generate_switch_block_top(mux_name):
     
 def generate_connection_block_top(mux_name):
     """ Generate the top level switch block SPICE file """
-    # TODO: why is the connection block using the switch block mux!!!
     
     # Create directories
     if not os.path.exists(mux_name):
@@ -3979,12 +3978,6 @@ def generate_RAM_local_mux_top_lp(mux_name):
 def generate_lut6_top(lut_name, use_tgate):
     """ Generate the top level 6-LUT SPICE file """
 
-    """
-    TODO:
-    - This should be modified for the case of FLUTs since the LUTs in this case are loaded differently
-      they are loaded with a full adder and the input to the flut mux and not with the lut output load.
-    """
-
     # Create directory
     if not os.path.exists(lut_name):
         os.makedirs(lut_name)  
@@ -4080,10 +4073,10 @@ def generate_lut6_top(lut_name, use_tgate):
     lut_file.write("** Circuit\n")
     lut_file.write("********************************************************************************\n\n")
 
-    if not use_tgate :
+    if not use_tgate:
         lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
-    else :
+    else:
         lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
@@ -4527,7 +4520,6 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             n_g_f2 = "n_3_1"
             n_out = "n_out3"
 
-    # TODO: for the new design the inputs are connected in a different way update that
 
     # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
     # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
@@ -4800,11 +4792,11 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     if updates:
         if input_size == 2:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-            top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_0_2 vdd gnd vdd vdd vdd flut_output_load\n\n")
-            top_file.write(utils.create_wire("n_0_2", "n_1_1", "fmux_l1_duplicte", "ff"))
-            top_file.write("Xff n_1_1 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
-            top_file.write(utils.create_wire("n_1_1", "n_1_2", "ffin", "gbo2"))
-            top_file.write("Xgeneral_ble_output n_1_2 n_general_out vdd gnd vdd_general_output gnd general_ble_output\n\n")
+            top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_1_1 vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write(utils.create_wire("n_1_1", "n_1_2", "fmux_l1_duplicte", "ff"))
+            top_file.write("Xff n_1_2 n_hang2 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
+            top_file.write(utils.create_wire("n_1_2", "n_1_3", "ffin", "gbo2"))
+            top_file.write("Xgeneral_ble_output n_1_3 n_general_out vdd gnd vdd_general_output gnd general_ble_output\n\n")
         elif input_size == 3:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
             top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
@@ -5249,7 +5241,7 @@ def generate_carry_chain_ripple_top(name, updates, id):
         top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
         top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
-    elif updates == 2 and id == 2:
+    elif updates and id == 2:
         top_file.write(utils.create_wire("n_out", "n_1_4", "cc2_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
         top_file.write("Xff3 n_1_4 n_1_5 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")

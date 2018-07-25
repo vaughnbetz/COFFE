@@ -311,7 +311,7 @@ class _SwitchBlockMUX(_SizableCircuit):
         self.num_unused_inputs = self.implemented_size - self.required_size
         self.sram_per_mux = self.level1_size + self.level2_size
         
-        # TODO: wouldn't it be better for inv 1 to start with pmos = 8 and nmos = 4
+        
         # Call MUX generation function
         if not self.use_tgate :
             self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux(subcircuit_filename, self.name, self.level1_size, self.level2_size)
@@ -1562,7 +1562,7 @@ class _CarryChainPer(_SizableCircuit):
         # Instance id
         self.id = _CarryChainPer.number
         # if this is update 2 and this is the second adder add 2 to its name
-        if updates == 2 and self.id == 2:
+        if updates and self.id == 2:
             self.name += str(self.id)
 
         # Increment the static variable number each time a new instance is created
@@ -1571,7 +1571,7 @@ class _CarryChainPer(_SizableCircuit):
 
     def generate(self, subcircuit_filename):
         """ Generate the SPICE netlists."""  
-
+        print("Generatign " + self.name)
 
         # if type is skip, we need to generate two levels of nand + not for the and tree
         # if type is ripple, we need to add the delay of one inverter for the final sum.
@@ -1590,6 +1590,7 @@ class _CarryChainPer(_SizableCircuit):
         return self.initial_transistor_sizes
     def generate_top(self):
         """ Generate Top-level Evaluation Path for the Carry chain """
+        print("Generating top-level " + self.name)
 
         if self.carry_chain_type == "ripple":
             self.top_spice_path = top_level.generate_carry_chain_ripple_top(self.name, self.updates, self.id)
@@ -1620,6 +1621,7 @@ class _CarryChainPer(_SizableCircuit):
                 wire_layers[utils.wire_name("cc2_sout", "reg3_sel")] = 0
 
 
+
 class _CarryChain(_SizableCircuit):
     """ Carry Chain class.    """
 
@@ -1641,7 +1643,7 @@ class _CarryChain(_SizableCircuit):
         # Instance id
         self.id = _CarryChain.number
         # if this is update 2 and this is the second adder add 2 to its name
-        if updates == 2 and self.id == 2:
+        if updates and self.id == 2:
             self.name += str(self.id)
         # Increment the static varible number with one each time you create instance
         _CarryChain.number += 1
@@ -1649,6 +1651,7 @@ class _CarryChain(_SizableCircuit):
 
     def generate(self, subcircuit_filename):
         """ Generate Carry chain SPICE netlists."""  
+        print("Generating " + self.name)
 
         self.transistor_names, self.wire_names = lut_subcircuits.generate_full_adder_simplified(subcircuit_filename, self.name, self.use_finfet)
 
@@ -1680,7 +1683,7 @@ class _CarryChain(_SizableCircuit):
 
     def generate_top(self):
         """ Generate Top-level Evaluation Path for Carry chain """
-
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_carrychain_top(self.name)
 
 
@@ -1831,7 +1834,7 @@ class _CarryChainInterCluster(_SizableCircuit):
         # Instance id
         self.id = _CarryChainInterCluster.number
         # if this is update 2 and this is the second adder add 2 to its name
-        if updates == 2 and self.id == 2:
+        if updates and self.id == 2:
             self.name += str(self.id)
         # increment the static variable with 1 when creating a new instance
         _CarryChainInterCluster.number += 1
@@ -1839,6 +1842,7 @@ class _CarryChainInterCluster(_SizableCircuit):
 
     def generate(self, subcircuit_filename):
         """ Generate Carry chain SPICE netlists."""  
+        print("Generating " + self.name)
 
         self.transistor_names, self.wire_names = lut_subcircuits.generate_carry_inter(subcircuit_filename, self.name)
 
@@ -1851,7 +1855,7 @@ class _CarryChainInterCluster(_SizableCircuit):
 
     def generate_top(self):
         """ Generate Top-level Evaluation Path for Carry chain """
-
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_carry_inter_top(self.name, self.id)
 
     def update_area(self, area_dict, width_dict):
@@ -2626,9 +2630,8 @@ class _MUX(_SizableCircuit):
 
     def update_wires(self, width_dict, wire_lengths, wire_layers, ratio = 1.0):
         """ Update wire of member objects. """
-        # TODO: There should be a class mux that handles this stuff
+
         # Update wire lengths
-        
         if self.input_size == 2:
             wire_lengths["wire_" + self.name] = width_dict[self.switch + self.name]
         elif self.input_size > 2:
@@ -6512,7 +6515,6 @@ class FPGA:
 
 
 
-    #TODO: break this into different functions or form a loop out of it; it's too long
     def update_delays(self, spice_interface):
         """ 
         Get the HSPICE delays for each subcircuit. 

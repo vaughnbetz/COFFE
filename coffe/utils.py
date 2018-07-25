@@ -85,8 +85,11 @@ def print_area_and_delay(report_file, fpga_inst):
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name].driver))
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name].not_driver))
 
-    if fpga_inst.updates:
+    # flut muxes
+    if fpga_inst.specs.use_fluts:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux))
+
+    if fpga_inst.updates:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l2))
 
     # Carry chain    
@@ -108,7 +111,7 @@ def print_area_and_delay(report_file, fpga_inst):
             print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainskipmux, "", "", "n/a"))
 
     # Carry chain 2   
-    if fpga_inst.specs.updates == 2:
+    if fpga_inst.specs.updates > 1:
         #carry path
         print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychain2, "", "", "n/a"))
         # Sum inverter
@@ -426,6 +429,7 @@ def load_arch_params(filename):
         'switch_type': "",
         'use_tgate': False,
         'use_finfet': False,
+        'updates': 0,
         'memory_technology': "SRAM",
         'enable_bram_module': 0,
         'ram_local_mux_size': 25,
@@ -534,6 +538,8 @@ def load_arch_params(filename):
             arch_params['switch_type'] = value        
             if value == 'transmission_gate':
                 arch_params['use_tgate'] = True
+        elif param == 'updates':
+            arch_params['updates'] = int(value)
         elif param == 'memory_technology':
             arch_params['memory_technology'] = value
         elif param == 'vdd':
@@ -888,7 +894,9 @@ def check_arch_params (arch_params, filename):
     if arch_params['enable_bram_module'] == 1 and arch_params['use_finfet'] == True:
         print_error_not_compatable("finfet", "BRAM")           
     if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
-        print_error_not_compatable("finfet", "flut")           
+        print_error_not_compatable("finfet", "flut")    
+    if arch_params['updates'] < 0 or arch_params['updates'] > 3:
+        print_error (str(arch_params['updates']), "updates", filename)      
 
 
 
@@ -1029,7 +1037,7 @@ def use_initial_tran_size(initial_sizes, fpga_inst, tran_sizing, use_tgate):
     print "Extracting initial transistor sizes from: " + initial_sizes
     initial_tran_size = extract_initial_tran_size(initial_sizes, use_tgate)
     print "Setting transistor sizes to extracted values"
-    tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
+    tran_sizing.overwrite_transistor_sizes(fpga_inst, initial_tran_size)
     for tran in initial_tran_size :
         fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
     print "Re-calculating area..."
@@ -1134,6 +1142,7 @@ def print_summary(arch_folder, fpga_inst, start_time):
     print_and_write(report_file, "  SUMMARY")
     print_and_write(report_file, "  -------")
     print_and_write(report_file, "  Tile Area                            " + str(round(fpga_inst.area_dict["tile"]/1e6,2)) + " um^2")
+    print_and_write(report_file, "  Tile Height                          " + str(round(fpga_inst.lb_height/1e3,2)) + " um")
     print_and_write(report_file, "  Representative Critical Path Delay   " + str(round(fpga_inst.delay_dict["rep_crit_path"]*1e12,2)) + " ps")
     print_and_write(report_file, "  Cost (area^" + str(fpga_inst.area_opt_weight) + " x delay^" + str(fpga_inst.delay_opt_weight) + ")              " 
            + str(round(final_cost,5)))
@@ -1197,3 +1206,13 @@ def subcircuit_ADP(area_dict, subcircuit, name = "", area = "", power = ""):
     + str(round(subcircuit.tfall/1e-12,4)).ljust(13) + str(round(subcircuit.trise/1e-12,4)).ljust(13) + power)
 
     return string
+
+
+def load_tran_sizes(subcircuit, initial_sizes):
+    """ This function overwrites the initial of a subcircuit with the given init_sizes"""
+
+    for trans in subcircuit.initial_transistor_sizes :
+            if trans in initial_sizes:
+                subcircuit.initial_transistor_sizes[trans] = initial_sizes[trans]
+            else: 
+                print("WARNING: Transistor {} size wasn't found in the input file".format(trans))
