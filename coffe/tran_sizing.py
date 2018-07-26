@@ -326,7 +326,7 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 			fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay)
 
 		# if we have a second layer of carry chains add their delay to the critical path
-		if fpga_inst.specs.updates > 1:
+		if fpga_inst.specs.updates in (2, 3):
 			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain2.delay + fpga_inst.carrychainperf2.delay + fpga_inst.carrychaininter2.delay
 
 		return path_delay
@@ -598,7 +598,7 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 			fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay)
 
 		# if we have another layer of carry chains add their delay to the critical path
-		if fpga_inst.specs.updates > 1:
+		if fpga_inst.specs.updates in (2, 3):
 			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain2.delay + fpga_inst.carrychainperf2.delay + fpga_inst.carrychaininter2.delay
 
 		return path_delay
@@ -3054,7 +3054,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				time_before_sizing = time.time()
 
 
-		if fpga_inst.specs.updates > 1:
+		if fpga_inst.specs.updates in (2, 3):
 			############################################
 			## Size Carry Chain 2
 			############################################

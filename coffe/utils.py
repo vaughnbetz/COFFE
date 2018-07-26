@@ -895,7 +895,7 @@ def check_arch_params (arch_params, filename):
         print_error_not_compatable("finfet", "BRAM")           
     if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
         print_error_not_compatable("finfet", "flut")    
-    if arch_params['updates'] < 0 or arch_params['updates'] > 3:
+    if arch_params['updates'] < 0 or arch_params['updates'] > 4:
         print_error (str(arch_params['updates']), "updates", filename)      
 
 

@@ -990,7 +990,7 @@ class _LUTInputDriverLoad:
         wire_layers["wire_lut_" + self.name + "_driver_load"] = 0
 
         # if new design, add the wire connecting the e and f inputs to the second carry chain
-        if self.updates > 1 and self.name in ("e", "f"):
+        if self.updates in (2, 3) and self.name in ("e", "f"):
             # Update wire lengths
             wire_lengths["wire_lut_" + self.name + "_driver_to_cc2"] = width_dict["lut"] * ratio + width_dict["carry_chain"]      
             # Update set wire layers
@@ -1029,7 +1029,14 @@ class _LUT(_SizableCircuit):
         self.lutSize = K
         # for the new design the 6-LUT is fractured into 4 4-LUTs with only
         # inputs a and b used as feedback inputs and register select inputs
-        if updates:
+        # design 4, with level 3 of fracturability 
+        if updates == 4:
+            self.lutSize -= 3
+            Rsel = 'ab'
+            # we need to add a mux in front of the c input, however, it is not a feedback mux
+            # it should select between c, d, e or f.
+            Rfb = 'abc'
+        elif updates:
             self.lutSize -= 2
             Rsel = 'ab'
             Rfb = 'ab'
@@ -1062,6 +1069,8 @@ class _LUT(_SizableCircuit):
             self.initial_transistor_sizes = self._generate_5lut(subcircuit_filename, self.min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
         elif self.lutSize == 4:
             self.initial_transistor_sizes = self._generate_4lut(subcircuit_filename, self.min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
+        elif self.lutSize == 3:
+            self.initial_transistor_sizes = self._generate_3lut(subcircuit_filename, self.min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
 
         # generate all the drivers added to the input drivers list in the constructor
         for name in self.input_drivers:
@@ -1081,6 +1090,8 @@ class _LUT(_SizableCircuit):
             self.top_spice_path = top_level.generate_lut5_top(self.name, self.use_tgate)
         elif self.lutSize == 4:
             self.top_spice_path = top_level.generate_lut4_top(self.name, self.use_tgate, self.updates)
+        elif self.lutSize == 3:
+            self.top_spice_path = top_level.generate_lut3_top(self.name, self.use_tgate, self.updates)
             
         # Generate top-level driver files
         for input_driver in self.input_drivers.values():
@@ -1099,84 +1110,109 @@ class _LUT(_SizableCircuit):
             # Calculate area (differs with different values of K)
             if self.lutSize == 6:    
                 area += (64*area_dict["inv_lut_0sram_driver_2"] + 
-                        64*area_dict["ptran_lut_L1"] + 
-                        32*area_dict["ptran_lut_L2"] + 
-                        16*area_dict["ptran_lut_L3"] +      
-                        8*area_dict["rest_lut_int_buffer"] + 
-                        8*area_dict["inv_lut_int_buffer_1"] + 
-                        8*area_dict["inv_lut_int_buffer_2"] + 
-                        8*area_dict["ptran_lut_L4"] + 
-                        4*area_dict["ptran_lut_L5"] + 
-                        2*area_dict["ptran_lut_L6"] + 
-                        area_dict["rest_lut_out_buffer"] + 
-                        area_dict["inv_lut_out_buffer_1"] + 
-                        area_dict["inv_lut_out_buffer_2"] +
-                        64*area_dict["sram"])
+                         64*area_dict["ptran_lut_L1"] + 
+                         32*area_dict["ptran_lut_L2"] + 
+                         16*area_dict["ptran_lut_L3"] +      
+                         8*area_dict["rest_lut_int_buffer"] + 
+                         8*area_dict["inv_lut_int_buffer_1"] + 
+                         8*area_dict["inv_lut_int_buffer_2"] + 
+                         8*area_dict["ptran_lut_L4"] + 
+                         4*area_dict["ptran_lut_L5"] + 
+                         2*area_dict["ptran_lut_L6"] + 
+                         area_dict["rest_lut_out_buffer"] + 
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         64*area_dict["sram"])
             elif self.lutSize == 5:
                 area += (32*area_dict["inv_lut_0sram_driver_2"] + 
-                        32*area_dict["ptran_lut_L1"] + 
-                        16*area_dict["ptran_lut_L2"] + 
-                        8*area_dict["ptran_lut_L3"] + 
-                        4*area_dict["rest_lut_int_buffer"] + 
-                        4*area_dict["inv_lut_int_buffer_1"] + 
-                        4*area_dict["inv_lut_int_buffer_2"] + 
-                        4*area_dict["ptran_lut_L4"] + 
-                        2*area_dict["ptran_lut_L5"] +  
-                        area_dict["rest_lut_out_buffer"] + 
-                        area_dict["inv_lut_out_buffer_1"] + 
-                        area_dict["inv_lut_out_buffer_2"] +
-                        32*area_dict["sram"])
+                         32*area_dict["ptran_lut_L1"] + 
+                         16*area_dict["ptran_lut_L2"] + 
+                         8*area_dict["ptran_lut_L3"] + 
+                         4*area_dict["rest_lut_int_buffer"] + 
+                         4*area_dict["inv_lut_int_buffer_1"] + 
+                         4*area_dict["inv_lut_int_buffer_2"] + 
+                         4*area_dict["ptran_lut_L4"] + 
+                         2*area_dict["ptran_lut_L5"] +  
+                         area_dict["rest_lut_out_buffer"] + 
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         32*area_dict["sram"])
             elif self.lutSize == 4:
                 area += (16*area_dict["inv_lut_0sram_driver_2"] + 
-                        16*area_dict["ptran_lut_L1"] + 
-                        8*area_dict["ptran_lut_L2"] + 
-                        4*area_dict["rest_lut_int_buffer"] + 
-                        4*area_dict["inv_lut_int_buffer_1"] + 
-                        4*area_dict["inv_lut_int_buffer_2"] +
-                        4*area_dict["ptran_lut_L3"] + 
-                        2*area_dict["ptran_lut_L4"] +   
-                        area_dict["rest_lut_out_buffer"] + 
-                        area_dict["inv_lut_out_buffer_1"] + 
-                        area_dict["inv_lut_out_buffer_2"] +
-                        16*area_dict["sram"])
+                         16*area_dict["ptran_lut_L1"] + 
+                         8*area_dict["ptran_lut_L2"] + 
+                         4*area_dict["rest_lut_int_buffer"] + 
+                         4*area_dict["inv_lut_int_buffer_1"] + 
+                         4*area_dict["inv_lut_int_buffer_2"] +
+                         4*area_dict["ptran_lut_L3"] + 
+                         2*area_dict["ptran_lut_L4"] +   
+                         area_dict["rest_lut_out_buffer"] + 
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         16*area_dict["sram"])
+            elif self.lutSize == 3:
+                area += (8*area_dict["inv_lut_0sram_driver_2"] + 
+                         8*area_dict["ptran_lut_L1"] + 
+                         4*area_dict["ptran_lut_L2"] + 
+                         #4*area_dict["rest_lut_int_buffer"] + 
+                         #4*area_dict["inv_lut_int_buffer_1"] + 
+                         #4*area_dict["inv_lut_int_buffer_2"] +
+                         2*area_dict["ptran_lut_L3"] + 
+                         #2*area_dict["ptran_lut_L4"] +   
+                         area_dict["rest_lut_out_buffer"] + 
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         8*area_dict["sram"])
+
         else :
             # Calculate area (differs with different values of K)
             if self.lutSize == 6:    
                 area += (64*area_dict["inv_lut_0sram_driver_2"] + 
-                        64*area_dict["tgate_lut_L1"] + 
-                        32*area_dict["tgate_lut_L2"] + 
-                        16*area_dict["tgate_lut_L3"] + 
-                        8*area_dict["inv_lut_int_buffer_1"] + 
-                        8*area_dict["inv_lut_int_buffer_2"] + 
-                        8*area_dict["tgate_lut_L4"] + 
-                        4*area_dict["tgate_lut_L5"] + 
-                        2*area_dict["tgate_lut_L6"] + 
-                        area_dict["inv_lut_out_buffer_1"] + 
-                        area_dict["inv_lut_out_buffer_2"] +
-                        64*area_dict["sram"])
+                         64*area_dict["tgate_lut_L1"] + 
+                         32*area_dict["tgate_lut_L2"] + 
+                         16*area_dict["tgate_lut_L3"] + 
+                         8*area_dict["inv_lut_int_buffer_1"] + 
+                         8*area_dict["inv_lut_int_buffer_2"] + 
+                         8*area_dict["tgate_lut_L4"] + 
+                         4*area_dict["tgate_lut_L5"] + 
+                         2*area_dict["tgate_lut_L6"] + 
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         64*area_dict["sram"])
             elif self.lutSize == 5:
                 area += (32*area_dict["inv_lut_0sram_driver_2"] + 
-                        32*area_dict["tgate_lut_L1"] + 
-                        16*area_dict["tgate_lut_L2"] + 
-                        8*area_dict["tgate_lut_L3"] + 
-                        4*area_dict["inv_lut_int_buffer_1"] + 
-                        4*area_dict["inv_lut_int_buffer_2"] + 
-                        4*area_dict["tgate_lut_L4"] + 
-                        2*area_dict["tgate_lut_L5"] +  
-                        area_dict["inv_lut_out_buffer_1"] + 
-                        area_dict["inv_lut_out_buffer_2"] +
-                        32*area_dict["sram"])
+                         32*area_dict["tgate_lut_L1"] + 
+                         16*area_dict["tgate_lut_L2"] + 
+                         8*area_dict["tgate_lut_L3"] + 
+                         4*area_dict["inv_lut_int_buffer_1"] + 
+                         4*area_dict["inv_lut_int_buffer_2"] + 
+                         4*area_dict["tgate_lut_L4"] + 
+                         2*area_dict["tgate_lut_L5"] +  
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         32*area_dict["sram"])
             elif self.lutSize == 4:
                 area += (16*area_dict["inv_lut_0sram_driver_2"] + 
-                        16*area_dict["tgate_lut_L1"] + 
-                        8*area_dict["tgate_lut_L2"] + 
-                        4*area_dict["inv_lut_int_buffer_1"] + 
-                        4*area_dict["inv_lut_int_buffer_2"] +
-                        4*area_dict["tgate_lut_L3"] + 
-                        2*area_dict["tgate_lut_L4"] +   
-                        area_dict["inv_lut_out_buffer_1"] + 
-                        area_dict["inv_lut_out_buffer_2"] +
-                        16*area_dict["sram"])
+                         16*area_dict["tgate_lut_L1"] + 
+                         8*area_dict["tgate_lut_L2"] + 
+                         4*area_dict["inv_lut_int_buffer_1"] + 
+                         4*area_dict["inv_lut_int_buffer_2"] +
+                         4*area_dict["tgate_lut_L3"] + 
+                         2*area_dict["tgate_lut_L4"] +   
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         16*area_dict["sram"])
+            elif self.lutSize == 3:
+                area += (8*area_dict["inv_lut_0sram_driver_2"] + 
+                         8*area_dict["tgate_lut_L1"] + 
+                         4*area_dict["tgate_lut_L2"] + 
+                         #4*area_dict["inv_lut_int_buffer_1"] + 
+                         #4*area_dict["inv_lut_int_buffer_2"] +
+                         2*area_dict["tgate_lut_L3"] + 
+                         #2*area_dict["tgate_lut_L4"] +   
+                         area_dict["inv_lut_out_buffer_1"] + 
+                         area_dict["inv_lut_out_buffer_2"] +
+                         8*area_dict["sram"])
         
         # TODO: do this in the ble class to avoid writing the names of the instances manully
         # TODO: Should the inputs to the 2 fluts come from the same driver or should they 
@@ -1257,6 +1293,18 @@ class _LUT(_SizableCircuit):
                 wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
                 wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
 
+            elif self.lutSize == 3:
+                # Update wire lengths
+                wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+                wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["ptran_lut_L1"])/4
+                wire_lengths["wire_lut_L1"] = width_dict["ptran_lut_L1"]
+                wire_lengths["wire_lut_L2"] = 2*width_dict["ptran_lut_L1"]
+                #wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+                #wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["ptran_lut_L4"])/4
+                wire_lengths["wire_lut_L3"] = 4*width_dict["ptran_lut_L1"]
+                #wire_lengths["wire_lut_L4"] = 8*width_dict["ptran_lut_L1"]
+                wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+
         else:
             if self.lutSize == 6:        
                 # Update wire lengths
@@ -1296,6 +1344,19 @@ class _LUT(_SizableCircuit):
                 wire_lengths["wire_lut_L3"] = 4*width_dict["tgate_lut_L1"]
                 wire_lengths["wire_lut_L4"] = 8*width_dict["tgate_lut_L1"]
                 wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+
+            elif self.lutSize == 3:
+                # Update wire lengths
+                wire_lengths["wire_lut_sram_driver"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["inv_lut_0sram_driver_2"])/4
+                wire_lengths["wire_lut_sram_driver_out"] = (width_dict["inv_lut_0sram_driver_2"] + width_dict["tgate_lut_L1"])/4
+                wire_lengths["wire_lut_L1"] = width_dict["tgate_lut_L1"]
+                wire_lengths["wire_lut_L2"] = 2*width_dict["tgate_lut_L1"]
+                #wire_lengths["wire_lut_int_buffer"] = (width_dict["inv_lut_int_buffer_1"] + width_dict["inv_lut_int_buffer_2"])/4
+                #wire_lengths["wire_lut_int_buffer_out"] = (width_dict["inv_lut_int_buffer_2"] + width_dict["tgate_lut_L4"])/4
+                wire_lengths["wire_lut_L3"] = 4*width_dict["tgate_lut_L1"]
+                #wire_lengths["wire_lut_L4"] = 8*width_dict["tgate_lut_L1"]
+                wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+
           
         # Update input driver and input driver load wires
         for name in self.input_drivers:
@@ -1468,6 +1529,51 @@ class _LUT(_SizableCircuit):
         return self.initial_transistor_sizes
 
 
+    def _generate_3lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
+        """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
+        print "Generating 3-LUT"
+        
+        # Call the generation function
+        if not use_tgate:
+            # use pass transistor
+            self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut3(subcircuit_filename, min_tran_width, use_finfet)
+            # Give initial transistor sizes
+            self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
+            self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
+            #self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+            self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
+            #self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
+            self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+        else:
+            # use transmission gates
+            self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut3(subcircuit_filename, min_tran_width, use_finfet)
+            # Give initial transistor sizes
+            self.initial_transistor_sizes["tgate_lut_L1_nmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
+            #self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
+            #self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
+
+        # common transistors between tgate and ptran based designs
+        self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+        self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+
+        #self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+        #self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+        #self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+        #self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+
+        self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+        self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+        self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+        self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+
+        return self.initial_transistor_sizes
+
+
 
 class _CarryChainMux(_SizableCircuit):
     """ Carry Chain Multiplexer class.    """
@@ -1582,7 +1688,7 @@ class _CarryChainPer(_SizableCircuit):
         if self.updates == 1:
             self.wire_names.append(utils.wire_name("cc_sout", "reg3_sel"))
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
-        elif self.updates > 1:
+        elif self.updates in (2, 3):
             if self.id == 2:
                 self.wire_names.append(utils.wire_name("cc2_sout", "reg3_sel"))
                 
@@ -1615,7 +1721,7 @@ class _CarryChainPer(_SizableCircuit):
             wire_lengths[utils.wire_name("cc_sout", "reg3_sel")] = width_dict["lut"]
             wire_layers[utils.wire_name("cc_sout", "reg3_sel")] = 0
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
-        elif self.updates > 1:
+        elif self.updates in (2, 3):
             if self.id == 2:
                 wire_lengths[utils.wire_name("cc2_sout", "reg3_sel")] = width_dict["lut"]/2
                 wire_layers[utils.wire_name("cc2_sout", "reg3_sel")] = 0
@@ -1693,7 +1799,7 @@ class _CarryChain(_SizableCircuit):
 
         area = area_dict["inv_"+self.name+"_1"] * 2 + area_dict["inv_"+self.name+"_2"] + area_dict["tgate_"+self.name+"_1"] * 4 + area_dict["tgate_"+self.name+"_2"] * 4
 
-        if self.updates > 1 and self.id == 2:
+        if self.updates in (2, 3) and self.id == 2:
             area += area_dict["carry_chain_perf2"]
         else:
             area += area_dict["carry_chain_perf"]
@@ -2416,7 +2522,7 @@ class _LUTOutputLoad:
             self.wire_names = load_subcircuits.generate_lut_output_load(subcircuit_filename)
 
         if self.use_fluts:
-            self.wire_names.extend(load_subcircuits.generate_flut_output_load(subcircuit_filename, self.enable_carry_chain, self.level))    
+            self.wire_names.extend(load_subcircuits.generate_flut_output_load(subcircuit_filename, self.enable_carry_chain, self.updates))    
         
      
     def update_wires(self, width_dict, wire_lengths, wire_layers, lut_ratio):
@@ -2479,11 +2585,15 @@ class _flut_mux(_SizableCircuit):
         self.transistor_names = self.mux.transistor_names
         self.wire_names = self.mux.wire_names
 
-        # generate the output loading of the flut level 2 mux
-        if self.updates and self.level == 2:
-            self.wire_names.extend(load_subcircuits.generate_fmux_l2_output_load(subcircuit_filename))
+        # For Stratix10: generate the output loading of fmux2
+        # For Stratix10 level3: generate the output loading of fmux1 and fmux3
+        if (self.updates in (1, 2, 3) and self.level == 2) or (self.updates == 4 and self.level == 3):
+            self.wire_names.extend(load_subcircuits.generate_last_fmux_output_load(subcircuit_filename, self.level))
+        elif self.updates == 4 and self.level == 1:
+            self.wire_names.extend(load_subcircuits.generate_fmux_l1_output_load(subcircuit_filename))
 
         return self.initial_transistor_sizes
+
 
     def generate_top(self):       
 
@@ -2493,7 +2603,7 @@ class _flut_mux(_SizableCircuit):
                                                               self.updates)
 
         # add wire connecting the flut output load to the flut mux level2
-        if self.updates:
+        if self.updates and self.level == 1:
             self.wire_names.append(utils.wire_name("fmux_l1", "fmux_l2"))
             
 
@@ -2509,20 +2619,23 @@ class _flut_mux(_SizableCircuit):
         """ Update wire of member objects. """
         
         self.mux.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
-
-        # if this is the flut mux level 2 instance add a wire connecting the output of fmux_l1 to fmux_l2
+        fmux1 = "fmux_l"+str(self.level)
+        fmux2 = "fmux_l"+str(self.level+1)
+        # For Stratix10 or Stratix10 level3: wire connecting fmux_l1 and fmux_l2
+        # For Stratix10 level 3: there is an extra wire from fmux_l2 to fmux_l3
         if self.updates:
-            wire_lengths[utils.wire_name("fmux_l1", "fmux_l2")] = (width_dict["fmux_l1"] + width_dict["fmux_l2"])/4
-            wire_layers[utils.wire_name("fmux_l1", "fmux_l2")] = 0
-            # wire connecting the output of the level 2 flut mux and the 3:1 general ble output mux
-            # and wire connecting the output of the level 2 flut mux and the input of the 3:1 
-            # register input select mux
-            # TODO: update those wire lengths
-            if self.level == 2:
-                wire_lengths[utils.wire_name("fmux_l2", "gbo3")] = 2*width_dict['ff']
-                wire_layers[utils.wire_name("fmux_l2", "gbo3")] = 0
-                wire_lengths[utils.wire_name("fmux_l2", "ff3")] = width_dict['ff']
-                wire_layers[utils.wire_name("fmux_l2", "ff3")] = 0
+            if self.level == 1 or (self.updates == 4 and self.level == 2):
+                wire_lengths[utils.wire_name(fmux1, fmux2)] = (width_dict[fmux1] + width_dict[fmux2])/4
+                wire_layers[utils.wire_name(fmux1, fmux2)] = 0
+
+        # two wires connecting the last level fmux and the 3:1 general ble output mux
+        # and the input of the 3:1 register input select mux
+        # TODO: update those wire lengths
+        if (self.updates in (1, 2, 3) and self.level == 2) or self.level == 3:
+            wire_lengths[utils.wire_name(fmux1, "gbo3")] = 2*width_dict['ff']
+            wire_layers[utils.wire_name(fmux1, "gbo3")] = 0
+            wire_lengths[utils.wire_name(fmux1, "ff3")] = width_dict['ff']
+            wire_layers[utils.wire_name(fmux1, "ff3")] = 0
 
 
 class _MUX(_SizableCircuit):
@@ -2704,6 +2817,11 @@ class _BLE(_CompoundCircuit):
             self.fmux_l2 = _flut_mux(specs.use_tgate, specs.use_finfet, specs.enable_carry_chain, specs.updates, 2)
             self.subcircuits[self.fmux_l2.name] = self.fmux_l2
 
+        # Stratix10 level 3 have a third level of flut mux
+        if specs.updates == 4:
+            self.fmux_l3 = _flut_mux(specs.use_tgate, specs.use_finfet, specs.enable_carry_chain, specs.updates, 3)
+            self.subcircuits[self.fmux_l3.name] = self.fmux_l3
+
         # Create LUT object
         self.lut = _LUT(specs.K, specs.Rsel, specs.Rfb, specs.use_tgate, specs.use_finfet, specs.use_fluts, specs.min_tran_width, specs.updates)
         self.subcircuits[self.lut.name] = self.lut
@@ -2800,7 +2918,7 @@ class _BLE(_CompoundCircuit):
         else:
             ble_area += area_dict["carry_chain"] * self.FAs_per_flut
             
-            if self.updates > 1:
+            if self.updates in (2, 3):
                 ble_area += area_dict["carry_chain2"] * self.FAs_per_flut
 
 
@@ -5615,7 +5733,7 @@ class FPGA:
 
         # IMPORTANT: this should be always created after the fist carry chain, since its internal name has to do with this oder
 
-        if self.updates > 1:
+        if self.updates in (2, 3):
             self.carrychain2 = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.updates)
             self.carrychainperf2 = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate, self.updates)
             self.carrychaininter2 = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length, self.updates)
@@ -5769,7 +5887,7 @@ class FPGA:
                 self.subcircutis[self.carrychainand.name] = self.carrychainand   
 
         # Carry Chain 2 for the new architecure
-        if self.updates > 1:
+        if self.updates in (2, 3):
             self.subcircuits[self.carrychain2.name] = self.carrychain2
             self.subcircuits[self.carrychainperf2.name] = self.carrychainperf2
             self.subcircuits[self.carrychaininter2.name] = self.carrychaininter2 
@@ -5829,7 +5947,7 @@ class FPGA:
                 self.transistor_sizes.update(self.carrychainskipmux.generate(self.subcircuits_filename))
 
         # generate the carry chain of the new architecture
-        if self.updates > 1:
+        if self.updates in (2, 3):
             self.transistor_sizes.update(self.carrychain2.generate(self.subcircuits_filename))
             self.transistor_sizes.update(self.carrychainperf2.generate(self.subcircuits_filename))
             self.transistor_sizes.update(self.carrychaininter2.generate(self.subcircuits_filename))
@@ -5870,7 +5988,7 @@ class FPGA:
                 self.carrychainskipmux.generate_top()
 
         # generate the top of second carry chain
-        if self.updates > 1:
+        if self.updates in (2, 3):
             self.carrychain2.generate_top()
             self.carrychainperf2.generate_top()
             self.carrychaininter2.generate_top()
@@ -5929,7 +6047,7 @@ class FPGA:
                 self.carrychainskipmux.update_area(self.area_dict, self.width_dict)
 
         # carry chain 2
-        if self.updates > 1:
+        if self.updates in (2, 3):
             self.carrychainperf2.update_area(self.area_dict, self.width_dict)
             self.carrychaininter2.update_area(self.area_dict, self.width_dict)
             self.carrychain2.update_area(self.area_dict, self.width_dict)
@@ -5995,7 +6113,7 @@ class FPGA:
             if self.specs.enable_carry_chain == 1:
                 cluster_area += self.area_dict[self.carrychaininter.name]
 
-            if self.updates > 1:
+            if self.updates in (2, 3):
                 cluster_area += self.area_dict[self.carrychaininter2.name]
 
         else:
@@ -6042,7 +6160,7 @@ class FPGA:
                 cc_area_total = self.specs.N * 2 * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
 
             # if new architecture add the second carry chain
-            if self.updates > 1:
+            if self.updates in (2, 3):
                 cc_area_total += self.specs.N * 2 * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
 
 
@@ -6098,7 +6216,7 @@ class FPGA:
         elif self.updates:
             carry_chain_area = self.specs.N * self.specs.FAs_per_flut * self.area_dict[self.carrychain.name] + self.area_dict[self.carrychaininter.name]
 
-        if self.updates > 1:
+        if self.updates in (2, 3):
             carry_chain_area += self.specs.N * self.specs.FAs_per_flut * self.area_dict[self.carrychain2.name] + self.area_dict[self.carrychaininter2.name]
             
         if self.updates or self.specs.enable_carry_chain:
@@ -6485,7 +6603,7 @@ class FPGA:
                 self.carrychainskipmux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
 
         # updates wirs for the new architecture
-        if self.updates > 1:
+        if self.updates in (2, 3):
             self.carrychain2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
             self.carrychainperf2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
             self.carrychaininter2.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)
@@ -7680,7 +7798,7 @@ class FPGA:
                 if subcircuit == self.carrychainmux:
                     return False
 
-        if self.updates > 1:
+        if self.updates in (2, 3):
             if (subcircuit == self.carrychain2 or
                 subcircuit == self.carrychainperf2 or
                 subcircuit == self.carrychaininter2): 

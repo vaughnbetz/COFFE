@@ -4276,6 +4276,100 @@ def generate_lut4_top(lut_name, use_tgate, updates):
     os.chdir("../")
     
     return (lut_name + "/" + lut_name + ".sp")
+
+
+
+def generate_lut3_top(lut_name, use_tgate, updates):
+    """ Generate the top level 3-LUT SPICE file """
+
+    # Create directory
+    if not os.path.exists(lut_name):
+        os.makedirs(lut_name)  
+    # Change to directory    
+    os.chdir(lut_name) 
+
+    lut_input_nodes = "vdd "*6
+    if use_tgate: lut_input_nodes = "vdd gnd "*6
+    
+    lut_filename = lut_name + ".sp"
+    lut_file = open(lut_filename, 'w')
+    lut_file.write(".TITLE 3-LUT\n\n") 
+    
+    lut_file.write("********************************************************************************\n")
+    lut_file.write("** Include libraries, parameters and other\n")
+    lut_file.write("********************************************************************************\n\n")
+    lut_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
+    
+    lut_file.write("********************************************************************************\n")
+    lut_file.write("** Setup and input\n")
+    lut_file.write("********************************************************************************\n\n")
+    lut_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
+    lut_file.write(".OPTIONS BRIEF=1\n\n")
+    lut_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    lut_file.write("*.OPTIONS POST=2\n\n")
+
+    lut_file.write("* Input signal\n")
+    lut_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    
+    lut_file.write("********************************************************************************\n")
+    lut_file.write("** Measurement\n")
+    lut_file.write("********************************************************************************\n\n")
+    lut_file.write("* inv_lut_0sram_driver_1 delay\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_1_tfall TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_1_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_1_trise TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_1_1) VAL='supply_v/2' RISE=1\n\n")
+    lut_file.write("* inv_lut_sram_driver_2 delay\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_2_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_2_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_2_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_2_1) VAL='supply_v/2' RISE=1\n\n")
+    lut_file.write("* Xinv_lut_int_buffer_1 delay\n")
+    #lut_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_1_tfall TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    #lut_file.write("+    TARG V(Xlut.n_5_1) VAL='supply_v/2' FALL=1\n")
+    #lut_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_1_trise TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    #lut_file.write("+    TARG V(Xlut.n_5_1) VAL='supply_v/2' RISE=1\n\n")
+    #lut_file.write("* Xinv_lut_int_buffer_2 delay\n")
+    #lut_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    #lut_file.write("+    TARG V(Xlut.n_6_1) VAL='supply_v/2' FALL=1\n")
+    #lut_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    #lut_file.write("+    TARG V(Xlut.n_6_1) VAL='supply_v/2' RISE=1\n\n")
+    lut_file.write("* Xinv_lut_out_buffer_1 delay\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_tfall TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(Xlut.n_9_1) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_trise TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(Xlut.n_9_1) VAL='supply_v/2' RISE=1\n\n")
+    lut_file.write("* Xinv_lut_out_buffer_2 delay\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_2_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_2_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+    lut_file.write("* Total delays\n")
+    lut_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_in) VAL='supply_v/2' FALL=1\n")
+    lut_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
+    lut_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_in) VAL='supply_v/2' RISE=1\n")
+    lut_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+    lut_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
+    
+    lut_file.write("********************************************************************************\n")
+    lut_file.write("** Circuit\n")
+    lut_file.write("********************************************************************************\n\n")
+
+    lut_file.write("Xlut n_in n_out " + lut_input_nodes + "vdd gnd lut\n\n")
+    # BUG: this should be if updates or use_fluts since this is he right loading for the lut output in case of fluts
+    if updates:
+        lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    else:
+        lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
+   
+
+    lut_file.write(".END")
+    lut_file.close()
+
+    # Come out of lut directory
+    os.chdir("../")
+    
+    return (lut_name + "/" + lut_name + ".sp")
     
  
 def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
