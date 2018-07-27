@@ -74,7 +74,7 @@ outputs/*
 #ignore results
 input_files/bulk_example/
 input_files/*
-!input_files/*.txt
+#!input_files/*.txt
 #input_files/
 
 sainity_check/sainity_check/
@@ -90,3 +90,5 @@ tags/*
 *.sh
 
 coffe.sublime*
+
+tags

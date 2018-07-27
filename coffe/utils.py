@@ -89,8 +89,11 @@ def print_area_and_delay(report_file, fpga_inst):
     if fpga_inst.specs.use_fluts:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux))
 
-    if fpga_inst.updates:
+    if fpga_inst.specs.updates:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l2))
+
+    if fpga_inst.specs.updates == 4:
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l3))
 
     # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
@@ -111,7 +114,7 @@ def print_area_and_delay(report_file, fpga_inst):
             print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychainskipmux, "", "", "n/a"))
 
     # Carry chain 2   
-    if fpga_inst.specs.updates > 1:
+    if fpga_inst.specs.updates in (2, 3):
         #carry path
         print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.carrychain2, "", "", "n/a"))
         # Sum inverter

@@ -227,7 +227,7 @@ def generate_dff(spice_filename, name, use_finfet, use_tgate, Rsel, mux_name, ff
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write("* FF "+title+"subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write(".SUBCKT "+name+" n_in n_out n_gate n_gate_n n_clk n_clk_n n_set n_set_n n_reset n_reset_n n_vdd n_gnd\n\n")
+	spice_file.write(".SUBCKT "+name+" n_in n_out n_1_1 n_gate n_gate_n n_clk n_clk_n n_set n_set_n n_reset n_reset_n n_vdd n_gnd\n\n")
 
 	if Rsel:
 		spice_file.write("X"+mux_name+" n_in n_1_1 n_gate n_gate_n n_vdd n_gnd "+mux_name+"\n\n")

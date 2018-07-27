@@ -1685,7 +1685,7 @@ class _CarryChainPer(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
 
-        if self.updates == 1:
+        if self.updates in (1, 4):
             self.wire_names.append(utils.wire_name("cc_sout", "reg3_sel"))
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
         elif self.updates in (2, 3):
@@ -1717,7 +1717,7 @@ class _CarryChainPer(_SizableCircuit):
     def update_wires(self, width_dict, wire_lengths, wire_layers):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         # TODO: revise this line 
-        if self.updates == 1:
+        if self.updates in (1, 4):
             wire_lengths[utils.wire_name("cc_sout", "reg3_sel")] = width_dict["lut"]
             wire_layers[utils.wire_name("cc_sout", "reg3_sel")] = 0
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
@@ -2415,9 +2415,53 @@ class _GeneralBLEOutput(_SizableCircuit):
         print "Generating top-level " + self.name
         self.top_spice_path = top_level.generate_general_ble_output_top(self.name, self.use_tgate, self.use_fluts, 
                                                                         self.updates, self.input_size)
-        if self.updates:
-            self.wire_names.append(utils.wire_name("fmux_l1_duplicte", "ff"))
+        if self.updates in (1, 2, 3) and self.input_size == 2:
+            self.wire_names.append(utils.wire_name("fmux_l1_duplicate", "ff"))
             self.wire_names.append(utils.wire_name("ffin", "gbo2"))
+        elif self.updates == 4 and self.input_size == 2:
+            self.wire_names.append(utils.wire_name("fmux_l2_duplicate", "ff2"))
+            self.wire_names.append(utils.wire_name("ff2_mux", "gbo2"))
+
+
+    def update_wires(self, width_dict, wire_lengths, wire_layers):
+        """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
+
+        level = ""
+        switch = "ptran_"
+        if self.updates and self.input_size == 3:
+            level = "_L1"
+        if self.use_tgate:
+            switch = "tgate_"
+    
+        # Update wire lengths
+        wire_lengths["wire_" + self.name + level] = width_dict[switch + self.name + level]
+        wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
+
+        if self.input_size == 2:
+            if self.updates in (1, 2, 3):
+                # TODO: revise all these lengths
+                wire_lengths[utils.wire_name("fmux_l1_duplicate", "ff")] = width_dict["ff"]*2
+                #wire_layers[utils.wire_name("fmux_l1_duplicte", "ff")] = 0
+                wire_lengths[utils.wire_name("ffin", "gbo2")] = width_dict["ff"]
+                #wire_layers[utils.wire_name("ffin", "gbo2")] = 0
+            # wire connecting fmux_l2 duplicate with the input select mux in front of the ff
+            elif self.updates == 4:
+                wire_lengths[utils.wire_name("fmux_l2_duplicate", "ff2")] = (width_dict["fmux_l2"] + width_dict["ff2_input_select"])/4
+                #wire_layers[utils.wire_name("fmux_l2_duplicte", "ff2")] = 0
+                wire_lengths[utils.wire_name("ff2_mux", "gbo2")] = width_dict["ff"]
+                #wire_layers[utils.wire_name("ff2_mux", "gbo2")] = 0
+ 
+        # Update wire layers
+        #wire_layers["wire_" + self.name + level] = 0
+        #wire_layers["wire_" + self.name + "_driver"] = 0
+
+        if self.updates and self.input_size == 3:
+            wire_lengths["wire_" + self.name + "_L2"] = (width_dict[switch + self.name + level] + width_dict[switch + self.name + "_L2"])/4
+            #wire_layers["wire_" + self.name + "_L2"] = 0
+
+        for wire in self.wire_names:
+            wire_layers[wire] = 0
+
 
     def update_area(self, area_dict, width_dict):
 
@@ -2455,37 +2499,6 @@ class _GeneralBLEOutput(_SizableCircuit):
             width_dict[self.name] = width
 
         return area
-        
-    
-    def update_wires(self, width_dict, wire_lengths, wire_layers):
-        """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
-
-        level = ""
-        switch = "ptran_"
-        if self.updates and self.input_size == 3:
-            level = "_L1"
-        if self.use_tgate:
-            switch = "tgate_"
-    
-        # Update wire lengths
-        wire_lengths["wire_" + self.name + level] = width_dict[switch + self.name + level]
-        wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
-
-        if self.updates:
-            # TODO: revise all these lengths
-            wire_lengths[utils.wire_name("fmux_l1_duplicte", "ff")] = width_dict["ff"]*2
-            wire_layers[utils.wire_name("fmux_l1_duplicte", "ff")] = 0
-            wire_lengths[utils.wire_name("ffin", "gbo2")] = width_dict["ff"]
-            wire_layers[utils.wire_name("ffin", "gbo2")] = 0
-
-        
-        # Update wire layers
-        wire_layers["wire_" + self.name + level] = 0
-        wire_layers["wire_" + self.name + "_driver"] = 0
-
-        if self.updates and self.input_size == 3:
-            wire_lengths["wire_" + self.name + "_L2"] = (width_dict[switch + self.name + level] + width_dict[switch + self.name + "_L2"])/4
-            wire_layers["wire_" + self.name + "_L2"] = 0
         
    
     def print_details(self):
@@ -2535,7 +2548,8 @@ class _LUTOutputLoad:
                 wire_lengths[utils.wire_name("lut", "flut_mux")] = width_dict["lut"]/2 * lut_ratio
             elif self.level == 2:
                 wire_lengths[utils.wire_name("lut", "fmux_l1")] = width_dict["lut"]/2 * lut_ratio
-                wire_lengths[utils.wire_name("lut", "fmux_l1_duplicate")] = width_dict["lut"]/2 * lut_ratio
+                if self.updates in (1, 2, 3):
+                    wire_lengths[utils.wire_name("lut", "fmux_l1_duplicate")] = width_dict["lut"]/2 * lut_ratio
             if self.enable_carry_chain:
                 wire_lengths[utils.wire_name("lut", "carry_chain")] = width_dict["lut"]/2 * lut_ratio
         
@@ -2589,6 +2603,7 @@ class _flut_mux(_SizableCircuit):
         # For Stratix10 level3: generate the output loading of fmux1 and fmux3
         if (self.updates in (1, 2, 3) and self.level == 2) or (self.updates == 4 and self.level == 3):
             self.wire_names.extend(load_subcircuits.generate_last_fmux_output_load(subcircuit_filename, self.level))
+        # generates a load containing the fmux_l2 and fmux_l2_duplicate and resturns the wire connecting them
         elif self.updates == 4 and self.level == 1:
             self.wire_names.extend(load_subcircuits.generate_fmux_l1_output_load(subcircuit_filename))
 
@@ -2602,9 +2617,16 @@ class _flut_mux(_SizableCircuit):
         self.top_spice_path = top_level.generate_flut_mux_top(self.name, self.use_tgate, self.enable_carry_chain, self.level, 
                                                               self.updates)
 
+        # Note: those two wires are the only two wire not created already 
+        # in the load circuites created in the generate function
+
         # add wire connecting the flut output load to the flut mux level2
-        if self.updates and self.level == 1:
+        if self.updates in (1, 2, 3) and self.level == 1:
             self.wire_names.append(utils.wire_name("fmux_l1", "fmux_l2"))
+
+        # add the wire connecting the flut mux l2 and flut mux l3
+        if self.updates == 4 and self.level == 2:
+            self.wire_names.append(utils.wire_name("fmux_l2", "fmux_l3"))
             
 
     def update_area(self, area_dict, width_dict):
@@ -2618,24 +2640,33 @@ class _flut_mux(_SizableCircuit):
     def update_wires(self, width_dict, wire_lengths, wire_layers, lut_ratio):
         """ Update wire of member objects. """
         
+        # updates wires in the mux object
         self.mux.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
+
+        # current fmux and next fmux names
         fmux1 = "fmux_l"+str(self.level)
         fmux2 = "fmux_l"+str(self.level+1)
+
         # For Stratix10 or Stratix10 level3: wire connecting fmux_l1 and fmux_l2
         # For Stratix10 level 3: there is an extra wire from fmux_l2 to fmux_l3
         if self.updates:
             if self.level == 1 or (self.updates == 4 and self.level == 2):
                 wire_lengths[utils.wire_name(fmux1, fmux2)] = (width_dict[fmux1] + width_dict[fmux2])/4
-                wire_layers[utils.wire_name(fmux1, fmux2)] = 0
+
+        # wire connecting fmux_l1 to fmux_l2 duplicate
+        if self.updates == 4 and self.level == 1:
+            wire_lengths[utils.wire_name(fmux1, fmux2+"_duplicate")] = (width_dict[fmux1] + width_dict[fmux2])/4
 
         # two wires connecting the last level fmux and the 3:1 general ble output mux
         # and the input of the 3:1 register input select mux
         # TODO: update those wire lengths
         if (self.updates in (1, 2, 3) and self.level == 2) or self.level == 3:
             wire_lengths[utils.wire_name(fmux1, "gbo3")] = 2*width_dict['ff']
-            wire_layers[utils.wire_name(fmux1, "gbo3")] = 0
             wire_lengths[utils.wire_name(fmux1, "ff3")] = width_dict['ff']
-            wire_layers[utils.wire_name(fmux1, "ff3")] = 0
+
+        # Update wire layers
+        for wire in self.wire_names:
+            wire_layers[wire] = 0
 
 
 class _MUX(_SizableCircuit):
@@ -2967,6 +2998,9 @@ class _BLE(_CompoundCircuit):
 
         if self.updates:
             self.fmux_l2.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
+
+        if self.updates == 4:
+            self.fmux_l3.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
 
         
     def print_details(self, report_file):
@@ -5870,6 +5904,10 @@ class FPGA:
             # Level 2 FLUT Mux Subcircuti
             self.subcircuits[self.logic_cluster.ble.fmux_l2.name] = self.logic_cluster.ble.fmux_l2
 
+        # Add the third level of flut mux
+        if self.updates == 4:
+            self.subcircuits[self.logic_cluster.ble.fmux_l3.name] = self.logic_cluster.ble.fmux_l3
+
         # Carry Chain Subcircuits
         if self.specs.enable_carry_chain:
             # Carry Chain Subcircuit, Cin to Cout
@@ -6757,11 +6795,11 @@ class FPGA:
                 spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
                 trise, tfall, valid_delay = utils.get_delays(spice_meas)
 
-                # For the Stratix10 design add the delay for the signal propagation through fmux_l1 and
+                # For the Stratix10 design add the delay for thes signal propagation through fmux_l1 and
                 # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals
                 # input f delay will be only the delay of switching the ptran of the level 2 fmux
                 # TODO: add to the delay dictionary the delay of a to d without the fmux delays might be useful
-                if self.updates: 
+                if self.updates in (1, 2, 3): 
                     if lut_input_name != 'e' and lut_input_name != 'f' :
                         tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall
                         trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise
@@ -6770,6 +6808,18 @@ class FPGA:
                     elif lut_input_name == 'e':
                         tfall += self.logic_cluster.ble.fmux_l2.tfall
                         trise += self.logic_cluster.ble.fmux_l2.trise
+                elif self.updates == 4:
+                    if lut_input_name != 'd' and lut_input_name != 'e' and lut_input_name != 'f' :
+                        tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall + self.logic_cluster.ble.fmux_l3.tfall
+                        trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise + self.logic_cluster.ble.fmux_l3.trise
+                    # input e will see the delay of switching the gates of the fmux_l1 in addition to the
+                    # propagation delay through fmux_l2
+                    elif lut_input_name == 'd':
+                        tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall
+                        trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise
+                    elif lut_input_name == 'e':
+                        tfall += self.logic_cluster.ble.fmux_l3.tfall
+                        trise += self.logic_cluster.ble.fmux_l3.trise
                 elif self.specs.use_fluts:
                     tfall += self.logic_cluster.ble.fmux.tfall
                     trise += self.logic_cluster.ble.fmux.trise

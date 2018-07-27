@@ -373,7 +373,7 @@ def generate_lut_output_load(spice_filename):
     spice_file.write("******************************************************************************************\n")
     spice_file.write(".SUBCKT lut_output_load n_in n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on\n")
     spice_file.write("Xwire_lut_output_load_1 n_in n_1_1 wire Rw='wire_lut_output_load_1_res' Cw='wire_lut_output_load_1_cap'\n")
-    spice_file.write("Xff n_1_1 n_hang1 n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff\n")
+    spice_file.write("Xff n_1_1 n_hang1 n_mux_out n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff\n")
     spice_file.write("Xwire_lut_output_load_2 n_1_1 n_1_2 wire Rw='wire_lut_output_load_2_res' Cw='wire_lut_output_load_2_cap'\n")
     spice_file.write("Xble_outputs n_1_2 n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on ble_outputs\n")
     spice_file.write(".ENDS\n\n\n")
@@ -453,11 +453,11 @@ def generate_fmux_l1_output_load(spice_filename):
 
     spice_file.write("* Wire connecting the output of fmux level 1 to the input of fmux level2\n")
     spice_file.write(utils.create_wire("n_in", "n_1_1", "fmux_l1", "fmux_l2"))
-    spice_file.write("Xfmux_l1 n_1_1 n_out1 n_g_1 n_gnd n_vdd_fmux2 n_gnd fmux_l1\n\n")
+    spice_file.write("Xfmux_l2 n_1_1 n_out1 n_g_1 n_gnd n_vdd_fmux2 n_gnd fmux_l2\n\n")
 
     spice_file.write("* Wire connecting the output of fmux level 1 and the input of fmux level 2 duplicate\n")
     spice_file.write(utils.create_wire("n_in", "n_2_1", "fmux_l1", "fmux_l2_duplicate"))
-    spice_file.write("Xfmux_l1_duplicate n_2_1 n_out2 n_g_2 n_gnd n_vdd_fmux2_dup n_gnd fmux_l1\n\n")
+    spice_file.write("Xfmux_l2_duplicate n_2_1 n_out2 n_g_2 n_gnd n_vdd_fmux2_dup n_gnd fmux_l2\n\n")
 
     spice_file.write(".ENDS\n\n\n")
 
@@ -473,7 +473,8 @@ def generate_fmux_l1_output_load(spice_filename):
 
 
 def generate_last_fmux_output_load(spice_filename, level):
-    """ Creates the load seen by the last level of fmux which is the gbo3 and ff3 """    
+    """ Creates the load seen by the last level of fmux which is the gbo3 and ff3 
+        and returns a lits containing the two wires connecting those components """    
 
     fmux = "fmux_l" + str(level)
 
@@ -483,15 +484,15 @@ def generate_last_fmux_output_load(spice_filename, level):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* FLUT level "+str(level)+" mux output load\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT "+fmux+"_load n_in n_out1 n_out2 n_gate n_gate_n n_vdd n_gnd n_vdd_gbo\n\n")
+    spice_file.write(".SUBCKT "+fmux+"_load n_in n_gbo3_out n_ff3_out n_gate n_gate_n n_vdd n_gnd n_vdd_gbo\n\n")
 
     spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the 3:1 general ble output mux\n")
     spice_file.write(utils.create_wire("n_in", "n_1_1", fmux, "gbo3"))
-    spice_file.write("Xgeneral_ble_output3 n_1_1 n_out1 n_vdd n_gnd n_vdd_gbo n_gnd general_ble_output3\n\n")
+    spice_file.write("Xgeneral_ble_output3 n_1_1 n_gbo3_out n_vdd n_gnd n_vdd_gbo n_gnd general_ble_output3\n\n")
 
     spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the 3:1 register input selct mux \n")
     spice_file.write(utils.create_wire("n_in", "n_2_1", fmux, "ff3"))
-    spice_file.write("Xff3 n_2_1 n_out2 n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff3\n\n")
+    spice_file.write("Xff3 n_2_1 n_ff3_out n_mux_out n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff3\n\n")
 
     spice_file.write(".ENDS\n\n\n")
 
