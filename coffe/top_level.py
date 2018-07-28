@@ -4739,7 +4739,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
                 spice_file.write("Xfmux_l3 n_1_7 n_1_8 "+n_g_f3+" gnd vdd gnd fmux_l3\n\n")
                 if lut_letter == 'f':
                     # load at the output of flut mux level 3
-                    spice_file.write("Xfmux_l3_load n_1_8 n_gbo3_out n_ff3_out vdd gnd vdd gnd vdd fmux_l3_load\n")
+                    spice_file.write("Xfmux_l3_load n_1_8 n_gbo3_out n_ff3_out vsram vsram_n vdd gnd vdd fmux_l3_load\n")
 
     
     spice_file.write(".END")
@@ -4747,6 +4747,94 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
 
     # Come out of lut_driver directory
     os.chdir("../")  
+
+
+
+def generate_input_select_mux_top(input_driver_name, use_tgate, use_fluts):
+    """ Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
+    
+    # Create directories
+    if not os.path.exists(input_driver_name):
+        os.makedirs(input_driver_name)  
+    # Change to directory    
+    os.chdir(input_driver_name)  
+
+
+    # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
+    # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
+    # transmission gate ---> "Xlut n_in_sram n_out a a_not b b_not c c_not d d_not e e_not f f_not vdd_lut gnd lut"
+    lut_letter = 'c'
+    # string holding lut input connections depending on the driver letter
+    lut_input_nodes = ""
+    # loop over the letters a -> f
+    for letter in range(97,103):
+        # if this is the driver connect it to n_3_1 else connect it to vdd
+        if chr(letter) == lut_letter:
+            lut_input_nodes += "n_4_1 "
+            # if tgate connect the complement input to n_1_4
+            if use_tgate: lut_input_nodes += "n_1_4 "
+        else:
+            lut_input_nodes += "vdd "
+            # if tgate connect the complement to gnd
+            if use_tgate: lut_input_nodes += "gnd "
+
+    
+    input_select_mux_filename = input_driver_name + "_input_mux.sp"
+    spice_file = open(input_select_mux_filename, 'w')
+    spice_file.write(".TITLE C Input Select Mux \n\n") 
+    
+    spice_file.write("********************************************************************************\n")
+    spice_file.write("** Include libraries, parameters and other\n")
+    spice_file.write("********************************************************************************\n\n")
+    spice_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
+    
+    spice_file.write("********************************************************************************\n")
+    spice_file.write("** Setup and input\n")
+    spice_file.write("********************************************************************************\n\n")
+    spice_file.write(".TRAN 1p 16n SWEEP DATA=sweep_data\n")
+    spice_file.write(".OPTIONS BRIEF=1\n\n")
+    spice_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    spice_file.write("*.OPTIONS POST=2\n\n")
+
+    spice_file.write("* Input signal\n")
+    spice_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    spice_file.write("* Power rail for the circuit under test.\n")
+    spice_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    spice_file.write("V_LUT vdd_lut gnd supply_v\n\n")
+
+    spice_file.write("********************************************************************************\n")
+    spice_file.write("** Measurement\n")
+    spice_file.write("********************************************************************************\n\n")
+    spice_file.write("* Total delays\n")
+    spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
+    spice_file.write("+    TARG V(n_4_1) VAL='supply_v/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+    spice_file.write("+    TARG V(n_4_1) VAL='supply_v/2' RISE=1\n\n")
+    
+    spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
+
+    spice_file.write("* Measure the power required to propagate a rise and a fall transition through the lut at 250MHz.\n")
+    spice_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LUT) FROM=0ns TO=4ns\n")
+    spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
+    spice_file.write("********************************************************************************\n")
+    spice_file.write("** Circuit\n")
+    spice_file.write("********************************************************************************\n\n")    
+    spice_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
+    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
+    spice_file.write("* Note that only the first K inputs of the lut are actually connected to inside the lut subcircuit\n")
+    spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n\n")
+    spice_file.write("Xc_input_mux n_3_1 n_4_1 vdd gnd vdd gnd c_input_mux \n")
+    spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n\n")
+    spice_file.write("Xlut vdd n_out " + lut_input_nodes + "vdd gnd lut\n\n")
+
+    spice_file.write(".END")
+    spice_file.close()
+
+    # Come out of lut_driver directory
+    os.chdir("../")  
+
+    return (input_driver_name + "/" + input_driver_name + "_input_mux.sp")
   
     
 def generate_local_ble_output_top(name, use_tgate, use_fluts, updates = False):
@@ -4948,12 +5036,124 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
             top_file.write("Xfmux_l1_load n_0_2 vdd n_0_3 vdd n_f2d_out vdd gnd vdd vdd fmux_l1_load\n\n")       
             top_file.write(utils.create_wire("n_0_3", "n_0_4", "fmux_l2", "fmux_l3"))
             top_file.write("Xfmux_l3 n_0_4 n_1_1 vdd gnd vdd gnd fmux_l3\n\n")
-            top_file.write("Xfmux_l3_load n_1_1 n_general_out n_out_ff vdd gnd vdd gnd vdd_general_output fmux_l3_load\n\n")
+            top_file.write("Xfmux_l3_load n_1_1 n_general_out n_mux_out vsram vsram_n vdd gnd vdd_general_output fmux_l3_load\n\n")
     else:
         top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
     # the general output 
     top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
+    top_file.write(".END")
+    top_file.close()
+
+    # Come out of top-level directory
+    os.chdir("../")
+    
+    return (name + "/" + name + ".sp")
+
+
+def generate_ff_top(name, use_tgate, updates, input_size = 2):
+    """ """
+    
+    # Create directories
+    if not os.path.exists(name):
+        os.makedirs(name)  
+    # Change to directory    
+    os.chdir(name)  
+
+    lut_input_nodes = "vdd "*6
+    if use_tgate: lut_input_nodes = "vdd gnd "*6
+
+    
+    ff_filename = name + ".sp"
+    top_file = open(ff_filename, 'w')
+    top_file.write(".TITLE FF Input Mux\n\n") 
+    
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Include libraries, parameters and other\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
+    
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Setup and input\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
+    top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
+    top_file.write("* Input signal\n")
+    top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    top_file.write("* Power rail for the circuit under test.\n")
+    top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    top_file.write("V_FF_MUX vdd_mux gnd supply_v\n\n")
+
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Measurement\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write("* Total delays\n")
+    top_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_1) VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V(n_1_3) VAL='supply_v/2' RISE=1\n\n")
+
+    top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
+
+    top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_FF_MUX) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Circuit\n")
+    top_file.write("********************************************************************************\n\n")
+
+    # BUG: This is a bug fix for COFFE 2.0 uncomment it and push it to the master
+    #if use_fluts:
+    #    top_file.write("Xlut n_in n_0_1 "+ lut_input_nodes + "vdd gnd lut\n\n")
+    #    top_file.write("Xflut_output_load n_0_1 vdd n_1_1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+    #else:
+    
+    if updates in (1, 2, 3):
+        #needs to be worked out
+        pass
+        #if input_size == 2:
+        #    top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+        #    # delay calculations start from n_1_1 to include all the wires before global ble 2:1
+        #    top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_1_1 vdd gnd vdd vdd vdd flut_output_load\n\n")
+        #    top_file.write(utils.create_wire("n_1_1", "n_1_2", "fmux_l1_duplicate", "ff"))
+        #    top_file.write("Xff n_1_2 n_hang2 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
+        #    top_file.write(utils.create_wire("n_1_2", "n_1_3", "ffin", "gbo2"))
+        #    top_file.write("Xgeneral_ble_output n_1_3 n_general_out vdd gnd vdd_general_output gnd general_ble_output\n\n")
+        #elif input_size == 3:
+        #    top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+        #    top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
+        #    top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1", "fmux_l2"))
+        #    top_file.write("Xfmux_l2 n_0_3 n_1_1 vdd gnd vdd gnd fmux_l2\n\n")
+        #    top_file.write("Xfmux_l2_load n_1_1 n_general_out n_out_ff vdd gnd vdd gnd vdd_general_output fmux_l2_load\n\n")
+    elif updates == 4:
+        if input_size == 2:
+            top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+            top_file.write("* Fmux level 1 \n")
+            top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_hang vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write("* Fmux level 1 output load which includes fmux level 2 and its duplicate\n")
+            top_file.write("Xfmux_l1_load n_0_2 vdd n_f2_out vdd n_1_1 vdd gnd vdd vdd fmux_l1_load\n\n")
+            top_file.write(utils.create_wire("n_1_1", "n_1_2", "fmux_l2_duplicate", "ff2"))
+            top_file.write("Xff2 n_1_2 n_hang2 n_1_3 vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff2\n\n")
+            top_file.write("* Wire connecting the output of the ff input select mux output and the generabl ble output 2:1 mux\n")
+            top_file.write(utils.create_wire("n_1_3", "n_1_4", "ff2_mux", "gbo2"))
+            top_file.write("Xgeneral_ble_output n_1_4 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+        elif input_size == 3:
+            top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
+            top_file.write("* Fmux level 1 \n")
+            top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_hang vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write("* Fmux level 1 output load which includes fmux level 2 and its duplicate\n")
+            top_file.write("Xfmux_l1_load n_0_2 vdd n_0_3 vdd n_f2d_out vdd gnd vdd vdd fmux_l1_load\n\n")       
+            top_file.write(utils.create_wire("n_0_3", "n_0_4", "fmux_l2", "fmux_l3"))
+            top_file.write("Xfmux_l3 n_0_4 n_1_1 vdd gnd vdd gnd fmux_l3\n\n")
+            top_file.write("Xfmux_l3_load n_1_1 n_hang_2 n_1_3 vsram vsram_n vdd gnd vdd fmux_l3_load\n\n")
+            top_file.write("* wire connecting the output of the ff mux to gbo \n")
+            top_file.write(utils.create_wire("n_1_3", "n_1_4", "ff2_mux", "gbo2"))
+            top_file.write("Xgeneral_ble_output n_1_4 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+
     top_file.write(".END")
     top_file.close()
 
@@ -5118,7 +5318,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level, updates):
         # if simulating fmux_l3 add its load
         if level == 3:
             top_file.write("* Loading at the output of fmux_l3 consisting of a ff with a 3:1 input select mux and a 3:1 general ble output mux\n")
-            top_file.write("Xfmux_l3_load n_1_7 n_gbo3_out n_ff3_out vdd gnd vdd gnd vdd fmux_l3_load\n\n")
+            top_file.write("Xfmux_l3_load n_1_7 n_gbo3_out n_ff3_out vsram vsram_n vdd gnd vdd fmux_l3_load\n\n")
 
 
     top_file.write(".END")

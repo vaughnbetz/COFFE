@@ -600,8 +600,9 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + 
 			lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
 		if updates == 4 and lut_input_name == 'c' and ptran > 2:
-			# TODO: add mux inputs here
-			spice_file.write("* add a muxes as load here\n")
+			#spice_file.write("* Input select mux\n")
+			spice_file.write("Xc_input_mux"+str(ptran+1)+" n_"+ str(ptran+1) +" n_mux_out_" + str(ptran+1)+" vdd gnd vdd gnd c_input_mux\n\n")
+			pass
 		elif not updates and (use_fluts and num_ptran_load == 1):
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n\n") 
 		elif finput:

@@ -95,6 +95,10 @@ def print_area_and_delay(report_file, fpga_inst):
     if fpga_inst.specs.updates == 4:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l3))
 
+    if fpga_inst.specs.updates == 4:
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff2))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff3))
+
     # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
         #carry path

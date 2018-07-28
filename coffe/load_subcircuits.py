@@ -484,7 +484,7 @@ def generate_last_fmux_output_load(spice_filename, level):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* FLUT level "+str(level)+" mux output load\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT "+fmux+"_load n_in n_gbo3_out n_ff3_out n_gate n_gate_n n_vdd n_gnd n_vdd_gbo\n\n")
+    spice_file.write(".SUBCKT "+fmux+"_load n_in n_gbo3_out n_mux_out n_gate n_gate_n n_vdd n_gnd n_vdd_gbo\n\n")
 
     spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the 3:1 general ble output mux\n")
     spice_file.write(utils.create_wire("n_in", "n_1_1", fmux, "gbo3"))

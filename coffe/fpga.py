@@ -78,6 +78,7 @@ DELAY_WEIGHT_LUT_F = 0.0186
 DELAY_WEIGHT_LUT_FRAC = 0.0186
 DELAY_WEIGHT_LOCAL_BLE_OUTPUT = 0.0267
 DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0326
+DELAY_WEIGHT_FF = 0.0326
 # The res of the ~15% came from memory, DSP, IO and FF based on my delay profiling experiments.
 DELAY_WEIGHT_RAM = 0.15
 HEIGHT_SPAN = 0.5
@@ -900,11 +901,15 @@ class _LUTInput(_CompoundCircuit):
         # Create LUT input not driver
         self.not_driver = _LUTInputNotDriver(name, self.type, delay_weight, use_tgate, updates)
         
+        # input select mux used in updates 4
+        if updates == 4 and name == 'c':
+            self.input_select_mux = _MUX("c_input_mux", use_tgate, 2, False)
         # LUT input delays are the delays through the LUT for specific input (doesn't include input driver delay)
         self.tfall = 1
         self.trise = 1
         self.delay = 1
         self.delay_weight = delay_weight
+        self.updates = updates
         
         
     def generate(self, subcircuit_filename):
@@ -916,6 +921,10 @@ class _LUTInput(_CompoundCircuit):
         init_tran_sizes = self.driver.generate(subcircuit_filename)
         # Generate the not driver
         init_tran_sizes.update(self.not_driver.generate(subcircuit_filename))
+
+        # generate the input select mux
+        if self.updates == 4 and self.name == 'c':
+            init_tran_sizes.update(self.input_select_mux.generate(subcircuit_filename))
 
         return init_tran_sizes
   
@@ -930,6 +939,10 @@ class _LUTInput(_CompoundCircuit):
         # Generate the not driver top
         self.not_driver.generate_top()
 
+        #generate the top of select mux
+        if self.updates == 4 and self.name == 'c':
+            self.mux_top_spice_path = top_level.generate_input_select_mux_top("lut_" + self.name + "_driver", self.use_tgate, self.use_finfet)
+
      
     def update_area(self, area_dict, width_dict):
         """ Update area. We update the area of the the driver and the not driver by calling area update functions
@@ -939,8 +952,13 @@ class _LUTInput(_CompoundCircuit):
         driver_area = self.driver.update_area(area_dict, width_dict)
         # Calculate area of not driver
         not_driver_area = self.not_driver.update_area(area_dict, width_dict)
+        # Add the input select mux
+        if self.updates == 4 and self.name == 'c':
+            mux_area = self.input_select_mux.update_area(area_dict, width_dict)
+        else:
+            mux_area = 0
         # Return the sum
-        return driver_area + not_driver_area
+        return driver_area + not_driver_area + 2*mux_area
     
     
     def update_wires(self, width_dict, wire_lengths, wire_layers):
@@ -950,6 +968,9 @@ class _LUTInput(_CompoundCircuit):
         self.driver.update_wires(width_dict, wire_lengths, wire_layers)
         # Update not driver wires
         self.not_driver.update_wires(width_dict, wire_lengths, wire_layers)
+        # Update the input select mux wires
+        if self.updates == 4 and self.name == 'c':
+            self.input_select_mux.update_wires(width_dict, wire_lengths, wire_layers)
         
         
     def print_details(self, report_file):
@@ -2087,7 +2108,7 @@ class _FlipFlop(_CompoundCircuit):
         # 
         self.t_clk_to_q = 1
         # Delay weight used to calculate delay of representative critical path
-        self.delay_weight = 1
+        self.delay_weight = DELAY_WEIGHT_FF
 
         self.input_size = input_size
         self.updates = updates
@@ -2206,7 +2227,8 @@ class _FlipFlop(_CompoundCircuit):
     def generate_top(self):
         """ """
         # TODO for T_setup and T_clock_to_Q
-        pass
+        if self.Rsel != 'z' and self.updates == 4:
+            self.top_spice_path = top_level.generate_ff_top(self.name, self.use_tgate, self.updates, self.input_size)
         
 
     def update_area(self, area_dict, width_dict):
@@ -2867,13 +2889,13 @@ class _BLE(_CompoundCircuit):
         if specs.updates:
             self.ff  = _FlipFlop('z', specs.use_tgate, specs.use_finfet)
             self.subcircuits[self.ff.name] = self.ff
-            self.ff3 = _FlipFlop('b', specs.use_tgate, specs.use_finfet, 3, True)
+            self.ff3 = _FlipFlop('b', specs.use_tgate, specs.use_finfet, 3, specs.updates)
             self.subcircuits[self.ff3.name] = self.ff3
             if specs.updates != 3:
-                self.ff2 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 2, True)
+                self.ff2 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 2, specs.updates)
                 self.subcircuits[self.ff2.name] = self.ff2
             else:
-                self.ff4 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 4, True)
+                self.ff4 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 4, specs.updates)
                 self.subcircuits[self.ff4.name] = self.ff4
 
         # Create LUT output load object
@@ -5930,6 +5952,10 @@ class FPGA:
             self.subcircuits[self.carrychainperf2.name] = self.carrychainperf2
             self.subcircuits[self.carrychaininter2.name] = self.carrychaininter2 
 
+        if self.updates == 4:
+            self.subcircuits[self.logic_cluster.ble.ff2.name] = self.logic_cluster.ble.ff2
+            self.subcircuits[self.logic_cluster.ble.ff3.name] = self.logic_cluster.ble.ff3
+
 
 
     def generate(self):
@@ -6795,6 +6821,10 @@ class FPGA:
                 spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
                 trise, tfall, valid_delay = utils.get_delays(spice_meas)
 
+                if self.updates == 4 and lut_input_name == 'c':
+                    mspice_meas = spice_interface.run(lut_input.mux_top_spice_path, parameter_dict) 
+                    mtrise, mtfall, mvalid_delay = utils.get_delays(mspice_meas)
+
                 # For the Stratix10 design add the delay for thes signal propagation through fmux_l1 and
                 # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals
                 # input f delay will be only the delay of switching the ptran of the level 2 fmux
@@ -6809,20 +6839,25 @@ class FPGA:
                         tfall += self.logic_cluster.ble.fmux_l2.tfall
                         trise += self.logic_cluster.ble.fmux_l2.trise
                 elif self.updates == 4:
-                    if lut_input_name != 'd' and lut_input_name != 'e' and lut_input_name != 'f' :
+                    if lut_input_name not in ('d', 'e', 'f'):
                         tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall + self.logic_cluster.ble.fmux_l3.tfall
                         trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise + self.logic_cluster.ble.fmux_l3.trise
-                    # input e will see the delay of switching the gates of the fmux_l1 in addition to the
-                    # propagation delay through fmux_l2
+                    # for input d we need to add the delay of the two following fmuxes
                     elif lut_input_name == 'd':
-                        tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall
-                        trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise
+                        tfall += self.logic_cluster.ble.fmux_l2.tfall + self.logic_cluster.ble.fmux_l3.tfall
+                        trise += self.logic_cluster.ble.fmux_l2.trise + self.logic_cluster.ble.fmux_l3.trise
+                    # for input e we need to add the delay of the last fmux
                     elif lut_input_name == 'e':
                         tfall += self.logic_cluster.ble.fmux_l3.tfall
                         trise += self.logic_cluster.ble.fmux_l3.trise
                 elif self.specs.use_fluts:
                     tfall += self.logic_cluster.ble.fmux.tfall
                     trise += self.logic_cluster.ble.fmux.trise
+
+                # add the input mux delay
+                if self.updates == 4 and lut_input_name == 'c':
+                    tfall += mtfall
+                    trise += mtrise
 
                 lut_input.tfall = tfall
                 lut_input.trise = trise
@@ -6849,8 +6884,6 @@ class FPGA:
                 exit(2)
 
             crit_path_delay += lut_delay*lut_input.delay_weight
-
-
 
 
         # TODO: the actual delay weights should be calculated from vpr and used here
