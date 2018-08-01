@@ -4393,6 +4393,10 @@ def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
         elif lut_letter == 'b':
             n = "3"
 
+    gate = ""
+    if updates == 4 and lut_letter == 'c':
+        gate = "vsram vsram_n "
+
     # Create directories
     if not os.path.exists(input_driver_name):
         os.makedirs(input_driver_name)  
@@ -4460,13 +4464,13 @@ def generate_lut_driver_top(input_driver_name, input_driver_type, updates):
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
     input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
     input_driver_file.write("X" + input_driver_name + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd_lut_driver gnd " + input_driver_name + "\n")
-    input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n\n")
+    input_driver_file.write("X" + input_driver_name + "_load_1 n_out "+gate+"vdd gnd " + input_driver_name + "_load\n\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
         input_driver_file.write("Xff"+n+" n_rsel n_ff_out n_mux_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     input_driver_file.write("X" + input_driver_name + "_not_1 n_2_1 n_out_n vdd gnd " + input_driver_name + "_not\n")
-    input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd gnd " + input_driver_name + "_load\n\n")
+    input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n "+gate+"vdd gnd " + input_driver_name + "_load\n\n")
     input_driver_file.write(".END")
     input_driver_file.close()
 
@@ -4497,6 +4501,10 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type, updates):
             n = "2"
         elif lut_letter == 'b':
             n = "3"
+
+    gate = ""
+    if updates == 4 and lut_letter == 'c':
+        gate = "vsram vsram_n "
 
     # Create directories
     if not os.path.exists(input_driver_name_no_not):
@@ -4559,14 +4567,14 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type, updates):
     input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name_no_not + "\n")
     # BUG: the n_vdd should be changes to vdd
-    input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
+    input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out "+gate+"n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         # For the new design A is connected to ff2 while B is connected to ff3 this is controlled by the string (n)  
         input_driver_file.write("Xff"+n+" n_rsel n_ff_out n_mux_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff"+n+"\n")
     input_driver_file.write("X" + input_driver_name + "_1 n_2_1 n_out_n vdd_lut_driver gnd " + input_driver_name + "\n")
     # BUG: the n_vdd should be changes to vdd
-    input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
+    input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n "+gate+"n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
     input_driver_file.write(".END")
     input_driver_file.close()
 
@@ -4700,6 +4708,11 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
 
     spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n\n")
     spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n\n")
+    # I think this is not needed since it's already included in the delay measurement of the driver
+    # think of it as if we already measured the time needed to charge those capacitors the only thing
+    # needed now is to measure the delay of one of the pathes which doesn't need adding all the capacitve
+    # loading seed at the input node
+
     # The lut module only has one input ptran as loading the real loading depends on the input level and 
     # is most of the time higher than that. Adding the whole loading is still a rough estimation.
     # BUG: Uncomment the next line to add the loading minus one ptran which is already connected from inside the lut
@@ -4714,11 +4727,8 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
         else:
             spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     elif updates in (1, 2, 3):
-        # since d only see one transistor as loading no need to add the loading to this circuit
-        # however, for the other inputs there is at least one more transistor that needs to be added as loading
-        # at the lut input node since the lut component only has on transistor in it connected to the input
-        if lut_letter != 'd':
-            spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
+        #if lut_letter != 'd':
+        #    spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
         spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
         if lut_letter == 'e' or lut_letter == 'f':
             spice_file.write(utils.create_wire("n_out1", "n_1_5", "fmux_l1", "fmux_l2"))
@@ -4726,8 +4736,13 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             if lut_letter == 'f':
                 spice_file.write("Xfmux_l2_load n_out3 n_out4 n_out5 vdd gnd vdd gnd v_dd fmux_l2_load\n\n")
     elif updates == 4:
+        # I think this is not needed since it's already included in the delay measurement of the driver
+        # think of it as if we already measured the time needed to charge those capacitors the only thing
+        # needed now is to measure the delay of one of the pathes which doesn't need adding all the capacitve
+        # loading seed at the input node
+
         # loading seen at the input signal after the driver
-        spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
+        #spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
         # lut output load containing the first level of flut mux
         spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_1_5 vdd n_out2 vdd gnd vdd vdd vdd flut_output_load\n\n")
         if lut_letter in ('d', 'e', 'f'):
@@ -4807,9 +4822,9 @@ def generate_input_select_mux_top(input_driver_name, use_tgate, use_fluts):
     spice_file.write("********************************************************************************\n\n")
     spice_file.write("* Total delays\n")
     spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
-    spice_file.write("+    TARG V(n_4_1) VAL='supply_v/2' FALL=1\n")
+    spice_file.write("+    TARG V(Xlut_"+lut_letter+"_driver_load.n_mux_out_4) VAL='supply_v/2' FALL=1\n")
     spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(n_4_1) VAL='supply_v/2' RISE=1\n\n")
+    spice_file.write("+    TARG V(Xlut_"+lut_letter+"_driver_load.n_mux_out_4) VAL='supply_v/2' RISE=1\n\n")
     
     spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 
@@ -4822,9 +4837,9 @@ def generate_input_select_mux_top(input_driver_name, use_tgate, use_fluts):
     spice_file.write("********************************************************************************\n\n")    
     spice_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
     spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n\n")
-    spice_file.write("* Note that only the first K inputs of the lut are actually connected to inside the lut subcircuit\n")
+    spice_file.write("* Note that only the first K inputs of the lut are actually connected to ptrans inside the lut subcircuit\n")
     spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n\n")
-    spice_file.write("Xc_input_mux n_3_1 n_4_1 vdd gnd vdd gnd c_input_mux \n")
+    spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vsram vsram_n vdd gnd lut_"+lut_letter+"_driver_load\n")
     spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n\n")
     spice_file.write("Xlut vdd n_out " + lut_input_nodes + "vdd gnd lut\n\n")
 

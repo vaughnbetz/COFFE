@@ -84,6 +84,10 @@ def print_area_and_delay(report_file, fpga_inst):
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name], "lut_" + input_name, "n/a"))
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name].driver))
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.lut.input_drivers[input_name].not_driver))
+        if fpga_inst.specs.updates == 4 and input_name == 'c':
+            mux = BLE.lut.input_drivers[input_name].input_select_mux
+            print_and_write(report_file, subcircuit_ADP(area_dict, mux, "lut_c_input_mux"))
+
 
     # flut muxes
     if fpga_inst.specs.use_fluts:

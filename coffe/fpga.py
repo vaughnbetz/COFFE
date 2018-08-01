@@ -1006,16 +1006,19 @@ class _LUTInputDriverLoad:
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
         # Update wire lengths
-        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio       
-        # Update set wire layers
-        wire_layers["wire_lut_" + self.name + "_driver_load"] = 0
+        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio      
 
         # if new design, add the wire connecting the e and f inputs to the second carry chain
         if self.updates in (2, 3) and self.name in ("e", "f"):
             # Update wire lengths
             wire_lengths["wire_lut_" + self.name + "_driver_to_cc2"] = width_dict["lut"] * ratio + width_dict["carry_chain"]      
-            # Update set wire layers
-            wire_layers["wire_lut_" + self.name + "_driver_to_cc2"] = 0
+
+        # adding the wire connecting inputs d, e, and f to the input select mux
+        if self.updates == 4 and self.name in ('d', 'e', 'f'):
+            wire_lengths[utils.wire_name("lut_" + self.name + "_driver", "input_select")] = width_dict["lut"] * ratio
+
+        for wire in self.wire_names:
+            wire_layers[wire] = 0
         
         
     def print_details(self):
@@ -1054,9 +1057,7 @@ class _LUT(_SizableCircuit):
         if updates == 4:
             self.lutSize -= 3
             Rsel = 'ab'
-            # we need to add a mux in front of the c input, however, it is not a feedback mux
-            # it should select between c, d, e or f.
-            Rfb = 'abc'
+            Rfb = 'ab'
         elif updates:
             self.lutSize -= 2
             Rsel = 'ab'
@@ -6287,6 +6288,7 @@ class FPGA:
             self.area_dict["total_carry_chain"] = carry_chain_area
         
         # Calculate tile area
+        # TODO: add the constant for the multiplier area for calculating the area after adding a hard multiplier to the LAB
         tile_area = switch_block_area + connection_block_area + cluster_area 
 
         self.area_dict["tile"] = tile_area
@@ -6821,9 +6823,14 @@ class FPGA:
                 spice_meas = spice_interface.run(driver_and_lut_sp_path, parameter_dict) 
                 trise, tfall, valid_delay = utils.get_delays(spice_meas)
 
+                # for lut c in design 4 we need to measure the delay of the input select mux after the c driver
                 if self.updates == 4 and lut_input_name == 'c':
                     mspice_meas = spice_interface.run(lut_input.mux_top_spice_path, parameter_dict) 
                     mtrise, mtfall, mvalid_delay = utils.get_delays(mspice_meas)
+                    lut_input.input_select_mux.tfall = mtfall
+                    lut_input.input_select_mux.trise = mtrise
+                    lut_input.input_select_mux.delay = max(mtfall, mtrise)
+                    lut_input.input_select_mux.power = float(mspice_meas["meas_avg_power"][0])
 
                 # For the Stratix10 design add the delay for thes signal propagation through fmux_l1 and
                 # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals

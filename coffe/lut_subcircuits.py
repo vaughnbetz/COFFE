@@ -595,14 +595,18 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	spice_file.write("******************************************************************************************\n")
 	spice_file.write("* LUT " + lut_input_name + "-input load subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
-	spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n\n")
+	if updates == 4 and lut_input_name == 'c':
+		spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_gate n_gate_n n_vdd n_gnd\n\n")
+	else:
+		spice_file.write(".SUBCKT lut_" + lut_input_name + "_driver_load n_1 n_vdd n_gnd\n\n")
 	for ptran in range(1, num_ptran_load + 1):
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_" + str(ptran) + " n_" + str(ptran+1) + " wire Rw='wire_lut_" + 
 			lut_input_name + "_driver_load_res/" + str(num_ptran_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_ptran_load) + "'\n")
 		if updates == 4 and lut_input_name == 'c' and ptran > 2:
 			#spice_file.write("* Input select mux\n")
-			spice_file.write("Xc_input_mux"+str(ptran+1)+" n_"+ str(ptran+1) +" n_mux_out_" + str(ptran+1)+" vdd gnd vdd gnd c_input_mux\n\n")
-			pass
+			spice_file.write("Xinput_select_mux_"+str(ptran+1)+" n_"+ str(ptran+1) +" n_mux_out_" + str(ptran+1)+" n_gate n_gate_n n_vdd n_gnd c_input_mux\n")
+			# adding the transistor at the output of the input select mux
+			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_mux_out_"+ str(ptran+1) +" n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n\n")
 		elif not updates and (use_fluts and num_ptran_load == 1):
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_flut_mux_nmos\n\n") 
 		elif finput:
@@ -621,12 +625,24 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 		spice_file.write(utils.create_wire("n_1", "n_1_1", "lut_" + lut_input_name + "_driver", "cc2"))
 		spice_file.write("Xcarry_chain2_load n_1_1 gnd vdd n_cout n_sum_out2 n_p_3 vdd gnd FA_carry_chain2\n") 
 
+	# add the extra loading in design 4 which is the input select mux which chooses an input between 
+	# C and E or D. This loading should be added to inputs D, E, and F
+	if updates == 4 and lut_input_name in ('d', 'e', 'f'):
+		spice_file.write(utils.create_wire("n_1", "n_1_1", "lut_" + lut_input_name + "_driver", "input_select"))
+		spice_file.write("Xinput_select_mux n_1_1 n_1_2 vsram vsram_n n_vdd n_gnd c_input_mux\n")
+
 
 	spice_file.write(".ENDS\n\n\n")
 	
 	# Create a list of all wires used in this subcircuit
 	wire_names_list = []
 	wire_names_list.append("wire_lut_" + lut_input_name + "_driver_load")
+
+	if updates in (2, 3) and lut_input_name in ('e', 'f'):
+		wire_names_list.append(utils.wire_name("lut_" + lut_input_name + "_driver", "cc2"))
+
+	if updates == 4 and lut_input_name in ('d', 'e', 'f'):
+		wire_names_list.append(utils.wire_name("lut_" + lut_input_name + "_driver", "input_select"))
 	
 	return wire_names_list
 
