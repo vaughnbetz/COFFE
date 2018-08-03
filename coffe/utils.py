@@ -96,12 +96,15 @@ def print_area_and_delay(report_file, fpga_inst):
     if fpga_inst.specs.updates:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l2))
 
-    if fpga_inst.specs.updates == 4:
-        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l3))
-
-    if fpga_inst.specs.updates == 4:
-        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff2))
-        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff3))
+    # level 3 mux and flip flop input select mux
+    if fpga_inst.specs.updates:
+        if fpga_inst.specs.updates == 4:
+            print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l3))
+        if fpga_inst.specs.updates != 3:
+            print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff2.input_mux, "", "", "n/a"))
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff3.input_mux, "", "", "n/a"))
+        if fpga_inst.specs.updates == 3:
+            print_and_write(report_file, subcircuit_ADP(area_dict, BLE.ff4.input_mux, "", "", "n/a"))
 
     # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
@@ -441,6 +444,7 @@ def load_arch_params(filename):
         'use_tgate': False,
         'use_finfet': False,
         'updates': 0,
+        'mult_size': 0,
         'memory_technology': "SRAM",
         'enable_bram_module': 0,
         'ram_local_mux_size': 25,
@@ -551,6 +555,8 @@ def load_arch_params(filename):
                 arch_params['use_tgate'] = True
         elif param == 'updates':
             arch_params['updates'] = int(value)
+        elif param == 'mult_size':
+            arch_params['mult_size'] = float(value)
         elif param == 'memory_technology':
             arch_params['memory_technology'] = value
         elif param == 'vdd':
@@ -983,6 +989,9 @@ def print_architecture_params(arch_params_dict, report_file_path):
     print_and_write(report_file, "  Local MUX population (Fclocal): " + str(arch_params_dict['Fclocal']))
     print_and_write(report_file, "  LUT input for register selection MUX (Rsel): " + str(arch_params_dict['Rsel']))
     print_and_write(report_file, "  LUT input(s) for register feedback MUX(es) (Rfb): " + str(arch_params_dict['Rfb']))
+
+    if arch_params_dict['updates']:
+        print_and_write(report_file, "  Updates number: " + str(arch_params_dict['updates']))
     print_and_write(report_file, "")
     
     print_and_write(report_file, "-------------------------------------------------")
@@ -1186,12 +1195,12 @@ def create_wire(node_1, node_2, from_node, to_node):
     name = wire_name(from_node, to_node)
     return "X"+name+" "+node_1+" "+node_2+" wire Rw="+name+"_res Cw="+name+"_cap\n"
 
-def get_delays(spice_meas):
+def get_delays(spice_meas, measurment = "meas_total"):
     """ Checks for failed simulation and returns the rise and fall delays from the 
         spice_meas dictionary """
     valid_delay = True
-    tfall = spice_meas["meas_total_tfall"][0]
-    trise = spice_meas["meas_total_trise"][0]
+    tfall = spice_meas[measurment+"_tfall"][0]
+    trise = spice_meas[measurment+"_trise"][0]
 
     if "failed" in (trise, tfall):
         valid_delay = False
@@ -1227,3 +1236,124 @@ def load_tran_sizes(subcircuit, initial_sizes):
                 subcircuit.initial_transistor_sizes[trans] = initial_sizes[trans]
             else: 
                 print("WARNING: Transistor {} size wasn't found in the input file".format(trans))
+
+
+def print_detailed_delays(report_file, fpga_inst):
+
+    print_and_write(report_file, "  Detailed Delays (ps) Report:")
+    print_and_write(report_file, "  ============================")
+    print_and_write(report_file, "\n")
+
+
+    print_and_write(report_file, "  LUT Input Delays (Local Mux -> 6-LUT output):")
+    print_and_write(report_file, "  ---------------------------------------------")
+    print_and_write(report_file, "")
+
+    for lut_letter, lut_input in sorted(fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems()):
+        driver = lut_input.driver
+        not_driver = lut_input.not_driver
+        # LUT input delay from the local mux output to the 6-LUT output
+        lut_input_delay = lut_input.delay + max(driver.delay, not_driver.delay)
+        print_and_write(report_file, ("  LUT input " + lut_letter + ": ").ljust(40) + str(round(lut_input_delay/1e-12,4)))
+
+    # New Line
+    print_and_write(report_file, "")  
+
+    print_and_write(report_file, "  Fracturable LUT Muxes Delays:")
+    print_and_write(report_file, "  -----------------------------")
+    print_and_write(report_file, "")
+
+    if fpga_inst.specs.use_fluts or fpga_inst.specs.updates:
+
+        # FLUT mux level 1
+        print_and_write(report_file, ("  FLUT Mux Level 1: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.fmux.delay/1e-12,4)))
+
+        if fpga_inst.specs.updates:
+
+            # FLUT mux level 2
+            print_and_write(report_file, ("  FLUT Mux Level 2: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.fmux_l2.delay/1e-12,4)))
+
+
+            if fpga_inst.specs.updates == 4:
+                # FLUT mux level 3
+                print_and_write(report_file, ("  FLUT Mux Level 3: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.fmux_l3.delay/1e-12,4)))
+    
+    # New Line
+    print_and_write(report_file, "")  
+
+    print_and_write(report_file, "  Carry Chain Delays:")
+    print_and_write(report_file, "  -------------------")
+    print_and_write(report_file, "")
+
+    # Carry Chain 1 input to Sout delay
+    print_and_write(report_file, ("  Carry Chain 1 Input to Sout: ").ljust(40) + str(round(fpga_inst.carrychain.in_sout_delay/1e-12,4)))
+
+    # Carry Chain 1 input to Cout delay
+    print_and_write(report_file, ("  Carry Chain 1 Input to Cout: ").ljust(40) + str(round(fpga_inst.carrychain.in_cout_delay/1e-12,4)))
+
+    # Carry Chain 1 Cin to Cout delay
+    print_and_write(report_file, ("  Carry Chain 1 Cin to Cout: ").ljust(40) + str(round(fpga_inst.carrychain.delay/1e-12,4)))
+
+    # Carry Chain 1 Cin to Sout delay
+    print_and_write(report_file, ("  Carry Chain 1 Cin to Sout: ").ljust(40) + str(round(fpga_inst.carrychainperf.delay/1e-12,4)))
+
+    # Carry Chain 2 inter LAB drivers delay 
+    print_and_write(report_file, ("  Carry Chain 1 Inter LAB Driver: ").ljust(40) + str(round(fpga_inst.carrychaininter.delay/1e-12,4)))    
+
+
+    # New Line
+    print_and_write(report_file, "")
+
+
+    if fpga_inst.specs.updates in (2, 3):
+        # Carry Chain 2 input to Sout delay
+        print_and_write(report_file, ("  Carry Chain 2 Input to Sout: ").ljust(40) + str(round(fpga_inst.carrychain2.in_sout_delay/1e-12,4)))
+
+        # Carry Chain 2 input to Cout delay
+        print_and_write(report_file, ("  Carry Chain 2 Input to Cout: ").ljust(40) + str(round(fpga_inst.carrychain2.in_cout_delay/1e-12,4)))
+
+        # Carry Chain 2 Cin to Cout delay
+        print_and_write(report_file, ("  Carry Chain 2 Cin to Cout: ").ljust(40) + str(round(fpga_inst.carrychain2.delay/1e-12,4)))
+
+        # Carry Chain 2 Cin to Sout delay
+        print_and_write(report_file, ("  Carry Chain 2 Cin to Sout: ").ljust(40) + str(round(fpga_inst.carrychainperf2.delay/1e-12,4)))
+
+        # Carry Chain 2 inter LAB drivers delay 
+        print_and_write(report_file, ("  Carry Chain 2 Inter LAB Driver: ").ljust(40) + str(round(fpga_inst.carrychaininter2.delay/1e-12,4))) 
+
+
+    # New Line
+    print_and_write(report_file, "")  
+
+    print_and_write(report_file, "  Flip Flops Input Select Registers:")
+    print_and_write(report_file, "  ----------------------------------")
+    print_and_write(report_file, "")
+
+    if fpga_inst.specs.updates != 3:
+        # Delay from the input of the 2:1 Flip Flop input select mux to the Flip Flop input
+        print_and_write(report_file, ("  Flip Flop 2:1 Input Select Mux Delay: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.ff2.input_mux.delay/1e-12,4)))
+
+    # Delay from the input of the 3:1 Flip Flop input select mux to the Flip Flop input
+    print_and_write(report_file, ("  Flip Flop 3:1 Input Select Mux Delay: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.ff3.input_mux.delay/1e-12,4)))
+
+    if fpga_inst.specs.updates == 3:
+        # Delay from the input of the 3:1 Flip Flop input select mux to the Flip Flop input
+        print_and_write(report_file, ("  Flip Flop 4:1 Input Select Mux Delay: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.ff4.input_mux.delay/1e-12,4)))
+
+
+    # New Line
+    print_and_write(report_file, "")  
+
+    print_and_write(report_file, "  BLE Output Muxes:")
+    print_and_write(report_file, "  ---------------")
+    print_and_write(report_file, "")
+
+    # Delay of the 2:1 BLE output mux
+    print_and_write(report_file, ("  BLE 2:1 Output Mux Delay: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)))
+
+    # Delay of the 3:1 BLE output mux
+    print_and_write(report_file, ("  BLE 3:1 Output Mux Delay: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.general_output3.delay/1e-12,4)))
+
+
+
+    print_and_write(report_file, "\n\n")

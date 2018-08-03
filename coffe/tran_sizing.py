@@ -328,6 +328,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		# if we have a second layer of carry chains add their delay to the critical path
 		if fpga_inst.specs.updates in (2, 3):
 			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain2.delay + fpga_inst.carrychainperf2.delay + fpga_inst.carrychaininter2.delay
+		# Adding two adders per ALM to the critical path
+		elif fpga_inst.specs.updates == 4:
+			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain.delay
 
 		return path_delay
 
@@ -354,6 +357,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
 			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 			path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
+			# Add the delay of the input select mux
+			if fpga_inst.specs.updates == 4 and lut_input_name == 'c':
+				path_delay += lut_input.input_select_mux.delay
 
 		if not fpga_inst.updates:
 			# Local BLE output
@@ -366,10 +372,15 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		if fpga_inst.specs.use_fluts:
 			path_delay += fpga_inst.logic_cluster.ble.fmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
 
-		# TODO: I don't know if this is right or not
 		if fpga_inst.updates:
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l2.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 			path_delay += fpga_inst.logic_cluster.ble.general_output3.delay * fpga_inst.logic_cluster.ble.general_output3.delay_weight
+
+	 	# Add the delays of the flip flop input mux and the level three flut mux
+		if fpga_inst.updates == 4:
+			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -483,6 +494,9 @@ def get_current_delay(fpga_inst, is_ram_component = 0):
 	for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
 		path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 		path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
+		# Add the delay of the input select mux
+		if fpga_inst.specs.updates == 4 and lut_input_name == 'c':
+			path_delay += lut_input.input_select_mux.delay
 
 	if not fpga_inst.updates:
 		# Local BLE output
@@ -499,6 +513,12 @@ def get_current_delay(fpga_inst, is_ram_component = 0):
 	if fpga_inst.updates:
 		path_delay += fpga_inst.logic_cluster.ble.fmux_l2.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 		path_delay += fpga_inst.logic_cluster.ble.general_output3.delay * fpga_inst.logic_cluster.ble.general_output3.delay_weight
+
+	# Add the delays of the flip flop input mux and the level three flut mux
+	if fpga_inst.updates == 4:
+		path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+		path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+		path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
 	if not fpga_inst.updates:
 		if fpga_inst.specs.enable_carry_chain == 1:
@@ -600,6 +620,8 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 		# if we have another layer of carry chains add their delay to the critical path
 		if fpga_inst.specs.updates in (2, 3):
 			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain2.delay + fpga_inst.carrychainperf2.delay + fpga_inst.carrychaininter2.delay
+		elif fpga_inst.specs.updates == 4:
+			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain.delay
 
 		return path_delay
 
@@ -656,6 +678,9 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
 			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 			path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
+			# Add the delay of the input select mux
+			if fpga_inst.specs.updates == 4 and lut_input_name == 'c':
+				path_delay += lut_input.input_select_mux.delay
 
 		if not fpga_inst.updates:
 			# Local BLE output
@@ -668,10 +693,16 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 		if fpga_inst.specs.use_fluts:
 			path_delay += fpga_inst.logic_cluster.ble.fmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
 
-		# TODO: I don't know if this is right or not
 		if fpga_inst.updates:
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l2.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 			path_delay += fpga_inst.logic_cluster.ble.general_output3.delay * fpga_inst.logic_cluster.ble.general_output3.delay_weight
+
+		# Add the delays of the flip flop input mux and the level three flut mux
+		if fpga_inst.updates == 4:
+			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -2001,7 +2032,7 @@ def size_subcircuit_transistors(fpga_inst,
 	"""
 	
 	print "|------------------------------------------------------------------------------|"
-	print "|    Transistor sizing on subcircuit: " + subcircuit.name.ljust(41) + "|"
+	print "|    Transistor sizing on subcircuit: " + subcircuit.name.ljust(41) + 		 "|"
 	print "|------------------------------------------------------------------------------|"
 	print ""
 	
@@ -2292,13 +2323,13 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 
 		# If we are moving to a higher cost solution,
 		# Stop, and choose the one with smaller cost (the previous one)
-		#if total_cost >= previous_cost:
-			#print "Algorithm is terminating: cost has stopped decreasing\n"
-			#best_iteration = i - 1
-			#return True, best_iteration
-		#else:
-		previous_cost = total_cost
-		best_iteration = i
+		if total_cost >= previous_cost:
+			print "Algorithm is terminating: cost has stopped decreasing\n"
+			best_iteration = i - 1
+			return True, best_iteration
+		else:
+			previous_cost = total_cost
+			best_iteration = i
 
 	return False, 0
 
@@ -2461,7 +2492,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		### Debugging ###
 		#################
 
-
+		
 		#exit()
 
 		
@@ -2676,6 +2707,120 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				print "Current Cost: " + str(current_cost)
 
 			time_before_sizing = time.time()
+
+
+
+		############################################
+		## Size FLUT Level 3 Internal Mux
+		############################################
+		if fpga_inst.updates == 4:
+			subcircuit = fpga_inst.logic_cluster.ble.fmux_l3
+			name = subcircuit.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(subcircuit.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, subcircuit, 
+					opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]      
+
+			# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", subcircuit), get_current_delay(fpga_inst), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+			time_before_sizing = time.time()
+
+
+
+		############################################
+		## Size FF2 Input Select Mux
+		############################################
+		# TODO: make this for all updates
+		if fpga_inst.specs.updates == 4:
+			mux = fpga_inst.logic_cluster.ble.ff2.input_mux
+			name = mux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(mux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]        
+
+				# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+			time_before_sizing = time.time()
+
+
+		############################################
+		## Size FF3 Input Select Mux
+		############################################
+
+		# TODO: make this for all updates
+		if fpga_inst.specs.updates == 4:
+			mux = fpga_inst.logic_cluster.ble.ff3.input_mux
+			name = mux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(mux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]        
+
+				# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+			time_before_sizing = time.time()
 			
 
 			
@@ -2719,7 +2864,30 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[input_driver.not_driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
-				sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name]   
+				sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name] 
+
+
+			####################
+			# Input Select Mux #  
+			####################
+
+			if fpga_inst.specs.updates == 4 and input_driver_name == 'c':
+				input_mux = input_driver.input_select_mux
+				name = input_mux.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(input_mux.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict["input_drivers"] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, input_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
+
 
 
 		if quick_mode_dict["input_drivers"] == 1:

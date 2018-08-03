@@ -184,6 +184,13 @@ os.chdir(default_dir)
 # Print out final COFFE report to file
 utils.print_summary(arch_folder, fpga_inst, total_start_time)
 
+# Print detailed delays
+if fpga_inst.specs.updates:
+  delay_report_path = os.path.join(arch_folder, "delays_report.txt") 
+  delay_report = open(delay_report_path, 'w')
+  utils.print_detailed_delays(delay_report, fpga_inst)
+  delay_report.close()
+
 # Print vpr architecure file
 # The architecture description file should be changes for vpr
 if not fpga_inst.updates:

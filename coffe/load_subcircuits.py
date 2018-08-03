@@ -405,7 +405,7 @@ def generate_flut_output_load(spice_filename, enable_carry_chain, updates):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* FLUT output load (Loading at the LUT output when using FLUTs)\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT flut_output_load n_in n_g_1 n_out1 n_g_2 n_out2 n_vdd n_gnd n_vdd_m1 n_vdd_cc n_vdd_m2\n")
+    spice_file.write(".SUBCKT flut_output_load n_in n_g_1 n_out1 n_g_2 n_out2 ncout nsumout n_vdd n_gnd n_vdd_m1 n_vdd_cc n_vdd_m2\n")
 
     spice_file.write(utils.create_wire("n_in", "n_1_2", "lut", fmux))  
     spice_file.write("X" + fmux + " n_1_2 n_out1 n_g_1 n_gnd n_vdd_m1 n_gnd "+ fmux + "\n\n")
@@ -413,7 +413,7 @@ def generate_flut_output_load(spice_filename, enable_carry_chain, updates):
     if enable_carry_chain:
         spice_file.write(utils.create_wire("n_in", "n_2_2", "lut", "carry_chain"))
         # TODO: figure out what are the suitable inputs for this
-        spice_file.write("Xcarrychain n_2_2 n_gnd n_gnd ncout nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n\n")
+        spice_file.write("Xcarrychain n_2_2 n_gnd n_vdd ncout nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n\n")
 
     # duplicate 5-LUT output flut mux
     if updates in (1, 2, 3):
@@ -472,11 +472,16 @@ def generate_fmux_l1_output_load(spice_filename):
     return wire_names_list
 
 
-def generate_last_fmux_output_load(spice_filename, level):
+def generate_last_fmux_output_load(spice_filename, level, updates):
     """ Creates the load seen by the last level of fmux which is the gbo3 and ff3 
         and returns a lits containing the two wires connecting those components """    
 
     fmux = "fmux_l" + str(level)
+
+    fn = "3"
+
+    if updates == 3:
+        fn = "4"
 
     # Open SPICE file for appending
     spice_file = open(spice_filename, 'a')
@@ -490,9 +495,10 @@ def generate_last_fmux_output_load(spice_filename, level):
     spice_file.write(utils.create_wire("n_in", "n_1_1", fmux, "gbo3"))
     spice_file.write("Xgeneral_ble_output3 n_1_1 n_gbo3_out n_vdd n_gnd n_vdd_gbo n_gnd general_ble_output3\n\n")
 
-    spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the 3:1 register input selct mux \n")
+    # TODO: change this to ff4 in case of update 3!!
+    spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the "+fn+":1 register input selct mux \n")
     spice_file.write(utils.create_wire("n_in", "n_2_1", fmux, "ff3"))
-    spice_file.write("Xff3 n_2_1 n_ff3_out n_mux_out n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff3\n\n")
+    spice_file.write("Xff"+fn+" n_2_1 n_ff"+fn+"_out n_mux_out n_gate n_gate_n n_vdd n_gnd n_gnd n_vdd n_gnd n_vdd n_vdd n_gnd ff"+fn+"\n\n")
 
     spice_file.write(".ENDS\n\n\n")
 
