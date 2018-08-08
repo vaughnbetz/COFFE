@@ -1,0 +1,35 @@
+Depending on what features of COFFE you are using, you might want to cite a different publication.
+This guide is supposed to help with that :)
+
+
+1) If you are using COFFE's heterogeneous block modelling (standard cell and full-custom hybrid), carry chains, or fracturable LUTs, please cite the following paper:
+
+Sadegh Yazdanshenas and Vaughn Betz. Automatic circuit design and modelling for heterogeneous FPGAs. In International Conference on Field Programmable Technology (FPT), pages 9-16. IEEE, 2017.
+
+If you are using Latex, you can cite the publication by adding the following to your bibliography file:
+
+@inproceedings{yazdanshenas2017automatic,
+  title={Automatic circuit design and modelling for heterogeneous {FPGAs}},
+  author={Yazdanshenas, Sadegh and Betz, Vaughn},
+  booktitle={International Conference on Field Programmable Technology (FPT)},
+  pages={9--16},
+  year={2017},
+  organization={IEEE}
+}
+
+
+
+2) If you are using COFFE's memory block modelling (either SRAM-based or MTJ-based), please cite the following paper:
+
+Sadegh Yazdanshenas, Kosuke Tatsumura, and Vaughn Betz. Don't forget the memory: Automatic block RAM modelling, optimization, and architecture exploration. In ACM/SIGDA International Symposium on Field-Programmable Gate Arrays (FPGA), pages 115{124. ACM, 2017.
+
+If you are using Latex, you can cite the publication by adding the following to your bibliography file:
+
+@inproceedings{yazdanshenas2017don,
+  title={Don't Forget the Memory: Automatic Block {RAM} Modelling, Optimization, and Architecture Exploration},
+  author={Yazdanshenas, Sadegh and Tatsumura, Kosuke and Betz, Vaughn},
+  booktitle={ACM/SIGDA International Symposium on Field-Programmable Gate Arrays (FPGA)},
+  pages={115--124},
+  year={2017},
+  organization={ACM}
+}
