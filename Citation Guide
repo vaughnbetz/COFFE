@@ -4,7 +4,7 @@ This guide is supposed to help with that :)
 
 1) If you are using COFFE's heterogeneous block modelling (standard cell and full-custom hybrid), carry chains, or fracturable LUTs, please cite the following paper:
 
-Sadegh Yazdanshenas and Vaughn Betz. Automatic circuit design and modelling for heterogeneous FPGAs. In International Conference on Field Programmable Technology (FPT), pages 9-16. IEEE, 2017.
+Sadegh Yazdanshenas and Vaughn Betz. "Automatic circuit design and modelling for heterogeneous FPGAs." International Conference on Field Programmable Technology (FPT), pages 9-16. IEEE, 2017.
 
 If you are using Latex, you can cite the publication by adding the following to your bibliography file:
 
@@ -21,7 +21,7 @@ If you are using Latex, you can cite the publication by adding the following to 
 
 2) If you are using COFFE's memory block modelling (either SRAM-based or MTJ-based), please cite the following paper:
 
-Sadegh Yazdanshenas, Kosuke Tatsumura, and Vaughn Betz. Don't forget the memory: Automatic block RAM modelling, optimization, and architecture exploration. In ACM/SIGDA International Symposium on Field-Programmable Gate Arrays (FPGA), pages 115{124. ACM, 2017.
+Sadegh Yazdanshenas, Kosuke Tatsumura, and Vaughn Betz. "Don't forget the memory: Automatic block RAM modelling, optimization, and architecture exploration." ACM/SIGDA International Symposium on Field-Programmable Gate Arrays (FPGA), pages 115-124. ACM, 2017.
 
 If you are using Latex, you can cite the publication by adding the following to your bibliography file:
 
@@ -32,4 +32,19 @@ If you are using Latex, you can cite the publication by adding the following to 
   pages={115--124},
   year={2017},
   organization={ACM}
+}
+
+
+3) If you are using the original COFFE (without any of the features mentioned above), cite the original COFFE paper:
+
+Chiasson, Charles, and Vaughn Betz. "COFFE: Fully-automated transistor sizing for FPGAs." Field-Programmable Technology (FPT), 2013 International Conference on, pages 34-41. IEEE, 2013.
+
+If you are using Latex, you can cite the publication by adding the following to your bibliography file:
+
+@inproceedings{chiasson2013coffe,
+  title={{COFFE}: Fully-automated transistor sizing for {FPGAs}},
+  author={Chiasson, Charles and Betz, Vaughn},
+  booktitle={International Conference on Field-Programmable Technology (FPT)},
+  pages={34--41},
+  year={2013}
 }
