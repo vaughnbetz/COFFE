@@ -25,20 +25,20 @@ def test_flow(ref_file, test_dir, err_margin):
 	list_directory = [dI for dI in os.listdir(test_directory) if os.path.isdir(os.path.join(test_directory,dI))]
 
 	#lists used to store file names and directory
-	target_file_list = []
-	target_file_names = []
+	target_file_list = []  # Full path and filename to the spice output files we're checking
+	target_file_names = []  # Short name (no path) of the spice output files we're checking
 
 	# change directory to target
 	os.chdir(test_directory)
 
-	#get all the lis files in the test directory
+	#get all the lis files underneath the test directory. These are the final spice output files from a COFFE run.
 	for directory in list_directory:
 		for file in os.listdir(directory):
 			if file.endswith(".lis"):
 				target_file_list.append(test_directory+'/' +directory +'/'+ file)
 				target_file_names.append(file)
 
-	# directionary used to store rise and fall delays			
+	# dictionary used to store rise and fall delays			
 	rise_and_fall_time_dictionary = {}
 
 	for index, item in enumerate(target_file_list):
@@ -62,7 +62,7 @@ def test_flow(ref_file, test_dir, err_margin):
 		rise_and_fall_time_dictionary_reference = {}
 		# look for rise and fall time delays in the file and load the reference dictionary
 		for line in search_target:
-			theindex, thevalue = line.split('..')
+			theindex, thevalue = line.split('..')  # Our reference file has one delay entry per line <name>..<delay>
 			rise_and_fall_time_dictionary_reference[theindex] = thevalue
 			
 	# for all items in the reference dictionary, check the difference with target dictionary
@@ -74,7 +74,10 @@ def test_flow(ref_file, test_dir, err_margin):
 				# print and let the user know that this component passed the test
 				print "Passed test: "+ str(i) 
 
-				
+
+# Function to print a new reference file to screen. test_dir is the directory in which COFFE put its output. All SPICE output files
+# test_dir will be parsed, rise and fall delays are extracted, and printed to the screen (pipe to a file to store) in the format
+# expected by the tester.
 def generate_reference(test_dir):
 
 
