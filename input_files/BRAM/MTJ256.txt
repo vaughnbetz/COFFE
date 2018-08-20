@@ -65,8 +65,6 @@ Rfb=c
 # Do we want Block RAM simulation at all?
 enable_bram_module = 1
 
-#Memory block voltage (low power transistors)
-vddlp = 0.95
 
 
 # Do we want Block RAM simulation at all?
