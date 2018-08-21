@@ -51,7 +51,7 @@ If you are using Latex, you can cite the publication by adding the following to 
 }
 
 
-3) If you are using the original COFFE (without any of the features mentioned above), cite the original COFFE paper:
+3) The original COFFE paper:
 
 Chiasson, Charles, and Vaughn Betz. "COFFE: Fully-automated transistor sizing for FPGAs." Field-Programmable Technology (FPT), 2013 International Conference on, pages 34-41. IEEE, 2013.
 
