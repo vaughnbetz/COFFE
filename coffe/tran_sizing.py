@@ -379,8 +379,15 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 	 	# Add the delays of the flip flop input mux and the level three flut mux
 		if fpga_inst.updates == 4:
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
-			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
-			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+		
+        if fpga_inst.updates in (1, 2, 4):
+        	path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+	    	path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+
+        if fpga_inst.updates == 3:
+        	path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+	    	path_delay += fpga_inst.logic_cluster.ble.ff4.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -517,9 +524,17 @@ def get_current_delay(fpga_inst, is_ram_component = 0):
 	# Add the delays of the flip flop input mux and the level three flut mux
 	if fpga_inst.updates == 4:
 		path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+		
+        
+	if fpga_inst.updates in (1, 2, 4):
 		path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 		path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
+	if fpga_inst.updates == 3:
+		path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+		path_delay += fpga_inst.logic_cluster.ble.ff4.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+
+	
 	if not fpga_inst.updates:
 		if fpga_inst.specs.enable_carry_chain == 1:
 			path_delay += fpga_inst.carrychainmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
@@ -565,7 +580,7 @@ def get_current_delay(fpga_inst, is_ram_component = 0):
 		ram_delay += fpga_inst.RAM.writedriver.delay + fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay + fpga_inst.RAM.precharge.delay 
 	else:
 		ram_delay +=fpga_inst.RAM.bldischarging.delay + fpga_inst.RAM.blcharging.delay + fpga_inst.RAM.mtjsamp.delay
-		
+	
 	# first stage of the configurable deocoder
 	ram_delay += fpga_inst.RAM.configurabledecoderi.delay
 	# second stage of the configurable decoder
@@ -700,9 +715,15 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 		# Add the delays of the flip flop input mux and the level three flut mux
 		if fpga_inst.updates == 4:
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			
+			
+		if fpga_inst.updates in (1, 2, 4):
 			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
+		if fpga_inst.updates == 3:
+			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff4.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -2752,7 +2773,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		## Size FF2 Input Select Mux
 		############################################
 		# TODO: make this for all updates
-		if fpga_inst.specs.updates == 4:
+		if fpga_inst.specs.updates in (1, 2, 4):
 			mux = fpga_inst.logic_cluster.ble.ff2.input_mux
 			name = mux.name
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
@@ -2790,7 +2811,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		############################################
 
 		# TODO: make this for all updates
-		if fpga_inst.specs.updates == 4:
+		if fpga_inst.specs.updates:
 			mux = fpga_inst.logic_cluster.ble.ff3.input_mux
 			name = mux.name
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
@@ -2822,6 +2843,43 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 			time_before_sizing = time.time()
 			
+
+        	############################################
+		## Size FF4 Input Select Mux
+		############################################
+
+		if fpga_inst.specs.updates == 3:
+			mux = fpga_inst.logic_cluster.ble.ff4.input_mux
+			name = mux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(mux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]        
+
+				# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print "Duration: " + str(time_after_sizing - time_before_sizing)
+				print "Current Cost: " + str(current_cost)
+
+			time_before_sizing = time.time()
+	
 
 			
 		############################################

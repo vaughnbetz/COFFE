@@ -6840,7 +6840,8 @@ class FPGA:
                     lut_input.input_select_mux.trise = mtrise
                     lut_input.input_select_mux.delay = max(mtfall, mtrise)
                     lut_input.input_select_mux.power = float(mspice_meas["meas_avg_power"][0])
-
+                    self.delay_dict[lut_input.input_select_mux.name] = lut_input.input_select_mux.delay
+                
                 # For the Stratix10 design add the delay for thes signal propagation through fmux_l1 and
                 # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals
                 # input f delay will be only the delay of switching the ptran of the level 2 fmux
