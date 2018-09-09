@@ -352,7 +352,6 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		path_delay += fpga_inst.logic_cluster.local_mux.delay*fpga_inst.logic_cluster.local_mux.delay_weight
 		# LUT
 		path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
-
 		# LUT input drivers
 		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
 			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
@@ -367,7 +366,6 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 
 		# General BLE output
 		path_delay += fpga_inst.logic_cluster.ble.general_output.delay*fpga_inst.logic_cluster.ble.general_output.delay_weight
-
 		# FLUT level 1 mux
 		if fpga_inst.specs.use_fluts:
 			path_delay += fpga_inst.logic_cluster.ble.fmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
@@ -384,10 +382,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
         	path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 	    	path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
-        if fpga_inst.updates == 3:
-        	path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
-	    	path_delay += fpga_inst.logic_cluster.ble.ff4.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
-
+		if fpga_inst.updates == 3:
+			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff4.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
 		if not fpga_inst.updates:
 			if fpga_inst.specs.enable_carry_chain == 1:
@@ -1563,9 +1560,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 		# Calculate evaluation delay
 		tfall_trise = tfall_trise_list[i]
 
-
 		delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, tfall_trise[0], tfall_trise[1], meas_logic_low_voltage[i], is_ram_component, is_cc_component)
-
 
 		eval_delay_list.append(delay)
 		
