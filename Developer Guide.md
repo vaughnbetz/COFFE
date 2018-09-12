@@ -1,6 +1,6 @@
 # COFFE Developer Guide
 
-## How to Change
+## Understanding the code - COFFE 101
 If you are new to developing in COFFE, the best place to start reading the code is the top-level definition of the FPGA being modelled which can be found in "fpga.py" file. The comments in this file outline the overall operation of COFFE; we suggest you read them carefully and make sure you understand the high-level operation of this file.
 
 
