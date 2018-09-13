@@ -378,9 +378,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		if fpga_inst.updates == 4:
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 		
-        if fpga_inst.updates in (1, 2, 4):
-        	path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
-	    	path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+		if fpga_inst.updates in (1, 2, 4):
+			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
+			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
 		if fpga_inst.updates == 3:
 			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
