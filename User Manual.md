@@ -1,0 +1,48 @@
+
+
+# COFFE User Guide
+
+
+## Details of Features
+The current release of COFFE supports the following features which are detailed in their corresponding paper. If you are interested in more details on a particular feature, you might want to read the paper that introduced that feature.
+
+* Yazdanshenas, S. and Betz, V. "Automatic circuit design and modelling for heterogeneous FPGAs." International Conference on Field-Programmable Technology (FPT), 2017.
+  * Fracturacture logic tiles
+  * Logic tiles with hard arithmetic (carry chains)
+  * Arbitrary hybrid (standard cell + full custom) blocks
+
+* Yazdanshenas, S, Tatsumura, K., and Betz, V. Yazdanshenas, Sadegh, Kosuke Tatsumura, and Vaughn Betz. "Don't Forget the Memory: Automatic Block RAM Modelling, Optimization, and Architecture Exploration." ACM/SIGDA International Symposium on Field-Programmable Gate Arrays (FPGA), 2017. 
+  * SRAM-based and MTJ-based on-chip memories
+
+* Chiasson, C. and Betz, V. "COFFE: Fully-automated Transistor Sizing for FPGAs." International Conference on Field-Programmable Technology (FPT),
+  * Logic tiles with fixed-size LUTs
+  
+## Setting up
+
+To run coffe with most of its (except hybrid blocks) features, you need Hspice. We have tested COFFE with two versions of Hspice: Hspice 2013.03 and 2011.01-SP1. But we expect other versions to also be able to work.
+To support arbitrary hybrid block modelling, you will also need a working version of Synopsys Design Compiler and Cadence Encounter Digital Implementation (EDI). We have tested COFFE using Synopsys Design Compiler 2013.03-SP5-2 and Cadence EDI 9.12.
+We expect newer versions of Synopsys Design Compiler to still work with our flow, but newer versions of Cadence EDI will require changing the scripts.
+To obtain the switching activity of hybrid blocks for more accurate power estimation, you will also need Mentor modelsim. We tested this feature using Mentor Modelsim 10 and we expect other version to continue to work with COFFE.
+
+  
+## How to Run
+
+To run COFFE, simply run coffe.py and follow the instructions.
+There are several sample input files in the test folder accompanying COFFE which stimulate all features. These files describe what each of the parameters are; simply read them and change them to form your desired architecture.
+We have also included several tests with COFFE which should smoothly run when using the latest version. To test your setup, you can run those.
+
+## How to report an issue.
+
+If you encounter an issue running COFFE, or if you have any questions about the features we support, please file an issue in github.
+Please include the following with any issue you file:
+
+  * COFFE commit number from the version you used.
+  * Version of CAD tools used together with COFFE.
+  * Detailed description of the issue.
+    * Expected behaviour vs encountered behaviour.
+	* Screenshot of the part of COFFE with unexpected behaviour.
+	* Details on when the issue occurs e.g. is it during the time an external tool such as Hspice is running or when COFFE's code is running?
+
+
+	
+  
