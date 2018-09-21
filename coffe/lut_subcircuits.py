@@ -629,7 +629,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	# C and E or D. This loading should be added to inputs D, E, and F
 	if updates == 4 and lut_input_name in ('d', 'e', 'f'):
 		spice_file.write(utils.create_wire("n_1", "n_1_1", "lut_" + lut_input_name + "_driver", "input_select"))
-		spice_file.write("Xinput_select_mux n_1_1 n_1_2 vsram vsram_n n_vdd n_gnd c_input_mux\n")
+		spice_file.write("Xinput_select_mux n_1_1 n_1_2 n_gate n_gate_n n_vdd n_gnd c_input_mux\n")
 
 
 	spice_file.write(".ENDS\n\n\n")

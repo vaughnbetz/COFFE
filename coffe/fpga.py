@@ -7885,6 +7885,10 @@ class FPGA:
             if subcircuit == BLE.fmux_l2:
                 return False
 
+        if self.updates == 4:
+            if subcircuit == BLE.fmux_l3:
+                return False
+
         if self.specs.enable_carry_chain:
             if (subcircuit == self.carrychain or
                 subcircuit == self.carrychainperf or
@@ -7903,17 +7907,17 @@ class FPGA:
                 subcircuit == self.carrychainperf2 or
                 subcircuit == self.carrychaininter2): 
                 return False
+        
+        #if self.updates in (1, 2, 4):
+        #    if (subcircuit == self.logic_cluster.ble.ff2.input_mux or
+        #        subcircuit == self.logic_cluster.ble.ff3.input_mux):
+        #        return False
 
-        if self.updates in (1, 2, 4):
-            if (subcircuit == self.logic_cluster.ble.ff2.input_mux or
-                subcircuit == self.logic_cluster.ble.ff3.input_mux):
-                return False
-
-        if self.updates == 3:
-            if (subcircuit == self.logic_cluster.ble.ff3.input_mux or
-                subcircuit == self.logic_cluster.ble.ff4.input_mux):
-                return False
-
+        #if self.updates == 3:
+        #    if (subcircuit == self.logic_cluster.ble.ff3.input_mux or
+        #        subcircuit == self.logic_cluster.ble.ff4.input_mux):
+        #        return False
+        
         return True
 
 

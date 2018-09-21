@@ -413,7 +413,8 @@ def generate_flut_output_load(spice_filename, enable_carry_chain, updates):
     if enable_carry_chain:
         spice_file.write(utils.create_wire("n_in", "n_2_2", "lut", "carry_chain"))
         # TODO: figure out what are the suitable inputs for this
-        spice_file.write("Xcarrychain n_2_2 n_gnd n_vdd ncout nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n\n")
+        spice_file.write("Xcarrychain n_2_2 n_gnd n_vdd ncout n_nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n")
+        spice_file.write("Xinv n_nsumout nsumout n_vdd n_gnd carry_chain_perf\n\n")
 
     # duplicate 5-LUT output flut mux
     if updates in (1, 2, 3):
@@ -493,7 +494,7 @@ def generate_last_fmux_output_load(spice_filename, level, updates):
 
     spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the 3:1 general ble output mux\n")
     spice_file.write(utils.create_wire("n_in", "n_1_1", fmux, "gbo3"))
-    spice_file.write("Xgeneral_ble_output3 n_1_1 n_gbo3_out n_vdd n_gnd n_vdd_gbo n_gnd general_ble_output3\n\n")
+    spice_file.write("Xgeneral_ble_output3 n_1_1 n_gbo3_out n_gate n_gate_n n_vdd_gbo n_gnd general_ble_output3\n\n")
 
     # TODO: change this to ff4 in case of update 3!!
     spice_file.write("* Wire connecting the output of the level "+str(level)+" fmux and the input of the "+fn+":1 register input selct mux \n")

@@ -5022,30 +5022,30 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
             # delay calculations start from n_1_1 to include all the wires before global ble 2:1
             top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_1_1 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
             top_file.write(utils.create_wire("n_1_1", "n_1_2", "fmux_l1_duplicate", "ff"))
-            top_file.write("Xff n_1_2 n_hang2 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
+            top_file.write("Xff n_1_2 n_hang2 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
             top_file.write(utils.create_wire("n_1_2", "n_1_3", "ffin", "gbo2"))
-            top_file.write("Xgeneral_ble_output n_1_3 n_general_out vdd gnd vdd_general_output gnd general_ble_output\n\n")
+            top_file.write("Xgeneral_ble_output n_1_3 n_general_out vsram vsram_n vdd_general_output gnd general_ble_output\n\n")
         elif input_size == 3:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
             top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
             top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1", "fmux_l2"))
             top_file.write("Xfmux_l2 n_0_3 n_1_1 vdd gnd vdd gnd fmux_l2\n\n")
-            top_file.write("Xfmux_l2_load n_1_1 n_general_out n_out_ff vdd gnd vdd gnd vdd_general_output fmux_l2_load\n\n")
+            top_file.write("Xfmux_l2_load n_1_1 n_general_out n_out_ff vsram vsram_n vdd gnd vdd_general_output fmux_l2_load\n\n")
     elif updates == 4:
         if input_size == 2:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-            top_file.write("* Fmux level 1 \n")
+            top_file.write("* Fmux level 1 (Fmux level 1 and the FA) \n")
             top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_hang ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
             top_file.write("* Fmux level 1 output load which includes fmux level 2 and its duplicate\n")
             top_file.write("Xfmux_l1_load n_0_2 vdd n_f2_out vdd n_0_3 vdd gnd vdd vdd fmux_l1_load\n\n")
             top_file.write(utils.create_wire("n_0_3", "n_0_4", "fmux_l2_duplicate", "ff2"))
-            top_file.write("Xff2 n_0_4 n_hang2 n_1_1 vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff2\n\n")
+            top_file.write("Xff2 n_0_4 n_hang2 n_1_1 vdd gnd vsram vsram_n gnd vdd gnd vdd vdd gnd ff2\n\n")
             top_file.write("* Wire connecting the output of the ff input select mux output and the generabl ble output 2:1 mux\n")
             top_file.write(utils.create_wire("n_1_1", "n_1_2", "ff2_mux", "gbo2"))
-            top_file.write("Xgeneral_ble_output n_1_2 n_general_out vdd gnd vdd_general_output gnd general_ble_output\n\n")
+            top_file.write("Xgeneral_ble_output n_1_2 n_general_out vsram vsram_n vdd_general_output gnd general_ble_output\n\n")
         elif input_size == 3:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-            top_file.write("* Fmux level 1 \n")
+            top_file.write("* Fmux level 1 (Fmux level 1 and the FA)\n")
             top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_hang ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
             top_file.write("* Fmux level 1 output load which includes fmux level 2 and its duplicate\n")
             top_file.write("Xfmux_l1_load n_0_2 vdd n_0_3 vdd n_f2d_out vdd gnd vdd vdd fmux_l1_load\n\n")       
@@ -5142,7 +5142,7 @@ def generate_ff_top(name, use_tgate, updates, input_size = 2):
         top_file.write("Xfmux_l2_load n_1_1 n_hang_2 n_1_3 vsram vsram_n vdd gnd vdd fmux_l2_load\n\n")
         top_file.write("* wire connecting the output of the ff mux to gbo \n")
         top_file.write(utils.create_wire("n_1_3", "n_1_4", "ff2_mux", "gbo2"))
-        top_file.write("Xgeneral_ble_output n_1_4 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+        top_file.write("Xgeneral_ble_output n_1_4 n_general_out vsram vsram_n vdd gnd general_ble_output\n\n")
         #else:
         #    # design 1 top or design 2 top
         #    if input_size == 2:
@@ -5190,7 +5190,7 @@ def generate_ff_top(name, use_tgate, updates, input_size = 2):
             top_file.write("Xff2 n_1_2 n_hang2 n_1_3 vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff2\n\n")
             top_file.write("* Wire connecting the output of the ff input select mux output and the generabl ble output 2:1 mux\n")
             top_file.write(utils.create_wire("n_1_3", "n_1_4", "ff2_mux", "gbo2"))
-            top_file.write("Xgeneral_ble_output n_1_4 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+            top_file.write("Xgeneral_ble_output n_1_4 n_general_out vsram vsram_n vdd gnd general_ble_output\n\n")
         elif input_size == 3:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
             top_file.write("* Fmux level 1 \n")
@@ -5202,7 +5202,7 @@ def generate_ff_top(name, use_tgate, updates, input_size = 2):
             top_file.write("Xfmux_l3_load n_1_1 n_hang_2 n_1_3 vsram vsram_n vdd gnd vdd fmux_l3_load\n\n")
             top_file.write("* wire connecting the output of the ff mux to gbo \n")
             top_file.write(utils.create_wire("n_1_3", "n_1_4", "ff2_mux", "gbo2"))
-            top_file.write("Xgeneral_ble_output n_1_4 n_general_out vdd gnd vdd gnd general_ble_output\n\n")
+            top_file.write("Xgeneral_ble_output n_1_4 n_general_out vsram vsram_n vdd gnd general_ble_output\n\n")
 
     top_file.write(".END")
     top_file.close()
@@ -5441,9 +5441,9 @@ def generate_cc_in_out_top(name, use_tgate, updates, id):
     top_file.write("********************************************************************************\n\n")
     top_file.write("* in to Sout delay\n")
     top_file.write(".MEASURE TRAN meas_in_sout_tfall TRIG V("+n_1_1+") VAL='supply_v/2' RISE=1\n")
-    top_file.write("+    TARG V("+n_sout+") VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V("+n_sout+") VAL='supply_v/2' RISE=1\n")
     top_file.write(".MEASURE TRAN meas_in_sout_trise TRIG V("+n_1_1+") VAL='supply_v/2' FALL=1\n")
-    top_file.write("+    TARG V("+n_sout+") VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("+    TARG V("+n_sout+") VAL='supply_v/2' FALL=1\n\n")
     top_file.write("* in to Cout delay\n")
     top_file.write(".MEASURE TRAN meas_in_cout_tfall TRIG V("+n_1_1+") VAL='supply_v/2' RISE=1\n")
     top_file.write("+    TARG V("+n_cout+") VAL='supply_v/2' FALL=1\n")
@@ -5462,17 +5462,18 @@ def generate_cc_in_out_top(name, use_tgate, updates, id):
     if updates in (1, 4):
         top_file.write(utils.create_wire("n_sout", "n_1_4", "cc_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
-        top_file.write("Xff3 n_1_4 n_1_5 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
+        top_file.write("Xff3 n_1_4 n_1_5 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
     elif updates in (2, 3):
         top_file.write(utils.create_wire("n_sout", "n_1_4", "cc1_sout", "cc2"))
-        top_file.write("Xcarrychain2 n_1_4 gnd vdd n_cout2 n_sout2 n_p_4 vdd gnd FA_carry_chain2\n\n")
+        top_file.write("Xcarrychain2 n_1_4 gnd vdd n_cout2 nn_sout2 n_p_4 vdd gnd FA_carry_chain2\n")
+        top_file.write("Xinv nn_sout2 n_sout2 vdd gnd carry_chain_perf2\n\n")
         if updates == 3:
             top_file.write(utils.create_wire("n_sout", "n_1_5", "cc1_sout", "reg4_sel"))
-            top_file.write("Xff4 n_1_5 n_1_6 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
+            top_file.write("Xff4 n_1_5 n_1_6 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
         if id == 2:
             top_file.write(utils.create_wire("n_sout2", "n_2_1", "cc2_sout", "reg"+fn+"_sel"))
             top_file.write("\n* Reg"+fn+" in Stratix 10 architecture with a "+fn+":1 mux at its input\n")
-            top_file.write("Xff"+fn+"_2 n_2_1 n_2_2 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff"+fn+"\n\n")
+            top_file.write("Xff"+fn+"_2 n_2_1 n_2_2 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff"+fn+"\n\n")
 
 
     top_file.write("XFA_CarryChain"+n+" vdd gnd n_cout"+n+" n_cout_h1 n_sout_h1 n_p2 vdd gnd FA_carry_chain"+n+"\n")
@@ -5781,18 +5782,18 @@ def generate_carry_chain_ripple_top(name, updates, id):
     if updates in (1, 4):
         top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
-        top_file.write("Xff3 n_1_4 n_1_5 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
+        top_file.write("Xff3 n_1_4 n_1_5 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
     elif updates in (2, 3): 
         if id == 1:
             top_file.write(utils.create_wire("n_out", "n_1_4", "cc1_sout", "cc2"))
             top_file.write("Xcarrychain2 n_1_4 gnd gnd n_hang_3 n_hand_4 n_p_4 vdd gnd FA_carry_chain2\n\n")
             if updates == 3:
                 top_file.write(utils.create_wire("n_out", "n_1_5", "cc1_sout", "reg4_sel"))
-                top_file.write("Xff4 n_1_5 n_1_6 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
+                top_file.write("Xff4 n_1_5 n_1_6 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
         elif id == 2:
             top_file.write(utils.create_wire("n_out", "n_1_4", "cc2_sout", "reg"+fn+"_sel"))
             top_file.write("\n* Reg"+fn+" in Stratix 10 architecture with a "+fn+":1 mux at its input\n")
-            top_file.write("Xff"+fn+" n_1_4 n_1_5 n_mux_out vdd gnd vdd gnd gnd vdd gnd vdd vdd gnd ff"+fn+"\n\n")        
+            top_file.write("Xff"+fn+" n_1_4 n_1_5 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff"+fn+"\n\n")        
     else:
         # generate typical load
         top_file.write("Xthemux n_out n_out2 vdd gnd vdd gnd carry_chain_mux\n\n")  

@@ -63,6 +63,9 @@ parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area o
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
 
+# Do floorplanning for non-sizing run, default is no floorplanning for non-sizing runs
+parser.add_argument('-f', '--floorplanning', type=int, default=0, help="activate floorplanning in case of a non-sizing run")
+
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
 
@@ -152,25 +155,27 @@ sys.stdout.flush()
 if is_size_transistors:
     tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
 else:
-  # in case of disabeling floorplanning there is no need to 
-  # update delays before updating area. Tried both ways and 
-  # they give exactly the same results
-  #fpga_inst.update_delays(spice_interface)
+  if (not args.floorplanning):
+    fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
+    fpga_inst.update_area()
+    fpga_inst.compute_distance()
+    fpga_inst.update_wires()
+    fpga_inst.update_wire_rc()
+    fpga_inst.update_delays(spice_interface)
+  else:
+    # area and delay calculations with floorplanning
+    fpga_inst.update_delays(spice_interface)
+    fpga_inst.update_area()
+    fpga_inst.update_wires()
+    fpga_inst.update_wire_rc()
+    fpga_inst.determine_height()
+    fpga_inst.update_area()
+    fpga_inst.compute_distance()
+    fpga_inst.update_wires()
+    fpga_inst.update_wire_rc()
+    fpga_inst.update_delays(spice_interface)
 
-  # same thing here no need to update area before calculating 
-  # the lb_height value. Also tested and gave same results
-  #fpga_inst.update_area()
-  fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
-  fpga_inst.update_area()
-  fpga_inst.compute_distance()
-  fpga_inst.update_wires()
-  fpga_inst.update_wire_rc()
-
-  # commented this part to avoid doing floorplannig for
-  # a non-sizing run
-  #fpga_inst.determine_height()
-
-  fpga_inst.update_delays(spice_interface)
+  # print final transistor sizes for non-sizing run
   tran_sizing.print_final_transistor_size(fpga_inst, "transistor_sizes.txt")
 
 # Obtain Memory core power
