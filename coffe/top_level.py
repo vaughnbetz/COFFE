@@ -5469,7 +5469,7 @@ def generate_cc_in_out_top(name, use_tgate, updates, id):
         top_file.write("Xinv nn_sout2 n_sout2 vdd gnd carry_chain_perf2\n\n")
         if updates == 3:
             top_file.write(utils.create_wire("n_sout", "n_1_5", "cc1_sout", "reg4_sel"))
-            top_file.write("Xff4 n_1_5 n_1_6 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
+            top_file.write("Xff4 n_1_5 n_1_6 n_mux_out2 vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff4\n\n")
         if id == 2:
             top_file.write(utils.create_wire("n_sout2", "n_2_1", "cc2_sout", "reg"+fn+"_sel"))
             top_file.write("\n* Reg"+fn+" in Stratix 10 architecture with a "+fn+":1 mux at its input\n")
