@@ -2,6 +2,7 @@
 # run HSPICE jobs and parse the output of those jobs.
 
 import os
+import time
 import subprocess
 import coffe.utils as utils
 
@@ -184,6 +185,7 @@ class SpiceInterface(object):
                 output_file.close()
             # HSPICE failed to run
             else :
+                time.sleep(90)
                 hspice_runs = hspice_runs + 1
                 if hspice_runs > 10 :
                     print "----------------------------------------------------------"

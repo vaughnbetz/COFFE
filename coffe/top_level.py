@@ -1,5 +1,11 @@
 import os
 
+local_mux_supply = "vdd" #"vsram"
+local_mux_meas = "supply_v" #"sram_v" #"supply_v"
+
+GB_LUT = 0
+LEVEL_SHIFTER = 0 
+
 def generate_switch_block_top(mux_name):
     """ Generate the top level switch block SPICE file """
     
@@ -53,6 +59,11 @@ def generate_switch_block_top(mux_name):
     sb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xrouting_wire_load_2.Xrouting_wire_load_tile_1.Xsb_mux_on_out.n_in) AT=7nn\n\n")
 
     sb_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    sb_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_SB_MUX) AT=1.97n\n")
+    sb_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_SB_MUX) AT=3.97n\n")
+    sb_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*supply_v'\n")
+    sb_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*supply_v'\n")  
+    
     sb_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_SB_MUX) FROM=0ns TO=4ns\n")
     sb_file.write(".MEASURE TRAN meas_avg_power PARAM = '-(meas_current/4n)*supply_v'\n\n")
 
@@ -73,7 +84,9 @@ def generate_switch_block_top(mux_name):
     
 def generate_connection_block_top(mux_name):
     """ Generate the top level switch block SPICE file """
-    
+    # change the vdd that is hooked up top the local mux driver
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas
     # Create directories
     if not os.path.exists(mux_name):
         os.makedirs(mux_name)  
@@ -123,6 +136,11 @@ def generate_connection_block_top(mux_name):
     cb_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) AT=3n\n\n")
     
     cb_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    cb_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_CB_MUX) AT=1.97n\n")
+    cb_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_CB_MUX) AT=3.97n\n")
+    cb_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*supply_v'\n")
+    cb_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*supply_v'\n")      
+    
     cb_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_CB_MUX) FROM=0ns TO=4ns\n")
     cb_file.write(".MEASURE TRAN meas_avg_power PARAM = '-(meas_current/4n)*supply_v'\n\n")
 
@@ -131,8 +149,13 @@ def generate_connection_block_top(mux_name):
     cb_file.write("********************************************************************************\n\n")
     cb_file.write("Xsb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd sb_mux_on\n")
     cb_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd_cb_mux routing_wire_load\n")
-    cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
-    cb_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 vdd gnd lut_a_driver\n\n")
+    #cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
+        cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+    else :
+        cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
+        
+    cb_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 " + local_mux_driv_vdd + " gnd lut_a_driver\n\n")
     cb_file.write(".END")
     cb_file.close()
 
@@ -144,7 +167,9 @@ def generate_connection_block_top(mux_name):
 
 def generate_local_mux_top(mux_name):
     """ Generate the top level local mux SPICE file """
-    
+    # change the vdd that is hooked up top the local mux driver
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas     
     # Create directories
     if not os.path.exists(mux_name):
         os.makedirs(mux_name)  
@@ -170,35 +195,97 @@ def generate_local_mux_top(mux_name):
     
     local_mux_file.write("* Power rail for the circuit under test.\n")
     local_mux_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
-    local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd supply_v\n\n")
+    #local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd "+local_mux_driv_vdd_meas+"\n\n")
+    
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :
+        local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd supply_v \n\n")
+        local_mux_file.write("V_LOCAL_MUX_h vdd_local_mux_h gnd "+local_mux_driv_vdd_meas+"\n\n")
+    else :
+        local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd "+local_mux_driv_vdd_meas+"\n\n")
 
     local_mux_file.write("********************************************************************************\n")
     local_mux_file.write("** Measurement\n")
     local_mux_file.write("********************************************************************************\n\n")
     local_mux_file.write("* inv_local_mux_1 delay\n")
     local_mux_file.write(".MEASURE TRAN meas_inv_local_mux_1_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
-    local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' FALL=1\n")
+    #local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_out_inv) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
+    else :
+        local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")    
+        
     local_mux_file.write(".MEASURE TRAN meas_inv_local_mux_1_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
-    local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' RISE=1\n\n")
+   # local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_out_inv) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n")
+    else :
+        local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
+    
+    
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
+        local_mux_file.write("* inv_lvl_shifter_1 delay\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_1_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_1_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n")
+     
+        local_mux_file.write("* inv_lvl_shifter_2 delay\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_2_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_inv_lvl_shifter_1_out) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_2_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_inv_lvl_shifter_1_out) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n")    
+    
+    
+    
     local_mux_file.write("* Total delays\n")
     local_mux_file.write(".MEASURE TRAN meas_total_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
-    local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' FALL=1\n")
+    local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
     local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
-    local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' RISE=1\n\n")
+    local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
 
     local_mux_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_1_1) AT=3n\n\n")
 
     local_mux_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    local_mux_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LOCAL_MUX) FROM=0ns TO=4ns\n")
-    local_mux_file.write(".MEASURE TRAN meas_avg_power PARAM = '-(meas_current/4n)*supply_v'\n\n")
+    
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_ON__state_1 FIND I(V_LOCAL_MUX) AT=3.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_OFF_state_1 FIND I(V_LOCAL_MUX) AT=1.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power_1 PARAM = '-(meas_leakage_current_ON__state_1)*supply_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power_1 PARAM = '-(meas_leakage_current_OFF_state_1)*supply_v'\n\n")
+
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_ON__state_2 FIND I(V_LOCAL_MUX_h) AT=3.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_OFF_state_2 FIND I(V_LOCAL_MUX_h) AT=1.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power_2 PARAM = '-(meas_leakage_current_ON__state_2)*sram_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power_2 PARAM = '-(meas_leakage_current_OFF_state_2)*sram_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = 'meas_ON_leakage_power_2 + meas_ON_leakage_power_1'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = 'meas_OFF_leakage_power_2 + meas_OFF_leakage_power_1'\n\n\n")
+    
+
+        local_mux_file.write(".MEASURE TRAN meas_current_vddl INTEGRAL I(V_LOCAL_MUX) FROM=0ns TO=4ns\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_1_power PARAM = '-(meas_current_vddl/4n)*supply_v'\n")
+
+        local_mux_file.write(".MEASURE TRAN meas_current_vddh INTEGRAL I(V_LOCAL_MUX_h) FROM=0ns TO=4ns\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_2_power PARAM = '-(meas_current_vddh/4n)*sram_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_power PARAM = 'meas_avg_2_power + meas_avg_1_power'\n") 
+    else :
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_LOCAL_MUX) AT=3.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_LOCAL_MUX) AT=1.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*"+local_mux_driv_vdd_meas+"'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*"+local_mux_driv_vdd_meas+"'  \n")  
+        local_mux_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LOCAL_MUX) FROM=0ns TO=4ns\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_power PARAM = '-(meas_current/4n)*"+local_mux_driv_vdd_meas+"'\n\n")
     
     local_mux_file.write("********************************************************************************\n")
     local_mux_file.write("** Circuit\n")
     local_mux_file.write("********************************************************************************\n\n")
     local_mux_file.write("Xsb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd sb_mux_on\n")
     local_mux_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd routing_wire_load\n")
-    local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n")
-    local_mux_file.write("Xlut_A_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 vdd gnd lut_A_driver\n\n")
+    #local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n"
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 : 
+        local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux vdd_local_mux_h local_routing_wire_load\n")
+    else :
+        local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n")
+    local_mux_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 "+local_mux_driv_vdd+" gnd lut_a_driver\n\n")
     local_mux_file.write(".END")
     local_mux_file.close()
 
@@ -4269,7 +4356,9 @@ def generate_lut4_top(lut_name, use_tgate):
  
 def generate_lut_driver_top(input_driver_name, input_driver_type):
     """ Generate the top level lut input driver SPICE file """
-    
+    # change the vdd that is hooked up top the local mux driver
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas    
     # Create directories
     if not os.path.exists(input_driver_name):
         os.makedirs(input_driver_name)  
@@ -4294,7 +4383,7 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
     input_driver_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     input_driver_file.write("* Power rail for the circuit under test.\n")
     input_driver_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
-    input_driver_file.write("V_LUT_DRIVER vdd_lut_driver gnd supply_v\n\n")
+    input_driver_file.write("V_LUT_DRIVER vdd_lut_driver gnd "+local_mux_driv_vdd_meas+"\n\n")
 
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Measurement\n")
@@ -4302,42 +4391,53 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
     # We measure different things based on the input driver type
     if input_driver_type != "default":
         input_driver_file.write("* inv_" + input_driver_name + "_0 delays\n")
-        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_0_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='supply_v/2' FALL=1\n")
-        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_0_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='supply_v/2' RISE=1\n\n")
+        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_0_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_0_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
         input_driver_file.write("* inv_" + input_driver_name + "_1 delays\n")
-        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_3_1) VAL='supply_v/2' FALL=1\n")
-        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_3_1) VAL='supply_v/2' RISE=1\n\n")
+        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+        input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+        input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
     input_driver_file.write("* inv_" + input_driver_name + "_2 delays\n")
-    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    input_driver_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+    input_driver_file.write("+    TARG V(n_out) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write("+    TARG V(n_out) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
     input_driver_file.write("* Total delays\n")
-    input_driver_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    input_driver_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+    input_driver_file.write("+    TARG V(n_out) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write("+    TARG V(n_out) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
 
     input_driver_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 
     input_driver_file.write("* Measure the power required to propagate a rise and a fall transition through the lut driver at 250MHz.\n")
+    
+    input_driver_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_LUT_DRIVER) AT=3.97n\n")
+    input_driver_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_LUT_DRIVER) AT=1.97n\n")
+    input_driver_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*sram_v'\n")
+    input_driver_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*sram_v'\n")
+    
     input_driver_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LUT_DRIVER) FROM=0ns TO=4ns\n")
-    input_driver_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*"+local_mux_driv_vdd_meas+"'\n\n")
 
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Circuit\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
+    
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :  
+        input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+    else :
+        input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
+        
     input_driver_file.write("X" + input_driver_name + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd_lut_driver gnd " + input_driver_name + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
-    input_driver_file.write("X" + input_driver_name + "_not_1 n_2_1 n_out_n vdd gnd " + input_driver_name + "_not\n")
+    input_driver_file.write("X" + input_driver_name + "_not_1 n_2_1 n_out_n "+local_mux_driv_vdd +" gnd " + input_driver_name + "_not\n")
     input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n")
     input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd gnd " + input_driver_name + "_load\n\n")
     input_driver_file.write(".END")
@@ -4351,6 +4451,8 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
 
 def generate_lut_driver_not_top(input_driver_name, input_driver_type):
     """ Generate the top level lut input not driver SPICE file """
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas
     
     # Create directories
     input_driver_name_no_not = input_driver_name.replace("_not", "")
@@ -4377,39 +4479,47 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
     input_driver_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
     input_driver_file.write("* Power rail for the circuit under test.\n")
     input_driver_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
-    input_driver_file.write("V_LUT_DRIVER vdd_lut_driver gnd supply_v\n\n")
+    input_driver_file.write("V_LUT_DRIVER vdd_lut_driver gnd "+local_mux_driv_vdd_meas+"\n\n")
     
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Measurement\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("* inv_" + input_driver_name + "_1 delays\n")
-    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_tfall TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_trise TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='supply_v/2' RISE=1\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+    input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_1_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write("+    TARG V(X" + input_driver_name + "_1.n_1_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
     input_driver_file.write("* inv_" + input_driver_name + "_2 delays\n")
-    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write("+    TARG V(n_out_n) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    input_driver_file.write("+    TARG V(n_out_n) VAL='supply_v/2' RISE=1\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write("+    TARG V(n_out_n) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write(".MEASURE TRAN meas_inv_" + input_driver_name + "_2_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+    input_driver_file.write("+    TARG V(n_out_n) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
     input_driver_file.write("* Total delays\n")
-    input_driver_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_2) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write("+    TARG V(n_out_n) VAL='supply_v/2' FALL=1\n")
-    input_driver_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_2) VAL='supply_v/2' RISE=1\n")
-    input_driver_file.write("+    TARG V(n_out_n) VAL='supply_v/2' RISE=1\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write("+    TARG V(n_out_n) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+    input_driver_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_1_2) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+    input_driver_file.write("+    TARG V(n_out_n) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")
 
     input_driver_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
     
     input_driver_file.write("* Measure the power required to propagate a rise and a fall transition through the lut driver at 250MHz.\n")
+    input_driver_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_LUT_DRIVER) AT=1.97n\n")
+    input_driver_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_LUT_DRIVER) AT=3.97n\n")
+    input_driver_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*sram_v'\n")
+    input_driver_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*sram_v'\n")  
     input_driver_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LUT_DRIVER) FROM=0ns TO=4ns\n")
-    input_driver_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+    input_driver_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*"+local_mux_driv_vdd_meas+"'\n\n")
 
     input_driver_file.write("********************************************************************************\n")
     input_driver_file.write("** Circuit\n")
     input_driver_file.write("********************************************************************************\n\n")
     input_driver_file.write("Xcb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
-    input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name_no_not + "\n")
+
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :      
+        input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram  local_routing_wire_load\n")
+    else :
+        input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
+    input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 "+local_mux_driv_vdd +" gnd " + input_driver_name_no_not + "\n")
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         # Connect a load to n_rsel node
         input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
@@ -4427,8 +4537,10 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
   
 def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate, use_fluts):
     """ Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
-    
-    # Create directories
+    # change the vdd that is hooked up top the local mux driver
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas	
+	# Create directories
     if not os.path.exists(input_driver_name):
         os.makedirs(input_driver_name)  
     # Change to directory    
@@ -4460,9 +4572,9 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("** Measurement\n")
     spice_file.write("********************************************************************************\n\n")
     spice_file.write("* Total delays\n")
-    spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=2\n")
+    spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n")
     spice_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+    spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
     spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
     
     spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
@@ -4476,13 +4588,18 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("** Circuit\n")
     spice_file.write("********************************************************************************\n\n")    
     spice_file.write("Xcb_mux_on_1 n_in_gate n_1_1 vsram vsram_n vdd gnd cb_mux_on\n")
-    spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
-    spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 vdd gnd " + input_driver_name + "\n")
+    #spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :    
+        spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+    else :
+        spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
+        
+    spice_file.write("X" + input_driver_name + "_1 n_1_2 n_3_1 vsram vsram_n n_rsel n_2_1 " + local_mux_driv_vdd + " gnd " + input_driver_name + "\n")
 
     # Connect a load to n_rsel node
     if input_driver_type == "default_rsel" or input_driver_type == "reg_fb_rsel":
         spice_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
-    spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 vdd gnd " + input_driver_name + "_not\n")
+    spice_file.write("X" + input_driver_name + "_not_1 n_2_1 n_1_4 " + local_mux_driv_vdd + " gnd " + input_driver_name + "_not\n")
 
     # Connect the LUT driver to a different LUT input based on LUT driver name and connect the other inputs to vdd
     # pass- transistor ----> "Xlut n_in_sram n_out a b c d e f vdd_lut gnd lut"
@@ -4499,7 +4616,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             # if tgate connect the complement input to n_1_4
             if use_tgate: lut_input_nodes += "n_1_4 "
         else:
-            lut_input_nodes += "vdd "
+            lut_input_nodes += local_mux_driv_vdd + " "
             # if tgate connect the complement to gnd
             if use_tgate: lut_input_nodes += "gnd "
 
@@ -4521,7 +4638,9 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     
 def generate_local_ble_output_top(name, use_tgate):
     """ Generate the top level local ble output SPICE file """
-    
+    # change the vdd that is hooked up top the local mux driver
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas    
     # Create directories
     if not os.path.exists(name):
         os.makedirs(name)  
@@ -4570,6 +4689,10 @@ def generate_local_ble_output_top(name, use_tgate):
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_local_out) AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_LOCAL_OUTPUT) AT=1.97n\n")
+    top_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_LOCAL_OUTPUT) AT=3.97n\n")
+    top_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*supply_v'\n")
+    top_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*supply_v'\n")  
     top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_LOCAL_OUTPUT) FROM=0ns TO=4ns\n")
     top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
 
@@ -4577,13 +4700,15 @@ def generate_local_ble_output_top(name, use_tgate):
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" " +"vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
     else :
         top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
-
-    top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n vdd gnd local_ble_output_load\n")
+    if GB_LUT > 0 and LEVEL_SHIFTER > 0 : 
+        top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n vdd vsram gnd local_ble_output_load\n")
+    else :
+        top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n "+local_mux_driv_vdd+" vsram gnd local_ble_output_load\n")    
     top_file.write(".END")
     top_file.close()
 
@@ -4595,7 +4720,9 @@ def generate_local_ble_output_top(name, use_tgate):
     
 def generate_general_ble_output_top(name, use_tgate):
     """ """
-    
+    # change the vdd that is hooked up top the local mux driver
+    local_mux_driv_vdd = local_mux_supply
+    local_mux_driv_vdd_meas = local_mux_meas   
     # Create directories
     if not os.path.exists(name):
         os.makedirs(name)  
@@ -4644,6 +4771,10 @@ def generate_general_ble_output_top(name, use_tgate):
     top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_general_out) AT=3n\n\n")
 
     top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_GENERAL_OUTPUT) AT=1.97n\n")
+    top_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_GENERAL_OUTPUT) AT=3.97n\n")
+    top_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*supply_v'\n")
+    top_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = '-(meas_leakage_current_OFF_state)*supply_v' \n")
     top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_GENERAL_OUTPUT) FROM=0ns TO=4ns\n")
     top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
 
@@ -4651,7 +4782,7 @@ def generate_general_ble_output_top(name, use_tgate):
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" " +"vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
     else :
         top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")

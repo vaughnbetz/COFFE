@@ -53,6 +53,9 @@ Rsel=c
 # Rfb=z tells COFFE that no LUT input should have register feedback muxes.
 Rfb=c
 
+use_fluts=False
+
+
 #######################################
 ##### Process Technology Parameters
 #######################################

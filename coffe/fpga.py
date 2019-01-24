@@ -81,6 +81,9 @@ DELAY_WEIGHT_GENERAL_BLE_OUTPUT = 0.0326
 DELAY_WEIGHT_RAM = 0.15
 HEIGHT_SPAN = 0.5
 
+GB_LUT = 0
+LEVEL_SHIFTER = 0 
+
 # This parameter determines if RAM core uses the low power transistor technology
 # It is strongly suggested to keep it this way since our
 # core RAM modules were designed to operate with low power transistors.
@@ -539,14 +542,29 @@ class _LocalMUX(_SizableCircuit):
         
         if not self.use_tgate :
             # Call MUX generation function
-            self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux_no_driver(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+            if GB_LUT > 0 and LEVEL_SHIFTER > 0 : 
+                self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux_no_driver_gb_lut_level_shifter(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
+            else :
+                self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2lvl_mux_no_driver(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
             
             # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
-            self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 2
-            self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 2
+            self.initial_transistor_sizes["ptran_" + self.name + "_L1_nmos"] = 3
+            self.initial_transistor_sizes["ptran_" + self.name + "_L2_nmos"] = 3
             self.initial_transistor_sizes["rest_" + self.name + "_pmos"] = 1
-            self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 2
-            self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 2
+            self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 4
+            self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 4     
+            # lvl shifter transistors
+            #self.initial_transistor_sizes["tran_lvl_shifter_" + self.name + "_1_pd"] = 1
+            #self.initial_transistor_sizes["tran_lvl_shifter_" + self.name + "_1_pu"] = 1
+            #self.initial_transistor_sizes["tran_lvl_shifter_" + self.name + "_2_pd"] = 1
+            #self.initial_transistor_sizes["tran_lvl_shifter_" + self.name + "_2_pu"] = 1 
+            
+
+            if GB_LUT > 0 and LEVEL_SHIFTER > 0 :             
+                self.initial_transistor_sizes["inv_lvl_shifter_" + self.name + "_1_nmos"] = 1
+                self.initial_transistor_sizes["inv_lvl_shifter_" + self.name + "_1_pmos"] = 1
+                self.initial_transistor_sizes["inv_lvl_shifter_" + self.name + "_2_nmos"] = 1
+                self.initial_transistor_sizes["inv_lvl_shifter_" + self.name + "_2_pmos"] = 1             
         else :
             # Call MUX generation function
             self.transistor_names, self.wire_names = mux_subcircuits.generate_tgate_2lvl_mux_no_driver(subcircuit_filename, self.name, self.implemented_size, self.level1_size, self.level2_size)
@@ -577,6 +595,14 @@ class _LocalMUX(_SizableCircuit):
                     self.level2_size*area_dict["ptran_" + self.name + "_L2"] +
                     area_dict["rest_" + self.name + ""] +
                     area_dict["inv_" + self.name + "_1"])
+                    
+            if GB_LUT > 0 and LEVEL_SHIFTER > 0 :                    
+                    area = (area + area_dict["inv_lvl_shifter_" + self.name + "_1"] +   
+                    area_dict["inv_lvl_shifter_" + self.name + "_2"]) 
+                    #area_dict["tran_lvl_shifter_" + self.name + "_1_pd"] +
+                    #area_dict["tran_lvl_shifter_" + self.name + "_1_pu"] +
+                    #area_dict["tran_lvl_shifter_" + self.name + "_2_pd"] +
+                    #area_dict["tran_lvl_shifter_" + self.name + "_2_pu"])                    
         else :
             area = ((self.level1_size*self.level2_size)*area_dict["tgate_" + self.name + "_L1"] +
                     self.level2_size*area_dict["tgate_" + self.name + "_L2"] +
@@ -921,10 +947,11 @@ class _LUTInputDriverLoad:
     """ LUT input driver load. This load consists of a wire as well as the gates
         of a particular level in the LUT. """
 
-    def __init__(self, name, use_tgate, use_fluts):
+    def __init__(self, name, use_tgate, use_fluts, predecode):
         self.name = name
         self.use_tgate = use_tgate
         self.use_fluts = use_fluts
+        self.predecode = predecode
     
     
     def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
@@ -932,10 +959,13 @@ class _LUTInputDriverLoad:
 
         # Update wire lengths
         wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio
+        if self.predecode == "on": 
+            wire_lengths["wire_driver_predecode_L1"] =  2*width_dict["inv_nand_lut_predecode_1"]
         
         # Update set wire layers
         wire_layers["wire_lut_" + self.name + "_driver_load"] = 0
-        
+        if self.predecode == "on": 
+            wire_layers["wire_driver_predecode_L1"] = 0
         
     def generate(self, subcircuit_filename, K):
         
@@ -944,9 +974,15 @@ class _LUTInputDriverLoad:
         if not self.use_tgate :
             # Call generation function based on input
             if self.name == "a":
-                self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+                if self.predecode == "on": 
+                    self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load_ib(subcircuit_filename, self.name, K, self.use_fluts)
+                else:
+                    self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
             elif self.name == "b":
-                self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+                if self.predecode == "on":             
+                    self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load_ib(subcircuit_filename, self.name, K, self.use_fluts)
+                else:
+                    self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)    
             elif self.name == "c":
                 self.wire_names = lut_subcircuits.generate_ptran_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
             elif self.name == "d":
@@ -975,6 +1011,66 @@ class _LUTInputDriverLoad:
         print "LUT input driver load details."
 
 
+        
+class _LUTInputPredecodeLoad:
+    """ LUT input driver load. This load consists of a wire as well as the gates
+        of a particular level in the LUT. """
+
+    def __init__(self, name, use_tgate, use_fluts):
+        self.name = name
+        self.use_tgate = use_tgate
+        self.use_fluts = use_fluts
+    
+    
+    def update_wires(self, width_dict, wire_lengths, wire_layers, ratio):
+        """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
+
+        # Update wire lengths
+        wire_lengths["wire_lut_" + self.name + "_predecode_load"] = width_dict["lut"] * ratio
+        wire_lengths["wire_lut_" + self.name + "_driver_load"] = width_dict["lut"] * ratio
+
+        # Update set wire layers
+        wire_layers["wire_lut_" + self.name + "_predecode_load"] = 0
+        
+        
+    def generate(self, subcircuit_filename, K):
+        
+        print "Generating LUT " + self.name + "-predcode driver load"
+        
+        if not self.use_tgate :
+            # Call generation function based on input
+            if self.name == "a":
+                self.wire_names = lut_subcircuits.generate_ptran_lut_predecode_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "b":
+                self.wire_names = lut_subcircuits.generate_ptran_lut_predecode_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "c":
+                self.wire_names = lut_subcircuits.generate_ptran_lut_predecode_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "d":
+                self.wire_names = lut_subcircuits.generate_ptran_lut_predecode_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "e":
+                self.wire_names = lut_subcircuits.generate_ptran_lut_predecode_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "f":
+                self.wire_names = lut_subcircuits.generate_ptran_lut_predecode_load(subcircuit_filename, self.name, K, self.use_fluts)
+        else :
+            # Call generation function based on input
+            if self.name == "a":
+                self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "b":
+                self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "c":
+                self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "d":
+                self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "e":
+                self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+            elif self.name == "f":
+                self.wire_names = lut_subcircuits.generate_tgate_lut_driver_load(subcircuit_filename, self.name, K, self.use_fluts)
+        
+        
+    def print_details(self):
+        print "LUT input predecode load details."
+
+
 
         
         
@@ -993,6 +1089,8 @@ class _LUT(_SizableCircuit):
         self.input_drivers = {}
         # Dictionary of input driver loads
         self.input_driver_loads = {}
+        self.input_predecode_loads = {}
+        self.predecode = "off"
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_LUT_A + DELAY_WEIGHT_LUT_B + DELAY_WEIGHT_LUT_C + DELAY_WEIGHT_LUT_D
         if K >= 5:
@@ -1026,7 +1124,10 @@ class _LUT(_SizableCircuit):
             else:
                 raise Exception("No delay weight definition for LUT input " + name)
             self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, use_tgate, use_fluts)
-            self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts)
+            self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts, self.predecode )
+    
+        if self.predecode == "on":    
+            self.input_predecode_loads["a"] = _LUTInputPredecodeLoad("a", use_tgate, use_fluts)
 
         if use_fluts:
             if K == 5:
@@ -1054,7 +1155,10 @@ class _LUT(_SizableCircuit):
             tempK = self.K - 1
 
         if tempK == 6:
-            init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
+            if self.predecode == "on": 
+                init_tran_sizes = self._generate_6lut_ib(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
+            else:
+                 init_tran_sizes = self._generate_6lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)           
         elif tempK == 5:
             init_tran_sizes = self._generate_5lut(subcircuit_filename, min_tran_width, self.use_tgate, self.use_finfet, self.use_fluts)
         elif tempK == 4:
@@ -1099,7 +1203,7 @@ class _LUT(_SizableCircuit):
             if tempK == 6:    
                 area += (64*area_dict["inv_lut_0sram_driver_2"] + 
                         64*area_dict["ptran_lut_L1"] + 
-                        32*area_dict["ptran_lut_L2"] + 
+                        #32*area_dict["ptran_lut_L2"] + predecode_ib
                         16*area_dict["ptran_lut_L3"] +      
                         8*area_dict["rest_lut_int_buffer"] + 
                         8*area_dict["inv_lut_int_buffer_1"] + 
@@ -1111,6 +1215,13 @@ class _LUT(_SizableCircuit):
                         area_dict["inv_lut_out_buffer_1"] + 
                         area_dict["inv_lut_out_buffer_2"] +
                         64*area_dict["sram"])
+
+                if self.predecode == "on":
+                    area += (8*area_dict["inv_nand_lut_predecode_1"] + 
+                        4*area_dict["inv_lut_predecode_2"])
+                else:
+                    area += 32*area_dict["ptran_lut_L2"]
+                        
             elif tempK == 5:
                 area += (32*area_dict["inv_lut_0sram_driver_2"] + 
                         32*area_dict["ptran_lut_L1"] + 
@@ -1219,6 +1330,9 @@ class _LUT(_SizableCircuit):
                 wire_lengths["wire_lut_L5"] = 16*width_dict["ptran_lut_L1"]
                 wire_lengths["wire_lut_L6"] = 32*width_dict["ptran_lut_L1"]
                 wire_lengths["wire_lut_out_buffer"] = (width_dict["inv_lut_out_buffer_1"] + width_dict["inv_lut_out_buffer_2"])/4
+                
+                if self.predecode == "on":
+                    wire_lengths["wire_lut_nand_inv_1"] = (width_dict["inv_nand_lut_predecode_1"] + width_dict["inv_lut_predecode_2"])/4
 
                 # Update wire layers
                 wire_layers["wire_lut_sram_driver"] = 0
@@ -1232,6 +1346,9 @@ class _LUT(_SizableCircuit):
                 wire_layers["wire_lut_L5"] = 0
                 wire_layers["wire_lut_L6"] = 0
                 wire_layers["wire_lut_out_buffer"] = 0
+               
+                if self.predecode == "on":
+                    wire_layers["wire_lut_nand_inv_1"] = 0
               
             elif self.K == 5:
                 # Update wire lengths
@@ -1364,8 +1481,11 @@ class _LUT(_SizableCircuit):
         # Update input driver load wires
         for driver_load_name, input_driver_load in self.input_driver_loads.iteritems():
             input_driver_load.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
-    
         
+        if self.predecode == "on":    
+            # for driver_load_name, input_precode_load in self.input_predecode_loads.iteritems():
+            self.input_predecode_loads["a"].update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)    
+
     def print_details(self, report_file):
         """ Print LUT details """
     
@@ -1376,11 +1496,102 @@ class _LUT(_SizableCircuit):
         utils.print_and_write(report_file, "  Isolation inverters between SRAM and LUT inputs")
         utils.print_and_write(report_file, "")
         utils.print_and_write(report_file, "  LUT INPUT DRIVER DETAILS:")
+        
         for driver_name, input_driver in self.input_drivers.iteritems():
             input_driver.print_details(report_file)
         utils.print_and_write(report_file,"")
         
     
+    def _generate_6lut_ib(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
+        """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
+        print "Generating 6-LUT"
+
+        # COFFE doesn't support 7-input LUTs check_arch_params in utils.py will handle this
+        # we currently don't support 7-input LUTs that are fracturable, that would require more code changes but can be done with reasonable effort.
+        # assert use_fluts == False
+        
+        # Call the generation function
+        if not use_tgate :
+            # use pass transistors
+            self.transistor_names, self.wire_names = lut_subcircuits.generate_ptran_lut6_ib(subcircuit_filename, min_tran_width, use_finfet)
+
+            # Give initial transistor sizes
+            self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+            
+            
+            self.initial_transistor_sizes["inv_nand_lut_predecode_1_nmos"] = 1
+            self.initial_transistor_sizes["inv_nand_lut_predecode_1_pmos"] = 1
+            self.initial_transistor_sizes["inv_lut_predecode_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_predecode_2_pmos"] = 4
+            
+            
+            self.initial_transistor_sizes["ptran_lut_L1_nmos"] = 2
+            self.initial_transistor_sizes["ptran_lut_L2_nmos"] = 2
+            self.initial_transistor_sizes["ptran_lut_L3_nmos"] = 2
+            self.initial_transistor_sizes["rest_lut_int_buffer_pmos"] = 1
+            self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+            self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+            self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+            self.initial_transistor_sizes["ptran_lut_L4_nmos"] = 3
+            self.initial_transistor_sizes["ptran_lut_L5_nmos"] = 3
+            self.initial_transistor_sizes["ptran_lut_L6_nmos"] = 3
+            self.initial_transistor_sizes["rest_lut_out_buffer_pmos"] = 1
+            self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+            self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+            self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+
+        else :
+            # use transmission gates
+            self.transistor_names, self.wire_names = lut_subcircuits.generate_tgate_lut6(subcircuit_filename, min_tran_width, use_finfet)
+
+            # Give initial transistor sizes
+            self.initial_transistor_sizes["inv_lut_0sram_driver_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_0sram_driver_2_pmos"] = 6
+            self.initial_transistor_sizes["tgate_lut_L1_nmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L1_pmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L2_nmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L2_pmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L3_nmos"] = 2
+            self.initial_transistor_sizes["tgate_lut_L3_pmos"] = 2
+            self.initial_transistor_sizes["inv_lut_int_buffer_1_nmos"] = 2
+            self.initial_transistor_sizes["inv_lut_int_buffer_1_pmos"] = 2
+            self.initial_transistor_sizes["inv_lut_int_buffer_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_int_buffer_2_pmos"] = 6
+            self.initial_transistor_sizes["tgate_lut_L4_nmos"] = 3
+            self.initial_transistor_sizes["tgate_lut_L4_pmos"] = 3
+            self.initial_transistor_sizes["tgate_lut_L5_nmos"] = 3
+            self.initial_transistor_sizes["tgate_lut_L5_pmos"] = 3
+            self.initial_transistor_sizes["tgate_lut_L6_nmos"] = 3
+            self.initial_transistor_sizes["tgate_lut_L6_pmos"] = 3
+            self.initial_transistor_sizes["inv_lut_out_buffer_1_nmos"] = 2
+            self.initial_transistor_sizes["inv_lut_out_buffer_1_pmos"] = 2
+            self.initial_transistor_sizes["inv_lut_out_buffer_2_nmos"] = 4
+            self.initial_transistor_sizes["inv_lut_out_buffer_2_pmos"] = 6
+        
+        
+        # Generate input drivers (with register feedback if input is in Rfb)
+        self.input_drivers["a"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["b"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["c"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["d"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["e"].generate(subcircuit_filename, min_tran_width)
+        self.input_drivers["f"].generate(subcircuit_filename, min_tran_width)
+        
+        # Generate input driver loads
+        self.input_driver_loads["a"].generate(subcircuit_filename, self.K)
+        self.input_driver_loads["b"].generate(subcircuit_filename, self.K)
+        self.input_driver_loads["c"].generate(subcircuit_filename, self.K)
+        self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
+        self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
+        self.input_driver_loads["f"].generate(subcircuit_filename, self.K)
+        
+        self.input_predecode_loads["a"].generate(subcircuit_filename, self.K)
+       
+        return self.initial_transistor_sizes
+        
     def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
         print "Generating 6-LUT"
@@ -1458,8 +1669,9 @@ class _LUT(_SizableCircuit):
         self.input_driver_loads["d"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["e"].generate(subcircuit_filename, self.K)
         self.input_driver_loads["f"].generate(subcircuit_filename, self.K)
+        
        
-        return self.initial_transistor_sizes
+        return self.initial_transistor_sizes        
 
         
     def _generate_5lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
@@ -6112,6 +6324,12 @@ class FPGA:
         crit_path_delay += self.sb_mux.delay*self.sb_mux.delay_weight
         self.delay_dict[self.sb_mux.name] = self.sb_mux.delay 
         self.sb_mux.power = float(spice_meas["meas_avg_power"][0])
+        self.sb_mux.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+        self.sb_mux.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])  
+        
+        print " after switch block\n"
+        sys.stdout.flush() 
+        
         
         # Connection Block MUX
         print "  Updating delay for " + self.cb_mux.name
@@ -6131,6 +6349,11 @@ class FPGA:
         crit_path_delay += self.cb_mux.delay*self.cb_mux.delay_weight
         self.delay_dict[self.cb_mux.name] = self.cb_mux.delay
         self.cb_mux.power = float(spice_meas["meas_avg_power"][0])
+        self.cb_mux.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+        self.cb_mux.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])      
+
+        print " after connection block\n"
+        sys.stdout.flush()         
         
         # Local MUX
         print "  Updating delay for " + self.logic_cluster.local_mux.name
@@ -6152,6 +6375,12 @@ class FPGA:
                             self.logic_cluster.local_mux.delay_weight)
         self.delay_dict[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux.delay
         self.logic_cluster.local_mux.power = float(spice_meas["meas_avg_power"][0])
+        self.logic_cluster.local_mux.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+        self.logic_cluster.local_mux.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])   
+        
+        
+        print " after local_mux block\n"
+        sys.stdout.flush() 
         
         # Local BLE output
         print "  Updating delay for " + self.logic_cluster.ble.local_output.name 
@@ -6173,6 +6402,12 @@ class FPGA:
                             self.logic_cluster.ble.local_output.delay_weight)
         self.delay_dict[self.logic_cluster.ble.local_output.name] = self.logic_cluster.ble.local_output.delay
         self.logic_cluster.ble.local_output.power = float(spice_meas["meas_avg_power"][0])
+        self.logic_cluster.ble.local_output.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+        self.logic_cluster.ble.local_output.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])         
+
+
+        print " after local ble block\n"
+        sys.stdout.flush()         
         
         # General BLE output
         print "  Updating delay for " + self.logic_cluster.ble.general_output.name
@@ -6194,7 +6429,11 @@ class FPGA:
                             self.logic_cluster.ble.general_output.delay_weight)
         self.delay_dict[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output.delay
         self.logic_cluster.ble.general_output.power = float(spice_meas["meas_avg_power"][0])
-        
+        self.logic_cluster.ble.general_output.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+        self.logic_cluster.ble.general_output.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])       
+
+        print " after general ble block\n"
+        sys.stdout.flush()          
 
         #fmux
         #print self.specs.use_fluts 
@@ -6273,6 +6512,7 @@ class FPGA:
                 lut_input.trise = trise
                 lut_input.delay = max(tfall, trise)
             lut_input.power = float(spice_meas["meas_avg_power"][0])
+            
 
             if lut_input.delay < 0 :
                 print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
@@ -6296,7 +6536,10 @@ class FPGA:
             driver.trise = trise
             driver.delay = max(tfall, trise)
             driver.power = float(spice_meas["meas_avg_power"][0])
+            driver.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+            driver.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])                                     
             self.delay_dict[driver.name] = driver.delay
+            
 
             if driver.delay < 0 :
                 print "*** Lut driver delay is negative : " + str(lut_input.delay) + " ***"
@@ -6318,6 +6561,8 @@ class FPGA:
             not_driver.trise = trise
             not_driver.delay = max(tfall, trise)
             not_driver.power = float(spice_meas["meas_avg_power"][0])
+            not_driver.leak_power_state_on = float(spice_meas["meas_on_leakage_power"][0])
+            not_driver.leak_power_state_off = float(spice_meas["meas_off_leakage_power"][0])              
             self.delay_dict[not_driver.name] = not_driver.delay
             if not_driver.delay < 0 :
                 print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"
@@ -7167,6 +7412,8 @@ class FPGA:
         #generate ram tgate
         basic_subcircuits.RAM_tgate_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
         basic_subcircuits.RAM_tgate_generate_lp(self.basic_subcircuits_filename, self.specs.use_finfet)
+		# Generate lvl_shifter_single_stage subcircuit
+        basic_subcircuits.lvl_shifter_generate(self.basic_subcircuits_filename, self.specs.use_finfet)
 
         # Write footer
         basic_sc_file = open(self.basic_subcircuits_filename, 'a')
@@ -7355,7 +7602,7 @@ class FPGA:
             # those components should have an nmos and a pmos transistors in them
             if "inv_" in tran[0] or "tgate_" in tran[0]:
                 # Get the component name; transistors full name example: inv_lut_out_buffer_2_nmos.
-                # so the component name after the next two lines will be inv_lut_out_buffe_2.
+                # so the component name after the next two lines will be inv_lut_out_buffer_2.
                 comp_name = tran[0].replace("_nmos", "")
                 comp_name = comp_name.replace("_pmos", "")
                 

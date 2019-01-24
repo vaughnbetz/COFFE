@@ -72,6 +72,7 @@ args = parser.parse_args()
 is_size_transistors = not args.no_sizing
 
 
+
 # Make the top-level spice folder if it doesn't already exist
 # if it's already there delete its content
 arch_folder = utils.create_output_dir(args.arch_description)
@@ -125,15 +126,47 @@ report_file = open(report_file_path, 'a')
 fpga_inst.print_details(report_file)  
 report_file.close()
 
+
+
+
+
 # Go to architecture directory
 os.chdir(arch_folder)
+# copy process_models file
+model_1000mv_file = open("1000mv.txt", 'w')
+model_900mv_file = open("900mv.txt", 'w')
+model_800mv_file = open("800mv.txt", 'w')
+model_700mv_file = open("700mv.txt", 'w')
+model_600mv_file = open("600mv.txt", 'w')
+default_model_file = open("process_data.l", 'r')
 
+for line in default_model_file:
+    
+	if "supply_v =" in line:
+		model_1000mv_file.write(".PARAM supply_v = 1.0\n")
+		model_900mv_file.write(".PARAM supply_v = 0.9\n")
+		model_800mv_file.write(".PARAM supply_v = 0.8\n")
+		model_700mv_file.write(".PARAM supply_v = 0.7\n")
+		model_600mv_file.write(".PARAM supply_v = 0.6\n")
+	else:
+		model_1000mv_file.write(line)
+		model_900mv_file.write(line)
+		model_800mv_file.write(line)
+		model_700mv_file.write(line)
+		model_600mv_file.write(line)
 
+default_model_file.close()
+model_1000mv_file.close()
+model_900mv_file.close()
+model_800mv_file.close()
+model_700mv_file.close()
+model_600mv_file.close()
 ###############################################################
 ## TRANSISTOR SIZING
 ###############################################################
 
-
+print "1\n"  
+sys.stdout.flush()
 sys.stdout.flush()
 
 # Size FPGA transistors
@@ -149,17 +182,25 @@ else:
   # same thing here no need to update area before calculating 
   # the lb_height value. Also tested and gave same results
   #fpga_inst.update_area()
+  print "1\n"  
+  sys.stdout.flush()
   fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
   fpga_inst.update_area()
   fpga_inst.compute_distance()
+  print "2\n"
+  sys.stdout.flush()  
   fpga_inst.update_wires()
   fpga_inst.update_wire_rc()
+  print "3\n"
+  sys.stdout.flush()  
 
   # commented this part to avoid doing floorplannig for
   # a non-sizing run
   #fpga_inst.determine_height()
 
   fpga_inst.update_delays(spice_interface)
+  print "4\n"
+  sys.stdout.flush() 
 
 # Obtain Memory core power
 if arch_params_dict['enable_bram_module'] == 1:
@@ -172,5 +213,57 @@ os.chdir(default_dir)
 # Print out final COFFE report to file
 utils.print_summary(arch_folder, fpga_inst, total_start_time)
 
+
+
+os.chdir(arch_folder)
+
 # Print vpr architecure file
-coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])
+coffe.vpr.print_vpr_file(fpga_inst, "vpr_def", arch_params_dict['enable_bram_module'])
+
+# copy report file into a report_default file
+os.rename("report.txt", "report_def.txt")
+os.rename("process_data.l", "process_data_def.l")
+
+# run new simul
+os.rename("1000mv.txt", "process_data.l")
+fpga_inst.update_delays(spice_interface)
+utils.print_summary(".", fpga_inst, total_start_time)
+os.rename("report.txt", "report_1000mv.txt")
+os.rename("process_data.l", "process_data_1000mv_done.l")
+coffe.vpr.print_vpr_file(fpga_inst, "vpr_1000mv", arch_params_dict['enable_bram_module'])
+
+# run new simul
+os.rename("900mv.txt", "process_data.l")
+fpga_inst.update_delays(spice_interface)
+utils.print_summary(".", fpga_inst, total_start_time)
+os.rename("report.txt", "report_900mv.txt")
+os.rename("process_data.l", "process_data_900mv_done.l")
+coffe.vpr.print_vpr_file(fpga_inst, "vpr_900mv", arch_params_dict['enable_bram_module'])
+
+
+# run new simul
+os.rename("800mv.txt", "process_data.l")
+fpga_inst.update_delays(spice_interface)
+utils.print_summary(".", fpga_inst, total_start_time)
+os.rename("report.txt", "report_800mv.txt")
+os.rename("process_data.l", "process_data_800mv_done.l")
+coffe.vpr.print_vpr_file(fpga_inst, "vpr_800mv", arch_params_dict['enable_bram_module'])
+
+# run new simul
+os.rename("700mv.txt", "process_data.l")
+fpga_inst.update_delays(spice_interface)
+utils.print_summary(".", fpga_inst, total_start_time)
+os.rename("report.txt", "report_700mv.txt")
+os.rename("process_data.l", "process_data_700mv_done.l")
+coffe.vpr.print_vpr_file(fpga_inst, "vpr_700mv", arch_params_dict['enable_bram_module'])
+
+# run new simul
+os.rename("600mv.txt", "process_data.l")
+fpga_inst.update_delays(spice_interface)
+utils.print_summary(".", fpga_inst, total_start_time)
+os.rename("report.txt", "report_600mv.txt")
+os.rename("process_data.l", "process_data_600mv_done.l")
+coffe.vpr.print_vpr_file(fpga_inst, "vpr_600mv", arch_params_dict['enable_bram_module'])
+
+
+

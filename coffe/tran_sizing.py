@@ -19,7 +19,7 @@ ERF_MONITOR_VERBOSE = True
 # This is the ERF error tolerance. E.g. 0.01 means 1%.
 ERF_ERROR_TOLERANCE = 0.1
 # Maximum number of times the algorithm will try to meet ERF_ERROR_TOLERANCE before quitting.
-ERF_MAX_ITERATIONS = 4
+ERF_MAX_ITERATIONS = 4 # 4
 
 
 
@@ -326,11 +326,21 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		path_delay += fpga_inst.logic_cluster.local_mux.delay*fpga_inst.logic_cluster.local_mux.delay_weight
 		# LUT
 		path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
+        
+        #ib 
+		#if subcircuit.name == "lut":
+		#	print "ibrahim lut delay" + str(delay)
+		#	print "old lut delay" + str(fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight)			            
+		#	path_delay += delay
 		# LUT input drivers
 
 		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
 			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 			path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
+            # ib, if the current subcircuit is not a lut then add this delay 
+			#if not subcircuit.name == "lut" :
+			#	print "ibrahim lut delay of " + str(lut_input.delay)
+			#	path_delay += lut_input.delay*lut_input.delay_weight
 		# Local BLE output
 		path_delay += fpga_inst.logic_cluster.ble.local_output.delay*fpga_inst.logic_cluster.ble.local_output.delay_weight
 		# General BLE output
@@ -401,6 +411,152 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 			return path_delay
 		else:
 			return ram_delay
+			
+			
+def get_eval_delay_ib(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, is_ram_component, is_cc_component):
+
+	# omit measurements that are negative or doesn't reach Vgnd
+	if tfall < 0 or trise < 0 or low_voltage > 4.0e-1:
+		return 100
+
+	# omit measurements that are too large
+	if tfall > 5e-9 or trise > 5e-9 :
+		return 100
+
+	# Use average delay for evaluation
+	delay = (tfall + trise)/2
+
+	skip_size = 5
+
+	if "hard_block" in subcircuit.name:
+		delaywrost = 0.0
+		if tfall > trise:
+			delayworst = tfall
+		else:
+			delayworst = trise
+
+		subcircuit.delay = delay
+		subcircuit.trise = trise
+		subcircuit.tfall = tfall
+
+		if delayworst > subcircuit.lowerbounddelay:
+			return subcircuit.delay + 10* (delayworst - subcircuit.lowerbounddelay)
+		else:
+			return subcircuit.delay
+
+	if is_cc_component:
+		subcircuit.delay = delay
+		if fpga_inst.specs.carry_chain_type == "ripple":
+			path_delay =  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain.delay + fpga_inst.carrychainperf.delay + fpga_inst.carrychaininter.delay
+			# The skip is pretty much dependent on size, I'll just assume 4 skip stages for now. However, it should work for any number of bits.
+		elif fpga_inst.specs.carry_chain_type == "skip":
+			# The critical path is the ripple path and the skip of the first one + the skip path of blocks in between, and the ripple and sum of the last block + the time it takes to load the wire in between
+			path_delay = (fpga_inst.carrychain.delay * skip_size  + fpga_inst.carrychainand.delay + fpga_inst.carrychainskipmux.delay) + 2 * fpga_inst.carrychainskipmux.delay + fpga_inst.carrychain.delay * skip_size + fpga_inst.carrychainperf.delay +  (3 - fpga_inst.specs.FAs_per_flut) * fpga_inst.carrychaininter.delay
+		return path_delay
+
+		
+	if opt_type == "local":
+		return delay
+	else:
+		# We need to get the delay of a representative critical path
+		# Let's first set the delay for this subcircuit
+		subcircuit.delay = delay
+		
+		path_delay = 0
+		
+		# Switch block
+		path_delay += fpga_inst.sb_mux.delay*fpga_inst.sb_mux.delay_weight
+		# Connection block
+		path_delay += fpga_inst.cb_mux.delay*fpga_inst.cb_mux.delay_weight
+		# Local mux
+		path_delay += fpga_inst.logic_cluster.local_mux.delay*fpga_inst.logic_cluster.local_mux.delay_weight
+		# LUT
+		#path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
+        
+        #ib 
+		if subcircuit.name == "lut":
+			print "ibrahim lut delay" + str(delay)
+			print "old lut delay" + str(fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight)			            
+			path_delay += delay
+		# LUT input drivers
+
+		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
+			path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
+            # ib, if the current subcircuit is not a lut then add this delay 
+			if not subcircuit.name == "lut" :
+			#	print "ibrahim lut delay of " + str(lut_input.delay)
+				path_delay += lut_input.delay*lut_input.delay_weight
+		# Local BLE output
+		path_delay += fpga_inst.logic_cluster.ble.local_output.delay*fpga_inst.logic_cluster.ble.local_output.delay_weight
+		# General BLE output
+		path_delay += fpga_inst.logic_cluster.ble.general_output.delay*fpga_inst.logic_cluster.ble.general_output.delay_weight
+		if fpga_inst.specs.use_fluts:
+			path_delay += fpga_inst.logic_cluster.ble.fmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
+
+		if fpga_inst.specs.enable_carry_chain == 1:
+			path_delay += fpga_inst.carrychainmux.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
+
+		#print path_delay
+		#path_delay +=fpga_inst.carrychain.delay *fpga_inst.logic_cluster.ble.lut.delay_weight
+
+		if fpga_inst.specs.enable_bram_block == 0:
+			return path_delay
+		# Memory block components begin here
+		# set RAM individual constant delays here:
+		# Memory block local mux
+		ram_delay = fpga_inst.RAM.RAM_local_mux.delay
+
+		# Row decoder
+		ram_decoder_stage1_delay = 0
+
+		# Obtian the average of NAND2 and NAND3 paths if they are both valid
+		count_1 = 0 
+		if fpga_inst.RAM.valid_row_dec_size2 == 1:
+			ram_decoder_stage1_delay += fpga_inst.RAM.rowdecoder_stage1_size2.delay
+			count_1 +=1
+
+		if fpga_inst.RAM.valid_row_dec_size3 == 1:
+			ram_decoder_stage1_delay += fpga_inst.RAM.rowdecoder_stage1_size3.delay
+			count_1 +=1
+
+		if count_1 !=0:
+			fpga_inst.RAM.estimated_rowdecoder_delay = ram_decoder_stage1_delay/count_1
+		fpga_inst.RAM.estimated_rowdecoder_delay += fpga_inst.RAM.rowdecoder_stage3.delay
+		ram_decoder_stage0_delay = fpga_inst.RAM.rowdecoder_stage0.delay
+		fpga_inst.RAM.estimated_rowdecoder_delay += ram_decoder_stage0_delay
+
+		ram_delay = ram_delay + fpga_inst.RAM.estimated_rowdecoder_delay
+		# wordline driver
+		ram_delay += fpga_inst.RAM.wordlinedriver.delay 
+		# column decoder
+		ram_delay +=  fpga_inst.RAM.columndecoder.delay
+
+		# add some other components depending on the technology:
+		if fpga_inst.RAM.memory_technology == "SRAM":
+			ram_delay += fpga_inst.RAM.writedriver.delay + fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay + fpga_inst.RAM.precharge.delay 
+		else:
+			ram_delay +=fpga_inst.RAM.bldischarging.delay + fpga_inst.RAM.blcharging.delay + fpga_inst.RAM.mtjsamp.delay
+		
+		# first stage of the configurable deocoder
+		ram_delay += fpga_inst.RAM.configurabledecoderi.delay
+		# second stage of the configurable decoder
+		# if there are two, I'll just add both since it doesn't really matter.
+		if fpga_inst.RAM.cvalidobj1 ==1:
+			ram_delay += fpga_inst.RAM.configurabledecoder3ii.delay
+		if fpga_inst.RAM.cvalidobj2 ==1:
+			ram_delay += fpga_inst.RAM.configurabledecoder2ii.delay
+
+		# last stage of the configurable decoder
+		ram_delay += fpga_inst.RAM.configurabledecoderiii.delay
+
+		# outputcrossbar
+		ram_delay +=fpga_inst.RAM.pgateoutputcrossbar.delay
+
+		if is_ram_component == 0:
+			return path_delay
+		else:
+			return ram_delay			
 
 
 def get_current_delay(fpga_inst, is_ram_component):
@@ -1339,7 +1495,53 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	# Run HSPICE data sweep
 	print ("Running HSPICE for " + str(len(sizing_combos)) + 
 		   " transistor sizing combinations...")
-	spice_meas = spice_interface.run(sizable_circuit.top_spice_path, parameter_dict)
+    
+	if (sizable_circuit.name == "lut" and "1" == "0") :
+		counter = 0    
+		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+			driver = lut_input.driver
+			not_driver = lut_input.not_driver
+			print "  ibrahim getting lut delay " + driver.name.replace("_driver", "")
+			driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
+
+            # Get the delay for a path through the LUT (we do it for each input)
+			spice_meas_temp = spice_interface.run(driver_and_lut_sp_path, parameter_dict)
+			if counter == 0 :
+				spice_meas = spice_meas_temp
+				if spice_meas["meas_logic_low_voltage"][i] == "failed" :
+					spice_meas["meas_logic_low_voltage"][i] = "failed"
+                  
+				if spice_meas["meas_total_tfall"][i] == "failed" or spice_meas_temp["meas_total_tfall"][i] == "failed":
+					spice_meas["meas_total_tfall"][i] = "failed"  
+				else :
+					spice_meas["meas_total_tfall"][i] = float(spice_meas_temp["meas_total_tfall"][i])*lut_input.delay_weight                     
+
+				if spice_meas["meas_total_trise"][i] == "failed" or spice_meas_temp["meas_total_trise"][i] == "failed":
+					spice_meas["meas_total_trise"][i] = "failed"                   
+				else :
+					spice_meas["meas_total_trise"][i] = float(spice_meas_temp["meas_total_trise"][i])*lut_input.delay_weight
+				print "ibrahim getting spice measure for first input"
+			else :
+				print "ibrahim adding new values"            
+                # add the current input*delayweight to the stored values  
+				for i in xrange(len(sizing_combos)):
+					if spice_meas_temp["meas_logic_low_voltage"][i] == "failed" :
+						spice_meas["meas_logic_low_voltage"][i] = "failed"
+                        
+					if spice_meas["meas_total_tfall"][i] == "failed" or spice_meas_temp["meas_total_tfall"][i] == "failed":
+						spice_meas["meas_total_tfall"][i] = "failed"  
+					else :
+						spice_meas["meas_total_tfall"][i] = float(spice_meas_temp["meas_total_tfall"][i])*lut_input.delay_weight + float(spice_meas["meas_total_tfall"][i])                    
+
+					if spice_meas["meas_total_trise"][i] == "failed" or spice_meas_temp["meas_total_trise"][i] == "failed":
+						spice_meas["meas_total_trise"][i] = "failed"                   
+					else :
+						spice_meas["meas_total_trise"][i] = float(spice_meas_temp["meas_total_trise"][i])*lut_input.delay_weight + float(spice_meas["meas_total_trise"][i]) 
+                
+			counter = counter +1  
+    
+	else :
+		spice_meas = spice_interface.run(sizable_circuit.top_spice_path, parameter_dict)
 
 	# Now we need to create a list of tfall_trise to be compatible with old code
 	tfall_trise_list = []
@@ -1370,7 +1572,8 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 
 
 		delay = get_eval_delay(fpga_inst, opt_type, sizable_circuit, tfall_trise[0], tfall_trise[1], meas_logic_low_voltage[i], is_ram_component, is_cc_component)
-
+		#delay = get_eval_delay_ib(fpga_inst, opt_type, sizable_circuit, tfall_trise[0], tfall_trise[1], meas_logic_low_voltage[i], is_ram_component, is_cc_component)
+		
 
 		eval_delay_list.append(delay)
 		
@@ -1498,6 +1701,9 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 		if "ptran_" in name:
 			best_combo_dict[name] = best_combo[i]
 			best_combo_detailed[name + "_nmos"] = best_combo[i]
+		elif "tran_" in name:
+			best_combo_dict[name] = best_combo[i]
+			best_combo_detailed[name + "_nmos"] = best_combo[i]        
 		elif "tgate_" in name:
 			best_combo_dict[name] = best_combo[i]
 			best_combo_detailed[name + "_nmos"] = best_combo[i]
@@ -1610,7 +1816,7 @@ def print_sizing_results(subcircuit_name, sizing_results_list):
 	print ""
 
 	
-def _divide_problem_into_sets(transistor_names):
+def _divide_problem_into_sets(subcircuit_name, transistor_names):
 	""" If there are too many elements to size, the number of different combinations to try will quickly blow up on us.
 		However, we want to size transistors together in as large groups as possible as this produces a more thorough search. 
 		In general, groups of 5-6 transistors yields a good balance between these two competing factors.  
@@ -1629,7 +1835,7 @@ def _divide_problem_into_sets(transistor_names):
 		
 	# Create the transistor groups
 	tran_names_set_list = []
-	if count > 6:
+	if count > 6 :#and "local_mux" not in subcircuit_name:
 		print "Too many elements to size at once..."
 		# Let's divide this into sets of 5, the last set might have less than 5 elements.       
 		tran_counter = 0
@@ -1671,7 +1877,7 @@ def _divide_problem_into_sets(transistor_names):
 	return tran_names_set_list
 			
 
-def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
+def _find_initial_sizing_ranges(subcircuit_name, transistor_names, transistor_sizes):
 	""" This function finds the initial transistor sizing ranges.
 		The initial ranges are determined based on 'transistor_sizes'
 		I think it's a good idea for the initial transistor size ranges to be smaller
@@ -1685,6 +1891,9 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
   
 	# We have to figure out what ranges to use.
 	set_length = len(transistor_names)
+
+	#if "local_mux" in subcircuit_name:
+	#	sizes_per_element = 4    
 	if set_length >= 6:
 		sizes_per_element = 4
 	elif set_length == 5:
@@ -1855,14 +2064,14 @@ def size_subcircuit_transistors(fpga_inst,
 	tran_names = format_transistor_names_to_basic_subcircuits(subcircuit.transistor_names)
 	
 	# Create groups of transistors to size to keep number of HSPICE sims manageable
-	tran_names_set_list = _divide_problem_into_sets(tran_names)
+	tran_names_set_list = _divide_problem_into_sets(subcircuit.name, tran_names)
 	
 	sizing_ranges_set_list = []
 	sizing_ranges_complete = {}
 
 	# Find initial transistor sizing ranges for each set of transistors
 	for tran_names_set in tran_names_set_list:
-		sizing_ranges_set = _find_initial_sizing_ranges(tran_names_set, 
+		sizing_ranges_set = _find_initial_sizing_ranges(subcircuit.name, tran_names_set, 
 														initial_transistor_sizes)
 		sizing_ranges_set_list.append(sizing_ranges_set.copy())
 		sizing_ranges_complete.update(sizing_ranges_set)
@@ -3299,6 +3508,7 @@ def print_final_transistor_size(fpga_inst, report_file):
 		report_file.write(trans + "  =  " + str(fpga_inst.transistor_sizes[trans]) + "\n")
 
 	return 
+
 
 
 		
