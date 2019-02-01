@@ -82,3 +82,12 @@ sainity_check/sainity_check/
 # hspice_extract file not used anywhere in the code
 # should be deleted later
 coffe/hspice_extract.py
+
+# hspice outputs
+*.ic0
+*.mt0
+*.st0
+*.ic0
+*.lis
+*.pa0
+*.tr0
