@@ -2345,13 +2345,13 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 
 		# If we are moving to a higher cost solution,
 		# Stop, and choose the one with smaller cost (the previous one)
-		#if total_cost >= previous_cost:
-			#print "Algorithm is terminating: cost has stopped decreasing\n"
-			#best_iteration = i - 1
-			#return True, best_iteration
-		#else:
-		previous_cost = total_cost
-		best_iteration = i
+		if total_cost >= previous_cost:
+			print "Algorithm is terminating: cost has stopped decreasing\n"
+			best_iteration = i - 1
+			return True, best_iteration
+		else:
+			previous_cost = total_cost
+			best_iteration = i
 
 	return False, 0
 
@@ -3386,6 +3386,12 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		#fpga_inst.update_delays(spice_interface)
 		#print "Current Cost: " + str(get_current_delay(fpga_inst, 0) * get_eval_area(fpga_inst, "global", fpga_inst.cb_mux, 0))
 		#print "Current RAM Cost: " + str(get_current_delay(fpga_inst, 1) * get_eval_area(fpga_inst, "global", fpga_inst.cb_mux, 1))
+
+		fpga_inst.update_area()
+		fpga_inst.update_wires()
+		fpga_inst.update_wire_rc()
+		fpga_inst.update_delays(spice_interface)
+
 
 		# Add subcircuit delays and area to list (need to copy because of mutability)
 		area_results_list.append(fpga_inst.area_dict.copy())

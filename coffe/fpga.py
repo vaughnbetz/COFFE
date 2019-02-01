@@ -157,6 +157,7 @@ class _Specs:
         self.rest_length_factor     = arch_params_dict['rest_length_factor']
         self.hb_files               = arch_params_dict['hb_files']
         self.use_tgate              = arch_params_dict['use_tgate']
+        self.tgate_blocks           = arch_params_dict['tgate_blocks']
         self.use_finfet             = arch_params_dict['use_finfet']
 
         
@@ -229,7 +230,7 @@ class _CompoundCircuit:
 class _SwitchBlockMUX(_SizableCircuit):
     """ Switch Block MUX Class: Pass-transistor 2-level mux with output driver """
     
-    def __init__(self, required_size, num_per_tile, use_tgate):
+    def __init__(self, required_size, num_per_tile, tgate_blocks):
         # Subcircuit name
         self.name = "sb_mux"
         # How big should this mux be (dictated by architecture specs)
@@ -249,7 +250,7 @@ class _SwitchBlockMUX(_SizableCircuit):
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_SB_MUX
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         
         
     def generate(self, subcircuit_filename, min_tran_width):
@@ -374,7 +375,7 @@ class _SwitchBlockMUX(_SizableCircuit):
 class _ConnectionBlockMUX(_SizableCircuit):
     """ Connection Block MUX Class: Pass-transistor 2-level mux """
     
-    def __init__(self, required_size, num_per_tile, use_tgate):
+    def __init__(self, required_size, num_per_tile, tgate_blocks):
         # Subcircuit name
         self.name = "cb_mux"
         # How big should this mux be (dictated by architecture specs)
@@ -394,7 +395,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_CB_MUX
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -507,7 +508,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
 class _LocalMUX(_SizableCircuit):
     """ Local Routing MUX Class: Pass-transistor 2-level mux with no driver """
     
-    def __init__(self, required_size, num_per_tile, use_tgate):
+    def __init__(self, required_size, num_per_tile, tgate_blocks):
         # Subcircuit name
         self.name = "local_mux"
         # How big should this mux be (dictated by architecture specs)
@@ -527,7 +528,7 @@ class _LocalMUX(_SizableCircuit):
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_LOCAL_MUX
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
     
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -656,14 +657,14 @@ class _LUTInputDriver(_SizableCircuit):
         All subsequent processes (netlist generation, area calculations, etc.) will use this type attribute.
         """
 
-    def __init__(self, name, type, delay_weight, use_tgate, use_fluts):
+    def __init__(self, name, type, delay_weight, tgate_blocks, use_fluts):
         self.name = "lut_" + name + "_driver"
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
         # Delay weight in a representative critical path
         self.delay_weight = delay_weight
         # use pass transistor or transmission gate
-        self.use_tgate = use_tgate
+        self.use_tgate = "lut" in tgate_blocks
         self.use_fluts = use_fluts
         
     def generate(self, subcircuit_filename, min_tran_width):
@@ -802,14 +803,14 @@ class _LUTInputDriver(_SizableCircuit):
 class _LUTInputNotDriver(_SizableCircuit):
     """ LUT input not-driver. This is the complement driver. """
 
-    def __init__(self, name, type, delay_weight, use_tgate):
+    def __init__(self, name, type, delay_weight, tgate_blocks):
         self.name = "lut_" + name + "_driver_not"
         # LUT input driver type ("default", "default_rsel", "reg_fb" and "reg_fb_rsel")
         self.type = type
         # Delay weight in a representative critical path
         self.delay_weight = delay_weight
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = "lut" in tgate_blocks
    
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -862,7 +863,7 @@ class _LUTInput(_CompoundCircuit):
     """ LUT input. It contains a LUT input driver and a LUT input not driver (complement). 
         The muxing on the LUT input is defined here """
 
-    def __init__(self, name, Rsel, Rfb, delay_weight, use_tgate, use_fluts):
+    def __init__(self, name, Rsel, Rfb, delay_weight, tgate_blocks, use_fluts):
         # Subcircuit name (should be driver letter like a, b, c...)
         self.name = name
         # The type is either 'default': a normal input or 'reg_fb': a register feedback input 
@@ -880,9 +881,9 @@ class _LUTInput(_CompoundCircuit):
             else:
                 self.type = "default"
         # Create LUT input driver
-        self.driver = _LUTInputDriver(name, self.type, delay_weight, use_tgate, use_fluts)
+        self.driver = _LUTInputDriver(name, self.type, delay_weight, tgate_blocks, use_fluts)
         # Create LUT input not driver
-        self.not_driver = _LUTInputNotDriver(name, self.type, delay_weight, use_tgate)
+        self.not_driver = _LUTInputNotDriver(name, self.type, delay_weight, tgate_blocks)
         
         # LUT input delays are the delays through the LUT for specific input (doesn't include input driver delay)
         self.tfall = 1
@@ -947,9 +948,9 @@ class _LUTInputDriverLoad:
     """ LUT input driver load. This load consists of a wire as well as the gates
         of a particular level in the LUT. """
 
-    def __init__(self, name, use_tgate, use_fluts, predecode):
+    def __init__(self, name, tgate_blocks, use_fluts, predecode):
         self.name = name
-        self.use_tgate = use_tgate
+        self.use_tgate = "lut" in tgate_blocks
         self.use_fluts = use_fluts
         self.predecode = predecode
     
@@ -1016,9 +1017,9 @@ class _LUTInputPredecodeLoad:
     """ LUT input driver load. This load consists of a wire as well as the gates
         of a particular level in the LUT. """
 
-    def __init__(self, name, use_tgate, use_fluts):
+    def __init__(self, name, tgate_blocks, use_fluts):
         self.name = name
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.use_fluts = use_fluts
     
     
@@ -1077,7 +1078,7 @@ class _LUTInputPredecodeLoad:
 class _LUT(_SizableCircuit):
     """ Lookup table. """
 
-    def __init__(self, K, Rsel, Rfb, use_tgate, use_finfet, use_fluts):
+    def __init__(self, K, Rsel, Rfb, tgate_blocks, use_finfet, use_fluts):
         # Name of LUT 
         self.name = "lut"
         self.use_fluts = use_fluts
@@ -1099,7 +1100,7 @@ class _LUT(_SizableCircuit):
             self.delay_weight += DELAY_WEIGHT_LUT_F
         
         # Boolean to use transmission gates 
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
 
         # Create a LUT input driver and load for each LUT input
 
@@ -1123,11 +1124,11 @@ class _LUT(_SizableCircuit):
                 delay_weight = DELAY_WEIGHT_LUT_F
             else:
                 raise Exception("No delay weight definition for LUT input " + name)
-            self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, use_tgate, use_fluts)
-            self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts, self.predecode )
+            self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, tgate_blocks, use_fluts)
+            self.input_driver_loads[name] = _LUTInputDriverLoad(name, tgate_blocks, use_fluts, self.predecode )
     
         if self.predecode == "on":    
-            self.input_predecode_loads["a"] = _LUTInputPredecodeLoad("a", use_tgate, use_fluts)
+            self.input_predecode_loads["a"] = _LUTInputPredecodeLoad("a", tgate_blocks, use_fluts)
 
         if use_fluts:
             if K == 5:
@@ -1136,8 +1137,8 @@ class _LUT(_SizableCircuit):
             else:
                 name = "f"
                 delay_weight = DELAY_WEIGHT_LUT_F
-            self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, use_tgate, use_fluts)
-            self.input_driver_loads[name] = _LUTInputDriverLoad(name, use_tgate, use_fluts)            
+            self.input_drivers[name] = _LUTInput(name, Rsel, Rfb, delay_weight, tgate_blocks, use_fluts)
+            self.input_driver_loads[name] = _LUTInputDriverLoad(name, tgate_blocks, use_fluts)            
     
         self.use_finfet = use_finfet
         
@@ -1821,11 +1822,11 @@ class _LUT(_SizableCircuit):
 
 class _CarryChainMux(_SizableCircuit):
     """ Carry Chain Multiplexer class.    """
-    def __init__(self, use_finfet, use_fluts, use_tgate):
+    def __init__(self, use_finfet, use_fluts, tgate_blocks):
         self.name = "carry_chain_mux"
         self.use_finfet = use_finfet
         self.use_fluts = use_fluts
-        self.use_tgate = use_tgate      
+        self.use_tgate = self.name in tgate_blocks      
         # handled in the check_arch_params function in the utils.py file
         # assert use_fluts
         
@@ -1896,7 +1897,7 @@ class _CarryChainMux(_SizableCircuit):
 
 class _CarryChainPer(_SizableCircuit):
     """ Carry Chain Peripherals class. Used to measure the delay from the Cin to Sout.  """
-    def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, use_tgate):
+    def __init__(self, use_finfet, carry_chain_type, N, FAs_per_flut, tgate_blocks):
         self.name = "carry_chain_perf"
         self.use_finfet = use_finfet
         self.carry_chain_type = carry_chain_type
@@ -1905,7 +1906,7 @@ class _CarryChainPer(_SizableCircuit):
         self.FAs_per_flut = FAs_per_flut
         # how many Fluts do we have in a cluster?
         self.N = N        
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
 
 
 
@@ -2021,11 +2022,11 @@ class _CarryChain(_SizableCircuit):
           
 class _CarryChainSkipAnd(_SizableCircuit):
     """ Part of peripherals used in carry chain class.    """
-    def __init__(self, use_finfet, use_tgate, carry_chain_type, N, FAs_per_flut, skip_size):
+    def __init__(self, use_finfet, tgate_blocks, carry_chain_type, N, FAs_per_flut, skip_size):
         # Carry chain name
         self.name = "xcarry_chain_and"
         self.use_finfet = use_finfet
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         # ripple or skip?
         self.carry_chain_type = carry_chain_type
         assert self.carry_chain_type == "skip"
@@ -2141,14 +2142,14 @@ class _CarryChainInterCluster(_SizableCircuit):
 
 class _CarryChainSkipMux(_SizableCircuit):
     """ Part of peripherals used in carry chain class.    """
-    def __init__(self, use_finfet, carry_chain_type, use_tgate):
+    def __init__(self, use_finfet, carry_chain_type, tgate_blocks):
         # Carry chain name
         self.name = "xcarry_chain_mux"
         self.use_finfet = use_finfet
         # ripple or skip?
         self.carry_chain_type = carry_chain_type
         assert self.carry_chain_type == "skip"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
 
 
 
@@ -2225,7 +2226,7 @@ class _FlipFlop:
         through manual design for PTM 22nm process technology. If you use a different process technology,
         you may need to re-size the FF transistors. """
     
-    def __init__(self, Rsel, use_tgate, use_finfet):
+    def __init__(self, Rsel, tgate_blocks, use_finfet):
         # Flip-Flop name
         self.name = "ff"
         # Register select mux, Rsel = LUT input (e.g. 'a', 'b', etc.) or 'z' if no register select 
@@ -2245,7 +2246,7 @@ class _FlipFlop:
         # Delay weight used to calculate delay of representative critical path
         self.delay_weight = 1
         self.use_finfet = use_finfet
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         
          
     def generate(self, subcircuit_filename, min_tran_width):
@@ -2410,12 +2411,12 @@ class _FlipFlop:
 class _LocalBLEOutput(_SizableCircuit):
     """ Local BLE Output class """
     
-    def __init__(self, use_tgate):
+    def __init__(self, tgate_blocks):
         self.name = "local_ble_output"
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_LOCAL_BLE_OUTPUT
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = "lut" in tgate_blocks
         
         
     def generate(self, subcircuit_filename, min_tran_width):
@@ -2489,10 +2490,10 @@ class _LocalBLEOutput(_SizableCircuit):
 class _GeneralBLEOutput(_SizableCircuit):
     """ General BLE Output """
     
-    def __init__(self, use_tgate):
+    def __init__(self, tgate_blocks):
         self.name = "general_ble_output"
         self.delay_weight = DELAY_WEIGHT_GENERAL_BLE_OUTPUT
-        self.use_tgate = use_tgate
+        self.use_tgate = "lut" in tgate_blocks
         
         
     def generate(self, subcircuit_filename, min_tran_width):
@@ -2594,11 +2595,11 @@ class _LUTOutputLoad:
 
 class _flut_mux(_CompoundCircuit):
     
-    def __init__(self, use_tgate, use_finfet, enable_carry_chain):
+    def __init__(self, tgate_blocks, use_finfet, enable_carry_chain):
         # name
         self.name = "flut_mux"
         # use tgate
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         # A dictionary of the initial transistor sizes
         self.initial_transistor_sizes = {}
         # todo: change to enable finfet support, should be rather straightforward as it's just a mux
@@ -2679,7 +2680,7 @@ class _flut_mux(_CompoundCircuit):
 
 class _BLE(_CompoundCircuit):
 
-    def __init__(self, K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, N):
+    def __init__(self, K, Or, Ofb, Rsel, Rfb, tgate_blocks, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, N):
         # BLE name
         self.name = "ble"
         # number of bles in a cluster
@@ -2693,20 +2694,20 @@ class _BLE(_CompoundCircuit):
         # Number of general outputs
         self.num_general_outputs = Or
         # Create BLE local output object
-        self.local_output = _LocalBLEOutput(use_tgate)
+        self.local_output = _LocalBLEOutput(tgate_blocks)
         # Create BLE general output object
-        self.general_output = _GeneralBLEOutput(use_tgate)
+        self.general_output = _GeneralBLEOutput(tgate_blocks)
         # Create LUT object
-        self.lut = _LUT(K, Rsel, Rfb, use_tgate, use_finfet, use_fluts)
+        self.lut = _LUT(K, Rsel, Rfb, tgate_blocks, use_finfet, use_fluts)
         # Create FF object
-        self.ff = _FlipFlop(Rsel, use_tgate, use_finfet)
+        self.ff = _FlipFlop(Rsel, tgate_blocks, use_finfet)
         # Create LUT output load object
         self.lut_output_load = _LUTOutputLoad(self.num_local_outputs, self.num_general_outputs)
         # Are the LUTs fracturable?
         self.use_fluts = use_fluts
         # The extra mux for the fracturable luts
         if use_fluts:
-            self.fmux = _flut_mux(use_tgate, use_finfet, enable_carry_chain)
+            self.fmux = _flut_mux(tgate_blocks, use_finfet, enable_carry_chain)
 
         # TODO: why is the carry chain object not defined here?
         self.enable_carry_chain = enable_carry_chain
@@ -3007,15 +3008,15 @@ class _LocalRoutingWireLoad:
 
 class _LogicCluster(_CompoundCircuit):
     
-    def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count):
+    def __init__(self, N, K, Or, Ofb, Rsel, Rfb, local_mux_size_required, num_local_mux_per_tile, tgate_blocks, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count):
         # Name of logic cluster
         self.name = "logic_cluster"
         # Cluster size
         self.N = N
         # Create BLE object
-        self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, use_tgate, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, N)
+        self.ble = _BLE(K, Or, Ofb, Rsel, Rfb, tgate_blocks, use_finfet, use_fluts, enable_carry_chain, FAs_per_flut, carry_skip_periphery_count, N)
         # Create local mux object
-        self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, use_tgate)
+        self.local_mux = _LocalMUX(local_mux_size_required, num_local_mux_per_tile, tgate_blocks)
         # Create local routing wire load object
         self.local_routing_wire_load = _LocalRoutingWireLoad()
         # Create local BLE output load object
@@ -3399,11 +3400,11 @@ class _pgateoutputcrossbar(_SizableCircuit):
 class _configurabledecoderiii(_SizableCircuit):
     """ Final stage of the configurable decoder"""
     
-    def __init__(self, use_tgate, nand_size, fanin1, fanin2, tgatecount):
+    def __init__(self, tgate_blocks, nand_size, fanin1, fanin2, tgatecount):
         # Subcircuit name
         self.name = "xconfigurabledecoderiii"
         self.required_size = nand_size
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.fanin1 = fanin1
         self.fanin2 = fanin2
         self.delay_weight = DELAY_WEIGHT_RAM
@@ -3469,13 +3470,13 @@ class _configurabledecoderiii(_SizableCircuit):
 class _configurabledecoder3ii(_SizableCircuit):
     """ Second part of the configurable decoder"""
     
-    def __init__(self, use_tgate, required_size, fan_out, fan_out_type, areafac):
+    def __init__(self, tgate_blocks, required_size, fan_out, fan_out_type, areafac):
         # Subcircuit name
         self.name = "xconfigurabledecoder3ii"
         self.required_size = required_size
         self.fan_out = fan_out
         self.fan_out_type = fan_out_type
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.areafac = areafac
     
     
@@ -3526,13 +3527,13 @@ class _configurabledecoder3ii(_SizableCircuit):
 class _configurabledecoder2ii(_SizableCircuit):
     """ second part of the configurable decoder"""
     
-    def __init__(self, use_tgate, required_size, fan_out, fan_out_type, areafac):
+    def __init__(self, tgate_blocks, required_size, fan_out, fan_out_type, areafac):
         # Subcircuit name
         self.name = "xconfigurabledecoder2ii"
         self.required_size = required_size
         self.fan_out = fan_out
         self.fan_out_type = fan_out_type
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.areafac = areafac
     
     
@@ -3588,9 +3589,9 @@ class _configurabledecoderinvmux(_SizableCircuit):
     """ First stage of the configurable decoder"""
     # I assume that the configurable decoder has 2 stages. Hence it has between 4 bits and 9.
     # I don't think anyone would want to exceed that range!
-    def __init__(self, use_tgate, numberofgates2,numberofgates3, ConfiDecodersize):
+    def __init__(self, tgate_blocks, numberofgates2,numberofgates3, ConfiDecodersize):
         self.name = "xconfigurabledecoderi"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.ConfiDecodersize = ConfiDecodersize
         self.numberofgates2 = numberofgates2
         self.numberofgates3 = numberofgates3
@@ -3638,9 +3639,9 @@ class _configurabledecoderinvmux(_SizableCircuit):
 
 class _rowdecoder0(_SizableCircuit):
     """ Initial stage of the row decoder ( named stage 0) """
-    def __init__(self, use_tgate, numberofgates3, valid_label_gates3, numberofgates2, valid_label_gates2, decodersize):
+    def __init__(self, tgate_blocks, numberofgates3, valid_label_gates3, numberofgates2, valid_label_gates2, decodersize):
         self.name = "rowdecoderstage0"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.decodersize = decodersize
         self.numberofgates2 = numberofgates2
         self.numberofgates3 = numberofgates3
@@ -3690,9 +3691,9 @@ class _rowdecoder0(_SizableCircuit):
 
 class _rowdecoder1(_SizableCircuit):
     """ Generating the first stage of the row decoder  """
-    def __init__(self, use_tgate, fan_out, fan_out_type, nandtype, areafac):
+    def __init__(self, tgate_blocks, fan_out, fan_out_type, nandtype, areafac):
         self.name = "rowdecoderstage1" + str(nandtype)
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.fanout = fan_out
         self.fanout_type = fan_out_type
         self.nandtype = nandtype
@@ -3742,7 +3743,7 @@ class _rowdecoder1(_SizableCircuit):
 class _wordlinedriver(_SizableCircuit):
     """ Wordline driver"""
     
-    def __init__(self, use_tgate, rowsram, number_of_banks, areafac, is_rowdecoder_2stage, memory_technology):
+    def __init__(self, tgate_blocks, rowsram, number_of_banks, areafac, is_rowdecoder_2stage, memory_technology):
         # Subcircuit name
         self.name = "wordline_driver"
         self.delay_weight = DELAY_WEIGHT_RAM
@@ -3835,7 +3836,7 @@ class _wordlinedriver(_SizableCircuit):
 class _rowdecoderstage3(_SizableCircuit):
     """ third stage inside the row decoder"""
     
-    def __init__(self, use_tgate, fanin1, fanin2, rowsram, gatesize, fanouttype, areafac):
+    def __init__(self, tgate_blocks, fanin1, fanin2, rowsram, gatesize, fanouttype, areafac):
         # Subcircuit name
         self.name = "rowdecoderstage3"
         self.fanin1 = fanin1
@@ -4003,9 +4004,9 @@ class _powersramread(_SizableCircuit):
 class _columndecoder(_SizableCircuit):
     """ Column decoder"""
 
-    def __init__(self, use_tgate, numberoftgates, col_decoder_bitssize):
+    def __init__(self, tgate_blocks, numberoftgates, col_decoder_bitssize):
         self.name = "columndecoder"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.col_decoder_bitssize = col_decoder_bitssize
         self.numberoftgates = numberoftgates
 
@@ -4054,9 +4055,9 @@ class _columndecoder(_SizableCircuit):
 class _writedriver(_SizableCircuit):
     """ SRAM-based BRAM Write driver"""
 
-    def __init__(self, use_tgate, numberofsramsincol):
+    def __init__(self, tgate_blocks, numberofsramsincol):
         self.name = "writedriver"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.numberofsramsincol = numberofsramsincol
 
 
@@ -4103,9 +4104,9 @@ class _writedriver(_SizableCircuit):
 class _samp(_SizableCircuit):
     """ sense amplifier circuit"""
 
-    def __init__(self, use_tgate, numberofsramsincol, mode, difference):
+    def __init__(self, tgate_blocks, numberofsramsincol, mode, difference):
         self.name = "samp1"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.numberofsramsincol = numberofsramsincol
         self.mode = mode
         self.difference = difference
@@ -4150,9 +4151,9 @@ class _samp(_SizableCircuit):
 class _samp_part2(_SizableCircuit):
     """ sense amplifier circuit (second evaluation stage)"""
 
-    def __init__(self, use_tgate, numberofsramsincol, difference):
+    def __init__(self, tgate_blocks, numberofsramsincol, difference):
         self.name = "samp1part2"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.numberofsramsincol = numberofsramsincol
         self.difference = difference
 
@@ -4169,9 +4170,9 @@ class _samp_part2(_SizableCircuit):
 class _prechargeandeq(_SizableCircuit):
     """ precharge and equalization circuit"""
 
-    def __init__(self, use_tgate, numberofsrams):
+    def __init__(self, tgate_blocks, numberofsrams):
         self.name = "precharge"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.numberofsrams = numberofsrams
 
 
@@ -4349,9 +4350,9 @@ class _mtjbasiccircuits(_SizableCircuit):
 class _memorycell(_SizableCircuit):
     """ Memory cell"""
 
-    def __init__(self, use_tgate, RAMwidth, RAMheight, sram_area, number_of_banks, memory_technology):
+    def __init__(self, tgate_blocks, RAMwidth, RAMheight, sram_area, number_of_banks, memory_technology):
         self.name = "memorycell"
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         self.RAMwidth = RAMwidth
         self.RAMheight = RAMheight
         if memory_technology == "SRAM":
@@ -4410,7 +4411,7 @@ class _memorycell(_SizableCircuit):
 class _RAMLocalMUX(_SizableCircuit):
     """ RAM Local MUX Class: Pass-transistor 2-level mux with no driver """
     
-    def __init__(self, required_size, num_per_tile, use_tgate):
+    def __init__(self, required_size, num_per_tile, tgate_blocks):
         # Subcircuit name
         #sadegh
         self.name = "ram_local_mux"
@@ -4431,7 +4432,7 @@ class _RAMLocalMUX(_SizableCircuit):
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_RAM
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
     
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -4608,11 +4609,11 @@ class _RAMLocalRoutingWireLoad:
 
 class _RAM(_CompoundCircuit):
     
-    def __init__(self, row_decoder_bits, col_decoder_bits, conf_decoder_bits, RAM_local_mux_size_required, RAM_num_local_mux_per_tile, use_tgate ,sram_area, number_of_banks, memory_technology, cspecs, process_data_filename, read_to_write_ratio):
+    def __init__(self, row_decoder_bits, col_decoder_bits, conf_decoder_bits, RAM_local_mux_size_required, RAM_num_local_mux_per_tile, tgate_blocks ,sram_area, number_of_banks, memory_technology, cspecs, process_data_filename, read_to_write_ratio):
         # Name of RAM block
         self.name = "ram"
         # use tgates or pass transistors
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
         # RAM info such as docoder size, crossbar population, number of banks and output crossbar fanout
         self.row_decoder_bits = row_decoder_bits
         self.col_decoder_bits = col_decoder_bits
@@ -4645,11 +4646,11 @@ class _RAM(_CompoundCircuit):
         self.delay_weight = DELAY_WEIGHT_RAM
 
         # Create local mux object
-        self.RAM_local_mux = _RAMLocalMUX(RAM_local_mux_size_required, RAM_num_local_mux_per_tile, use_tgate)
+        self.RAM_local_mux = _RAMLocalMUX(RAM_local_mux_size_required, RAM_num_local_mux_per_tile, tgate_blocks)
         # Create the local routing wire load module
         self.RAM_local_routing_wire_load = _RAMLocalRoutingWireLoad(self.row_decoder_bits, col_decoder_bits, conf_decoder_bits)
         # Create memory cells
-        self.memorycells = _memorycell(self.use_tgate, 2**(conf_decoder_bits + col_decoder_bits), 2**(self.row_decoder_bits), sram_area, self.number_of_banks, self.memory_technology)
+        self.memorycells = _memorycell(tgate_blocks, 2**(conf_decoder_bits + col_decoder_bits), 2**(self.row_decoder_bits), sram_area, self.number_of_banks, self.memory_technology)
         # calculat the number of input ports for the ram module
         self.ram_inputs = (3 + 2*(self.row_decoder_bits + col_decoder_bits + number_of_banks ) + 2** (self.conf_decoder_bits))
         
@@ -4727,11 +4728,11 @@ class _RAM(_CompoundCircuit):
         elif self.predecoder3 == 2:
             self.count_small_row_dec_nand2 = self.count_small_row_dec_nand2 + 2 
 
-        self.rowdecoder_stage0 = _rowdecoder0(use_tgate, self.count_small_row_dec_nand3,0 , self.count_small_row_dec_nand2, 0 , self.row_decoder_bits)
+        self.rowdecoder_stage0 = _rowdecoder0(tgate_blocks, self.count_small_row_dec_nand3,0 , self.count_small_row_dec_nand2, 0 , self.row_decoder_bits)
         #generate stage 0 , just an inverter that connects to half of the gates
         #call a function to generate it!!
         # Set up the wordline driver
-        self.wordlinedriver = _wordlinedriver(use_tgate, 2**(self.col_decoder_bits + self.conf_decoder_bits), self.number_of_banks, 2**self.row_decoder_bits, 1, self.memory_technology)
+        self.wordlinedriver = _wordlinedriver(tgate_blocks, 2**(self.col_decoder_bits + self.conf_decoder_bits), self.number_of_banks, 2**self.row_decoder_bits, 1, self.memory_technology)
 
         # create stage 1 similiar to configurable decoder
 
@@ -4758,12 +4759,12 @@ class _RAM(_CompoundCircuit):
 
         #check if nand2 exists, call a function
         if self.predecoder1 == 2 or self.predecoder2 == 2 or self.predecoder3 == 2:
-            self.rowdecoder_stage1_size2 = _rowdecoder1(use_tgate, 2 ** (self.row_decoder_bits - 2), self.fanouttypeforrowdec, 2, self.area2)
+            self.rowdecoder_stage1_size2 = _rowdecoder1(tgate_blocks, 2 ** (self.row_decoder_bits - 2), self.fanouttypeforrowdec, 2, self.area2)
             self.valid_row_dec_size2 = 1
 
         #check if nand3 exists, call a function
         if self.predecoder1 == 3 or self.predecoder2 == 3 or self.predecoder3 == 3:
-            self.rowdecoder_stage1_size3 = _rowdecoder1(use_tgate, 2 ** (self.row_decoder_bits - 3), self.fanouttypeforrowdec, 3, self.area3)
+            self.rowdecoder_stage1_size3 = _rowdecoder1(tgate_blocks, 2 ** (self.row_decoder_bits - 3), self.fanouttypeforrowdec, 3, self.area3)
             self.valid_row_dec_size3 = 1
 
         # there is no intermediate stage, connect what you generated directly to stage 3
@@ -4771,7 +4772,7 @@ class _RAM(_CompoundCircuit):
         if self.row_decoder_bits > 6:
             self.gatesize_stage3 = 3
 
-        self.rowdecoder_stage3 = _rowdecoderstage3(use_tgate, self.area2, self.area3, 2**(self.col_decoder_bits + self.conf_decoder_bits), self.gatesize_stage3, self.fanouttypeforrowdec, 2** self.row_decoder_bits)
+        self.rowdecoder_stage3 = _rowdecoderstage3(tgate_blocks, self.area2, self.area3, 2**(self.col_decoder_bits + self.conf_decoder_bits), self.gatesize_stage3, self.fanouttypeforrowdec, 2** self.row_decoder_bits)
 
 
 
@@ -4789,10 +4790,10 @@ class _RAM(_CompoundCircuit):
 
         # Create precharge and equalization
         if self.memory_technology == "SRAM":
-            self.precharge = _prechargeandeq(self.use_tgate, 2**self.row_decoder_bits)
-            self.samp_part2 = _samp_part2(self.use_tgate, 2**self.row_decoder_bits, 0.3)
-            self.samp = _samp(self.use_tgate, 2**self.row_decoder_bits, 0, 0.3)
-            self.writedriver = _writedriver(self.use_tgate, 2**self.row_decoder_bits)
+            self.precharge = _prechargeandeq(tgate_blocks, 2**self.row_decoder_bits)
+            self.samp_part2 = _samp_part2(tgate_blocks, 2**self.row_decoder_bits, 0.3)
+            self.samp = _samp(tgate_blocks, 2**self.row_decoder_bits, 0, 0.3)
+            self.writedriver = _writedriver(tgate_blocks, 2**self.row_decoder_bits)
 
         elif self.memory_technology == "MTJ":
             self.mtjbasics = _mtjbasiccircuits()
@@ -4801,7 +4802,7 @@ class _RAM(_CompoundCircuit):
             self.mtjsamp = _mtjsamp(2**self.row_decoder_bits)
 
 
-        self.columndecoder = _columndecoder(self.use_tgate, 2**(self.col_decoder_bits + self.conf_decoder_bits), self.col_decoder_bits)
+        self.columndecoder = _columndecoder(tgate_blocks, 2**(self.col_decoder_bits + self.conf_decoder_bits), self.col_decoder_bits)
         #create the level shifter
 
         self.levelshift = _levelshifter()
@@ -4873,17 +4874,17 @@ class _RAM(_CompoundCircuit):
             self.stage1output2+=4              
 
         if self.cpredecoder1 == 3 or self.cpredecoder2 == 3 or self.cpredecoder3 == 3:
-            self.configurabledecoder3ii =  _configurabledecoder3ii(use_tgate, 3, 2**(self.cpredecoder1+self.cpredecoder1+self.cpredecoder1 - 3), self.cfanouttypeconf, self.stage1output3)
+            self.configurabledecoder3ii =  _configurabledecoder3ii(tgate_blocks, 3, 2**(self.cpredecoder1+self.cpredecoder1+self.cpredecoder1 - 3), self.cfanouttypeconf, self.stage1output3)
             self.cfanin1 = 2**(self.cpredecoder1+self.cpredecoder2+self.cpredecoder3 - 3)
             self.cvalidobj1 = 1
 
         if self.cpredecoder2 == 2 or self.cpredecoder2 == 2 or self.cpredecoder3 == 2:
-            self.configurabledecoder2ii =  _configurabledecoder2ii(use_tgate, 2, 2**(self.cpredecoder1+self.cpredecoder1+self.cpredecoder1 - 2), self.cfanouttypeconf, self.stage1output2)
+            self.configurabledecoder2ii =  _configurabledecoder2ii(tgate_blocks, 2, 2**(self.cpredecoder1+self.cpredecoder1+self.cpredecoder1 - 2), self.cfanouttypeconf, self.stage1output2)
             self.cfanin2 = 2**(self.cpredecoder1+self.cpredecoder2+self.cpredecoder3 - 2)
             self.cvalidobj2 = 1
 
-        self.configurabledecoderi = _configurabledecoderinvmux(use_tgate, self.stage1output2/2, self.stage1output3/2, self.conf_decoder_bits)
-        self.configurabledecoderiii = _configurabledecoderiii(use_tgate, self.cfanouttypeconf , self.cfanin1 , self.cfanin2, 2**self.conf_decoder_bits)
+        self.configurabledecoderi = _configurabledecoderinvmux(tgate_blocks, self.stage1output2/2, self.stage1output3/2, self.conf_decoder_bits)
+        self.configurabledecoderiii = _configurabledecoderiii(tgate_blocks, self.cfanouttypeconf , self.cfanin1 , self.cfanin2, 2**self.conf_decoder_bits)
 
         self.pgateoutputcrossbar = _pgateoutputcrossbar(2**self.conf_decoder_bits)
         
@@ -5102,7 +5103,7 @@ class _RAM(_CompoundCircuit):
 class _HBLocalMUX(_SizableCircuit):
     """ Hard block Local MUX Class: Pass-transistor 2-level mux with driver """
     
-    def __init__(self, required_size, num_per_tile, use_tgate, hb_parameters):
+    def __init__(self, required_size, num_per_tile, tgate_blocks, hb_parameters):
         
         self.hb_parameters = hb_parameters
         # Subcircuit name
@@ -5124,7 +5125,7 @@ class _HBLocalMUX(_SizableCircuit):
         # Delay weight in a representative critical path
         self.delay_weight = DELAY_WEIGHT_RAM
         # use pass transistor or transmission gates
-        self.use_tgate = use_tgate
+        self.use_tgate = self.name in tgate_blocks
     
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -5338,13 +5339,13 @@ class _dedicated_routing_driver(_SizableCircuit):
 class _hard_block(_CompoundCircuit):
     """ hard block class"""
 
-    def __init__(self, filename, use_tgate):
+    def __init__(self, filename, tgate_blocks):
         #Call the hard block parameter parser
         self.parameters = utils.load_hard_params(filename)
         # Subcircuit name
         self.name = self.parameters['name']
         #create the inner objects
-        self.mux = _HBLocalMUX(int(math.ceil(self.parameters['num_gen_inputs']/self.parameters['num_crossbars'] * self.parameters['crossbar_population'])), self.parameters['num_gen_inputs'], use_tgate, self.parameters)
+        self.mux = _HBLocalMUX(int(math.ceil(self.parameters['num_gen_inputs']/self.parameters['num_crossbars'] * self.parameters['crossbar_population'])), self.parameters['num_gen_inputs'], tgate_blocks, self.parameters)
         self.load = _HBLocalRoutingWireLoad(self.parameters)
         if self.parameters['num_dedicated_outputs'] > 0:
             # the user can change this line to add more buffers to their dedicated links. In my case 2 will do.
@@ -5463,7 +5464,7 @@ class FPGA:
         # Calculate number of switch block muxes per tile
         num_sb_mux_per_tile = 2*self.specs.W/self.specs.L
         # Initialize the switch block
-        self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, self.specs.use_tgate)
+        self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, self.specs.tgate_blocks)
 
         
         ######################################
@@ -5475,7 +5476,7 @@ class FPGA:
         cb_mux_size_required = int(self.specs.W*self.specs.Fcin)
         num_cb_mux_per_tile = self.specs.I
         # Initialize the connection block
-        self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile, self.specs.use_tgate)
+        self.cb_mux = _ConnectionBlockMUX(cb_mux_size_required, num_cb_mux_per_tile, self.specs.tgate_blocks)
 
         
         ###################################
@@ -5495,7 +5496,7 @@ class FPGA:
             self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/self.skip_size))
         # initialize the logic cluster
         self.logic_cluster = _LogicCluster(self.specs.N, self.specs.K, self.specs.num_ble_general_outputs, self.specs.num_ble_local_outputs, self.specs.Rsel, self.specs.Rfb, 
-                                           local_mux_size_required, num_local_mux_per_tile, self.specs.use_tgate, self.specs.use_finfet, self.specs.use_fluts, 
+                                           local_mux_size_required, num_local_mux_per_tile, self.specs.tgate_blocks, self.specs.use_finfet, self.specs.use_fluts, 
                                            self.specs.enable_carry_chain, self.specs.FAs_per_flut, self.carry_skip_periphery_count)
         
         ###########################
@@ -5515,12 +5516,12 @@ class FPGA:
 
         if self.specs.enable_carry_chain == 1:
             self.carrychain = _CarryChain(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut)
-            self.carrychainperf = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.use_tgate)
-            self.carrychainmux = _CarryChainMux(self.specs.use_finfet, self.specs.use_fluts, self.specs.use_tgate)
+            self.carrychainperf = _CarryChainPer(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.specs.tgate_blocks)
+            self.carrychainmux = _CarryChainMux(self.specs.use_finfet, self.specs.use_fluts, self.specs.tgate_blocks)
             self.carrychaininter = _CarryChainInterCluster(self.specs.use_finfet, self.specs.carry_chain_type, inter_wire_length)
             if self.specs.carry_chain_type == "skip":
-                self.carrychainand = _CarryChainSkipAnd(self.specs.use_finfet, self.specs.use_tgate, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.skip_size)
-                self.carrychainskipmux = _CarryChainSkipMux(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.use_tgate)
+                self.carrychainand = _CarryChainSkipAnd(self.specs.use_finfet, self.specs.tgate_blocks, self.specs.carry_chain_type, self.specs.N, self.specs.FAs_per_flut, self.skip_size)
+                self.carrychainskipmux = _CarryChainSkipMux(self.specs.use_finfet, self.specs.carry_chain_type, self.specs.tgate_blocks)
         
 
         #########################
@@ -5530,7 +5531,7 @@ class FPGA:
         RAM_local_mux_size_required = float(self.specs.ram_local_mux_size)
         RAM_num_mux_per_tile = (3 + 2*(self.specs.row_decoder_bits + self.specs.col_decoder_bits + self.specs.conf_decoder_bits ) + 2** (self.specs.conf_decoder_bits))
         self.RAM = _RAM(self.specs.row_decoder_bits, self.specs.col_decoder_bits, self.specs.conf_decoder_bits, RAM_local_mux_size_required, 
-                        RAM_num_mux_per_tile , self.specs.use_tgate, self.specs.sram_cell_area*self.specs.min_width_tran_area, self.specs.number_of_banks,
+                        RAM_num_mux_per_tile , self.specs.tgate_blocks, self.specs.sram_cell_area*self.specs.min_width_tran_area, self.specs.number_of_banks,
                         self.specs.memory_technology, self.specs, self.process_data_filename, self.specs.read_to_write_ratio)
         self.number_of_banks = self.specs.number_of_banks
 
@@ -5543,7 +5544,7 @@ class FPGA:
         self.hard_block_files = self.specs.hb_files
         #self.hard_block_files = {}
         for name in self.hard_block_files:
-            hard_block = _hard_block(name, self.specs.use_tgate)
+            hard_block = _hard_block(name, self.specs.tgate_blocks)
             self.hardblocklist.append(hard_block)
 
 

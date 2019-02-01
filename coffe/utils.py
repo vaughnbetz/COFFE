@@ -437,6 +437,7 @@ def load_arch_params(filename):
         'transistor_type': "",
         'switch_type': "",
         'use_tgate': False,
+        'tgate_blocks': [],
         'use_finfet': False,
         'memory_technology': "SRAM",
         'enable_bram_module': 0,
@@ -474,6 +475,7 @@ def load_arch_params(filename):
         'carry_chain_type': "ripple",
         'FAs_per_flut':2,
         'hb_files' : []
+
     }
 
     params_file = open(filename, 'r')
@@ -546,6 +548,8 @@ def load_arch_params(filename):
             arch_params['switch_type'] = value        
             if value == 'transmission_gate':
                 arch_params['use_tgate'] = True
+        elif param == 'tgate_blocks':  
+            arch_params['tgate_blocks'].append(value)
         elif param == 'memory_technology':
             arch_params['memory_technology'] = value
         elif param == 'vdd':
@@ -872,7 +876,7 @@ def check_arch_params (arch_params, filename):
         print_error (str(arch_params['FAs_per_flut']), "FAs_per_flut", filename, "(number of FA per ble should be 2 or less)")
     # Currently, I only generate the circuit assuming we have a fracturable lut. It can easily be changed to support nonfracturable luts as well.
     if arch_params['enable_carry_chain'] == 1 and arch_params['use_fluts'] == False:
-        print_error_not_compatable("carry chains", "non fracturable lut")           
+        print_error_not_compatable("carry chains", "non fracturable lut")
 
 
     # Check process technology parameters
