@@ -113,7 +113,7 @@ def nand2_generate(filename, use_finfet):
 		spice_file.write("******************************************************************************************\n")
 		spice_file.write("* nand2 decoder\n")
 		spice_file.write("******************************************************************************************\n")
-		spice_file.write(".SUBCKT nand2_decode n_in1 n_in2 n_out n_vdd n_gnd Wn=45n Wp=45n\n") # I dont change the input to the NAND gate, since we are only exciting one of the inputs. The 2nd input is always set to vdd
+		spice_file.write(".SUBCKT nand2_decode n_in1 n_in2 n_out n_vdd n_gnd Wn=45n Wp=45n\n") 
 		spice_file.write("MNDOWN2 n_out n_in1 n_z n_gnd nmos L=gate_length W=Wn ")
 		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
 		spice_file.write("MNDOWN1 n_z n_in2 n_gnd n_gnd nmos L=gate_length W=Wn ")
@@ -207,6 +207,26 @@ def nand3_generate(filename, use_finfet):
 		spice_file.write("MPUP2 n_out n_in n_vdd n_vdd pmos L=gate_length W=Wp ")
 		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
 		spice_file.write(".ENDS\n\n\n")
+		
+		
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write("* nand3 decoder\n")
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write(".SUBCKT nand3_decode n_in1 n_in2 n_in3 n_out n_vdd n_gnd Wn=45n Wp=45n\n") # I dont change the input to the NAND gate, since we are only exciting one of the inputs. The 2nd input is always set to vdd
+		spice_file.write("MNDOWN3 n_out n_in1 n_z n_gnd nmos L=gate_length W=Wn ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MNDOWN2 n_z n_in2 n_y n_gnd nmos L=gate_length W=Wn ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MNDOWN1 n_y n_in3 n_gnd n_gnd nmos L=gate_length W=Wn ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+
+		spice_file.write("MPUP1 n_out n_in1 n_vdd n_vdd pmos L=gate_length W=Wp ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MPUP2 n_out n_in2 n_vdd n_vdd pmos L=gate_length W=Wp ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MPUP3 n_out n_in3 n_vdd n_vdd pmos L=gate_length W=Wp ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write(".ENDS\n\n\n")		
 	else :
 		spice_file.write("******************************************************************************************\n")
 		spice_file.write("* nand3\n")

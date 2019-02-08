@@ -475,8 +475,8 @@ def get_eval_delay_ib(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage
         
         #ib 
 		if subcircuit.name == "lut":
-			print "ibrahim lut delay" + str(delay)
-			print "old lut delay" + str(fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight)			            
+			#print "ibrahim lut delay" + str(delay)
+			#print "old lut delay" + str(fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight)			            
 			path_delay += delay
 		# LUT input drivers
 
@@ -1106,6 +1106,8 @@ def erf_inverter(sp_path,
 	# make bigger to balance rise/fall or the PMOS.
 	spice_meas = spice_interface.run(sp_path, parameter_dict)
 	
+	#todo: add simulation of all LUT inputs here to get
+	
 	# Get the rise and fall measurements for our inverter out of 'spice_meas'
 	# This was a single HSPICE run, so the value we want is at index 0
 
@@ -1357,6 +1359,47 @@ def run_combo(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interf
 	trise = float(spice_meas["meas_total_trise"][0])
 	
 	return tfall, trise
+	
+def run_combo_ib(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interface):
+	""" Run HSPICE to measure delay for this transistor sizing combination.
+		Returns tfall, trise """
+	
+	# Update transistor sizes
+	fpga_inst._update_transistor_sizes(element_names, combo, fpga_inst.specs.use_finfet, erf_ratios)
+	# Calculate area of everything
+	fpga_inst.update_area()
+	# Re-calculate wire lengths
+	fpga_inst.update_wires()
+	# Update wire resistance and capacitance
+	fpga_inst.update_wire_rc()
+	# Update wire R and C SPICE file
+	#fpga_inst.update_wire_rc_file()
+
+	# Make parameter dict
+	parameter_dict = {}
+	if not fpga_inst.specs.use_finfet :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+			parameter_dict[wire_name + "_res"] = [rc_data[0]]
+			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+	else :
+		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+			parameter_dict[tran_name] = [tran_size]
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+			parameter_dict[wire_name + "_res"] = [rc_data[0]]
+			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
+
+	# Run HSPICE with the current transistor size
+	spice_meas = spice_interface.run(sp_path, parameter_dict)                                           
+
+	# run returns a dict of measurements. For each key, we have a list of meaasurements. 
+	# That;s why we add the [0] 
+	# Extract total delay from measurements
+	tfall = float(spice_meas["meas_total_tfall"][0])
+	trise = float(spice_meas["meas_total_trise"][0])
+	
+	return tfall, trise	
 
 	
 def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, area_opt_weight, 
@@ -1508,35 +1551,54 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 			spice_meas_temp = spice_interface.run(driver_and_lut_sp_path, parameter_dict)
 			if counter == 0 :
 				spice_meas = spice_meas_temp
-				if spice_meas["meas_logic_low_voltage"][i] == "failed" :
-					spice_meas["meas_logic_low_voltage"][i] = "failed"
-                  
-				if spice_meas["meas_total_tfall"][i] == "failed" or spice_meas_temp["meas_total_tfall"][i] == "failed":
-					spice_meas["meas_total_tfall"][i] = "failed"  
-				else :
-					spice_meas["meas_total_tfall"][i] = float(spice_meas_temp["meas_total_tfall"][i])*lut_input.delay_weight                     
+				
+				for i in xrange(len(sizing_combos)):
+					
+					if spice_meas["meas_logic_low_voltage"][i] == "failed" :
+						spice_meas["meas_logic_low_voltage"][i] = "failed"
+						
+					if float(spice_meas_temp["meas_logic_low_voltage"][i]) > 4.0e-1:
+						spice_meas["meas_logic_low_voltage"][i] = "failed"	
+					  
+					if spice_meas_temp["meas_total_tfall"][i] == "failed":
+						spice_meas["meas_total_tfall"][i] = "failed"  
+					else :
+						spice_meas["meas_total_tfall"][i] = float(spice_meas_temp["meas_total_tfall"][i])*lut_input.delay_weight                     
 
-				if spice_meas["meas_total_trise"][i] == "failed" or spice_meas_temp["meas_total_trise"][i] == "failed":
-					spice_meas["meas_total_trise"][i] = "failed"                   
-				else :
-					spice_meas["meas_total_trise"][i] = float(spice_meas_temp["meas_total_trise"][i])*lut_input.delay_weight
+					if spice_meas_temp["meas_total_trise"][i] == "failed":
+						spice_meas["meas_total_trise"][i] = "failed"                   
+					else :
+						spice_meas["meas_total_trise"][i] = float(spice_meas_temp["meas_total_trise"][i])*lut_input.delay_weight
+				
 				print "ibrahim getting spice measure for first input"
 			else :
 				print "ibrahim adding new values"            
                 # add the current input*delayweight to the stored values  
 				for i in xrange(len(sizing_combos)):
-					if spice_meas_temp["meas_logic_low_voltage"][i] == "failed" :
+					if spice_meas_temp["meas_logic_low_voltage"][i] == "failed":
 						spice_meas["meas_logic_low_voltage"][i] = "failed"
+						
+					if float(spice_meas_temp["meas_logic_low_voltage"][i]) > 4.0e-1:
+						spice_meas["meas_logic_low_voltage"][i] = "failed"
+					
                         
 					if spice_meas["meas_total_tfall"][i] == "failed" or spice_meas_temp["meas_total_tfall"][i] == "failed":
 						spice_meas["meas_total_tfall"][i] = "failed"  
 					else :
-						spice_meas["meas_total_tfall"][i] = float(spice_meas_temp["meas_total_tfall"][i])*lut_input.delay_weight + float(spice_meas["meas_total_tfall"][i])                    
+						if float(spice_meas_temp["meas_total_tfall"][i]) < 0 or float(spice_meas["meas_total_tfall"][i]) < 0:
+							spice_meas["meas_total_tfall"][i] = "failed" 
+							print "found negative values"
+						else:	
+							spice_meas["meas_total_tfall"][i] = float(spice_meas_temp["meas_total_tfall"][i])*lut_input.delay_weight + float(spice_meas["meas_total_tfall"][i])                    
 
 					if spice_meas["meas_total_trise"][i] == "failed" or spice_meas_temp["meas_total_trise"][i] == "failed":
 						spice_meas["meas_total_trise"][i] = "failed"                   
 					else :
-						spice_meas["meas_total_trise"][i] = float(spice_meas_temp["meas_total_trise"][i])*lut_input.delay_weight + float(spice_meas["meas_total_trise"][i]) 
+						if float(spice_meas_temp["meas_total_trise"][i]) < 0 or float(spice_meas["meas_total_trise"][i]) < 0:
+							spice_meas["meas_total_trise"][i] = "failed" 
+							print "found negative values"
+						else:					
+							spice_meas["meas_total_trise"][i] = float(spice_meas_temp["meas_total_trise"][i])*lut_input.delay_weight + float(spice_meas["meas_total_trise"][i]) 
                 
 			counter = counter +1  
     
@@ -1598,14 +1660,15 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	print "TOP 10 BEST COST RESULTS"
 	print "------------------------"
 	
-	for i in range(min(10, len(cost_list))):
+	for i in range(min(10, len(cost_list))): # 10
 		combo_index = cost_list[i][1]
 		print ("Combo #" + str(combo_index).ljust(6) + 
 			   "cost=" + str(round(cost_list[i][0],6)).ljust(9) + 
-			   "area=" + str(round(area_list[combo_index]/1000000,3)).ljust(8) + 
+			   " area=" + str(round(area_list[combo_index]/1000000,3)).ljust(8) + 
 			   "delay=" + str(round(eval_delay_list[combo_index],13)).ljust(10) + 
 			   "tfall=" + str(round(tfall_trise_list[combo_index][0],13)).ljust(10) + 
-			   "trise=" + str(round(tfall_trise_list[combo_index][1],13)).ljust(10))
+			   "trise=" + str(round(tfall_trise_list[combo_index][1],13)).ljust(10) + 
+			   " voltage_low= " + str(meas_logic_low_voltage[i]))
 	print ""
 	
 	# Write results to file
@@ -2508,8 +2571,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			time_before_sizing = time.time()
 
 
-
-		
+	
 		############################################
 		## Size switch block mux transistors
 		############################################
@@ -3386,6 +3448,11 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		#fpga_inst.update_delays(spice_interface)
 		#print "Current Cost: " + str(get_current_delay(fpga_inst, 0) * get_eval_area(fpga_inst, "global", fpga_inst.cb_mux, 0))
 		#print "Current RAM Cost: " + str(get_current_delay(fpga_inst, 1) * get_eval_area(fpga_inst, "global", fpga_inst.cb_mux, 1))
+		
+		#Ibrahim addition
+		fpga_inst.update_wires()
+		fpga_inst.update_wire_rc()
+		fpga_inst.update_delays(spice_interface)
 
 		fpga_inst.update_area()
 		fpga_inst.update_wires()
