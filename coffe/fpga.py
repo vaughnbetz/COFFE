@@ -948,7 +948,7 @@ class _LUTInputDriverLoad:
     """ LUT input driver load. This load consists of a wire as well as the gates
         of a particular level in the LUT. """
 
-    def __init__(self, name, use_tgate, use_fluts, predecode, predecode_input):
+    def __init__(self, name, tgate_blocks, use_fluts, predecode, predecode_input):
         self.name = name
         self.use_tgate = "lut" in tgate_blocks
         self.use_fluts = use_fluts
