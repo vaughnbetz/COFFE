@@ -438,6 +438,7 @@ def load_arch_params(filename):
         'switch_type': "",
         'use_tgate': False,
         'tgate_blocks': [],
+        'lut_design': -2,
         'use_finfet': False,
         'memory_technology': "SRAM",
         'enable_bram_module': 0,
@@ -550,6 +551,8 @@ def load_arch_params(filename):
                 arch_params['use_tgate'] = True
         elif param == 'tgate_blocks':  
             arch_params['tgate_blocks'].append(value)
+        elif param == 'lut_design':  
+            arch_params['lut_design']= int(value);
         elif param == 'memory_technology':
             arch_params['memory_technology'] = value
         elif param == 'vdd':

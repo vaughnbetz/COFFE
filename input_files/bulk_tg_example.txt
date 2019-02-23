@@ -92,7 +92,7 @@ min_tran_width=45
 trans_diffusion_length = 52
 
 # Minimum-width transistor area (nm^2)
-min_width_tran_area = 28851
+min_width_tran_area = 33864
 
 # SRAM area (in number of minimum width transistor areas)
 sram_cell_area = 4
@@ -126,3 +126,6 @@ metal=0.007862,0.000215
 # you to investigate the use of more than 2 metal layers if you wanted to. However,
 # making use of more metal layers would require changes to the COFFE source code.
 
+tgate_blocks = lut
+tgate_blocks = sb_mux
+tgate_blocks = cb_mux

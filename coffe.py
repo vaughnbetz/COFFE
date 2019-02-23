@@ -62,6 +62,7 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
+parser.add_argument('-v', '--voltage_sweep', help="don't perform transistor sizing", action='store_true')
 
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
@@ -70,7 +71,7 @@ parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimu
 args = parser.parse_args()
 
 is_size_transistors = not args.no_sizing
-
+print_voltage_sweep = args.voltage_sweep
 
 
 # Make the top-level spice folder if it doesn't already exist
@@ -224,46 +225,47 @@ coffe.vpr.print_vpr_file(fpga_inst, "vpr_def", arch_params_dict['enable_bram_mod
 os.rename("report.txt", "report_def.txt")
 os.rename("process_data.l", "process_data_def.l")
 
-# run new simul
-os.rename("1000mv.txt", "process_data.l")
-fpga_inst.update_delays(spice_interface)
-utils.print_summary(".", fpga_inst, total_start_time)
-os.rename("report.txt", "report_1000mv.txt")
-os.rename("process_data.l", "process_data_1000mv_done.l")
-coffe.vpr.print_vpr_file(fpga_inst, "vpr_1000mv", arch_params_dict['enable_bram_module'])
+if print_voltage_sweep:
+  # run new simul
+  os.rename("1000mv.txt", "process_data.l")
+  fpga_inst.update_delays(spice_interface)
+  utils.print_summary(".", fpga_inst, total_start_time)
+  os.rename("report.txt", "report_1000mv.txt")
+  os.rename("process_data.l", "process_data_1000mv_done.l")
+  coffe.vpr.print_vpr_file(fpga_inst, "vpr_1000mv", arch_params_dict['enable_bram_module'])
 
-# run new simul
-os.rename("900mv.txt", "process_data.l")
-fpga_inst.update_delays(spice_interface)
-utils.print_summary(".", fpga_inst, total_start_time)
-os.rename("report.txt", "report_900mv.txt")
-os.rename("process_data.l", "process_data_900mv_done.l")
-coffe.vpr.print_vpr_file(fpga_inst, "vpr_900mv", arch_params_dict['enable_bram_module'])
+  # run new simul
+  os.rename("900mv.txt", "process_data.l")
+  fpga_inst.update_delays(spice_interface)
+  utils.print_summary(".", fpga_inst, total_start_time)
+  os.rename("report.txt", "report_900mv.txt")
+  os.rename("process_data.l", "process_data_900mv_done.l")
+  coffe.vpr.print_vpr_file(fpga_inst, "vpr_900mv", arch_params_dict['enable_bram_module'])
 
 
-# run new simul
-os.rename("800mv.txt", "process_data.l")
-fpga_inst.update_delays(spice_interface)
-utils.print_summary(".", fpga_inst, total_start_time)
-os.rename("report.txt", "report_800mv.txt")
-os.rename("process_data.l", "process_data_800mv_done.l")
-coffe.vpr.print_vpr_file(fpga_inst, "vpr_800mv", arch_params_dict['enable_bram_module'])
+  # run new simul
+  os.rename("800mv.txt", "process_data.l")
+  fpga_inst.update_delays(spice_interface)
+  utils.print_summary(".", fpga_inst, total_start_time)
+  os.rename("report.txt", "report_800mv.txt")
+  os.rename("process_data.l", "process_data_800mv_done.l")
+  coffe.vpr.print_vpr_file(fpga_inst, "vpr_800mv", arch_params_dict['enable_bram_module'])
 
-# run new simul
-os.rename("700mv.txt", "process_data.l")
-fpga_inst.update_delays(spice_interface)
-utils.print_summary(".", fpga_inst, total_start_time)
-os.rename("report.txt", "report_700mv.txt")
-os.rename("process_data.l", "process_data_700mv_done.l")
-coffe.vpr.print_vpr_file(fpga_inst, "vpr_700mv", arch_params_dict['enable_bram_module'])
+  # run new simul
+  os.rename("700mv.txt", "process_data.l")
+  fpga_inst.update_delays(spice_interface)
+  utils.print_summary(".", fpga_inst, total_start_time)
+  os.rename("report.txt", "report_700mv.txt")
+  os.rename("process_data.l", "process_data_700mv_done.l")
+  coffe.vpr.print_vpr_file(fpga_inst, "vpr_700mv", arch_params_dict['enable_bram_module'])
 
-# run new simul
-os.rename("600mv.txt", "process_data.l")
-fpga_inst.update_delays(spice_interface)
-utils.print_summary(".", fpga_inst, total_start_time)
-os.rename("report.txt", "report_600mv.txt")
-os.rename("process_data.l", "process_data_600mv_done.l")
-coffe.vpr.print_vpr_file(fpga_inst, "vpr_600mv", arch_params_dict['enable_bram_module'])
+  # run new simul
+  os.rename("600mv.txt", "process_data.l")
+  fpga_inst.update_delays(spice_interface)
+  utils.print_summary(".", fpga_inst, total_start_time)
+  os.rename("report.txt", "report_600mv.txt")
+  os.rename("process_data.l", "process_data_600mv_done.l")
+  coffe.vpr.print_vpr_file(fpga_inst, "vpr_600mv", arch_params_dict['enable_bram_module'])
 
 
 
