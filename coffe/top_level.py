@@ -4335,7 +4335,7 @@ def generate_lut6_top_design0(lut_name, use_tgate):
         spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     
-    spice_file.write(".OPTIONS post 2\n")
+    # spice_file.write(".OPTIONS post 2\n")
     spice_file.write(".END")
     spice_file.close()
 
@@ -4471,7 +4471,7 @@ def generate_lut6_top_design1(lut_name, use_tgate):
         spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     
-    spice_file.write(".OPTIONS post 2\n")
+    # spice_file.write(".OPTIONS post 2\n")
     spice_file.write(".END")
     spice_file.close()
 
@@ -4625,7 +4625,7 @@ def generate_lut6_top_design2(lut_name, use_tgate):
         spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     
-    spice_file.write(".OPTIONS post 2\n")
+    # spice_file.write(".OPTIONS post 2\n")
     spice_file.write(".END")
     spice_file.close()
 
