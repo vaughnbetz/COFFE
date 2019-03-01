@@ -4407,9 +4407,9 @@ def generate_lut6_top_design1(lut_name, use_tgate):
 
     spice_file.write("* Xinv_lut_int_buffer_2 delay\n")
     spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(Xlut.n_8_4) VAL='supply_v/2' RISE=1\n")
+    spice_file.write("+    TARG V(Xlut.n_6_3) VAL='supply_v/2' RISE=1\n")
     spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=2\n")
-    spice_file.write("+    TARG V(Xlut.n_8_4) VAL='supply_v/2' FALL=1\n\n")
+    spice_file.write("+    TARG V(Xlut.n_6_3) VAL='supply_v/2' FALL=1\n\n")
    
     spice_file.write("* Xinv_lut_out_buffer_1 delay\n")
     spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
