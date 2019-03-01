@@ -62,7 +62,7 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
-parser.add_argument('-v', '--voltage_sweep', help="don't perform transistor sizing", action='store_true')
+parser.add_argument('-v', '--voltage_sweep', help="don't perform transistor sizing", action='store_false')
 
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
