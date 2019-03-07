@@ -2405,7 +2405,7 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 		# Sadegh: I have decided not to include this part to be able to observe how cost function is changed over time
 		# It also facilitiates having quick mode.
 		# The user should probably have an idea of how many iterations to run the tool with after using the quick mode.
-
+		## return False, 0 # ibrahim
 		# If we are moving to a higher cost solution,
 		# Stop, and choose the one with smaller cost (the previous one)
 		if total_cost >= previous_cost:
@@ -2510,6 +2510,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 		fpga_inst.update_wires()
 		fpga_inst.update_wire_rc()
+		# todo: I think after finalizing the sizing, we need to call determine heigh again. Ibrahim
 		fpga_inst.determine_height()
 		fpga_inst.update_area()
 		fpga_inst.compute_distance()
@@ -3440,6 +3441,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 		print "FPGA transistor sizing iteration complete!\n"
 		
+		
 		sizing_results_list.append(sizing_results_dict.copy())
 		sizing_results_detailed_list.append(sizing_results_detailed_dict.copy())
 		
@@ -3450,9 +3452,9 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		#print "Current RAM Cost: " + str(get_current_delay(fpga_inst, 1) * get_eval_area(fpga_inst, "global", fpga_inst.cb_mux, 1))
 		
 		#Ibrahim addition
-		fpga_inst.update_wires()
-		fpga_inst.update_wire_rc()
-		fpga_inst.update_delays(spice_interface)
+	#	fpga_inst.update_wires()
+	#	fpga_inst.update_wire_rc()
+	#	fpga_inst.update_delays(spice_interface)
 
 		fpga_inst.update_area()
 		fpga_inst.update_wires()
@@ -3516,6 +3518,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	fpga_inst.update_wires()
 	# Update wire resistance and capacitance
 	fpga_inst.update_wire_rc()
+	
+	fpga_inst.update_delays(spice_interface)
 		   
 	print "FPGA transistor sizing complete!\n"
 	

@@ -164,6 +164,135 @@ def generate_ptran_lut6_ib(spice_filename, min_tran_width, use_finfet):
 	return tran_names_list, wire_names_list    
   
 
+  
+  
+def generate_ptran_lut6_buff_after_3_ib(spice_filename, min_tran_width, use_finfet):
+	""" Generates a 6LUT SPICE deck """
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+    
+    # generate the predecoding circuitry
+	generate_predecoding_circuitry(spice_file)
+	
+	# Create the 6-LUT circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* 6-LUT subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
+	Wn = min_tran_width
+	Wp = 1.667*min_tran_width
+	if not use_finfet:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	else:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=1 Wp=1\n")
+
+	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
+	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
+	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
+    	
+	spice_file.write("* First chain\n")
+    
+	spice_file.write("Xpredecoder n_b n_a n_predecoded n_vdd n_gnd predecode \n")  
+	spice_file.write("Xpredecoder_load n_predecoded n_vdd n_gnd lut_a_predecode_load \n")    
+	#spice_file.write("Xwire_predecode_pass n_3_1 n_4_2 wire Rw='wire_predecode_pass_res/2' Cw='wire_predecode_pass_cap/2'\n")
+    
+	spice_file.write("Xptran_lut_L1 n_2_2 n_3_1 n_predecoded n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+	spice_file.write("Xwire_lut_L1 n_3_1 n_4_2 wire Rw='3*wire_lut_L1_res/2' Cw='3*wire_lut_L1_cap/2'\n")
+	
+	spice_file.write("Xwire_lut_L1h n_4_2 n_3_3_1 wire Rw='3*wire_lut_L1_res/2' Cw='3*wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h n_gnd n_3_3_1 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+
+	spice_file.write("Xwire_lut_L1h_2 n_4_2 n_3_3_2 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_2 n_gnd n_3_3_2 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+
+	spice_file.write("Xwire_lut_L1h_3 n_4_2 n_3_3_3 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_3 n_gnd n_3_3_3 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")	
+	
+
+	spice_file.write("Xptran_lut_L3 n_4_2 n_5_1 n_c n_gnd ptran Wn=ptran_lut_L3_nmos\n")
+	spice_file.write("Xwire_lut_L3 n_5_1 n_5_2 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
+	spice_file.write("Xwire_lut_L3h n_5_2 n_5_3 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
+	spice_file.write("Xptran_lut_L3h n_gnd n_5_3 n_gnd n_gnd ptran Wn=ptran_lut_L3_nmos\n\n")
+	
+	spice_file.write("Xptran_lut_L4 n_5_2 n_8_1 n_d n_gnd ptran Wn=ptran_lut_L4_nmos\n") 
+	spice_file.write("Xwire_lut_L4 n_8_1 n_8_2 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
+	spice_file.write("Xwire_lut_L4h n_8_2 n_8_3 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
+	spice_file.write("Xptran_lut_L4h n_gnd n_8_3 n_gnd n_gnd ptran Wn=ptran_lut_L4_nmos\n")
+
+	spice_file.write("* Internal buffer \n")
+	spice_file.write("Xrest_lut_int_buffer n_8_2 n_6_1 n_vdd n_gnd rest Wp=rest_lut_int_buffer_pmos\n")
+	spice_file.write("Xinv_lut_int_buffer_1 n_8_2 n_6_1 n_vdd n_gnd inv Wn=inv_lut_int_buffer_1_nmos Wp=inv_lut_int_buffer_1_pmos\n")
+	spice_file.write("Xwire_lut_int_buffer n_6_1 n_6_2 wire Rw=wire_lut_int_buffer_res Cw=wire_lut_int_buffer_cap\n")
+	spice_file.write("Xinv_lut_int_buffer_2 n_6_2 n_7_1 n_vdd n_gnd inv Wn=inv_lut_int_buffer_2_nmos Wp=inv_lut_int_buffer_2_pmos\n")
+	spice_file.write("Xwire_lut_int_buffer_out n_7_1 n_7_2 wire Rw=wire_lut_int_buffer_out_res Cw=wire_lut_int_buffer_out_cap\n\n")
+	
+	spice_file.write("* Second chain\n")
+
+	spice_file.write("Xptran_lut_L5 n_7_2 n_9_1 n_e n_gnd ptran Wn=ptran_lut_L5_nmos\n")
+	spice_file.write("Xwire_lut_L5 n_9_1 n_9_2 wire Rw='wire_lut_L5_res/2' Cw='wire_lut_L5_cap/2'\n")
+	spice_file.write("Xwire_lut_L5h n_9_2 n_9_3 wire Rw='wire_lut_L5_res/2' Cw='wire_lut_L5_cap/2'\n")
+	spice_file.write("Xptran_lut_L5h n_gnd n_9_3 n_gnd n_gnd ptran Wn=ptran_lut_L5_nmos\n")
+	spice_file.write("Xptran_lut_L6 n_9_2 n_10_1 n_f n_gnd ptran Wn=ptran_lut_L6_nmos\n")
+	spice_file.write("Xwire_lut_L6 n_10_1 n_10_2 wire Rw='wire_lut_L6_res/2' Cw='wire_lut_L6_cap/2'\n")
+	spice_file.write("Xwire_lut_L6h n_10_2 n_10_3 wire Rw='wire_lut_L6_res/2' Cw='wire_lut_L6_cap/2'\n")
+	spice_file.write("Xptran_lut_L6h n_gnd n_10_3 n_gnd n_gnd ptran Wn=ptran_lut_L6_nmos\n\n")
+	
+	spice_file.write("* Output buffer \n")
+	spice_file.write("Xrest_lut_out_buffer n_10_2 n_11_1 n_vdd n_gnd rest Wp=rest_lut_out_buffer_pmos\n")
+	spice_file.write("Xinv_lut_out_buffer_1 n_10_2 n_11_1 n_vdd n_gnd inv Wn=inv_lut_out_buffer_1_nmos Wp=inv_lut_out_buffer_1_pmos\n")
+	spice_file.write("Xwire_lut_out_buffer n_11_1 n_11_2 wire Rw=wire_lut_out_buffer_res Cw=wire_lut_out_buffer_cap\n")
+	spice_file.write("Xinv_lut_out_buffer_2 n_11_2 n_out n_vdd n_gnd inv Wn=inv_lut_out_buffer_2_nmos Wp=inv_lut_out_buffer_2_pmos\n\n")
+	spice_file.write(".ENDS\n\n\n")
+	
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	tran_names_list.append("inv_lut_0sram_driver_2_nmos")
+	tran_names_list.append("inv_lut_0sram_driver_2_pmos")
+    
+	tran_names_list.append("inv_nand_lut_predecode_1_nmos")
+	tran_names_list.append("inv_nand_lut_predecode_1_pmos")
+	tran_names_list.append("inv_lut_predecode_2_nmos")
+	tran_names_list.append("inv_lut_predecode_2_pmos")
+    
+	tran_names_list.append("ptran_lut_L1_nmos")
+	#tran_names_list.append("ptran_lut_L2_nmos")
+	tran_names_list.append("ptran_lut_L3_nmos")
+	tran_names_list.append("rest_lut_int_buffer_pmos")
+	tran_names_list.append("inv_lut_int_buffer_1_nmos")
+	tran_names_list.append("inv_lut_int_buffer_1_pmos")
+	tran_names_list.append("inv_lut_int_buffer_2_nmos")
+	tran_names_list.append("inv_lut_int_buffer_2_pmos")
+	tran_names_list.append("ptran_lut_L4_nmos")
+	tran_names_list.append("ptran_lut_L5_nmos")
+	tran_names_list.append("ptran_lut_L6_nmos")
+	tran_names_list.append("rest_lut_out_buffer_pmos")
+	tran_names_list.append("inv_lut_out_buffer_1_nmos")
+	tran_names_list.append("inv_lut_out_buffer_1_pmos")
+	tran_names_list.append("inv_lut_out_buffer_2_nmos")
+	tran_names_list.append("inv_lut_out_buffer_2_pmos")
+
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+    
+	wire_names_list.append("wire_lut_nand_inv_1")
+    #wire_names_list.append("wire_predecode_pass")
+    
+	wire_names_list.append("wire_lut_sram_driver")
+	wire_names_list.append("wire_lut_sram_driver_out")
+	wire_names_list.append("wire_lut_L1")
+	wire_names_list.append("wire_lut_L2")
+	wire_names_list.append("wire_lut_L3")
+	wire_names_list.append("wire_lut_int_buffer")
+	wire_names_list.append("wire_lut_int_buffer_out")
+	wire_names_list.append("wire_lut_L4")
+	wire_names_list.append("wire_lut_L5")
+	wire_names_list.append("wire_lut_L6")
+	wire_names_list.append("wire_lut_out_buffer")
+	
+	return tran_names_list, wire_names_list    
+  
 
 # 3-input decoded LUT with buffer after 1-stage and 3-stages     
 def generate_ptran_lut6_ib_3_decode(spice_filename, min_tran_width, use_finfet):
@@ -462,6 +591,159 @@ def generate_ptran_lut6_ib_3_decode_buff_2(spice_filename, min_tran_width, use_f
 	
 	return tran_names_list, wire_names_list    
 	
+
+
+
+
+	
+# 3-input decoded LUT with no internal buffer   
+def generate_ptran_lut6_ib_3_decode_no_internal_buff(spice_filename, min_tran_width, use_finfet):
+	""" Generates a 6LUT SPICE deck """
+	
+	# Open SPICE file for appending
+	spice_file = open(spice_filename, 'a')
+    
+    # generate the predecoding circuitry
+	generate_predecoding_circuitry_3_inputs(spice_file)
+	
+	# Create the 6-LUT circuit
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write("* 6-LUT subcircuit \n")
+	spice_file.write("******************************************************************************************\n")
+	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
+	Wn = min_tran_width
+	Wp = 1.667*min_tran_width
+	if not use_finfet:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=" + str(Wn) + "n Wp=" + str(Wp) + "n\n")
+	else:
+		spice_file.write("Xinv_lut_sram_driver_1 n_in n_1_1 n_vdd n_gnd inv Wn=1 Wp=1\n")
+
+	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
+	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
+	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
+    	
+	spice_file.write("* First chain\n")
+    
+	spice_file.write("Xpredecoder n_c n_b n_a n_predecoded n_vdd n_gnd predecode \n")  
+	spice_file.write("Xpredecoder_load n_predecoded n_vdd n_gnd lut_a_predecode_load \n")    
+	#spice_file.write("Xwire_predecode_pass n_3_1 n_4_2 wire Rw='wire_predecode_pass_res/2' Cw='wire_predecode_pass_cap/2'\n")
+    
+	spice_file.write("Xptran_lut_L1 n_2_2 n_3_1 n_predecoded n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+	spice_file.write("Xwire_lut_L1 n_3_1 n_5_2 wire Rw='7*wire_lut_L1_res/2' Cw='7*wire_lut_L1_cap/2'\n")
+	
+	spice_file.write("Xwire_lut_L1h_2 n_5_2 n_3_3_1 wire Rw='7*wire_lut_L1_res/2' Cw='7*wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_2 n_gnd n_3_3_1 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+
+	spice_file.write("Xwire_lut_L1h_3 n_5_2 n_3_3_2 wire Rw='5*wire_lut_L1_res/2' Cw='5*wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_3 n_gnd n_3_3_2 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+
+	spice_file.write("Xwire_lut_L1h_4 n_5_2 n_3_3_3 wire Rw='5*wire_lut_L1_res/2' Cw='5*wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_4 n_gnd n_3_3_3 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")	
+	
+	
+	spice_file.write("Xwire_lut_L1h_5 n_5_2 n_3_3_4 wire Rw='3*wire_lut_L1_res/2' Cw='3*wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_5 n_gnd n_3_3_4 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+	
+	spice_file.write("Xwire_lut_L1h_6 n_5_2 n_3_3_5 wire Rw='3*wire_lut_L1_res/2' Cw='3*wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_6 n_gnd n_3_3_5 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+
+	spice_file.write("Xwire_lut_L1h_7 n_5_2 n_3_3_6 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_7 n_gnd n_3_3_6 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")
+
+	spice_file.write("Xwire_lut_L1h_8 n_5_2 n_3_3_7 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+	spice_file.write("Xptran_lut_L1h_8 n_gnd n_3_3_7 n_gnd n_gnd ptran Wn=ptran_lut_L1_nmos\n")	
+	
+	
+	
+	spice_file.write("*Xptran_lut_L2 n_3_2 n_4_1 n_b n_gnd ptran Wn=ptran_lut_L2_nmos\n")
+	spice_file.write("*Xwire_lut_L2 n_4_1 n_4_2 wire Rw='wire_lut_L2_res/2' Cw='wire_lut_L2_cap/2'\n")
+	spice_file.write("*Xwire_lut_L2h n_4_2 n_4_3 wire Rw='wire_lut_L2_res/2' Cw='wire_lut_L2_cap/2'\n")
+	spice_file.write("*Xptran_lut_L2h n_gnd n_4_3 n_gnd n_gnd ptran Wn=ptran_lut_L2_nmos\n")
+	
+	spice_file.write("*Xptran_lut_L3 n_4_2 n_5_1 n_predecoded n_gnd ptran Wn=ptran_lut_L3_nmos\n")
+	spice_file.write("*Xwire_lut_L3 n_5_1 n_5_2 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
+	spice_file.write("*Xwire_lut_L3h n_5_2 n_5_3 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
+	spice_file.write("*Xptran_lut_L3h n_gnd n_5_3 n_gnd n_gnd ptran Wn=ptran_lut_L3_nmos\n\n")
+
+
+	
+	spice_file.write("* Second chain\n")
+	spice_file.write("Xptran_lut_L4 n_5_2 n_8_1 n_d n_gnd ptran Wn=ptran_lut_L4_nmos\n")
+	spice_file.write("Xwire_lut_L4 n_8_1 n_8_2 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
+	spice_file.write("Xwire_lut_L4h n_8_2 n_8_3 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
+	spice_file.write("Xptran_lut_L4h n_gnd n_8_3 n_gnd n_gnd ptran Wn=ptran_lut_L4_nmos\n")
+	
+	spice_file.write("* Internal buffer \n")
+	spice_file.write("*Xrest_lut_int_buffer n_8_2 n_6_1 n_vdd n_gnd rest Wp=rest_lut_int_buffer_pmos\n")
+	spice_file.write("*Xinv_lut_int_buffer_1 n_8_2 n_6_1 n_vdd n_gnd inv Wn=inv_lut_int_buffer_1_nmos Wp=inv_lut_int_buffer_1_pmos\n")
+	spice_file.write("*Xwire_lut_int_buffer n_6_1 n_6_2 wire Rw=wire_lut_int_buffer_res Cw=wire_lut_int_buffer_cap\n")
+	spice_file.write("*Xinv_lut_int_buffer_2 n_6_2 n_7_1 n_vdd n_gnd inv Wn=inv_lut_int_buffer_2_nmos Wp=inv_lut_int_buffer_2_pmos\n")
+	spice_file.write("*Xwire_lut_int_buffer_out n_7_1 n_7_2 wire Rw=wire_lut_int_buffer_out_res Cw=wire_lut_int_buffer_out_cap\n\n")
+	
+	spice_file.write("Xptran_lut_L5 n_8_2 n_9_1 n_e n_gnd ptran Wn=ptran_lut_L5_nmos\n")
+	spice_file.write("Xwire_lut_L5 n_9_1 n_9_2 wire Rw='wire_lut_L5_res/2' Cw='wire_lut_L5_cap/2'\n")
+	spice_file.write("Xwire_lut_L5h n_9_2 n_9_3 wire Rw='wire_lut_L5_res/2' Cw='wire_lut_L5_cap/2'\n")
+	spice_file.write("Xptran_lut_L5h n_gnd n_9_3 n_gnd n_gnd ptran Wn=ptran_lut_L5_nmos\n")
+	spice_file.write("Xptran_lut_L6 n_9_2 n_10_1 n_f n_gnd ptran Wn=ptran_lut_L6_nmos\n")
+	spice_file.write("Xwire_lut_L6 n_10_1 n_10_2 wire Rw='wire_lut_L6_res/2' Cw='wire_lut_L6_cap/2'\n")
+	spice_file.write("Xwire_lut_L6h n_10_2 n_10_3 wire Rw='wire_lut_L6_res/2' Cw='wire_lut_L6_cap/2'\n")
+	spice_file.write("Xptran_lut_L6h n_gnd n_10_3 n_gnd n_gnd ptran Wn=ptran_lut_L6_nmos\n\n")
+	
+	spice_file.write("* Output buffer \n")
+	spice_file.write("Xrest_lut_out_buffer n_10_2 n_11_1 n_vdd n_gnd rest Wp=rest_lut_out_buffer_pmos\n")
+	spice_file.write("Xinv_lut_out_buffer_1 n_10_2 n_11_1 n_vdd n_gnd inv Wn=inv_lut_out_buffer_1_nmos Wp=inv_lut_out_buffer_1_pmos\n")
+	spice_file.write("Xwire_lut_out_buffer n_11_1 n_11_2 wire Rw=wire_lut_out_buffer_res Cw=wire_lut_out_buffer_cap\n")
+	spice_file.write("Xinv_lut_out_buffer_2 n_11_2 n_out n_vdd n_gnd inv Wn=inv_lut_out_buffer_2_nmos Wp=inv_lut_out_buffer_2_pmos\n\n")
+	spice_file.write(".ENDS\n\n\n")
+	
+	
+	# Create a list of all transistors used in this subcircuit
+	tran_names_list = []
+	tran_names_list.append("inv_lut_0sram_driver_2_nmos")
+	tran_names_list.append("inv_lut_0sram_driver_2_pmos")
+    
+	tran_names_list.append("inv_nand_lut_predecode_1_nmos")
+	tran_names_list.append("inv_nand_lut_predecode_1_pmos")
+	tran_names_list.append("inv_lut_predecode_2_nmos")
+	tran_names_list.append("inv_lut_predecode_2_pmos")
+    
+	tran_names_list.append("ptran_lut_L1_nmos")
+	#tran_names_list.append("ptran_lut_L2_nmos")
+	#tran_names_list.append("ptran_lut_L3_nmos")
+	#tran_names_list.append("rest_lut_int_buffer_pmos")
+	#tran_names_list.append("inv_lut_int_buffer_1_nmos")
+	#tran_names_list.append("inv_lut_int_buffer_1_pmos")
+	#tran_names_list.append("inv_lut_int_buffer_2_nmos")
+	#tran_names_list.append("inv_lut_int_buffer_2_pmos")
+	tran_names_list.append("ptran_lut_L4_nmos")
+	tran_names_list.append("ptran_lut_L5_nmos")
+	tran_names_list.append("ptran_lut_L6_nmos")
+	tran_names_list.append("rest_lut_out_buffer_pmos")
+	tran_names_list.append("inv_lut_out_buffer_1_nmos")
+	tran_names_list.append("inv_lut_out_buffer_1_pmos")
+	tran_names_list.append("inv_lut_out_buffer_2_nmos")
+	tran_names_list.append("inv_lut_out_buffer_2_pmos")
+
+	# Create a list of all wires used in this subcircuit
+	wire_names_list = []
+    
+	wire_names_list.append("wire_lut_nand_inv_1")
+    #wire_names_list.append("wire_predecode_pass")
+    
+	wire_names_list.append("wire_lut_sram_driver")
+	wire_names_list.append("wire_lut_sram_driver_out")
+	wire_names_list.append("wire_lut_L1")
+	wire_names_list.append("wire_lut_L2")
+	wire_names_list.append("wire_lut_L3")
+	wire_names_list.append("wire_lut_int_buffer")
+	wire_names_list.append("wire_lut_int_buffer_out")
+	wire_names_list.append("wire_lut_L4")
+	wire_names_list.append("wire_lut_L5")
+	wire_names_list.append("wire_lut_L6")
+	wire_names_list.append("wire_lut_out_buffer")
+	
+	return tran_names_list, wire_names_list    	
+
 	
 def generate_ptran_lut6(spice_filename, min_tran_width, use_finfet):
 	""" Generates a 6LUT SPICE deck """
@@ -1311,7 +1593,7 @@ def generate_ptran_lut_driver_load_ib(spice_filename, lut_input_name, K, use_flu
 	
 	return wire_names_list    
     
-def generate_ptran_lut_predecode_load(spice_filename, lut_input_name, K, use_fluts):
+def generate_ptran_lut_predecode_load(spice_filename, lut_input_name, K, use_fluts, predecode_input):
 	""" Generates LUT input load SPICE deck 
 		Note: the input K incase of fluts is still input comming from the architecure file.
 		For a 5-FLUT K = 5"""
@@ -1342,7 +1624,10 @@ def generate_ptran_lut_predecode_load(spice_filename, lut_input_name, K, use_flu
         
     # predecoded inputs will load the first level of the mux tree (pre-decoding a and b)
     # each NOR gate will load 1 of 4 pass transistors    
-	num_ptran_load = int(max_num_ptran/4)
+	if (predecode_input != "c"):	
+		num_ptran_load = int(max_num_ptran/4)
+	else: # predecoding 3 inputs, mean that each decoder will load 1 of 8 pass transistors	
+		num_ptran_load = int(max_num_ptran/8)
 	ptran_level = "L1"	
 	# Open SPICE file for appending
 	spice_file = open(spice_filename, 'a')
@@ -1594,8 +1879,7 @@ def generate_tgate_lut6_design1(spice_filename, min_tran_width, use_finfet):
 
 	spice_file.write("Xwire_lut_sram_driver n_1_1 n_1_2 wire Rw=wire_lut_sram_driver_res Cw=wire_lut_sram_driver_cap\n")
 	spice_file.write("Xinv_lut_sram_driver_2 n_1_2 n_2_1 n_vdd n_gnd inv Wn=inv_lut_0sram_driver_2_nmos Wp=inv_lut_0sram_driver_2_pmos\n")
-	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
-	
+	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")	
 	spice_file.write("* First chain\n")
 	spice_file.write("Xtgate_lut_L1 n_2_2 n_3_1 n_a n_a_n n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
 	spice_file.write("Xwire_lut_L1 n_3_1 n_3_2 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
@@ -1631,8 +1915,8 @@ def generate_tgate_lut6_design1(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("Xtgate_lut_L6 n_9_2 n_10_1 n_f n_f_n n_vdd n_gnd tgate Wn=tgate_lut_L6_nmos Wp=tgate_lut_L6_pmos\n")
 	spice_file.write("Xwire_lut_L6 n_10_1 n_10_2 wire Rw='wire_lut_L6_res/2' Cw='wire_lut_L6_cap/2'\n")
 	spice_file.write("Xwire_lut_L6h n_10_2 n_10_3 wire Rw='wire_lut_L6_res/2' Cw='wire_lut_L6_cap/2'\n")
-	spice_file.write("Xtgate_lut_L6h n_gnd n_10_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L6_nmos Wp=tgate_lut_L6_pmos\n\n")
-	
+	spice_file.write("Xtgate_lut_L6h n_gnd n_10_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L6_nmos Wp=tgate_lut_L6_pmos\n\n")	
+
 	spice_file.write("* Output buffer \n")
 	spice_file.write("Xinv_lut_out_buffer_1 n_10_2 n_out n_vdd n_gnd inv Wn=inv_lut_out_buffer_1_nmos Wp=inv_lut_out_buffer_1_pmos\n")
 	spice_file.write(".ENDS\n\n\n")

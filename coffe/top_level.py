@@ -1,6 +1,8 @@
 import os
-
-local_mux_supply = "vdd" #"vsram"
+# to get no GB: GB_LUT and LEVEL_SHIFTER = 0, local_mux_supply = vdd, local_mux_meas = supply_v
+# to get GB with the pmos trick (not using lvl converter): GB_LUT and LEVEL_SHIFTER = 0, local_mux_supply = vsram, local_mux_meas = sram_v
+# to get GB with lvl shifter: GB_LUT and LEVEL_SHIFTER = 1, local_mux_supply = vsram, local_mux_meas = sram_v
+local_mux_supply = "vdd" #"vsram" # "vdd"
 local_mux_meas = "supply_v" #"sram_v" #"supply_v"
 
 GB_LUT = 0
@@ -4058,7 +4060,7 @@ def generate_RAM_local_mux_top_lp(mux_name):
 	
 	
 	
-def generate_lut6_top(lut_name, use_tgate):
+def generate_lut6_top(lut_name, use_tgate, predecode):
     """ Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
     # change the vdd that is hooked up top the local mux driver
     local_mux_driv_vdd = local_mux_supply
@@ -4101,7 +4103,7 @@ def generate_lut6_top(lut_name, use_tgate):
     spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
     spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
 
-    if "1" == "0":
+    if predecode == "on":
         spice_file.write("* inv decoder nand delay\n")
         spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
         spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='supply_v/2' FALL=1\n")

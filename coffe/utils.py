@@ -86,8 +86,8 @@ def print_area_and_delay(report_file, fpga_inst):
     # LUT input drivers
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
-        print_and_write(report_file, "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + 
-            str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22).ljust(22) + "n/a".ljust(13) + "n/a".ljust(13))
+        print_and_write(report_file, "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.tfall/1e-12,4)).ljust(13) + 
+            str(round(lut_input.trise/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22).ljust(22) + "n/a".ljust(13) + "n/a".ljust(13))
 
         driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].driver
         not_driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].not_driver
