@@ -1126,6 +1126,10 @@ def create_output_dir(arch_file_name):
         # COFFE generates several 'intermediate results' files during sizing
         # so we delete them to avoid from having them pile up if we run COFFE
         # more than once.
+        # if the directory already exists ask the user if he wants to delete it or not
+        decision = raw_input("The following directory \"" + arch_folder + "\" exists already are you sure you want to delete it (Y/N): ")
+        if (decision not in ['y', 'Y', 'yes', 'YES']):
+            sys.exit(1)
         dir_contents = os.listdir(arch_folder)
         for content in dir_contents:
             if os.path.isdir(arch_folder + "/" + content):
