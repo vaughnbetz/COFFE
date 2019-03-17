@@ -198,5 +198,4 @@ if fpga_inst.specs.updates:
 
 # Print vpr architecure file
 # The architecture description file should be changes for vpr
-if not fpga_inst.updates:
-  coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])
+coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'], fpga_inst.updates)
