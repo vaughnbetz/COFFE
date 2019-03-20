@@ -17,9 +17,9 @@ do
 	echo $f >> e.txt
 	echo $f >> f.txt
 	echo $f >> x.txt
-	for i in {1..3}
+	for i in {1..2}
 		do
-		python ../../../COFFE/scripts/gen_rand_full_lut.py $i
+		python ../../../COFFE/scripts/gen_rand_full_lut.py $i 0
 		hspice rand_lut_a.sp 2>&1 | grep meas_avg_power= >> a.txt  &
 		hspice rand_lut_b.sp 2>&1 | grep meas_avg_power= >> b.txt  &
 		hspice rand_lut_c.sp 2>&1 | grep meas_avg_power= >> c.txt  &
