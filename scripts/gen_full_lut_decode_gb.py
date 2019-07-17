@@ -19,7 +19,7 @@ def generate_headers(spice_file):
 	spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current1 + meas_current2)/4n)*supply_v'\n")
 	spice_file.write("\n")
 
-def generate_drivers(spice_file, input_vector, input_driver):
+def generate_drivers(spice_file, input_vector, input_driver,use_tgate):
 	drivers = ["a","b","c","d","e","f"]
 	sources_toggle = ["n_in_rise", "n_in_fall"]
 	sources_static = ["n_in_low", "n_in_high"]
@@ -31,27 +31,36 @@ def generate_drivers(spice_file, input_vector, input_driver):
 		else:
 			s = sources_static[input_vector[driver_index]]
 		spice_file.write("Xcb_mux_on_" + d + " " + s + " n_1_1_d_" + d + " vsram vsram_n vdd gnd cb_mux_on\n")
-		spice_file.write("Xlocal_routing_wire_load_" + d + " n_1_1_d_" + d + " n_1_2_d_" + d + " vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
-		spice_file.write("Xlut_" + d + "_driver_1 n_1_2_d_" + d + " n_" + d + " vsram vsram_n n_rsel n_2_1_d_" + d + " vsram gnd lut_" + d + "_driver\n")
-		spice_file.write("Xlut_" + d + "_driver_not_1 n_2_1_d_" + d + " n_" + d + "_b vsram gnd lut_" + d + "_driver_not\n")
+
+		if use_tgate:
+			spice_file.write("Xlocal_routing_wire_load_" + d + " n_1_1_d_" + d + " n_1_2_d_" + d + " vsram vsram_n vdd gnd vdd local_routing_wire_load\n")
+			spice_file.write("Xlut_" + d + "_driver_1 n_1_2_d_" + d + " n_" + d + " vsram vsram_n n_rsel n_2_1_d_" + d + " vdd gnd lut_" + d + "_driver\n")
+			spice_file.write("Xlut_" + d + "_driver_not_1 n_2_1_d_" + d + " n_" + d + "_b vdd gnd lut_" + d + "_driver_not\n")
+		else:
+			spice_file.write("Xlocal_routing_wire_load_" + d + " n_1_1_d_" + d + " n_1_2_d_" + d + " vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+			spice_file.write("Xlut_" + d + "_driver_1 n_1_2_d_" + d + " n_" + d + " vsram vsram_n n_rsel n_2_1_d_" + d + " vsram gnd lut_" + d + "_driver\n")
+			spice_file.write("Xlut_" + d + "_driver_not_1 n_2_1_d_" + d + " n_" + d + "_b vsram gnd lut_" + d + "_driver_not\n")
 		spice_file.write("\n")
 		driver_index += 1
 
-def generate_predecoders(spice_file):
+def generate_predecoders(spice_file,use_tgate):
 	decoders = ["ab_00", "ab_01", "ab_10", "ab_11"]
-	decoders_b_value = ["n_a", "n_a", "n_a_b", "n_a_b"]
-	decoders_a_value = ["n_b", "n_b_b", "n_b", "n_b_b"]
+	decoders_a_value = ["n_a", "n_a", "n_a_b", "n_a_b"]
+	decoders_b_value = ["n_b", "n_b_b", "n_b", "n_b_b"]
 
 	decoder_index = 0
 	for d in decoders:
-		spice_file.write("Xpredecoder_" + decoders[decoder_index] + " " + decoders_a_value[decoder_index]+ " " + decoders_b_value[decoder_index]+ " n_predecoded_" + decoders[decoder_index] + " vsram n_gnd predecode \n")
+		if use_tgate:
+			spice_file.write("Xpredecoder_" + decoders[decoder_index] + " " + decoders_b_value[decoder_index]+ " " + decoders_a_value[decoder_index]+ " n_predecoded_" + decoders[decoder_index] + " n_predecoded_" + decoders[decoder_index] + "_b vsram gnd predecode \n")
+		else:
+			spice_file.write("Xpredecoder_" + decoders[decoder_index] + " " + decoders_b_value[decoder_index]+ " " + decoders_a_value[decoder_index]+ " n_predecoded_" + decoders[decoder_index] + " vsram gnd predecode \n")
 		spice_file.write("\n")
 		decoder_index += 1
 
 
 def generate_footers(spice_file):
 	spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n")
-	spice_file.write(".OPTIONS POST=2 \n")
+	# spice_file.write(".OPTIONS POST=2 \n")
 	spice_file.write(".END\n")
 	spice_file.write("\n")
 
@@ -90,8 +99,10 @@ def generate_full_lut(spice_file, lut_mask, use_tgate):
 	lvl_curr=lvl_curr -1
 	for i in range(1, 2**(lvl_curr-1)+1):
 		if use_tgate:
-			spice_file.write("Xlvl1_"+str(i*2-1)+"_mux n_0_"+ str(sram_cell_count) + " n_0_" + str(sram_cell_count+1) + " n_predecoded_ab_00" + " n_predecoded_ab_01" + " n_2_" + str(i) + " n_vdd gnd simple_mux Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
-			spice_file.write("Xlvl1_"+str(i*2+1)+"_mux n_0_"+ str(sram_cell_count+2) + " n_0_" + str(sram_cell_count+3) + " n_predecoded_ab_10" + " n_predecoded_ab_11" + " n_2_" + str(i) + " n_vdd gnd simple_mux Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+			spice_file.write("Xlvl1_"+str(i*4-1)+"_mux n_0_"+ str(sram_cell_count) + " n_0_" + str(sram_cell_count+1) + " n_predecoded_ab_00" + " n_predecoded_ab_00_b" + " n_2_" + str(i) + " n_vdd gnd L1_stage Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+			spice_file.write("Xlvl1_"+str(i*4)+"_mux n_0_"+ str(sram_cell_count+2) + " n_0_" + str(sram_cell_count+3) + " n_predecoded_ab_10" + " n_predecoded_ab_10_b" + " n_2_" + str(i) + " n_vdd gnd L1_stage Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+			spice_file.write("Xlvl1_"+str(i*4+1)+"_mux n_0_"+ str(sram_cell_count+2) + " n_0_" + str(sram_cell_count+3) + " n_predecoded_ab_01" + " n_predecoded_ab_01_b" + " n_2_" + str(i) + " n_vdd gnd L1_stage Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
+			spice_file.write("Xlvl1_"+str(i*4+2)+"_mux n_0_"+ str(sram_cell_count+2) + " n_0_" + str(sram_cell_count+3) + " n_predecoded_ab_11" + " n_predecoded_ab_11_b" + " n_2_" + str(i) + " n_vdd gnd L1_stage Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
 		else:
 			spice_file.write("Xlvl1_"+str(i*2-1)+"_mux n_0_"+ str(sram_cell_count) + " n_0_" + str(sram_cell_count+1) + " n_predecoded_ab_00" + " n_predecoded_ab_01" + " n_2_" + str(i) + " gnd simple_mux Wn=ptran_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
 			spice_file.write("Xlvl1_"+str(i*2)+"_mux n_0_"+ str(sram_cell_count+2) + " n_0_" + str(sram_cell_count+3) + " n_predecoded_ab_10" + " n_predecoded_ab_11" + " n_2_" + str(i) + " gnd simple_mux Wn=ptran_lut_L1_nmos Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
@@ -159,8 +170,8 @@ def generate_full_lut(spice_file, lut_mask, use_tgate):
 
 def generate_spice_file(spice_file, input_vector, driver, lut_mask, use_tgate):
 	generate_headers(spice_file)
-	generate_drivers(spice_file, input_vector, driver)
-	generate_predecoders(spice_file)
+	generate_drivers(spice_file, input_vector, driver,use_tgate)
+	generate_predecoders(spice_file,use_tgate)
 	generate_full_lut(spice_file, lut_mask, use_tgate)
 	generate_footers(spice_file)
 
