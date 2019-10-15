@@ -202,12 +202,19 @@ def print_vpr_file_ib(vpr_file, fpga_inst):
 	vpr_file.write("  <output name=\"out\" num_pins=\"1\" port_class=\"lut_out\"/>\n")
 	vpr_file.write("  <!-- We define the LUT delays on the LUT pins instead of through the LUT -->\n")
 	vpr_file.write("  <delay_matrix type=\"max\" in_port=\"lut6.in\" out_port=\"lut6.out\">\n")
-	vpr_file.write("     0\n")
-	vpr_file.write("     0\n")
-	vpr_file.write("     0\n")
-	vpr_file.write("     0\n")
-	vpr_file.write("     0\n")
-	vpr_file.write("     0\n")
+#	vpr_file.write("     0\n")
+#	vpr_file.write("     0\n")
+#	vpr_file.write("     0\n")
+#	vpr_file.write("     0\n")
+#	vpr_file.write("     0\n")
+#	vpr_file.write("     0\n")
+
+	# adding LUT delays in the LUT itself, to help with extracting LUT delay from VPR timing reports.
+	# It also makes sense to put the LUT delay here.
+	for input_name in lut_input_names:
+		vpr_file.write("     " + str(lut_delays[input_name]) + "\n")
+	
+	
 	vpr_file.write("  </delay_matrix>\n")
 	vpr_file.write("  </pb_type>\n")
 	vpr_file.write("  <pb_type name=\"ff\" blif_model=\".latch\" num_pb=\"1\" class=\"flipflop\">\n")
@@ -227,7 +234,7 @@ def print_vpr_file_ib(vpr_file, fpga_inst):
 	for input_name in lut_input_names:
 		if Rfb.count(input_name) != 1 :
 			vpr_file.write("    <direct name=\"direct" + str(input_num) + "\" input=\"ble6.in_" + input_name.upper() + "\" output=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\">\n")
-			vpr_file.write("      <delay_constant max=\"" + str(lut_delays[input_name]) + "\" in_port=\"ble6.in_" + input_name.upper() + "\" out_port=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\" />\n")
+			vpr_file.write("      <delay_constant max=\"" + str(0) + "\" in_port=\"ble6.in_" + input_name.upper() + "\" out_port=\"lut6.in[" + str(input_num) + ":" + str(input_num) + "]\" />\n")
 			vpr_file.write("    </direct>\n")
 			direct_num = direct_num + 1
 
@@ -244,8 +251,8 @@ def print_vpr_file_ib(vpr_file, fpga_inst):
 	for name in feedback_mux :
 		vpr_file.write("      <!-- Register feedback mux -->   \n")
 		vpr_file.write("      <mux name=\"mux" + str(mux_num) + "\" input=\"ble6.in_" + name.upper() + " ff.Q\" output=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\">\n")
-		vpr_file.write("        <delay_constant max=\"" + str(lut_delays[name]) + "\" in_port=\"ble6.in_" + name.upper() + "\" out_port=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\" />\n")
-		vpr_file.write("        <delay_constant max=\"" + str(lut_delays[name]) + "\" in_port=\"ff.Q\" out_port=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\" />  \n")
+		vpr_file.write("        <delay_constant max=\"" + str(0) + "\" in_port=\"ble6.in_" + name.upper() + "\" out_port=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\" />\n")
+		vpr_file.write("        <delay_constant max=\"" + str(0) + "\" in_port=\"ff.Q\" out_port=\"lut6.in[" + str(feedback_mux[name]) + ":" + str(feedback_mux[name]) + "]\" />  \n")
 		vpr_file.write("      </mux>\n")
 		mux_num = mux_num + 1
 		vpr_file.write("      <!-- FF input selection mux -->\n")

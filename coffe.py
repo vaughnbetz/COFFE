@@ -53,6 +53,10 @@ print "                           - Thomas Carlyle\n\n"
 # floorplanning for a quicker run
 
 # Parse the input arguments with argparse
+
+
+voltage_islands = 1
+
 parser = argparse.ArgumentParser()
 parser.add_argument('arch_description')
 parser.add_argument('-n', '--no_sizing', help="don't perform transistor sizing", action='store_true')
@@ -129,39 +133,67 @@ report_file.close()
 
 
 
-
-
+voltages_list = ["1.0","0.9","0.8","0.7","0.6"]
+if voltage_islands > 0:
+  volt_logic_list = ["1.0","0.9","0.8","0.7","0.6"]
+else : 	
+  volt_logic_list = ["0.8"]
+	
+# _generate_process_data_ibrahim(self, default_vdd, logic_vdd)	
 # Go to architecture directory
 os.chdir(arch_folder)
+process_file_names = []
+# loop over default/routing vdd and logic vdd
+# this loop will create different process files
+for i in voltages_list: 
+  for j in volt_logic_list:
+    if voltage_islands > 0:  
+      current_file_name = "gen_vdd_" + i + "v_log_vdd_" + j + "v_data.l"
+    else:
+      current_file_name = "gen_vdd_" + i + "v_log_vdd_" + i + "v_data.l"	  	
+    process_file_names.append(current_file_name)		
+    fpga_inst._generate_process_data_ibrahim(current_file_name, i, j)	
+
+
+
+
+
+
+
+
+
+
+
+
 # copy process_models file
-model_1000mv_file = open("1000mv.txt", 'w')
-model_900mv_file = open("900mv.txt", 'w')
-model_800mv_file = open("800mv.txt", 'w')
-model_700mv_file = open("700mv.txt", 'w')
-model_600mv_file = open("600mv.txt", 'w')
-default_model_file = open("process_data.l", 'r')
+##model_1000mv_file = open("1000mv.txt", 'w')
+##model_900mv_file = open("900mv.txt", 'w')
+##model_800mv_file = open("800mv.txt", 'w')
+##model_700mv_file = open("700mv.txt", 'w')
+##model_600mv_file = open("600mv.txt", 'w')
+##default_model_file = open("process_data.l", 'r')
 
-for line in default_model_file:
+##for line in default_model_file:
     
-	if "supply_v =" in line:
-		model_1000mv_file.write(".PARAM supply_v = 1.0\n")
-		model_900mv_file.write(".PARAM supply_v = 0.9\n")
-		model_800mv_file.write(".PARAM supply_v = 0.8\n")
-		model_700mv_file.write(".PARAM supply_v = 0.7\n")
-		model_600mv_file.write(".PARAM supply_v = 0.6\n")
-	else:
-		model_1000mv_file.write(line)
-		model_900mv_file.write(line)
-		model_800mv_file.write(line)
-		model_700mv_file.write(line)
-		model_600mv_file.write(line)
+##	if "supply_v =" in line:
+##		model_1000mv_file.write(".PARAM supply_v = 1.0\n")
+##		model_900mv_file.write(".PARAM supply_v = 0.9\n")
+##		model_800mv_file.write(".PARAM supply_v = 0.8\n")
+##		model_700mv_file.write(".PARAM supply_v = 0.7\n")
+##		model_600mv_file.write(".PARAM supply_v = 0.6\n")
+##	else:
+##		model_1000mv_file.write(line)
+##		model_900mv_file.write(line)
+##		model_800mv_file.write(line)
+##		model_700mv_file.write(line)
+##		model_600mv_file.write(line)
 
-default_model_file.close()
-model_1000mv_file.close()
-model_900mv_file.close()
-model_800mv_file.close()
-model_700mv_file.close()
-model_600mv_file.close()
+##default_model_file.close()
+##model_1000mv_file.close()
+##model_900mv_file.close()
+##model_800mv_file.close()
+##model_700mv_file.close()
+##model_600mv_file.close()
 ###############################################################
 ## TRANSISTOR SIZING
 ###############################################################
@@ -224,48 +256,24 @@ coffe.vpr.print_vpr_file(fpga_inst, "vpr_def", arch_params_dict['enable_bram_mod
 # copy report file into a report_default file
 os.rename("report.txt", "report_def.txt")
 os.rename("process_data.l", "process_data_def.l")
-
+  
 if print_voltage_sweep:
-  # run new simul
-  os.rename("1000mv.txt", "process_data.l")
-  fpga_inst.update_delays(spice_interface)
-  utils.print_summary(".", fpga_inst, total_start_time)
-  os.rename("report.txt", "report_1000mv.txt")
-  os.rename("process_data.l", "process_data_1000mv_done.l")
-  coffe.vpr.print_vpr_file(fpga_inst, "vpr_1000mv", arch_params_dict['enable_bram_module'])
+#process_file_names
+  print "printing voltage sweep"
+  for process_file_name in process_file_names:
+    name_without_suffix = process_file_name.replace("_data.l", "")
+	
+    os.rename(process_file_name, "process_data.l") 
+    fpga_inst.update_delays(spice_interface)
+    utils.print_summary(".", fpga_inst, total_start_time)
+    report_name = "results" + name_without_suffix + ".txt"
+    os.rename("report.txt", report_name)
+    os.rename("process_data.l", name_without_suffix + "_done.l")
+    vpr_arch_file_name = "vpr_" + name_without_suffix	
+    coffe.vpr.print_vpr_file(fpga_inst, vpr_arch_file_name, arch_params_dict['enable_bram_module'])
 
-  # run new simul
-  os.rename("900mv.txt", "process_data.l")
-  fpga_inst.update_delays(spice_interface)
-  utils.print_summary(".", fpga_inst, total_start_time)
-  os.rename("report.txt", "report_900mv.txt")
-  os.rename("process_data.l", "process_data_900mv_done.l")
-  coffe.vpr.print_vpr_file(fpga_inst, "vpr_900mv", arch_params_dict['enable_bram_module'])
+	
 
-
-  # run new simul
-  os.rename("800mv.txt", "process_data.l")
-  fpga_inst.update_delays(spice_interface)
-  utils.print_summary(".", fpga_inst, total_start_time)
-  os.rename("report.txt", "report_800mv.txt")
-  os.rename("process_data.l", "process_data_800mv_done.l")
-  coffe.vpr.print_vpr_file(fpga_inst, "vpr_800mv", arch_params_dict['enable_bram_module'])
-
-  # run new simul
-  os.rename("700mv.txt", "process_data.l")
-  fpga_inst.update_delays(spice_interface)
-  utils.print_summary(".", fpga_inst, total_start_time)
-  os.rename("report.txt", "report_700mv.txt")
-  os.rename("process_data.l", "process_data_700mv_done.l")
-  coffe.vpr.print_vpr_file(fpga_inst, "vpr_700mv", arch_params_dict['enable_bram_module'])
-
-  # run new simul
-  os.rename("600mv.txt", "process_data.l")
-  fpga_inst.update_delays(spice_interface)
-  utils.print_summary(".", fpga_inst, total_start_time)
-  os.rename("report.txt", "report_600mv.txt")
-  os.rename("process_data.l", "process_data_600mv_done.l")
-  coffe.vpr.print_vpr_file(fpga_inst, "vpr_600mv", arch_params_dict['enable_bram_module'])
 
 
 

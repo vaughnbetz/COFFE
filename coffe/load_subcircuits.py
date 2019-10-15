@@ -1,5 +1,7 @@
-GB_LUT = 0
-LEVEL_SHIFTER = 0 
+GB_LUT = 1
+LEVEL_SHIFTER = 1  
+
+voltage_islands = 0
 
 
 def general_routing_load_generate(spice_filename, wire_length, tile_sb_on, tile_sb_partial, tile_sb_off, tile_cb_on, tile_cb_partial, tile_cb_off):
@@ -125,7 +127,7 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* Local routing wire load\n")
     spice_file.write("******************************************************************************************\n")
-    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :   
+    if (GB_LUT > 0 and LEVEL_SHIFTER > 0) or voltage_islands > 0 :   
         spice_file.write(".SUBCKT local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on n_vdd_local_mux_on_h\n")
     else :    
         spice_file.write(".SUBCKT local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on\n")
@@ -149,7 +151,7 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
                 on_counter = on_counter + 1
                 if on_counter == num_on:
                     spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
-                    if GB_LUT > 0 and LEVEL_SHIFTER > 0 : 
+                    if (GB_LUT > 0 and LEVEL_SHIFTER > 0) or voltage_islands > 0 : 
                         spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd_local_mux_on n_vdd_local_mux_on_h n_gnd local_mux_on_lvl_shift \n")
                     else :
                         spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd_local_mux_on n_gnd local_mux_on\n")
@@ -410,11 +412,12 @@ def generate_local_ble_output_load(spice_filename):
     spice_file.write("******************************************************************************************\n")
     spice_file.write(".SUBCKT local_ble_output_load n_in n_gate n_gate_n n_vdd n_vdd_h n_gnd\n")
     spice_file.write("Xwire_local_ble_output_feedback n_in n_1_1 wire Rw='wire_local_ble_output_feedback_res' Cw='wire_local_ble_output_feedback_cap'\n")
-    if GB_LUT > 0 and LEVEL_SHIFTER > 0 :
+    if (GB_LUT > 0 and LEVEL_SHIFTER > 0) or voltage_islands > 0 :
         spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 n_gate n_gate_n n_vdd n_gnd n_vdd n_vdd_h local_routing_wire_load\n")
+        spice_file.write("Xlut_a_driver_1 n_1_2 n_hang1 vsram vsram_n n_hang2 n_hang3 n_vdd_h n_gnd lut_a_driver\n\n")		
     else :
         spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 n_gate n_gate_n n_vdd n_gnd n_vdd local_routing_wire_load\n")    
-    spice_file.write("Xlut_a_driver_1 n_1_2 n_hang1 vsram vsram_n n_hang2 n_hang3 n_vdd n_gnd lut_a_driver\n\n")
+        spice_file.write("Xlut_a_driver_1 n_1_2 n_hang1 vsram vsram_n n_hang2 n_hang3 n_vdd n_gnd lut_a_driver\n\n")
     spice_file.write(".ENDS\n\n\n")
     
     spice_file.close()

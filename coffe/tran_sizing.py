@@ -1983,7 +1983,7 @@ def _find_initial_sizing_ranges(subcircuit_name, transistor_names, transistor_si
 			min = 1
 			incr = 1
 			sizing_ranges[name] = (min, max, incr)
-		elif "inv_nand" in name:
+		elif "inv_nand" in name: # _ibrahim
 			max = 1 
 			min = 1
 			incr = 1
@@ -2061,12 +2061,12 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 			continue
 		# The nand gates in the row decoder are best set to minimum size
 		# This also improves run-time greatly
-		if "inv_nand" in name:
-			max = 1
-			min = 1
-			incr = 1
-			sizing_ranges[name] = (min, max, incr)
-			continue
+		if "inv_nand" in name: # exploring the effects of sizing the nand gate in the LUT decoder _ibrahim
+			max = 1 #removed for nor exp
+			min = 1 #removed for nor exp
+			incr = 1 #removed for nor exp
+			sizing_ranges[name] = (min, max, incr) #removed for nor exp
+			continue #removed for nor exp
 		# Check if equal to upper bound
 		if size == sizing_ranges[name][1]:
 			print name + " is on upper bound"

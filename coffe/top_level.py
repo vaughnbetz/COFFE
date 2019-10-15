@@ -2,8 +2,13 @@ import os
 # to get no GB: GB_LUT and LEVEL_SHIFTER = 0, local_mux_supply = vdd, local_mux_meas = supply_v
 # to get GB with the pmos trick (not using lvl converter): GB_LUT and LEVEL_SHIFTER = 0, local_mux_supply = vsram, local_mux_meas = sram_v
 # to get GB with lvl shifter: GB_LUT and LEVEL_SHIFTER = 1, local_mux_supply = vsram, local_mux_meas = sram_v
-local_mux_supply = "vdd" #"vsram" # "vdd"
-local_mux_meas = "supply_v" #"sram_v" #"supply_v"
+
+# for having the LUT + LUT input drivers on a separate voltage island: GB_LUT and LEVEL_SHIFTER = 0, voltage_islands =1, local_mux_supply = vdd_log, local_mux_meas = supply_v_log
+# for having the only the LUT input drivers on a separate voltage island: GB_LUT and LEVEL_SHIFTER = 0, voltage_islands = 2, local_mux_supply = vdd_log, local_mux_meas = supply_v_log
+local_mux_supply = "vdd_log" #"vsram" # "vdd" "vdd_log"
+local_mux_meas = "supply_v_log" #"sram_v" #"supply_v" "supply_v_log"
+
+voltage_islands = 1
 
 GB_LUT = 0
 LEVEL_SHIFTER = 0 
@@ -154,7 +159,9 @@ def generate_connection_block_top(mux_name):
     #cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
         cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
-    else :
+    elif voltage_islands > 0:
+        cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd vdd_log local_routing_wire_load\n")
+    else:		
         cb_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
         
     cb_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 " + local_mux_driv_vdd + " gnd lut_a_driver\n\n")
@@ -202,6 +209,9 @@ def generate_local_mux_top(mux_name):
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :
         local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd supply_v \n\n")
         local_mux_file.write("V_LOCAL_MUX_h vdd_local_mux_h gnd "+local_mux_driv_vdd_meas+"\n\n")
+    elif voltage_islands > 0:
+        local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd supply_v \n\n")
+        local_mux_file.write("V_LOCAL_MUX_h vdd_local_mux_h gnd supply_v_log \n\n")	
     else :
         local_mux_file.write("V_LOCAL_MUX vdd_local_mux gnd "+local_mux_driv_vdd_meas+"\n\n")
 
@@ -213,6 +223,8 @@ def generate_local_mux_top(mux_name):
     #local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
         local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_out_inv) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
+    elif voltage_islands > 0:
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_out_inv) VAL='supply_v_log/2' FALL=1\n")
     else :
         local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")    
         
@@ -220,6 +232,8 @@ def generate_local_mux_top(mux_name):
    # local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :     
         local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_out_inv) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n")
+    elif voltage_islands > 0:
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_out_inv) VAL='supply_v_log/2' RISE=1\n")    
     else :
         local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
     
@@ -236,14 +250,31 @@ def generate_local_mux_top(mux_name):
         local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_inv_lvl_shifter_1_out) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
         local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_2_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
         local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_inv_lvl_shifter_1_out) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n")    
+    elif voltage_islands > 0:    
+        local_mux_file.write("* inv_lvl_shifter_1 delay\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_1_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v_log/2' FALL=1\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_1_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v_log/2' RISE=1\n")
+     
+        local_mux_file.write("* inv_lvl_shifter_2 delay\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_2_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_inv_lvl_shifter_1_out) VAL='supply_v_log/2' FALL=1\n")
+        local_mux_file.write(".MEASURE TRAN meas_inv_lvl_shifter_local_mux_2_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+        local_mux_file.write("+    TARG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.Xlocal_mux_sense_and_lvl_shifter.n_inv_lvl_shifter_1_out) VAL='supply_v_log/2' RISE=1\n")    
     
-    
-    
-    local_mux_file.write("* Total delays\n")
-    local_mux_file.write(".MEASURE TRAN meas_total_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
-    local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
-    local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
-    local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
+    if voltage_islands > 0 :
+        local_mux_file.write("* Total delays\n")
+        local_mux_file.write(".MEASURE TRAN meas_total_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v_log/2' FALL=1\n")
+        local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v_log/2' RISE=1\n\n")	
+    else:    
+        local_mux_file.write("* Total delays\n")
+        local_mux_file.write(".MEASURE TRAN meas_total_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' FALL=1\n")
+        local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+        local_mux_file.write("+    TARG V(n_1_4) VAL='"+local_mux_driv_vdd_meas+"/2' RISE=1\n\n")
 
     local_mux_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_1_1) AT=3n\n\n")
 
@@ -269,7 +300,27 @@ def generate_local_mux_top(mux_name):
         local_mux_file.write(".MEASURE TRAN meas_current_vddh INTEGRAL I(V_LOCAL_MUX_h) FROM=0ns TO=4ns\n")
         local_mux_file.write(".MEASURE TRAN meas_avg_2_power PARAM = '-(meas_current_vddh/4n)*sram_v'\n")
         local_mux_file.write(".MEASURE TRAN meas_avg_power PARAM = 'meas_avg_2_power + meas_avg_1_power'\n") 
-    else :
+    elif voltage_islands > 0 :
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_ON__state_1 FIND I(V_LOCAL_MUX) AT=3.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_OFF_state_1 FIND I(V_LOCAL_MUX) AT=1.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power_1 PARAM = '-(meas_leakage_current_ON__state_1)*supply_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power_1 PARAM = '-(meas_leakage_current_OFF_state_1)*supply_v'\n\n")
+
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_ON__state_2 FIND I(V_LOCAL_MUX_h) AT=3.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_leakage_current_OFF_state_2 FIND I(V_LOCAL_MUX_h) AT=1.97n\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power_2 PARAM = '-(meas_leakage_current_ON__state_2)*sram_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power_2 PARAM = '-(meas_leakage_current_OFF_state_2)*sram_v'\n")
+        local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = 'meas_ON_leakage_power_2 + meas_ON_leakage_power_1'\n")
+        local_mux_file.write(".MEASURE TRAN meas_OFF_leakage_power PARAM = 'meas_OFF_leakage_power_2 + meas_OFF_leakage_power_1'\n\n\n")
+    
+
+        local_mux_file.write(".MEASURE TRAN meas_current_vddl INTEGRAL I(V_LOCAL_MUX) FROM=0ns TO=4ns\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_1_power PARAM = '-(meas_current_vddl/4n)*supply_v'\n")
+
+        local_mux_file.write(".MEASURE TRAN meas_current_vddh INTEGRAL I(V_LOCAL_MUX_h) FROM=0ns TO=4ns\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_2_power PARAM = '-(meas_current_vddh/4n)*supply_v_log'\n")
+        local_mux_file.write(".MEASURE TRAN meas_avg_power PARAM = 'meas_avg_2_power + meas_avg_1_power'\n") 	
+    else :	
         local_mux_file.write(".MEASURE TRAN meas_leakage_current_ON_state FIND I(V_LOCAL_MUX) AT=3.97n\n")
         local_mux_file.write(".MEASURE TRAN meas_leakage_current_OFF_state FIND I(V_LOCAL_MUX) AT=1.97n\n")
         local_mux_file.write(".MEASURE TRAN meas_ON_leakage_power PARAM = '-(meas_leakage_current_ON_state)*"+local_mux_driv_vdd_meas+"'\n")
@@ -285,9 +336,15 @@ def generate_local_mux_top(mux_name):
     #local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n"
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 : 
         local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux vdd_local_mux_h local_routing_wire_load\n")
+    elif voltage_islands > 0:
+        local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux vdd_local_mux_h local_routing_wire_load\n")			
     else :
         local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n")
-    local_mux_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 "+local_mux_driv_vdd+" gnd lut_a_driver\n\n")
+		
+    if voltage_islands > 0:
+        local_mux_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 vdd_log gnd lut_a_driver\n\n")
+    else:	
+        local_mux_file.write("Xlut_a_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 "+local_mux_driv_vdd+" gnd lut_a_driver\n\n")
     local_mux_file.write(".END")
     local_mux_file.close()
 
@@ -4060,7 +4117,7 @@ def generate_RAM_local_mux_top_lp(mux_name):
 	
 	
 	
-def generate_lut6_top(lut_name, use_tgate, predecode):
+def generate_lut6_top(lut_name, use_tgate, predecode, decoder_design):
     """ Generate the top level lut with driver SPICE file. We use this to measure final delays of paths through the LUT. """
     # change the vdd that is hooked up top the local mux driver
     local_mux_driv_vdd = local_mux_supply
@@ -4072,6 +4129,15 @@ def generate_lut6_top(lut_name, use_tgate, predecode):
     # Change to directory    
     os.chdir(lut_name)  
     
+	
+    if voltage_islands > 0:
+        if voltage_islands > 1:
+            lut_supply = "supply_v"
+        else:			
+            lut_supply = "supply_v_log"
+    else:		
+        lut_supply = "supply_v"
+		
     spice_file = lut_name + ".sp"
     spice_file = open(spice_file, 'w')
     spice_file.write(".TITLE 6-LUT a la Ibrahim \n\n") 
@@ -4088,78 +4154,121 @@ def generate_lut6_top(lut_name, use_tgate, predecode):
     spice_file.write(".TRAN 1p 16n SWEEP DATA=sweep_data\n")
     spice_file.write(".OPTIONS BRIEF=1\n\n")
     spice_file.write("* Input signal\n")
-    spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 supply_v 4n 0 0 4n 8n)\n")
-    spice_file.write("VIN_GATE n_in_gate gnd PULSE (supply_v 0 3n 0 0 2n 4n)\n\n")
+    spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 " + lut_supply +" 4n 0 0 4n 8n)\n")
+    spice_file.write("VIN_GATE n_in_gate gnd PULSE (supply_v 0 3n 0 0 2n 4n)\n\n") 
     spice_file.write("* Power rail for the circuit under test.\n")
     spice_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
-    spice_file.write("V_LUT vdd_lut gnd supply_v\n\n")
+    spice_file.write("V_LUT vdd_lut gnd " + lut_supply +"\n\n")
 
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Measurement\n")
     spice_file.write("********************************************************************************\n\n")
     spice_file.write("* Total delays\n")
-    spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n")
-    spice_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
-    spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+	
+    if voltage_islands > 0:
+        spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n") 
+        spice_file.write("+    TARG V(n_out) VAL='supply_v_log/2' FALL=1\n")
+        spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n") 
+        spice_file.write("+    TARG V(n_out) VAL='supply_v_log/2' RISE=1\n\n")
+    else:	
+        spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n") 
+        spice_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
+        spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n") 
+        spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
 
     if predecode == "on":
-        spice_file.write("* inv decoder nand delay\n")
-        spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-        spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='supply_v/2' FALL=1\n")
-        spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_trise TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
-        spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='supply_v/2' RISE=1\n\n")	
-
-        spice_file.write("* inv decoder nand driver delay\n")
-        spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_tfall TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
-        spice_file.write("+    TARG V(Xlut.n_predecoded) VAL='supply_v/2' FALL=1\n")
-        spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-        spice_file.write("+    TARG V(Xlut.n_predecoded) VAL='supply_v/2' RISE=1\n\n")			
-		
+        if not use_tgate:	
+            spice_file.write("* inv decoder nand delay\n")
+            spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+            spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n") 
+            spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+            spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")	
+		    # edited removed for nor exp
+            spice_file.write("* inv decoder nand driver delay\n")
+            spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+            spice_file.write("+    TARG V(Xlut.n_predecoded) VAL='" + local_mux_driv_vdd_meas +"/2' FALL=1\n")
+            spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
+            spice_file.write("+    TARG V(Xlut.n_predecoded) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n\n")	
+        else:
+            spice_file.write("* inv decoder nand delay\n")
+            spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+            spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='supply_v/2' FALL=1\n") 
+            spice_file.write(".MEASURE TRAN meas_inv_nand_lut_predecode_1_trise TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
+            spice_file.write("+    TARG V(Xlut.Xpredecoder.n_1) VAL='supply_v/2' RISE=1\n\n")	
+		    # edited removed for nor exp
+            spice_file.write("* inv decoder nand driver delay\n")
+            spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_tfall TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
+            spice_file.write("+    TARG V(Xlut.n_predecoded) VAL='supply_v/2' FALL=1\n")
+            spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+            spice_file.write("+    TARG V(Xlut.n_predecoded) VAL='supply_v/2' RISE=1\n\n")	 
+            
+			
+            if (decoder_design == 1):			
+                spice_file.write("* inv decoder nand not driver delay 1st inverter\n")
+                spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+                spice_file.write("+    TARG V(Xlut.Xpredecoder.n_2_2) VAL='supply_v/2' RISE=1\n") 
+                spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_1_trise TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
+                spice_file.write("+    TARG V(Xlut.Xpredecoder.n_2_2) VAL='supply_v/2' FALL=1\n\n")	
+		        # edited removed for nor exp
+                spice_file.write("* inv decoder nand not driver delay 2nd inverter\n")
+                spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_2_tfall TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
+                spice_file.write("+    TARG V(Xlut.n_predecoded_n) VAL='supply_v/2' RISE=1\n")
+                spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_2_2_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+                spice_file.write("+    TARG V(Xlut.n_predecoded_n) VAL='supply_v/2' FALL=1\n\n")				
+            elif (decoder_design == 3):
+                spice_file.write("* inv decoder nand not driver delay 2nd inverter\n")
+                spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_3_tfall TRIG V(n_3_1) VAL='supply_v/2' FALL=1\n")
+                spice_file.write("+    TARG V(Xlut.n_predecoded_n) VAL='supply_v/2' RISE=1\n")
+                spice_file.write(".MEASURE TRAN meas_inv_lut_predecode_3_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
+                spice_file.write("+    TARG V(Xlut.n_predecoded_n) VAL='supply_v/2' FALL=1\n\n")			
 	
+	
+	
+
+		
     spice_file.write("* inv_lut_0sram_driver_1 delay\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_1_tfall TRIG V(n_in_sram) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(Xlut.n_1_1) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_1_trise TRIG V(n_in_sram) VAL='supply_v/2' FALL=1\n")
-    spice_file.write("+    TARG V(Xlut.n_1_1) VAL='supply_v/2' RISE=1\n\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_1_tfall TRIG V(n_in_sram) VAL='" + lut_supply +"/2' RISE=1\n")
+    spice_file.write("+    TARG V(Xlut.n_1_1) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_1_trise TRIG V(n_in_sram) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write("+    TARG V(Xlut.n_1_1) VAL='" + lut_supply +"/2' RISE=1\n\n")
 	
     spice_file.write("* inv_lut_sram_driver_2 delay\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_2_tfall TRIG V(n_in_sram) VAL='supply_v/2' FALL=1\n")
-    spice_file.write("+    TARG V(Xlut.n_2_1) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_2_trise TRIG V(n_in_sram) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(Xlut.n_2_1) VAL='supply_v/2' RISE=1\n\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_2_tfall TRIG V(n_in_sram) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write("+    TARG V(Xlut.n_2_1) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_0sram_driver_2_trise TRIG V(n_in_sram) VAL='" + lut_supply +"/2' RISE=1\n")
+    spice_file.write("+    TARG V(Xlut.n_2_1) VAL='" + lut_supply +"/2' RISE=1\n\n")
 	
-	
+
     spice_file.write("* Xinv_lut_int_buffer_1 delay\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(Xlut.n_6_1) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_1_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=2\n")
-    spice_file.write("+    TARG V(Xlut.n_6_1) VAL='supply_v/2' RISE=1\n\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_1_tfall TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=1\n")
+    spice_file.write("+    TARG V(Xlut.n_6_1) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_1_trise TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=2\n")
+    spice_file.write("+    TARG V(Xlut.n_6_1) VAL='" + lut_supply +"/2' RISE=1\n\n")
     
     spice_file.write("* Xinv_lut_int_buffer_2 delay\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=2\n")
-    spice_file.write("+    TARG V(Xlut.n_7_1) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(Xlut.n_7_1) VAL='supply_v/2' RISE=1\n\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_tfall TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=2\n")
+    spice_file.write("+    TARG V(Xlut.n_7_1) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_int_buffer_2_trise TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=1\n")
+    spice_file.write("+    TARG V(Xlut.n_7_1) VAL='" + lut_supply +"/2' RISE=1\n\n")
    
     spice_file.write("* Xinv_lut_out_buffer_1 delay\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(Xlut.n_11_1) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=2\n")
-    spice_file.write("+    TARG V(Xlut.n_11_1) VAL='supply_v/2' RISE=1\n\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_tfall TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=1\n")
+    spice_file.write("+    TARG V(Xlut.n_11_1) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_1_trise TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=2\n")
+    spice_file.write("+    TARG V(Xlut.n_11_1) VAL='" + lut_supply +"/2' RISE=1\n\n")
     
     spice_file.write("* Xinv_lut_out_buffer_2 delay\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_2_tfall TRIG V(n_3_1) VAL='supply_v/2' RISE=2\n")
-    spice_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_2_trise TRIG V(n_3_1) VAL='supply_v/2' RISE=1\n")
-    spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")	
+    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_2_tfall TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=2\n")
+    spice_file.write("+    TARG V(n_out) VAL='" + lut_supply +"/2' FALL=1\n")
+    spice_file.write(".MEASURE TRAN meas_inv_lut_out_buffer_2_trise TRIG V(n_3_1) VAL='" + lut_supply +"/2' RISE=1\n")
+    spice_file.write("+    TARG V(n_out) VAL='" + lut_supply +"/2' RISE=1\n\n")	
     
     spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 
     spice_file.write("* Measure the power required to propagate a rise and a fall transition through the lut at 250MHz.\n")
     spice_file.write(".MEASURE TRAN meas_current1 INTEGRAL I(V_LUT) FROM=5ns TO=7ns\n")
     spice_file.write(".MEASURE TRAN meas_current2 INTEGRAL I(V_LUT) FROM=9ns TO=11ns\n")
-    spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current1 + meas_current2)/4n)*supply_v'\n\n")
+    spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current1 + meas_current2)/4n)*" + lut_supply +"'\n\n")
 
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Circuit\n")
@@ -4168,6 +4277,8 @@ def generate_lut6_top(lut_name, use_tgate, predecode):
     #spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :    
         spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+    elif voltage_islands > 0 :
+        spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vdd_log local_routing_wire_load\n")	
     else :
         spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
         
@@ -4190,15 +4301,18 @@ def generate_lut6_top(lut_name, use_tgate, predecode):
     for letter in range(97,103):
         # if this is the driver connect it to n_3_1 else connect it to vdd
         if chr(letter) == lut_letter:
-            lut_input_nodes += "n_3_1 "
+            lut_input_nodes += "n_3_1 " 	
             # if tgate connect the complement input to n_1_4
             if use_tgate: lut_input_nodes += "n_1_4 "
         else:
+        #    if (chr(letter)=="b"): # edited added for nor ibrahim
+        #        lut_input_nodes += "gnd "
+        #    else:	
             lut_input_nodes += local_mux_driv_vdd + " "
             # if tgate connect the complement to gnd
             if use_tgate: lut_input_nodes += "gnd "
 
-    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut " +local_mux_driv_vdd+ " gnd lut\n")
     
     use_fluts = 0    
     if use_fluts:
@@ -4327,7 +4441,7 @@ def generate_lut6_top_design0(lut_name, use_tgate):
             # if tgate connect the complement to gnd
             if use_tgate: lut_input_nodes += "gnd "
 
-    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut vdd_lut gnd lut\n")
     
     use_fluts = 0    
     if use_fluts:
@@ -4463,7 +4577,7 @@ def generate_lut6_top_design1(lut_name, use_tgate):
             # if tgate connect the complement to gnd
             if use_tgate: lut_input_nodes += "gnd "
 
-    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut vdd_lut gnd lut\n")
     
     use_fluts = 0    
     if use_fluts:
@@ -4617,7 +4731,7 @@ def generate_lut6_top_design2(lut_name, use_tgate):
             # if tgate connect the complement to gnd
             if use_tgate: lut_input_nodes += "gnd "
 
-    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut vdd_lut gnd lut\n")
     
     use_fluts = 0    
     if use_fluts:
@@ -4713,10 +4827,10 @@ def generate_lut5_top(lut_name, use_tgate):
     lut_file.write("** Circuit\n")
     lut_file.write("********************************************************************************\n\n")
     if not use_tgate :
-        lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+        lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else :
-        lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     
     lut_file.write(".END")
@@ -4804,10 +4918,10 @@ def generate_lut4_top(lut_name, use_tgate):
     lut_file.write("** Circuit\n")
     lut_file.write("********************************************************************************\n\n")
     if not use_tgate :
-        lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
+        lut_file.write("Xlut n_in n_out vdd vdd vdd vdd vdd vdd vdd vdd gnd lut\n\n")
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else :
-        lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        lut_file.write("Xlut n_in n_out vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
 
     lut_file.write(".END")
@@ -4895,6 +5009,8 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
     
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :  
         input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+    elif voltage_islands > 0 :
+        input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vdd_log local_routing_wire_load\n")			
     else :
         input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
         
@@ -4903,8 +5019,13 @@ def generate_lut_driver_top(input_driver_name, input_driver_type):
         # Connect a load to n_rsel node
         input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
     input_driver_file.write("X" + input_driver_name + "_not_1 n_2_1 n_out_n "+local_mux_driv_vdd +" gnd " + input_driver_name + "_not\n")
-    input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n")
-    input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd gnd " + input_driver_name + "_load\n\n")
+	
+    if voltage_islands > 0:	
+        input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd_log gnd " + input_driver_name + "_load\n")
+        input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd_log gnd " + input_driver_name + "_load\n\n")
+    else:	
+        input_driver_file.write("X" + input_driver_name + "_load_1 n_out vdd gnd " + input_driver_name + "_load\n")
+        input_driver_file.write("X" + input_driver_name + "_load_2 n_out_n vdd gnd " + input_driver_name + "_load\n\n")
     input_driver_file.write(".END")
     input_driver_file.close()
 
@@ -4982,6 +5103,8 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
 
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :      
         input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram  local_routing_wire_load\n")
+    elif voltage_islands > 0 :
+        input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vdd_log local_routing_wire_load\n")		
     else :
         input_driver_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
     input_driver_file.write("X" + input_driver_name_no_not + "_1 n_1_2 n_out vsram vsram_n n_rsel n_2_1 "+local_mux_driv_vdd +" gnd " + input_driver_name_no_not + "\n")
@@ -4989,8 +5112,15 @@ def generate_lut_driver_not_top(input_driver_name, input_driver_type):
         # Connect a load to n_rsel node
         input_driver_file.write("Xff n_rsel n_ff_out vsram vsram_n gnd vdd gnd vdd gnd vdd vdd gnd ff\n")
     input_driver_file.write("X" + input_driver_name + "_1 n_2_1 n_out_n vdd_lut_driver gnd " + input_driver_name + "\n")
-    input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out n_vdd n_gnd " + input_driver_name_no_not + "_load\n")
-    input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n n_vdd n_gnd " + input_driver_name_no_not + "_load\n\n")
+	
+	
+    if voltage_islands > 0:	
+        input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out vdd_log gnd " + input_driver_name_no_not + "_load\n")
+        input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n vdd_log gnd " + input_driver_name_no_not + "_load\n\n")
+    else:	
+        input_driver_file.write("X" + input_driver_name_no_not + "_load_1 n_out vdd gnd " + input_driver_name_no_not + "_load\n")
+        input_driver_file.write("X" + input_driver_name_no_not + "_load_2 n_out_n vdd gnd " + input_driver_name_no_not + "_load\n\n")
+
     input_driver_file.write(".END")
     input_driver_file.close()
 
@@ -5015,6 +5145,21 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file = open(lut_driver_filename, 'w')
     spice_file.write(".TITLE " + input_driver_name + " \n\n") 
     
+#    if voltage_islands > 0:
+#        lut_supply = "supply_v_log"
+#    else:		
+#        lut_supply = "supply_v"	
+	
+    if voltage_islands > 0:
+        if voltage_islands > 1:
+            lut_supply = "supply_v"
+        else:			
+            lut_supply = "supply_v_log"
+    else:		
+        lut_supply = "supply_v"
+		
+    lut_letter_ib = input_driver_name.replace("_driver", "")
+    lut_letter_ib = lut_letter_ib.replace("lut_", "")
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Include libraries, parameters and other\n")
     spice_file.write("********************************************************************************\n\n")
@@ -5027,11 +5172,14 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write(".TRAN 1p 16n SWEEP DATA=sweep_data\n")
     spice_file.write(".OPTIONS BRIEF=1\n\n")
     spice_file.write("* Input signal\n")
-    spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 supply_v 4n 0 0 4n 8n)\n")
+    spice_file.write("VIN_SRAM n_in_sram gnd PULSE (0 " + lut_supply + " 4n 0 0 4n 8n)\n")
+#    if (lut_letter_ib == "a" or lut_letter_ib == "b"): ## edited added for nor exp should be removed
+#        spice_file.write("VIN_GATE n_in_gate gnd PULSE (0 supply_v 3n 0 0 2n 4n)\n\n")
+#    else:	
     spice_file.write("VIN_GATE n_in_gate gnd PULSE (supply_v 0 3n 0 0 2n 4n)\n\n")
     spice_file.write("* Power rail for the circuit under test.\n")
     spice_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
-    spice_file.write("V_LUT vdd_lut gnd supply_v\n\n")
+    spice_file.write("V_LUT vdd_lut gnd " + lut_supply + "\n\n")
 
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Measurement\n")
@@ -5039,22 +5187,22 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     spice_file.write("* Total delays\n")
 
     if not is_inverted:
-        spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n")
-        spice_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n")
-        spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
-        spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n\n")
+       spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n") 
+       spice_file.write("+    TARG V(n_out) VAL='" + lut_supply + "/2' FALL=1\n")
+       spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n") 
+       spice_file.write("+    TARG V(n_out) VAL='" + lut_supply + "/2' RISE=1\n\n")		
     else:
         spice_file.write(".MEASURE TRAN meas_total_trise TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=2\n")
-        spice_file.write("+    TARG V(n_out) VAL='supply_v/2' RISE=1\n")
+        spice_file.write("+    TARG V(n_out) VAL='" + lut_supply + "/2' RISE=1\n")
         spice_file.write(".MEASURE TRAN meas_total_tfall TRIG V(n_3_1) VAL='" + local_mux_driv_vdd_meas +"/2' RISE=1\n")
-        spice_file.write("+    TARG V(n_out) VAL='supply_v/2' FALL=1\n\n")
+        spice_file.write("+    TARG V(n_out) VAL='" + lut_supply + "/2' FALL=1\n\n")
 
     spice_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_out) AT=3n\n\n")
 
     spice_file.write("* Measure the power required to propagate a rise and a fall transition through the lut at 250MHz.\n")
     spice_file.write(".MEASURE TRAN meas_current1 INTEGRAL I(V_LUT) FROM=5ns TO=7ns\n")
     spice_file.write(".MEASURE TRAN meas_current2 INTEGRAL I(V_LUT) FROM=9ns TO=11ns\n")
-    spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current1 + meas_current2)/4n)*supply_v'\n\n")
+    spice_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current1 + meas_current2)/4n)*" + lut_supply + "'\n\n")
 
     spice_file.write("********************************************************************************\n")
     spice_file.write("** Circuit\n")
@@ -5063,6 +5211,8 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
     #spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
     if GB_LUT > 0 and LEVEL_SHIFTER > 0 :    
         spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vsram local_routing_wire_load\n")
+    elif voltage_islands > 0 :
+        spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd vdd vdd_log local_routing_wire_load\n")		
     else :
         spice_file.write("Xlocal_routing_wire_load_1 n_1_1 n_1_2 vsram vsram_n vdd gnd " + local_mux_driv_vdd + " local_routing_wire_load\n")
         
@@ -5092,8 +5242,9 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             # if tgate connect the complement to gnd
             if use_tgate: lut_input_nodes += "gnd "
 
-    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut gnd lut\n")
-    
+    #spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut vdd_lut gnd lut\n")
+	# the local_mux_driv_vdd node below, is only used for decoded LUTs
+    spice_file.write("Xlut n_in_sram n_out " + lut_input_nodes + "vdd_lut " +local_mux_driv_vdd+ " gnd lut\n")    
     if use_fluts:
         spice_file.write("Xwireflut n_out n_out2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
         spice_file.write("Xthemux n_out2 n_out3 vdd gnd vdd gnd flut_mux\n") 
@@ -5118,6 +5269,21 @@ def generate_local_ble_output_top(name, use_tgate):
         os.makedirs(name)  
     # Change to directory    
     os.chdir(name)   
+	
+	
+#    if voltage_islands > 0:
+#        lut_voltage = "vdd_log"
+#    else:		
+#        lut_voltage = "vdd"		
+		
+		
+    if voltage_islands > 0:
+        if voltage_islands > 1:
+            lut_voltage = "vdd"
+        else:			
+            lut_voltage = "vdd_log"
+    else:		
+        lut_voltage = "vdd"		
     
     local_ble_output_filename = name + ".sp"
     top_file = open(local_ble_output_filename, 'w')
@@ -5172,12 +5338,13 @@ def generate_local_ble_output_top(name, use_tgate):
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" " +"vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  " + lut_voltage + " " +local_mux_driv_vdd+" gnd lut\n\n")
+        #top_file.write("Xlut n_in n_1_1  gnd gnd "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" " +"vdd gnd lut\n\n")# for nor exp	        
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
     else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd_local_output vdd lut_output_load\n\n")
-    if GB_LUT > 0 and LEVEL_SHIFTER > 0 : 
+    if (GB_LUT > 0 and LEVEL_SHIFTER > 0) or voltage_islands > 0 : 
         top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n vdd vsram gnd local_ble_output_load\n")
     else :
         top_file.write("Xlocal_ble_output_load n_local_out vsram vsram_n "+local_mux_driv_vdd+" vsram gnd local_ble_output_load\n")    
@@ -5200,7 +5367,21 @@ def generate_general_ble_output_top(name, use_tgate):
         os.makedirs(name)  
     # Change to directory    
     os.chdir(name)  
+	
+#    if voltage_islands > 0:
+#        lut_voltage = "vdd_log"
+#    else:		
+#        lut_voltage = "vdd"			
     
+	
+    if voltage_islands > 0:
+        if voltage_islands > 1:
+            lut_voltage = "vdd"
+        else:			
+            lut_voltage = "vdd_log"
+    else:		
+        lut_voltage = "vdd"	
+		
     general_ble_output_filename = name + ".sp"
     top_file = open(general_ble_output_filename, 'w')
     top_file.write(".TITLE General BLE output\n\n") 
@@ -5254,10 +5435,12 @@ def generate_general_ble_output_top(name, use_tgate):
     top_file.write("** Circuit\n")
     top_file.write("********************************************************************************\n\n")
     if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" " +"vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  " + lut_voltage + " " +local_mux_driv_vdd+" gnd lut\n\n")
+    #    top_file.write("Xlut n_in n_1_1 "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" vdd " + local_mux_driv_vdd +" gnd lut\n\n")
+    #    top_file.write("Xlut n_in n_1_1  gnd gnd "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+"  "+local_mux_driv_vdd+" " +"vdd gnd lut\n\n")# for nor exp	
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
     else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
         top_file.write("Xlut_output_load n_1_1 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd_general_output lut_output_load\n\n")
 
     top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
@@ -5336,7 +5519,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
     top_file.write("********************************************************************************\n\n")
     # lut, wire from lut to the mux, the mux, and the load same output load as before
     if not use_tgate :
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
+        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
         top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n")  
         top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")       
         if enable_carry_chain == 1:
@@ -5345,7 +5528,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain):
         else:
             top_file.write("Xlut_output_load n_1_3 n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
     else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
         top_file.write("Xwireflut n_1_1 n_1_2 wire Rw=wire_lut_to_flut_mux_res Cw=wire_lut_to_flut_mux_cap\n") 
         top_file.write("Xthemux n_1_2 n_1_3 vdd gnd vdd_f gnd flut_mux\n")  
         if enable_carry_chain == 1:
@@ -5975,9 +6158,9 @@ def generate_carrychainand_top(name, use_tgate, nand1_size, nand2_size):
 
     # Generate Cin as part of wave-shaping circuitry:
     if not use_tgate:
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
+        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
     else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
     
     top_file.write("Xcarrychain n_1_1 vdd gnd n_hang n_sum_out n_1_2 vdd gnd FA_carry_chain\n")
     # Generate the unit under test:
@@ -6057,9 +6240,9 @@ def generate_skip_mux_top(name, use_tgate):
 
     # Generate Cin as part of wave-shaping circuitry:
     if not use_tgate:
-        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
+        top_file.write("Xlut n_in n_1_1 vdd vdd vdd vdd vdd vdd vdd vdd gnd lut\n")
     else :
-        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd lut\n\n")
+        top_file.write("Xlut n_in n_1_1 vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd gnd vdd vdd gnd lut\n\n")
     
     top_file.write("Xcarrychain n_1_1 vdd gnd n_hang n_sum_out n_1_2 vdd gnd FA_carry_chain\n")
     

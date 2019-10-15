@@ -123,6 +123,21 @@ def nand2_generate(filename, use_finfet):
 		spice_file.write("MPUP2 n_out n_in2 n_vdd n_vdd pmos L=gate_length W=Wp ")
 		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
 		spice_file.write(".ENDS\n\n\n")
+		
+		
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write("* nor2 decoder\n")
+		spice_file.write("******************************************************************************************\n")
+		spice_file.write(".SUBCKT nor2_decode n_in1 n_in2 n_out n_vdd n_gnd Wn=45n Wp=45n\n") 
+		spice_file.write("MNDOWN2 n_out n_in1 n_gnd n_gnd nmos L=gate_length W=Wn ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MNDOWN1 n_out n_in2 n_gnd n_gnd nmos L=gate_length W=Wn ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MPUP1 n_out n_in1 n_z n_vdd pmos L=gate_length W=Wp ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write("MPUP2 n_z n_in2 n_vdd n_vdd pmos L=gate_length W=Wp ")
+		spice_file.write("AS=Wn*trans_diffusion_length AD=Wn*trans_diffusion_length PS=Wn+2*trans_diffusion_length PD=Wn+2*trans_diffusion_length\n")
+		spice_file.write(".ENDS\n\n\n")		
 	else :
 		spice_file.write("******************************************************************************************\n")
 		spice_file.write("* nand2\n")
