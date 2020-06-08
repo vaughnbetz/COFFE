@@ -78,7 +78,7 @@ def hardblock_flow(flow_settings):
 			if flow_settings['read_saif_file']:
 				file.write("read_saif saif.saif \n")
 			else:
-				file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [all_nets] \n")
+				file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [get_nets] \n")
 
 			file.write("ungroup -all -flatten \n")
 			file.write("report_power > "+os.path.expanduser(flow_settings['synth_folder'])+"power.rpt\n")
@@ -144,7 +144,7 @@ def hardblock_flow(flow_settings):
 				file = open(os.path.expanduser(flow_settings['synth_folder'])+"power.rpt" ,"r")
 				for line in file:
 					if 'Total Dynamic Power' in line:
-						total_dynamic_power = re.findall(r'  \d+\.{0,1}\d*', line)
+						total_dynamic_power = re.findall(r'\d+\.\d*', line)
 						total_dynamic_power[0] = float(total_dynamic_power[0])
 						if 'mW' in line:
 							total_dynamic_power[0] *= 0.001
@@ -179,33 +179,33 @@ def hardblock_flow(flow_settings):
 					file.write("set rda_Input(ui_timingcon_file) "+os.path.expanduser(flow_settings['synth_folder'])+"synthesized.sdc"+"\n")
 					file.write("set rda_Input(ui_topcell) "+flow_settings['top_level']+"\n\n")
 
-					file.write("set rda_Input(ui_gndnet) {VSS} \n")
-					file.write("set rda_Input(ui_pwrnet) {VDD} \n")
-					file.write("set rda_Input(ui_pg_connections) [list {PIN:VSS:} {TIEL::} {NET:VSS:} {NET:VDD:} {TIEH::} {PIN:VDD:} ] \n")
+					file.write("set rda_Input(ui_gndnet) {gnd!} \n")
+					file.write("set rda_Input(ui_pwrnet) {vdd!} \n")
+					file.write("set rda_Input(ui_pg_connections) [list {PIN:gnd!:} {NET:gnd!:} {NET:vdd!:} {PIN:vdd!:} ] \n")
 
-					file.write("set rda_Input(PIN:VSS:) {VSS} \n")
-					file.write("set rda_Input(TIEL::) {VSS} \n")
-					file.write("set rda_Input(NET:VSS:) {VSS} \n")
-					file.write("set rda_Input(PIN:VDD:) {VDD} \n")
-					file.write("set rda_Input(TIEH::) {VDD} \n")
-					file.write("set rda_Input(NET:VDD:) {VDD} \n\n")
+					file.write("set rda_Input(PIN:gnd!:) {gnd!} \n")
+					file.write("set rda_Input(TIEL::) {gnd!} \n")
+					file.write("set rda_Input(NET:gnd!:) {gnd!} \n")
+					file.write("set rda_Input(PIN:vdd!:) {vdd!} \n")
+					file.write("set rda_Input(TIEH::) {vdd!} \n")
+					file.write("set rda_Input(NET:vdd!:) {vdd!} \n\n")
 
-					file.write("set rda_Input(ui_inv_footprint) {INVD0}\n")
-					file.write("set rda_Input(ui_buf_footprint) {BUFFD1}\n")
-					file.write("set rda_Input(ui_delay_footprint) {DEL0}\n")
+					#file.write("set rda_Input(ui_inv_footprint) {INVD0}\n")
+					#file.write("set rda_Input(ui_buf_footprint) {BUFFD1}\n")
+					#file.write("set rda_Input(ui_delay_footprint) {DEL0}\n")
 
 					file.close()
 
 					# generate the EDI (encounter) script
 					file = open("edi.tcl", "w")
 					file.write("loadConfig edi.conf \n")
-					file.write("floorPlan -site core -r "+str(flow_settings['height_to_width_ratio'])+" "+str(core_utilization)+" "+ str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core'])+ " ")
+					file.write("floorPlan -site Core -r "+str(flow_settings['height_to_width_ratio'])+" "+str(core_utilization)+" "+ str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core'])+ " ")
 					file.write(str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core']) + "\n")
 					file.write("setMaxRouteLayer "+str(metal_layer)+ " \n")
 					file.write("fit \n")
 					file.write("addRing -spacing_bottom "+str(flow_settings['power_ring_spacing'])+" -spacing_right "+str(flow_settings['power_ring_spacing'])+" -spacing_top "+str(flow_settings['power_ring_spacing'])+" -spacing_left "+str(flow_settings['power_ring_spacing'])+" ")
 					file.write("-width_right "+str(flow_settings['power_ring_width'])+" -width_left "+str(flow_settings['power_ring_width'])+" -width_bottom "+str(flow_settings['power_ring_width'])+" -width_top "+str(flow_settings['power_ring_width'])+" ")
-					file.write("-layer_bottom M1 -center 1 -stacked_via_top_layer AP -around core -layer_top M1  -layer_right M2 -layer_left M2 -nets { VSS VDD } -stacked_via_bottom_layer M1 \n")
+					file.write("-layer_bottom ME1 -center 1 -stacked_via_top_layer ME8 -around core -layer_top ME1  -layer_right ME2 -layer_left ME2 -nets { gnd! vdd! } -stacked_via_bottom_layer ME1 \n")
 
 					file.write("setPlaceMode -fp false -maxRouteLayer "+str(metal_layer)+ "\n")
 					file.write("placeDesign -inPlaceOpt -noPrePlaceOpt \n")
@@ -219,19 +219,19 @@ def hardblock_flow(flow_settings):
 					file.write("optDesign -preCTS \n")
 					# I won't do a CTS anyway as the blocks are small.
 
-					file.write("addFiller -cell {FILL1 FILL16 FILL1_LL FILL2 FILL32 FILL64 FILL8 FILL_NW_FA_LL FILL_NW_HH FILL_NW_LL} -prefix FILL -merge true \n")	
+					file.write("addFiller -cell {FILL1 FILL2 FILL3 FILL4} -prefix FILL -merge true \n")	
 					
 					file.write("clearGlobalNets \n")
-					file.write("globalNetConnect VSS -type pgpin -pin VSS -inst {} \n")
-					file.write("globalNetConnect VDD -type pgpin -pin VDD -inst {} \n")
-					file.write("globalNetConnect VSS -type net -net VSS \n")
-					file.write("globalNetConnect VDD -type net -net VDD \n")
-					file.write("globalNetConnect VDD -type pgpin -pin VDD -inst * \n")
-					file.write("globalNetConnect VSS -type pgpin -pin VSS -inst * \n")
-					file.write("globalNetConnect VDD -type tiehi -inst * \n")
-					file.write("globalNetConnect VSS -type tielo -inst * \n")
+					file.write("globalNetConnect gnd! -type pgpin -pin gnd! -inst {} \n")
+					file.write("globalNetConnect vdd! -type pgpin -pin vdd! -inst {} \n")
+					file.write("globalNetConnect gnd! -type net -net gnd! \n")
+					file.write("globalNetConnect vdd! -type net -net vdd! \n")
+					file.write("globalNetConnect vdd! -type pgpin -pin vdd! -inst * \n")
+					file.write("globalNetConnect gnd! -type pgpin -pin gnd! -inst * \n")
+					file.write("globalNetConnect vdd! -type tiehi -inst * \n")
+					file.write("globalNetConnect gnd! -type tielo -inst * \n")
 
-					file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe } -layerChangeRange { M1 AP } -blockPinTarget { nearestRingStripe nearestTarget } -padPinPortConnect { allPort oneGeom } -checkAlignedSecondaryPin 1 -blockPin useLef -allowJogging 1 -crossoverViaBottomLayer M1 -allowLayerChange 1 -targetViaTopLayer AP -crossoverViaTopLayer AP -targetViaBottomLayer M1 -nets { VSS VDD } \n")
+					file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe } -layerChangeRange { ME1 ME8 } -blockPinTarget { nearestRingStripe nearestTarget } -padPinPortConnect { allPort oneGeom } -checkAlignedSecondaryPin 1 -blockPin useLef -allowJogging 1 -crossoverViaBottomLayer ME1 -allowLayerChange 1 -targetViaTopLayer ME8 -crossoverViaTopLayer ME8 -targetViaBottomLayer ME1 -nets { gnd! vdd! } \n")
 
 
 
@@ -260,11 +260,11 @@ def hardblock_flow(flow_settings):
 					file.close()
 
 					# Run the scrip in EDI
-					subprocess.call('encounter -init edi.tcl', shell=True) 
+					subprocess.call('encounter -nowin -init edi.tcl', shell=True) 
 					# clean after EDI!
-					subprocess.call('rm -rf edi.tcl', shell=True)
-					subprocess.call('rm -rf edi.conf', shell=True)
-					subprocess.call('mv encounter.log '+os.path.expanduser(flow_settings['pr_folder'])+'/logfile.log', shell=True)
+					#subprocess.call('rm -rf edi.tcl', shell=True)
+					#subprocess.call('rm -rf edi.conf', shell=True)
+					subprocess.call('mv encounter.log '+os.path.expanduser(flow_settings['pr_folder'])+'/encounter_log.log', shell=True)
 					subprocess.call('mv encounter.cmd '+os.path.expanduser(flow_settings['pr_folder'])+'/encounter.cmd', shell=True)
 
 					# read total area from the report file:
@@ -280,33 +280,33 @@ def hardblock_flow(flow_settings):
 						mode_enabled = False
 					the_power = 0.0
 
-					# Optional: use modelsim to generate an activity file for the design:
+					### Optional: use modelsim to generate an activity file for the design:
 
-					# Create a modelsim folder
-					#subprocess.call("mkdir "+os.path.expanduser("./modelsim_dir")+"\n", shell=True)
-					# Create a modelsim .do file:
-					#subprocess.call("vlib modelsim_dir/libraries"+"\n",shell=True)
-					# todo: change the address and take it from the user as input
-					#subprocess.call("vlog -work modelsim_dir/libraries /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/verilog/tcbn65gplus_140b/tcbn65gplus.v /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/verilog/tpzn65gpgv2_140c/tpzn65gpgv2.v"+"\n",shell=True)
+					### Create a modelsim folder
+					###subprocess.call("mkdir "+os.path.expanduser("./modelsim_dir")+"\n", shell=True)
+					### Create a modelsim .do file:
+					###subprocess.call("vlib modelsim_dir/libraries"+"\n",shell=True)
+					### todo: change the address and take it from the user as input
+					###subprocess.call("vlog -work modelsim_dir/libraries /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/verilog/tcbn65gplus_140b/tcbn65gplus.v /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/verilog/tpzn65gpgv2_140c/tpzn65gpgv2.v"+"\n",shell=True)
 					
 					
-					file = open("modelsim.do", "w")
-					file.write("cd "+os.path.expanduser("./modelsim_dir")+"\n")
-					file.write("vlib work \n")
-					file.write("vlog -work work ../../test/testbench.v \n")
-					file.write("vlog -work work ../../pr/netlist.v \n")
-					file.write("vsim -L work -L libraries testbench\n")
-					file.write("vcd file vcd.vcd \n")
-					file.write("vcd add -r testbench/uut/* \n")
-					file.write("run 1000 ns \n")
-					file.write("quit \n")
-					file.close()			
+					##file = open("modelsim.do", "w")
+					##file.write("cd "+os.path.expanduser("./modelsim_dir")+"\n")
+					##file.write("vlib work \n")
+					##file.write("vlog -work work ../../test/testbench.v \n")
+					##file.write("vlog -work work ../../pr/netlist.v \n")
+					##file.write("vsim -L work -L libraries testbench\n")
+					##file.write("vcd file vcd.vcd \n")
+					##file.write("vcd add -r testbench/uut/* \n")
+					##file.write("run 1000 ns \n")
+					##file.write("quit \n")
+					##file.close()			
 
-					subprocess.call('vsim -c -do modelsim.do', shell=True) 					
-					subprocess.call('rm -rf modelsim.do', shell=True)
-					subprocess.call('vcd2wlf ./modelsim_dir/vcd.vcd out.wlf', shell=True)
-					subprocess.call('wlf2vcd -o test.vcd out.wlf', shell=True)
-					subprocess.call('vcd2saif -input test.vcd -o saif.saif', shell=True)
+					##subprocess.call('vsim -c -do modelsim.do', shell=True) 					
+					##subprocess.call('rm -rf modelsim.do', shell=True)
+					##subprocess.call('vcd2wlf ./modelsim_dir/vcd.vcd out.wlf', shell=True)
+					##subprocess.call('wlf2vcd -o test.vcd out.wlf', shell=True)
+					##subprocess.call('vcd2saif -input test.vcd -o saif.saif', shell=True)
 					
 
 					for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
@@ -315,11 +315,11 @@ def hardblock_flow(flow_settings):
 						# backannotate into primetime
 						# This part should be reported for all the modes in the design.
 						subprocess.call("mkdir "+os.path.expanduser(flow_settings['primetime_folder'])+"\n", shell=True)
-						file = open("primetime.tcl", "w")
+						file = open("primetime1.tcl", "w")
 						file.write("set sh_enable_page_mode true \n")
 
 						file.write("set search_path "+flow_settings['primetime_lib_path']+" \n")
-						file.write("set link_path " +r'"* tcbn65gpluswc.db tpzn65gpgv2wc.db"'+" \n")
+						file.write("set link_path " +r'"* ceid_vlsiLab_umc65ll_stdCells.db"'+" \n") 
 
 						file.write("read_verilog "+os.path.expanduser(flow_settings['pr_folder'])+"netlist.v \n")
 						if mode_enabled and x <2**len(flow_settings['mode_signal']):
@@ -334,10 +334,10 @@ def hardblock_flow(flow_settings):
 						file.close()
 
 						# run prime time
-						subprocess.call('dc_shell-t -f primetime.tcl', shell=True) 
+						subprocess.call('dc_shell-t -f primetime1.tcl', shell=True) 
 
 						# clean after prime time
-						subprocess.call('rm -rf primetime.tcl', shell=True)
+						#subprocess.call('rm -rf primetime.tcl', shell=True)
 
 						# Read timing parameters
 						file = open(os.path.expanduser(flow_settings['primetime_folder'])+"timing.rpt" ,"r")
@@ -352,11 +352,11 @@ def hardblock_flow(flow_settings):
 							total_delay =  float(data_arrival_time[0])
 						file.close()
 						# Create a script to measure power:
-						file = open("primetime.tcl", "w")
+						file = open("primetime2.tcl", "w")
 						file.write("set sh_enable_page_mode true \n")
 
 						file.write("set search_path "+flow_settings['primetime_lib_path']+" \n")
-						file.write("set link_path " +r'"* tcbn65gpluswc.db tpzn65gpgv2wc.db"'+" \n") 
+						file.write("set link_path " +r'"* ceid_vlsiLab_umc65ll_stdCells.db"'+" \n") 
 
 						file.write("read_verilog "+os.path.expanduser(flow_settings['pr_folder'])+"netlist.v \n")
 						file.write("link \n")
@@ -367,11 +367,11 @@ def hardblock_flow(flow_settings):
 								file.write("set_case_analysis "+str((x >> y) & 1)+" "+ flow_settings['mode_signal'][y]+ " \n")
 						file.write("set power_enable_analysis TRUE \n")
 						file.write(r'set power_analysis_mode "averaged"'+"\n")
-						#if flow_settings['read_saif_file']:
-						#	file.write("read_saif saif.saif \n")
-						#else:
-						#	file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [all_nets] \n")
-						file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
+						if flow_settings['read_saif_file']:
+							file.write("read_saif saif.saif \n")
+						else:
+							file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [get_nets] \n")
+						#file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
 						#file.write("read_vcd -input ./modelsim_dir/vcd.vcd \n")
 						file.write(r'read_parasitics -increment '+os.path.expanduser(flow_settings['pr_folder'])+r'spef.spef'+"\n")
 						#file.write("update_power \n")
@@ -380,10 +380,10 @@ def hardblock_flow(flow_settings):
 						file.close()
 
 						# run prime time
-						subprocess.call('dc_shell-t -f primetime.tcl', shell=True) 
+						subprocess.call('dc_shell-t -f primetime2.tcl', shell=True) 
 
 						# clean after prime time
-						subprocess.call('rm -rf primetime.tcl', shell=True)
+						#subprocess.call('rm -rf primetime2.tcl', shell=True)
 
 
 						# Read dynamic power
