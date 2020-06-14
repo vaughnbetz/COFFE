@@ -4,7 +4,7 @@
 ########## General Design Settings ##########
 #############################################
 # The folder in which all the design files are located:
-design_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/input_files/myexp/dsp_slice_hdl
+design_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/input_files/simple_dsp_slice_65nm/dsp_slice_hdl
 
 # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
 design_language=verilog
@@ -20,14 +20,14 @@ area_cost_exp=1.0
 clock_pin_name=clk
 
 # Desired clock period in ns
-clock_period=2.0
+clock_period=3.0
 
 # Name of the top-level entity in the design
 #top_level=ASU_conv
 top_level=dsp_slice
 
 # The name of the folder in which post-synthesis files and synthesis reports are to be stored
-synth_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/myexp/dsp_slice_synth
+synth_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_synth
 
 # Do you want to be informed of warnings during synthesis?
 
@@ -45,16 +45,17 @@ read_saif_file=False
 static_probability=0.5
 toggle_rate=25
 
+generate_activity_file=False
 
 # Location of the library files.
 # if you have more than one library, please provide them similiar to the example below.
 
-#link_libraries="/usr/local/packages/cadence_2007/FreePDK45/osu_soc/lib/files/gscl45nm.db dw_foundation.sldb"
-#link_libraries="/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db dw_foundation.sldb"
+#link_libraries=/usr/local/packages/cadence_2007/FreePDK45/osu_soc/lib/files/gscl45nm.db dw_foundation.sldb
+#link_libraries=/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db dw_foundation.sldb
 link_libraries="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.db dw_foundation.sldb"
 
-#target_libraries="/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db"
-target_libraries="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.db"
+#target_libraries=/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db
+target_libraries=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.db
 
 ##############################################
 ########## Place and Route Settings ##########
@@ -62,29 +63,45 @@ target_libraries="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_v
 
 # Libraries required in EDI:
 
-metal_layers=8
+#this can be a list of numbers
+metal_layers=4
+#names of metal layers starting from the bottom-most layer on the left
+metal_layer_names=["ME1", "ME2", "ME3", "ME4"]
 wire_selection=DEFAULT
 #wire_selection=WireAreaLowkCon
 #wire_selection=WireAreaLowkAgr
 #wire_selection=WireAreaForZero
 
+gnd_net=gnd!
+gnd_pin=gnd!
+pwr_net=vdd!
+pwr_pin=vdd!
+
+#get these values from the lib file
+inv_footprint=INVX
+buf_footprint=BUFX
+delay_footprint=INVX
+
+filler_cell_names=["FILL1", "FILL2", "FILL3", "FILL4"]
 
 
-core_utilization=0.85
+
+#this can be a list of values
+core_utilization=0.70
 
 lef_files="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/lef/ceid_vlsiLab_umc65ll_header.lef /home/projects/ljohn/aarora1/ceid/ceid_umc65ll/lef/ceid_vlsiLab_umc65ll_allStdCells.lef"
 
 
-best_case_libs="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib"
+best_case_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
 
-standard_libs="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib"
+standard_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
 
-worst_case_libs="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib"
+worst_case_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
 
 
 
 # EDI settings:
-power_ring_width=2
+power_ring_width=3
 power_ring_spacing=1
 height_to_width_ratio=4.0
 
@@ -92,7 +109,7 @@ space_around_core=10
 
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
-pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/myexp/dsp_slice_pnr
+pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pnr
 
 
 ##############################################
@@ -102,10 +119,10 @@ pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/myexp/dsp_slice
 #mode_signal=mode_0
 #mode_signal=mode_1
 
-primetime_lib_path="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys"
+primetime_lib_path=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys
+primetime_lib_name=ceid_vlsiLab_umc65ll_stdCells.db
 
-
-primetime_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/myexp/dsp_slice_pt
+primetime_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pt
 
 # COFFE parameters:
 name=hard_block

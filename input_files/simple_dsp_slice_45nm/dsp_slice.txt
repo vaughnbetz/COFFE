@@ -1,0 +1,137 @@
+#This is a sample settings file for the hard block flow
+
+#############################################
+########## General Design Settings ##########
+#############################################
+# The folder in which all the design files are located:
+design_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/input_files/simple_dsp_slice_45nm/dsp_slice_hdl
+
+# The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+design_language=verilog
+
+delay_cost_exp=1.0
+area_cost_exp=1.0
+
+########################################
+########## Synthesis Settings ##########
+########################################
+
+# Name of the clock pin in the design
+clock_pin_name=clk
+
+# Desired clock period in ns
+clock_period=3.0
+
+# Name of the top-level entity in the design
+#top_level=ASU_conv
+top_level=dsp_slice
+
+# The name of the folder in which post-synthesis files and synthesis reports are to be stored
+synth_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_synth
+
+# Do you want to be informed of warnings during synthesis?
+
+show_warnings=True
+
+# Should the flow terminate after synthesis?
+# A value of "False" will continue into placement and routing
+synthesis_only=False
+
+# Do you want to provide a saif file for power analysis?
+# In case of setting this to "True" a saif.saif file should be provided
+read_saif_file=False
+
+# If you don't want to provide a saif file, specify the switching activity parameters below:
+static_probability=0.5
+toggle_rate=25
+
+generate_activity_file=False
+
+# Location of the library files.
+# if you have more than one library, please provide them similiar to the example below.
+
+link_libraries="/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/timing/fast_vdd1v0_basicCells.modif.db dw_foundation.sldb"
+
+target_libraries=/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/timing/fast_vdd1v0_basicCells.modif.db
+
+##############################################
+########## Place and Route Settings ##########
+##############################################
+
+# Libraries required in EDI:
+
+#this can be a list of numbers
+metal_layers=4
+#names of metal layers starting from the bottom-most layer on the left 
+metal_layer_names=["Metal1", "Metal2", "Metal3", "Metal4"]
+wire_selection=None
+#wire_selection=WireAreaLowkCon
+#wire_selection=WireAreaLowkAgr
+#wire_selection=WireAreaForZero
+
+gnd_net=VSS
+gnd_pin=VSS
+pwr_net=VDD
+pwr_pin=VDD
+
+#get these values from the lib file
+inv_footprint=None
+buf_footprint=None
+delay_footprint=None
+
+filler_cell_names=["FILL1", "FILL16", "FILL2", "FILL32", "FILL4", "FILL64", "FILL8"]
+core_site_name=CoreSite
+
+
+#this can be a list of values
+core_utilization=0.70
+
+lef_files="/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/lef/gsclib045_tech.lef /home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/lef/gsclib045_macro.lef"
+
+
+best_case_libs=/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/timing/fast_vdd1v0_basicCells.lib
+
+standard_libs=/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/timing/fast_vdd1v0_basicCells.lib
+
+worst_case_libs=/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/timing/fast_vdd1v0_basicCells.lib
+
+
+
+# EDI settings:
+power_ring_width=3
+power_ring_spacing=1
+height_to_width_ratio=4.0
+
+space_around_core=10
+
+
+# The folder in which place and route reports and post-routing netlists and spef files will be stored
+pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_pnr
+
+
+##############################################
+########## Prime Time Settings ###############
+##############################################
+
+#mode_signal=mode_0
+#mode_signal=mode_1
+
+primetime_lib_path=/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/lan/flow/t1u1/reference_libs/GPDK045/gsclib045_all_v4.4/gsclib045/timing/
+primetime_lib_name=fast_vdd1v0_basicCells.modif.db
+
+primetime_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_pt
+
+# COFFE parameters:
+name=hard_block
+num_gen_inputs=22
+crossbar_population=0.5
+height=4
+num_gen_outputs=9
+num_dedicated_outputs=0
+soft_logic_per_block=0.1
+area_scale_factor=0.12
+freq_scale_factor=1.35
+power_scale_factor=0.3
+input_usage=0.8
+num_crossbars=1
+crossbar_modelling=optimistic

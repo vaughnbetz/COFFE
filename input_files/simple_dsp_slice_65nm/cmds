@@ -1,5 +1,5 @@
 module load syn/syn/2015
 module load cadence/2007
 module load synopsys/hspice/2015
-nohup python coffe.py input_files/myexp/mydesign.txt 
+nohup python coffe.py input_files/simple_dsp_slice_65nm/coffe_inp_params.txt
 

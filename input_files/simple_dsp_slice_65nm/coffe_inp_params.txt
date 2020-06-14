@@ -189,4 +189,4 @@ metal=0.227273,0.000000
 
 
 # if hybrid blocks are enabled, list configurations here
-hb_files = input_files/myexp/dsp_slice.txt
+hb_files = input_files/simple_dsp_slice_65nm/dsp_slice.txt

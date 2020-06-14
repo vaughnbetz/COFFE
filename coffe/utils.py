@@ -683,13 +683,24 @@ def load_hard_params(filename):
         'space_around_core': -1,
         'pr_folder': "",
         'primetime_lib_path': '',
+        'primetime_lib_name': '',
         'primetime_folder': "" ,
         'delay_cost_exp': 1.0,
         'area_cost_exp': 1.0,
         'wire_selection': [],
         'metal_layers': [],
-        'mode_signal': []
-
+        'metal_layer_names': [],
+        'gnd_net': '',
+        'gnd_pin': '',
+        'pwr_net': '',
+        'pwr_pin': '',
+        'inv_footprint': '',
+        'buf_footprint': '',
+        'delay_footprint': '',
+        'filler_cell_names': [],
+        'generate_activity_file': False,
+        'core_site_name':'',
+        'mode_signal': [],
     }
 
 
@@ -761,6 +772,26 @@ def load_hard_params(filename):
             hard_params['core_utilization'].append(value)
         elif param == 'metal_layers':
             hard_params['metal_layers'].append(value)
+        elif param == 'metal_layer_names':
+            hard_params['metal_layer_names'] += eval(value)
+        elif param == 'gnd_net':
+            hard_params['gnd_net'] = value.strip()
+        elif param == 'gnd_pin':
+            hard_params['gnd_pin'] = value.strip()
+        elif param == 'pwr_net':
+            hard_params['pwr_net'] = value.strip()
+        elif param == 'pwr_pin':
+            hard_params['pwr_pin'] = value.strip()
+        elif param == 'inv_footprint':
+            hard_params['inv_footprint'] = value.strip()
+        elif param == 'buf_footprint':
+            hard_params['buf_footprint'] = value.strip()
+        elif param == 'delay_footprint':
+            hard_params['delay_footprint'] = value.strip()
+        elif param == 'filler_cell_names':
+            hard_params['filler_cell_names'] += eval(value)
+        elif param == 'generate_activity_file':
+            hard_params['generate_activity_file'] = (value == "True")
         elif param == 'crossbar_modelling':
             hard_params['crossbar_modelling'] = value
         elif param == 'num_crossbars':
@@ -803,12 +834,14 @@ def load_hard_params(filename):
             hard_params['pr_folder'] = value
         elif param == 'primetime_lib_path':
             hard_params['primetime_lib_path'] = value
+        elif param == 'primetime_lib_name':
+            hard_params['primetime_lib_name'] = value
         elif param == 'primetime_folder':
             hard_params['primetime_folder'] = value
+        elif param == 'core_site_name':
+            hard_params['core_site_name'] = value
 
     hard_file.close()
-    
-    
     return hard_params
 
 
