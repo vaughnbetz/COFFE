@@ -9,6 +9,13 @@
 # [1] C. Chiasson and V.Betz. "COFFE: Fully-Automated Transistor Sizing for FPGAs",
 #      IEEE Int. Conf. on Field-Programmable Technology (FPT), 2013
 
+#######################################
+##### General parameters
+#######################################
+
+#The directory in which output files will be stored. 
+#If not specified, the directory containing this file is used as output dir.
+arch_out_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_45nm/arch_out_dir
 
 #######################################
 ##### Architecture Parameters

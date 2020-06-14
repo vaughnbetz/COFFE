@@ -42,7 +42,8 @@ def hardblock_flow(flow_settings):
   for clock_period in flow_settings['clock_period']:
     for wire_selection in flow_settings['wire_selection']:
       file = open("dc_script.tcl","w")
-      file.write("cd " + os.path.expanduser(flow_settings['design_folder']) + "\n")
+      file.write("cd " + os.path.expanduser(flow_settings['synth_folder']) + "\n")
+      file.write("set search_path "+flow_settings['design_folder']+" \n")
       if len(design_files) == 1:
         file.write("set my_files " + design_files[0] + "\n")
       else:

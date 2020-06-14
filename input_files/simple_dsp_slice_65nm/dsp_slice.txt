@@ -9,6 +9,8 @@ design_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/input_files/simple_dsp_s
 # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
 design_language=verilog
 
+# The exponents of delay and area in the cost function.
+# cost = (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
 delay_cost_exp=1.0
 area_cost_exp=1.0
 
@@ -23,14 +25,12 @@ clock_pin_name=clk
 clock_period=3.0
 
 # Name of the top-level entity in the design
-#top_level=ASU_conv
 top_level=dsp_slice
 
 # The name of the folder in which post-synthesis files and synthesis reports are to be stored
 synth_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_synth
 
 # Do you want to be informed of warnings during synthesis?
-
 show_warnings=True
 
 # Should the flow terminate after synthesis?
@@ -45,6 +45,7 @@ read_saif_file=False
 static_probability=0.5
 toggle_rate=25
 
+# Should COFFE generate an activity file for the design (using modelsim)
 generate_activity_file=False
 
 # Location of the library files.
@@ -65,48 +66,56 @@ target_libraries=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vl
 
 #this can be a list of numbers
 metal_layers=4
-#names of metal layers starting from the bottom-most layer on the left
+
+#names of metal layers starting from the bottom-most layer on the left. use a python list format. 
 metal_layer_names=["ME1", "ME2", "ME3", "ME4"]
-wire_selection=DEFAULT
+
+#mention the wireload model to be used. this is present in .lib files.
+#if the library doesn't have wireload models, specify None.
+#multiple values can be specified. just add more rows like:
 #wire_selection=WireAreaLowkCon
 #wire_selection=WireAreaLowkAgr
 #wire_selection=WireAreaForZero
+wire_selection=DEFAULT
 
+#specify names of ground and power pins and nets in the library
 gnd_net=gnd!
 gnd_pin=gnd!
 pwr_net=vdd!
 pwr_pin=vdd!
 
-#get these values from the lib file
+#specify footprint names for inverters, buffers, delays.
+#this is optional. you can get these values from the lib file.
+#you can also specify None, if you can't find them in the lib file.
 inv_footprint=INVX
 buf_footprint=BUFX
 delay_footprint=INVX
 
+#list of filler cell names. use a python list format.
+#the names can be obtained from .lib files.
 filler_cell_names=["FILL1", "FILL2", "FILL3", "FILL4"]
 
+#name of the core site in the floorplan. can be obtained from lef files.
+core_site_name=Core
 
-
-#this can be a list of values
+#specify the utilization of the core site. you can specify multiple ones on different lines.
 core_utilization=0.70
 
+#specify LEF files in the library. remember to specify the tech/header file first and then the file that has macros/cells.
 lef_files="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/lef/ceid_vlsiLab_umc65ll_header.lef /home/projects/ljohn/aarora1/ceid/ceid_umc65ll/lef/ceid_vlsiLab_umc65ll_allStdCells.lef"
 
-
+#list names (full paths) of the .lib files for various corners
 best_case_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
 
 standard_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
 
 worst_case_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
 
-
-
-# EDI settings:
+# EDI (Cadence Encounter) settings:
 power_ring_width=3
 power_ring_spacing=1
 height_to_width_ratio=4.0
-
 space_around_core=10
-
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
 pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pnr
@@ -119,9 +128,11 @@ pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slic
 #mode_signal=mode_0
 #mode_signal=mode_1
 
+#the directory containing the primetime library and the name of the library file
 primetime_lib_path=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys
 primetime_lib_name=ceid_vlsiLab_umc65ll_stdCells.db
 
+# The name of the folder in which primetime results/reports are to be stored
 primetime_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pt
 
 # COFFE parameters:

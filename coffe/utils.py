@@ -473,7 +473,8 @@ def load_arch_params(filename):
         'enable_carry_chain': 0,
         'carry_chain_type': "ripple",
         'FAs_per_flut':2,
-        'hb_files' : []
+        'hb_files' : [],
+        'arch_out_folder': "",
     }
 
     params_file = open(filename, 'r')
@@ -621,6 +622,8 @@ def load_arch_params(filename):
             arch_params['metal'].append((float(r),float(c)))
         elif param == 'hb_files':
             arch_params['hb_files'].append(value)
+        elif param == 'arch_out_folder':
+            arch_params['arch_out_folder'] = value
 
     params_file.close()
     
@@ -1124,15 +1127,22 @@ def print_and_write(file, string):
     file.write(string + "\n")
 
 
-def create_output_dir(arch_file_name):
+def create_output_dir(arch_file_name, arch_out_folder):
     """
-    This function created the architecture folder and returns its name
-    it also deletes the content of the folder in case it's already created
-    to avoid any errors in case of multiple runs on the same architecture file
+    This function creates the architecture folder and returns its name.
+    It also deletes the content of the folder in case it's already created
+    to avoid any errors in case of multiple runs on the same architecture file.
+    If arch_out_folder is specified in the input params file, then that is
+    used as the architecture folder, otherwise the folder containing the arch
+    params file is used.
     """
+    
+    if arch_out_folder == "" or arch_out_folder == "None":
+        arch_desc_words = arch_file_name.split('.')
+        arch_folder = arch_desc_words[0]
+    else:
+        arch_folder = arch_out_folder
 
-    arch_desc_words = arch_file_name.split('.')
-    arch_folder = arch_desc_words[0]
     if not os.path.exists(arch_folder):
         os.mkdir(arch_folder)
     else:
