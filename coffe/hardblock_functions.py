@@ -223,7 +223,7 @@ def hardblock_flow(flow_settings):
           # generate the EDI (encounter) script
           file = open("edi.tcl", "w")
           file.write("loadConfig edi.conf \n")
-          file.write("floorPlan -site " + flow_settings['core_site_name'] + " -su "+str(flow_settings['height_to_width_ratio'])+" "+str(core_utilization)+" "+ str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core'])+ " ")
+          file.write("floorPlan -site " + flow_settings['core_site_name'] + " -r "+str(flow_settings['height_to_width_ratio'])+" "+str(core_utilization)+" "+ str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core'])+ " ")
           file.write(str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core']) + "\n")
           file.write("setMaxRouteLayer "+str(metal_layer)+ " \n")
           file.write("fit \n")
@@ -309,7 +309,7 @@ def hardblock_flow(flow_settings):
           # Optional: use modelsim to generate an activity file for the design:
           if flow_settings['generate_activity_file'] is True:
             # Create a modelsim folder
-            #subprocess.call("mkdir "+os.path.expanduser("./modelsim_dir")+"\n", shell=True)
+            #subprocess.call("mkdir -p"+os.path.expanduser("./modelsim_dir")+"\n", shell=True)
             # Create a modelsim .do file:
             #subprocess.call("vlib modelsim_dir/libraries"+"\n",shell=True)
             # todo: change the address and take it from the user as input

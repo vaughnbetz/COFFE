@@ -474,7 +474,7 @@ def load_arch_params(filename):
         'carry_chain_type': "ripple",
         'FAs_per_flut':2,
         'hb_files' : [],
-        'arch_out_folder': "",
+        'arch_out_folder': "None",
     }
 
     params_file = open(filename, 'r')
@@ -1144,7 +1144,7 @@ def create_output_dir(arch_file_name, arch_out_folder):
         arch_folder = arch_out_folder
 
     if not os.path.exists(arch_folder):
-        os.mkdir(arch_folder)
+        os.makedirs(arch_folder)
     else:
         # Delete contents of sub-directories
         # COFFE generates several 'intermediate results' files during sizing

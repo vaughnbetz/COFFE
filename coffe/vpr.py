@@ -2643,7 +2643,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 
 def print_vpr_file(fpga_inst, arch_folder, enable_bram_module):
 
-	vpr_file = open(arch_folder + "/" + arch_folder + ".xml", 'w')
+	vpr_file = open(arch_folder + "/vpr_arch.xml", 'w')
 
 	if enable_bram_module == 1:
 		print_vpr_file_memory(vpr_file, fpga_inst)
