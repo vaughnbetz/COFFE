@@ -76,7 +76,7 @@ FAs_per_flut = 2
 #######################################
 
 # Do we want Block RAM simulation at all?
-enable_bram_module = 0
+enable_bram_module = 1
 
 #Memory block voltage (low power transistors)
 vdd_low_power = 1.0

@@ -5,6 +5,10 @@ import time
 import datetime
 
 
+FIRS_COL_WIDTH = 30
+MIDL_COL_WIDTH = 13
+LAST_COL_WIDTH = 22
+
 def compare_tfall_trise(tfall, trise):
     """ Compare tfall and trise and returns largest value or -1.0
         -1.0 is return if something went wrong in SPICE """
@@ -49,35 +53,55 @@ def print_area_and_delay(report_file, fpga_inst):
     # not work as well. The 'ljust' constants would have to be adjusted accordingly.
     
     # Print the header
-    print_and_write(report_file, "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22)) 
+    print_and_write(report_file, "  Subcircuit".ljust(32) + "Area (um^2)".ljust(MIDL_COL_WIDTH) + "Delay (ps)".ljust(MIDL_COL_WIDTH) + "tfall (ps)".ljust(MIDL_COL_WIDTH) + "trise (ps)".ljust(MIDL_COL_WIDTH) + "Power at 250MHz (uW)".ljust(LAST_COL_WIDTH)) 
     
     # Switch block mux
-    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.sb_mux.power/1e-6).ljust(22))
+    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.sb_mux.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.sb_mux.power/1e-6).ljust(LAST_COL_WIDTH))
+
+    # Switch block mux (with sram)
+    print_and_write(report_file, "  " + (fpga_inst.sb_mux.name + "(with sram)").ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(fpga_inst.sb_mux.power/1e-6).ljust(LAST_COL_WIDTH))
     
     # Connection block mux
-    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name]/1e6,3)).ljust(13) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.cb_mux.power/1e-6))
+    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.cb_mux.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.cb_mux.power/1e-6))
+
+    # Connection block mux (with sram)
+    print_and_write(report_file, "  " + (fpga_inst.cb_mux.name + "(with sram)").ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(fpga_inst.cb_mux.power/1e-6))
     
     # Local mux
-    print_and_write(report_file, "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.local_mux.power/1e-6))
+    print_and_write(report_file, "  " + fpga_inst.logic_cluster.local_mux.name.ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.logic_cluster.local_mux.power/1e-6))
     
-    # Local BLE output
-    print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.local_output.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.local_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.local_output.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.local_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6))
+    # Local mux (with sram)
+    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.local_mux.name + "(with sram)").ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.logic_cluster.local_mux.name+"_sram"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.local_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.logic_cluster.local_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.local_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.logic_cluster.local_mux.power/1e-6))
     
-    # General BLE output
-    print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(13) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6))
+    # Local BLE output (with sram)
+    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.local_output.name+"(with sram)").ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.logic_cluster.ble.local_output.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.ble.local_output.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.logic_cluster.ble.local_output.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.ble.local_output.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6))
     
+    # General BLE output (with sram)
+    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.general_output.name+"(with sram)").ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.logic_cluster.ble.general_output.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.ble.general_output.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.logic_cluster.ble.general_output.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.ble.general_output.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6))
+
+    # FF
+    print_and_write(report_file, "  " + fpga_inst.logic_cluster.ble.ff.name.ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.logic_cluster.ble.ff.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str("n/a").ljust(MIDL_COL_WIDTH) + str("n/a").ljust(MIDL_COL_WIDTH) + 
+        str("n/a").ljust(MIDL_COL_WIDTH) + str("n/a")) 
+
     # LUT
-    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.lut.name + " (SRAM to out)").ljust(22) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.lut.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.logic_cluster.ble.lut.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+    print_and_write(report_file, "  " + (fpga_inst.logic_cluster.ble.lut.name + " (with sram)").ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.logic_cluster.ble.lut.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.ble.lut.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.logic_cluster.ble.lut.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
     
     # Get LUT input names so that we can print inputs in sorted order
     lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
@@ -86,73 +110,59 @@ def print_area_and_delay(report_file, fpga_inst):
     # LUT input drivers
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
-        print_and_write(report_file, "  " + ("lut_" + input_name).ljust(22) + "n/a".ljust(13) + str(round(lut_input.delay/1e-12,4)).ljust(13) + str(round(lut_input.trise/1e-12,4)).ljust(13) + 
-            str(round(lut_input.tfall/1e-12,4)).ljust(13) + str(lut_input.power/1e-6).ljust(22))
+        print_and_write(report_file, "  " + ("lut_" + input_name).ljust(FIRS_COL_WIDTH) + "n/a".ljust(MIDL_COL_WIDTH) + str(round(lut_input.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(lut_input.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(lut_input.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(lut_input.power/1e-6).ljust(LAST_COL_WIDTH))
 
         driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].driver
         not_driver = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name].not_driver
-        print_and_write(report_file, "  " + driver.name.ljust(22) + str(round(area_dict[driver.name]/1e6,3)).ljust(13) + str(round(driver.delay/1e-12,4)).ljust(13) + 
-            str(round(driver.tfall/1e-12,4)).ljust(13) + str(round(driver.trise/1e-12,4)).ljust(13) + str(driver.power/1e-6).ljust(22))
-        print_and_write(report_file, "  " + not_driver.name.ljust(22) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(13) + str(round(not_driver.delay/1e-12,4)).ljust(13) + 
-            str(round(not_driver.tfall/1e-12,4)).ljust(13) + str(round(not_driver.trise/1e-12,4)).ljust(13) + str(not_driver.power/1e-6).ljust(22))
+        print_and_write(report_file, "  " + driver.name.ljust(FIRS_COL_WIDTH) + str(round(area_dict[driver.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(driver.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(driver.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(driver.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(driver.power/1e-6).ljust(LAST_COL_WIDTH))
+        print_and_write(report_file, "  " + not_driver.name.ljust(FIRS_COL_WIDTH) + str(round(area_dict[not_driver.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(not_driver.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(not_driver.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(not_driver.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(not_driver.power/1e-6).ljust(LAST_COL_WIDTH))
 
     # Carry chain    
     if fpga_inst.specs.enable_carry_chain == 1:
         #carry path
-        print_and_write(report_file, "  " + (fpga_inst.carrychain.name).ljust(22) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+        print_and_write(report_file, "  " + (fpga_inst.carrychain.name).ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.carrychain.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychain.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.carrychain.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychain.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
         # Sum inverter
-        print_and_write(report_file, "  " + (fpga_inst.carrychainperf.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+        print_and_write(report_file, "  " + (fpga_inst.carrychainperf.name).ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.carrychainperf.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychainperf.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.carrychainperf.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychainperf.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
         # mux
-        print_and_write(report_file, "  " + (fpga_inst.carrychainmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+        print_and_write(report_file, "  " + (fpga_inst.carrychainmux.name).ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.carrychainmux.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychainmux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.carrychainmux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychainmux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
         # Intercluster
-        print_and_write(report_file, "  " + (fpga_inst.carrychaininter.name).ljust(22) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+        print_and_write(report_file, "  " + (fpga_inst.carrychaininter.name).ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.carrychaininter.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychaininter.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.carrychaininter.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.carrychaininter.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
         # total carry chain area
-        print_and_write(report_file, "  " + "total carry chain area".ljust(22) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(13))
+        print_and_write(report_file, "  " + "total carry chain area".ljust(FIRS_COL_WIDTH) + str(round(area_dict["total_carry_chain"]/1e6,3)).ljust(MIDL_COL_WIDTH))
 
         if fpga_inst.specs.carry_chain_type == "skip":
             # skip and
-            print_and_write(report_file, "  " + (fpga_inst.carrychainand.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(13) + 
-                str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(13) + 
-                str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
+            print_and_write(report_file, "  " + (fpga_inst.carrychainand.name).ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.carrychainand.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+                str(round(fpga_inst.carrychainand.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.carrychainand.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+                str(round(fpga_inst.carrychainand.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
             # skip mux
-            print_and_write(report_file, "  " + (fpga_inst.carrychainskipmux.name).ljust(22) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(13) + 
-                str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(13) + 
-                str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(13) + "n/a".ljust(22))
-
-
+            print_and_write(report_file, "  " + (fpga_inst.carrychainskipmux.name).ljust(FIRS_COL_WIDTH) + str(round(area_dict[fpga_inst.carrychainskipmux.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+                str(round(fpga_inst.carrychainskipmux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.carrychainskipmux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+                str(round(fpga_inst.carrychainskipmux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
 
     for hardblock in fpga_inst.hardblocklist:
         ############################################
         ## Size dedicated routing links
         ############################################
         if hardblock.parameters['num_dedicated_outputs'] > 0:
-            print_and_write(report_file, "  dedicated link ".ljust(24) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(13) + 
-                str(round(hardblock.dedicated.delay/1e-12,4)).ljust(13) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(13) + 
-                str(round(hardblock.dedicated.trise/1e-12,4)).ljust(13) + str(hardblock.dedicated.power/1e-6).ljust(22))
+            print_and_write(report_file, ("  " + str(hardblock.parameters['name']).strip()+ " dedicated out").ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict[hardblock.dedicated.name]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+                str(round(hardblock.dedicated.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(hardblock.dedicated.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+                str(round(hardblock.dedicated.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(hardblock.dedicated.power/1e-6).ljust(LAST_COL_WIDTH))
         
-        print_and_write(report_file, "  mux " + str(hardblock.parameters['name']).ljust(24) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(13) + 
-            str(round(hardblock.mux.delay/1e-12,4)).ljust(13) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(13) + str(round(hardblock.mux.trise/1e-12,4)).ljust(13) + 
-            str(hardblock.mux.power/1e-6).ljust(22))
-
-        
-    # Connection block mux
-    print_and_write(report_file, "  " + fpga_inst.cb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.cb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.cb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.cb_mux.trise/1e-12,4)).ljust(13) + 
-        str(fpga_inst.cb_mux.power/1e-6))
-    
-    # Switch block mux,
-    print_and_write(report_file, "  " + fpga_inst.sb_mux.name.ljust(22) + str(round(area_dict[fpga_inst.sb_mux.name +"_sram"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.sb_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.sb_mux.trise/1e-12,4)).ljust(13) + 
-        str(fpga_inst.sb_mux.power/1e-6).ljust(22))
-    
+        print_and_write(report_file, (str("  " + hardblock.parameters['name']) + " mux").ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict[hardblock.mux.name +"_sram"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(hardblock.mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(hardblock.mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(hardblock.mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(hardblock.mux.power/1e-6).ljust(LAST_COL_WIDTH))
 
     if fpga_inst.specs.enable_bram_block == 0:
         print_and_write(report_file, "\n")
@@ -162,9 +172,9 @@ def print_area_and_delay(report_file, fpga_inst):
     # RAM
 
     # RAM local input mux
-    print_and_write(report_file, "  " + fpga_inst.RAM.RAM_local_mux.name.ljust(22) + str(round(fpga_inst.area_dict["ram_local_mux_total"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.RAM.RAM_local_mux.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.RAM_local_mux.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.RAM.RAM_local_mux.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.RAM_local_mux.power/1e-6).ljust(22))
+    print_and_write(report_file, "  " + fpga_inst.RAM.RAM_local_mux.name.ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["ram_local_mux_total"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.RAM_local_mux.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.RAM_local_mux.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.RAM_local_mux.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.RAM_local_mux.power/1e-6).ljust(LAST_COL_WIDTH))
     
     # Row decoder:
     stage1_delay = 0.0
@@ -182,16 +192,16 @@ def print_area_and_delay(report_file, fpga_inst):
 
     row_decoder_delay =  stage0_delay + stage1_delay + stage3_delay + stage2_delay
 
-    print_and_write(report_file, "  Row Decoder".ljust(24) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(13) + str(round(row_decoder_delay/1e-12,4)).ljust(13) + 
-        "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22))    
+    print_and_write(report_file, "  Row Decoder".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(row_decoder_delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))    
 
-    print "  Power Breakdown: ".ljust(24) + "stage0".ljust(22)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(22)
+    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(LAST_COL_WIDTH)
 
     if fpga_inst.RAM.valid_row_dec_size2 == 1:
-        print "  Power Breakdown: ".ljust(24) + "stage1".ljust(22)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size2.power/1e-6,4)).ljust(22)
+        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size2.power/1e-6,4)).ljust(LAST_COL_WIDTH)
     if fpga_inst.RAM.valid_row_dec_size3 == 1:
-        print "  Power Breakdown: ".ljust(24) + "stage1".ljust(22)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size3.power/1e-6,4)).ljust(22)
-    print "  Power Breakdown: ".ljust(24) + "stage2".ljust(22)+ str(round(fpga_inst.RAM.rowdecoder_stage3.power/1e-6,4)).ljust(22)        
+        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size3.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage3.power/1e-6,4)).ljust(LAST_COL_WIDTH)        
 
     # Configurable decoder:
     configdelay = fpga_inst.RAM.configurabledecoderi.delay 
@@ -204,59 +214,59 @@ def print_area_and_delay(report_file, fpga_inst):
         configdelay += fpga_inst.RAM.configurabledecoder2ii.delay
 
     # Column decoder:
-    print_and_write(report_file, "  Column Decoder".ljust(24) + str(round(fpga_inst.area_dict["columndecoder_total"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.RAM.columndecoder.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.columndecoder.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.RAM.columndecoder.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.columndecoder.power/1e-6).ljust(22))
-    print_and_write(report_file, "  Configurable Decoder".ljust(24) + str(round(fpga_inst.area_dict["configurabledecoder"]/1e6,3)).ljust(13) + 
-        str(round(configdelay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22))
-    print_and_write(report_file, "  CD driver delay ".ljust(24) + "n/a".ljust(13) + 
-        str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(13) + "n/m".ljust(13) + "n/m".ljust(13) + "n/m".ljust(22))
+    print_and_write(report_file, "  Column Decoder".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["columndecoder_total"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.columndecoder.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.columndecoder.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.columndecoder.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.columndecoder.power/1e-6).ljust(LAST_COL_WIDTH))
+    print_and_write(report_file, "  Configurable Decoder".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["configurabledecoder"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(configdelay/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))
+    print_and_write(report_file, "  CD driver delay ".ljust(FIRS_COL_WIDTH) + "n/a".ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))
 
-    print "  Power Breakdown: ".ljust(24) + "stage0".ljust(22)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(22)
+    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(LAST_COL_WIDTH)
     if fpga_inst.RAM.cvalidobj2 !=0:
-        print "  Power Breakdown: ".ljust(24) + "stage1".ljust(22)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(22)
+        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
     if fpga_inst.RAM.cvalidobj1 !=0:    
-        print "  Power Breakdown: ".ljust(24) + "stage1".ljust(22)+ str(round(fpga_inst.RAM.configurabledecoder3ii.power/1e-6,4)).ljust(22)
-    print "  Power Breakdown: ".ljust(24) + "stage2".ljust(22)+ str(round(fpga_inst.RAM.configurabledecoderiii.power/1e-6,4)).ljust(22)
+        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder3ii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderiii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
 
 
     # BRAM output crossbar:
-    print_and_write(report_file, "  Output Crossbar".ljust(24) + str(round(fpga_inst.area_dict["pgateoutputcrossbar_sram"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.RAM.pgateoutputcrossbar.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.pgateoutputcrossbar.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.pgateoutputcrossbar.power/1e-6).ljust(22))
+    print_and_write(report_file, "  Output Crossbar".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["pgateoutputcrossbar_sram"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.pgateoutputcrossbar.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.pgateoutputcrossbar.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.pgateoutputcrossbar.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.pgateoutputcrossbar.power/1e-6).ljust(LAST_COL_WIDTH))
     
     # reporting technology-specific part of the BRAM (sense amplifier, precharge/predischarge and write driver/bitline charge)
     if fpga_inst.RAM.memory_technology == "SRAM":
-        print_and_write(report_file, "  sense amp".ljust(24) + str(round(fpga_inst.area_dict["samp_total"]/1e6,3)).ljust(13) + 
-            str(round((fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay)/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.samp.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.RAM.samp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.samp.power/1e-6).ljust(22))
+        print_and_write(report_file, "  sense amp".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["samp_total"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round((fpga_inst.RAM.samp.delay + fpga_inst.RAM.samp_part2.delay)/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.samp.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.samp.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.samp.power/1e-6).ljust(LAST_COL_WIDTH))
     
-        print_and_write(report_file, "  precharge".ljust(24) + str(round(fpga_inst.area_dict["precharge_total"]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.RAM.precharge.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.precharge.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.RAM.precharge.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.precharge.power/1e-6).ljust(22))
+        print_and_write(report_file, "  precharge".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["precharge_total"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.precharge.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.precharge.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.precharge.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.precharge.power/1e-6).ljust(LAST_COL_WIDTH))
 
-        print_and_write(report_file, "  Write driver".ljust(24) + str(round(fpga_inst.area_dict["writedriver_total"]/1e6,3)).ljust(13) + 
-            str(round(fpga_inst.RAM.writedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.writedriver.tfall/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.RAM.writedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.writedriver.power/1e-6).ljust(22))
+        print_and_write(report_file, "  Write driver".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["writedriver_total"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.writedriver.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.writedriver.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.writedriver.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.writedriver.power/1e-6).ljust(LAST_COL_WIDTH))
     else:
-        print_and_write(report_file, "  Sense Amp".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.mtjsamp.delay/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.RAM.mtjsamp.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.mtjsamp.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.mtjsamp.power/1e-6).ljust(22))
+        print_and_write(report_file, "  Sense Amp".ljust(FIRS_COL_WIDTH) + " ".ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.mtjsamp.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.mtjsamp.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.mtjsamp.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.mtjsamp.power/1e-6).ljust(LAST_COL_WIDTH))
     
-        print_and_write(report_file, "  BL Charge".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.blcharging.delay/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.RAM.blcharging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.blcharging.trise/1e-12,4)).ljust(13) + 
-            str(fpga_inst.RAM.blcharging.power/1e-6).ljust(22))
+        print_and_write(report_file, "  BL Charge".ljust(FIRS_COL_WIDTH) + " ".ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.blcharging.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.blcharging.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.blcharging.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(fpga_inst.RAM.blcharging.power/1e-6).ljust(LAST_COL_WIDTH))
 
-        print_and_write(report_file, "  BL Discharge".ljust(24) + " ".ljust(13) + str(round(fpga_inst.RAM.bldischarging.delay/1e-12,4)).ljust(13) + 
-            str(round(fpga_inst.RAM.bldischarging.tfall/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.bldischarging.trise/1e-12,4)).ljust(13) + 
-            str(fpga_inst.RAM.bldischarging.power/1e-6).ljust(22))
+        print_and_write(report_file, "  BL Discharge".ljust(FIRS_COL_WIDTH) + " ".ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.bldischarging.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(round(fpga_inst.RAM.bldischarging.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.bldischarging.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+            str(fpga_inst.RAM.bldischarging.power/1e-6).ljust(LAST_COL_WIDTH))
     
     # wordline driver:
-    print_and_write(report_file, "  Wordline driver".ljust(24) + str(round(fpga_inst.area_dict["wordline_driver"]/1e6,3)).ljust(13) + 
-        str(round(fpga_inst.RAM.wordlinedriver.delay/1e-12,4)).ljust(13) + str(round(fpga_inst.RAM.wordlinedriver.tfall/1e-12,4)).ljust(13) + 
-        str(round(fpga_inst.RAM.wordlinedriver.trise/1e-12,4)).ljust(13) + str(fpga_inst.RAM.wordlinedriver.power/1e-6).ljust(22))
+    print_and_write(report_file, "  Wordline driver".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["wordline_driver"]/1e6,3)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.wordlinedriver.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(round(fpga_inst.RAM.wordlinedriver.tfall/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(fpga_inst.RAM.wordlinedriver.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + str(fpga_inst.RAM.wordlinedriver.power/1e-6).ljust(LAST_COL_WIDTH))
     
     # Level shifter: This was measured outside COFFE by kosuke.
-    print_and_write(report_file, "  Level Shifter".ljust(24) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(13) + str(round(32.3,4)).ljust(13) + 
-        str(round(32.3,4)).ljust(13) + str(round(32.3,4)).ljust(13) + str(2.26e-7/1e-6).ljust(22))
+    print_and_write(report_file, "  Level Shifter".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["level_shifter"]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(32.3,4)).ljust(MIDL_COL_WIDTH) + 
+        str(round(32.3,4)).ljust(MIDL_COL_WIDTH) + str(round(32.3,4)).ljust(MIDL_COL_WIDTH) + str(2.26e-7/1e-6).ljust(LAST_COL_WIDTH))
 
     print_and_write(report_file, "\n")
 
@@ -354,6 +364,7 @@ def print_block_area(report_file, fpga_inst):
         print_and_write(report_file, "")
         if fpga_inst.specs.enable_bram_block == 1:
             print_and_write(report_file, "  RAM AREA CONTRIBUTIONS")
+            print_and_write(report_file, "  -----------------------")
             print_and_write(report_file, "  Block".ljust(20) + "Total Area (um^2)".ljust(20) + "Fraction of RAM tile area")
             print_and_write(report_file, "  RAM".ljust(20) + str(round(ram,3)).ljust(20) + str(round(ram/ram*100,3)) + "%")
             print_and_write(report_file, "  RAM Local Mux".ljust(20) + str(round(ramlocalmux,3)).ljust(20) + str(round(ramlocalmux/ram*100,3)) + "%")
@@ -376,7 +387,23 @@ def print_block_area(report_file, fpga_inst):
             print_and_write(report_file, "  RAM Routing".ljust(20) + str(round(ram_routing,3)).ljust(20) + str(round(ram_routing/ram*100,3)) + "%")
             print_and_write(report_file, "  RAM CB".ljust(20) + str(round(RAM_CB_TOTAL,3)).ljust(20) + str(round(RAM_CB_TOTAL/ram*100,3)) + "%")
             print_and_write(report_file, "  RAM SB".ljust(20) + str(round(RAM_SB_TOTAL,3)).ljust(20) + str(round(RAM_SB_TOTAL/ram*100,3)) + "%")
+            print_and_write(report_file, "")
      
+
+def print_hardblock_info(report_file, fpga_inst):
+    print_and_write(report_file, "  HARDBLOCK INFORMATION")
+    print_and_write(report_file, "  ---------------------")
+
+    for hardblock in fpga_inst.hardblocklist:
+        print_and_write(report_file, "  Name: " + hardblock.name)
+        print_and_write(report_file, "  Core area: " + str(hardblock.area/1000000))
+        print_and_write(report_file, "  Local mux area: " + str(hardblock.parameters['num_gen_inputs'] * fpga_inst.area_dict[hardblock.mux.name]/1000000))
+        print_and_write(report_file, "  Local mux area with sram: " + str(hardblock.parameters['num_gen_inputs'] * fpga_inst.area_dict[hardblock.mux.name + "_sram"]/1000000))
+        if hardblock.parameters['num_dedicated_outputs'] > 0:
+            print_and_write(report_file, "  Dedicated output routing area: " + str(hardblock.parameters['num_dedicated_outputs'] * fpga_inst.area_dict[hardblock.name + "_ddriver"]/1000000))
+        print_and_write(report_file, "  Total area: " + str(fpga_inst.area_dict[hardblock.name + "_sram"]/1000000))
+        print_and_write(report_file, "")
+
 
 def print_vpr_delays(report_file, fpga_inst):
 
@@ -1173,6 +1200,10 @@ def print_summary(arch_folder, fpga_inst, start_time):
     
     # Print block areas
     print_block_area(report_file, fpga_inst)
+
+    #Print hardblock information
+    if len(fpga_inst.hardblocklist) > 0:
+        print_hardblock_info(report_file, fpga_inst)
     
     # Print VPR delays (to be used to make architecture file)
     print_vpr_delays(report_file, fpga_inst)

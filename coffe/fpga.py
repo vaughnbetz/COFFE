@@ -380,7 +380,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
         self.implemented_size = -1
         # This is simply the implemented_size-required_size
         self.num_unused_inputs = -1
-        # Number of switch block muxes in one FPGA tile
+        # Number of connection block muxes in one FPGA tile
         self.num_per_tile = num_per_tile
         # Number of SRAM cells per mux
         self.sram_per_mux = -1
@@ -4901,7 +4901,7 @@ class _HBLocalMUX(_SizableCircuit):
         self.implemented_size = -1
         # This is simply the implemented_size-required_size
         self.num_unused_inputs = -1
-        # Number of switch block muxes in one FPGA tile
+        # Number of hardblock local muxes in one FPGA tile
         self.num_per_tile = num_per_tile
         # Number of SRAM cells per mux
         self.sram_per_mux = -1
@@ -4955,10 +4955,8 @@ class _HBLocalMUX(_SizableCircuit):
 
     def generate_top(self):
         print "Generating top-level HB local mux"
-
         self.top_spice_path = top_level.generate_HB_local_mux_top(self.name, self.hb_parameters['name'])
 
-   
     def update_area(self, area_dict, width_dict):
         """ Update area. To do this, we use area_dict which is a dictionary, maintained externally, that contains
             the area of everything. It is expected that area_dict will have all the information we need to calculate area.
@@ -4987,9 +4985,6 @@ class _HBLocalMUX(_SizableCircuit):
         area_dict[self.name + "_sram"] = area_with_sram
         width_dict[self.name + "_sram"] = width_with_sram
 
-
-
-    
     def update_wires(self, width_dict, wire_lengths, wire_layers):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
 
@@ -5002,6 +4997,18 @@ class _HBLocalMUX(_SizableCircuit):
         wire_layers["wire_" + self.name + "_driver"] = 0
         wire_layers["wire_" + self.name + "_L1"] = 0
         wire_layers["wire_" + self.name + "_L2"] = 0  
+
+    def print_details(self, report_file):
+        """ Print hardblock local mux details """
+        utils.print_and_write(report_file, "  Style: two-level MUX")
+        utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
+        utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
+        utils.print_and_write(report_file, "  Level 1 size = " + str(self.level1_size))
+        utils.print_and_write(report_file, "  Level 2 size = " + str(self.level2_size))
+        utils.print_and_write(report_file, "  Number of unused inputs = " + str(self.num_unused_inputs))
+        utils.print_and_write(report_file, "  Number of MUXes per tile: " + str(self.num_per_tile))
+        utils.print_and_write(report_file, "  Number of SRAM cells per MUX: " + str(self.sram_per_mux))
+        utils.print_and_write(report_file, "")
 
 
 
@@ -5184,18 +5191,17 @@ class _hard_block(_CompoundCircuit):
         # area of the block itself
         if self.parameters['num_dedicated_outputs'] > 0:
             area = self.parameters['num_dedicated_outputs'] * area_dict[self.name + "_ddriver"] + self.parameters['num_gen_inputs'] * area_dict[self.mux.name] + self.area
+            area_with_sram = self.parameters['num_dedicated_outputs'] * area_dict[self.name + "_ddriver"] + self.parameters['num_gen_inputs'] * area_dict[self.mux.name + "_sram"] + self.area
         else :
             area = self.parameters['num_gen_inputs'] * area_dict[self.mux.name] + self.area
+            area_with_sram = self.parameters['num_gen_inputs'] * area_dict[self.mux.name + "_sram"] + self.area
 
-        area_with_sram = area
         width = math.sqrt(area)
         width_with_sram = math.sqrt(area_with_sram)
         area_dict[self.name] = area
         width_dict[self.name] = width
         area_dict[self.name + "_sram"] = area_with_sram
         width_dict[self.name + "_sram"] = width_with_sram
-
-
 
     def update_wires(self, width_dict, wire_lengths, wire_layers):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
@@ -5210,9 +5216,16 @@ class _hard_block(_CompoundCircuit):
         wire_layers["wire_" + self.name + "_2"] = 1  
         wire_layers["wire_" + self.name + "_local_routing_wire_load"] = 0
 
-
-
-
+    def print_details(self, report_file):
+        """ Print hardblock details """
+        utils.print_and_write(report_file, "  DETAILS OF HARD BLOCK: " + self.name)
+        utils.print_and_write(report_file, "  Localmux:")
+        self.mux.print_details(report_file)
+        #utils.print_and_write(report_file, "  Wireload:")
+        #self.load.print_details(report_file)
+        #if self.parameters['num_dedicated_outputs'] > 0:
+        #    utils.print_and_write(report_file, "  Dedicated output routing:")
+        #    self.dedicated.print_details(report_file)
 
   
 class FPGA:
@@ -5633,7 +5646,7 @@ class FPGA:
             self.area_dict["cc_area_total"] = cc_area_total
             self.width_dict["cc_area_total"] = math.sqrt(cc_area_total)
 
-            self.area_dict["local_mux_total"] = local_mux_area + local_mux_area
+            self.area_dict["local_mux_total"] = local_mux_area + local_mux_sram_area
             self.width_dict["local_mux_total"] = math.sqrt(local_mux_area + local_mux_area)
 
             self.area_dict["lut_total"] = lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
@@ -7087,6 +7100,8 @@ class FPGA:
         self.routing_wire_load.print_details(report_file)
         if self.specs.enable_bram_block == 1:
             self.RAM.print_details(report_file)
+        for hb in self.hardblocklist:
+            hb.print_details(report_file)
 
         utils.print_and_write(report_file, "|------------------------------------------------------------------------------|")
         utils.print_and_write(report_file, "")
