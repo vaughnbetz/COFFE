@@ -1,0 +1,119 @@
+#This is a sample settings file for the hard block flow
+
+#############################################
+########## General Design Settings ##########
+#############################################
+# The folder in which all the design files are located:
+design_folder=../simplyinvert/
+
+# The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+design_language=verilog
+
+delay_cost_exp=1.0
+area_cost_exp=1.0
+
+########################################
+########## Synthesis Settings ##########
+########################################
+
+# Name of the clock pin in the design
+clock_pin_name=clk
+
+# Desired clock period in ns
+clock_period=1.0
+
+# Name of the top-level entity in the design
+top_level=registered_inverter
+
+# The name of the folder in which post-synthesis files and synthesis reports are to be stored
+synth_folder=~/COFFE-master/latest/COFFE/input_files/syntha/
+
+# Do you want to be informed of warnings during synthesis?
+
+show_warnings=True
+
+# Should the flow terminate after synthesis?
+# A value of "False" will continue into placement and routing
+synthesis_only=False
+
+# Do you want to provide a saif file for power analysis?
+# In case of setting this to "True" a saif.saif file should be provided
+read_saif_file=False
+
+# If you don't want to provide a saif file, specify the switching activity parameters below:
+static_probability=0.5
+toggle_rate=25
+
+
+# Location of the library files.
+# if you have more than one library, please provide them similiar to the example below.
+
+link_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db"
+
+target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db"
+
+##############################################
+########## Place and Route Settings ##########
+##############################################
+
+# Libraries required in EDI:
+
+metal_layers=6
+
+#wire_selection=WireAreaLowkCon
+wire_selection=WireAreaLowkAgr
+#wire_selection=WireAreaForZero
+
+
+
+core_utilization=0.85
+
+lef_files="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/tpzn65gpgv2_9lm.lef"
+
+
+best_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplusbc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2bc.lib"
+
+standard_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2tc.lib"
+
+worst_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib"
+
+
+
+# EDI settings:
+power_ring_width=3
+power_ring_spacing=3
+height_to_width_ratio=1.0
+
+space_around_core=5
+
+
+# The folder in which place and route reports and post-routing netlists and spef files will be stored
+pr_folder=~/COFFE-master/latest/COFFE/input_files/pr/
+
+
+##############################################
+########## Prime Time Settings ###############
+##############################################
+
+#mode_signal=mode_0
+#mode_signal=mode_1
+
+primetime_lib_path=". /CMC/tools/synopsys/syn_vA-2007.12-SP5/libraries/syn /CMC/tools/synopsys/syn_vA-2007.12-SP5/dw/syn_ver /CMC/tools/synopsys/syn_vA-2007.12-SP5/dw/sim_ver /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
+
+
+primetime_folder=~/COFFE-master/latest/COFFE/input_files/final_analysis/
+
+# COFFE parameters:
+name=hard_block
+num_gen_inputs=114
+crossbar_population=0.5
+height=1
+num_gen_outputs=72
+num_dedicated_outputs=82
+soft_logic_per_block=0.1
+area_scale_factor=0.12
+freq_scale_factor=1.35
+power_scale_factor=0.3
+input_usage=0.8
+num_crossbars=2
+crossbar_modelling=optimistic
