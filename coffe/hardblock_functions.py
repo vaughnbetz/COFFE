@@ -434,14 +434,14 @@ def hardblock_flow(flow_settings):
               file = open("report_mode"+str(x)+"_"+str(flow_settings['top_level'])+"_"+str(clock_period)+"_"+str(wire_selection)+"_wire_"+str(metal_layer)+"_"+str(core_utilization)+".txt" ,"w")
             else:
               file = open("report_"+str(flow_settings['top_level'])+"_"+str(clock_period)+"_"+str(wire_selection)+"_wire_"+str(metal_layer)+"_"+str(core_utilization)+".txt" ,"w")
-            file.write("total area = " +str(total_area[0])+ "\n")
+            file.write("total area = " +str(total_area[0])+ " um^2 \n")
             file.write("total delay = "+str(total_delay)+" ns \n")
             file.write("total power = "+str(total_dynamic_power[0])+" W \n")
             file.close()
             if total_dynamic_power[0] > the_power:
               the_power = total_dynamic_power[0]
               
-            if lowest_cost < math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['area_cost_exp'])):
+            if lowest_cost > math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['area_cost_exp'])):
               lowest_cost = math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['area_cost_exp']))
               lowest_cost_area = float(total_area[0])
               lowest_cost_delay = float(total_delay)
@@ -451,6 +451,4 @@ def hardblock_flow(flow_settings):
             del library_setup_time[:]
             del data_arrival_time[:]
     
-    
-  
   return (float(lowest_cost_area), float(lowest_cost_delay), float(lowest_cost_power))

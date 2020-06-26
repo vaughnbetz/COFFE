@@ -5170,7 +5170,8 @@ class _hard_block(_CompoundCircuit):
 
         # hard flow
         self.flow_results = hardblock_functions.hardblock_flow(self.parameters)
-        self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * 1e+6
+        #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
+        self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
 
         self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
 		
