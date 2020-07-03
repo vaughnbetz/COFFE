@@ -438,7 +438,14 @@ class _ConnectionBlockMUX(_SizableCircuit):
     def update_area(self, area_dict, width_dict):
         """ Update area. To do this, we use area_dict which is a dictionary, maintained externally, that contains
             the area of everything. It is expected that area_dict will have all the information we need to calculate area.
-            We update area_dict and width_dict with calculations performed in this function. """
+            We update area_dict and width_dict with calculations performed in this function. 
+ 						The keys in these dictionaries are the names of the various components of the fpga like muxes, switches, etc.
+            For each component, generally there are two keys entries: one contains the area without the controlling sram bits
+            (this key is just the <component_name>) and the second contains the area with the controlling sram bits (this key 
+            is <component_name>_sram). The area associated with "component_name" generally does not include the controlling 
+            sram area (but includes everything else like buffers and pass transistors, while 
+            the area of "component_name_sram" is the sum of the area of this element including the controlling sram.
+        """
             
         # MUX area
         if not self.use_tgate :

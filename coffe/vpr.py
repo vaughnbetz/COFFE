@@ -339,7 +339,7 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	vpr_file.write("  </pb_type>\n")
 
 	vpr_file.write("  <!-- This is the 36*36 uniform mult -->\n")
-	vpr_file.write("  <pb_type name=\"mult_36\" height=\"" + str(L) + "\" area=\"118800\">\n")
+	vpr_file.write("  <pb_type name=\"mult_36\" height=\"4\" area=\"118800\">\n")
 	vpr_file.write("      <input name=\"a\" num_pins=\"36\"/>\n")
 	vpr_file.write("      <input name=\"b\" num_pins=\"36\"/>\n")
 	vpr_file.write("      <output name=\"out\" num_pins=\"72\"/>\n")
@@ -756,7 +756,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 
 	vpr_file.write("  </pb_type>\n")
 	vpr_file.write("  <!-- Logic cluster definition -->\n")
-	vpr_file.write("  <pb_type name=\"clb\">\n")
+	vpr_file.write("  <pb_type name=\"clb\" area=\""+str(grid_logic_tile_area)+"\">\n")
 	vpr_file.write("    <input name=\"I1\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
 	vpr_file.write("    <input name=\"I2\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
 	vpr_file.write("    <input name=\"I3\" num_pins=\"" + str(N) + "\" equivalent=\"true\"/>\n")
@@ -1152,7 +1152,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	vpr_file.write("  </pb_type>\n")
 
 	vpr_file.write("  <!-- This is the 36*36 uniform mult -->\n")
-	vpr_file.write("  <pb_type name=\"mult_36\" height=\"" + str(L) + "\">\n")
+	vpr_file.write("  <pb_type name=\"mult_36\" height=\"4\">\n")
 	vpr_file.write("      <input name=\"a\" num_pins=\"36\"/>\n")
 	vpr_file.write("      <input name=\"b\" num_pins=\"36\"/>\n")
 	vpr_file.write("      <output name=\"out\" num_pins=\"72\"/>\n")

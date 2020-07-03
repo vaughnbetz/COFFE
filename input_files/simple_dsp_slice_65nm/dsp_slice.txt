@@ -1,10 +1,14 @@
-#This is a sample settings file for the hard block flow
+#This is a sample settings file for the hard block flow.
+#The hard block flow is detailed in the paper: 
+#"COFFE 2: Automatic Modelling and Optimization of Complex and Heterogeneous FPGA Architectures"
+#https://dl.acm.org/doi/10.1145/3301298
+#Most of the variables below have comments with them. The paper provides more context and details too.
 
 #############################################
 ########## General Design Settings ##########
 #############################################
 # The folder in which all the design files are located:
-design_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/input_files/simple_dsp_slice_65nm/dsp_slice_hdl
+design_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/input_files/simple_dsp_slice_65nm/dsp_slice_hdl
 
 # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
 design_language=verilog
@@ -28,7 +32,7 @@ clock_period=3.0
 top_level=dsp_slice
 
 # The name of the folder in which post-synthesis files and synthesis reports are to be stored
-synth_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_synth
+synth_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_synth
 
 # Do you want to be informed of warnings during synthesis?
 show_warnings=True
@@ -118,7 +122,7 @@ height_to_width_ratio=4.0
 space_around_core=10
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
-pr_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pnr
+pr_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pnr
 
 
 ##############################################
@@ -133,7 +137,7 @@ primetime_lib_path=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys
 primetime_lib_name=ceid_vlsiLab_umc65ll_stdCells.db
 
 # The name of the folder in which primetime results/reports are to be stored
-primetime_folder=/home/projects/ljohn/aarora1/coffe2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pt
+primetime_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pt
 
 # COFFE parameters:
 name=hard_block

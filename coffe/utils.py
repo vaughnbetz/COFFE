@@ -4,8 +4,10 @@ import shutil
 import time 
 import datetime
 
-
-FIRS_COL_WIDTH = 30
+# Constants used for formatting the subcircuit area/delay/power table. 
+# These denote the widths of various columns - first (FIRS), last (LAST) and the rest (MIDL).
+# We could use better libraries for pretty printing tables, but currently we use a simple method.
+FIRS_COL_WIDTH = 30  #First solu
 MIDL_COL_WIDTH = 13
 LAST_COL_WIDTH = 22
 
@@ -396,6 +398,8 @@ def print_hardblock_info(report_file, fpga_inst):
 
     for hardblock in fpga_inst.hardblocklist:
         print_and_write(report_file, "  Name: " + hardblock.name)
+        # The areas in area_dict and in the objects in fpga.py are in nm^2. But in this table,
+        # we report areas in um^2. That's why we divide each value by 10^6.
         print_and_write(report_file, "  Core area: " + str(hardblock.area/1000000))
         print_and_write(report_file, "  Local mux area: " + str(hardblock.parameters['num_gen_inputs'] * fpga_inst.area_dict[hardblock.mux.name]/1000000))
         print_and_write(report_file, "  Local mux area with sram: " + str(hardblock.parameters['num_gen_inputs'] * fpga_inst.area_dict[hardblock.mux.name + "_sram"]/1000000))

@@ -36,14 +36,14 @@ def hardblock_flow(flow_settings):
     for file in os.listdir(os.path.expanduser(flow_settings['design_folder'])):
       if file.endswith(".sv"):
         design_files.append(file)    
-  subprocess.call("mkdir -p "+os.path.expanduser(flow_settings['synth_folder'])+"\n", shell=True)
+  subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['synth_folder']) + "\n", shell=True)
   # Make sure we managed to read the design files
   assert len(design_files) >= 1
   for clock_period in flow_settings['clock_period']:
     for wire_selection in flow_settings['wire_selection']:
       file = open("dc_script.tcl","w")
       file.write("cd " + os.path.expanduser(flow_settings['synth_folder']) + "\n")
-      file.write("set search_path "+flow_settings['design_folder']+" \n")
+      file.write("set search_path " + flow_settings['design_folder'] + " \n")
       if len(design_files) == 1:
         file.write("set my_files " + design_files[0] + "\n")
       else:
@@ -66,37 +66,40 @@ def hardblock_flow(flow_settings):
         file.write("analyze -f sverilog $my_files \n")
       file.write("elaborate $my_top_level \n")
       file.write("current_design $my_top_level \n")
-      file.write("check_design >  "+os.path.expanduser(flow_settings['synth_folder'])+"/checkprecompile.rpt\n")
+      file.write("check_design >  " + os.path.expanduser(flow_settings['synth_folder']) + "/checkprecompile.rpt\n")
       file.write("link \n")
       file.write("uniquify \n")
+      #If wire_selection is None, then no wireload model is used during synthesis. This does imply results 
+      #are not as accurate (wires don't have any delay and area), but is useful to let the flow work/proceed 
+      #if the std cell library is missing wireload models.
       if wire_selection != "None":
-        file.write(r'set_wire_load_selection '+wire_selection+" \n")
-      file.write("set my_period "+str(clock_period)+" \n")
+        file.write(r'set_wire_load_selection ' + wire_selection + " \n")
+      file.write("set my_period " + str(clock_period) + " \n")
       file.write("set find_clock [ find port [list $my_clock_pin] ] \n")
       file.write("if { $find_clock != [list] } { \n")
       file.write("set clk_name $my_clock_pin \n")
       file.write("create_clock -period $my_period $clk_name} \n\n")
       file.write("compile_ultra\n")
-      file.write("check_design >  "+os.path.expanduser(flow_settings['synth_folder'])+"/check.rpt\n")
+      file.write("check_design >  " + os.path.expanduser(flow_settings['synth_folder']) + "/check.rpt\n")
       file.write("link \n")
-      file.write("write_file -format ddc -hierarchy -output "+os.path.expanduser(flow_settings['synth_folder'])+"/"+ flow_settings['top_level'] +".ddc \n")
+      file.write("write_file -format ddc -hierarchy -output " + os.path.expanduser(flow_settings['synth_folder']) + "/" +  flow_settings['top_level']  + ".ddc \n")
 
       if flow_settings['read_saif_file']:
         file.write("read_saif saif.saif \n")
       else:
-        file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [get_nets] \n")
+        file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [get_nets] \n")
 
       file.write("ungroup -all -flatten \n")
-      file.write("report_power > "+os.path.expanduser(flow_settings['synth_folder'])+"/power.rpt\n")
-      file.write("report_area -nosplit -hierarchy > "+os.path.expanduser(flow_settings['synth_folder'])+"/area.rpt\n")
-      file.write("report_resources -nosplit -hierarchy > "+os.path.expanduser(flow_settings['synth_folder'])+"/resources.rpt\n")      
-      file.write("report_timing > "+os.path.expanduser(flow_settings['synth_folder'])+"/timing.rpt\n")
+      file.write("report_power > " + os.path.expanduser(flow_settings['synth_folder']) + "/power.rpt\n")
+      file.write("report_area -nosplit -hierarchy > " + os.path.expanduser(flow_settings['synth_folder']) + "/area.rpt\n")
+      file.write("report_resources -nosplit -hierarchy > " + os.path.expanduser(flow_settings['synth_folder']) + "/resources.rpt\n")      
+      file.write("report_timing > " + os.path.expanduser(flow_settings['synth_folder']) + "/timing.rpt\n")
       file.write("change_names -hier -rule verilog \n") 
       
-      file.write("write -f verilog -output "+os.path.expanduser(flow_settings['synth_folder'])+"/synthesized.v\n")
-      file.write("write_sdf "+os.path.expanduser(flow_settings['synth_folder'])+"/synthsized.sdf \n")
-      file.write("write_parasitics -output "+os.path.expanduser(flow_settings['synth_folder'])+"/synthesized.spef \n")
-      file.write("write_sdc "+os.path.expanduser(flow_settings['synth_folder'])+"/synthesized.sdc \n")
+      file.write("write -f verilog -output " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.v\n")
+      file.write("write_sdf " + os.path.expanduser(flow_settings['synth_folder']) + "/synthsized.sdf \n")
+      file.write("write_parasitics -output " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.spef \n")
+      file.write("write_sdc " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.sdc \n")
 
       file.write("quit \n")
       file.close()
@@ -111,7 +114,7 @@ def hardblock_flow(flow_settings):
 
       # Make sure it worked properly
       # Open the timing report and make sure the critical path is non-zero:
-      check_file = open(os.path.expanduser(flow_settings['synth_folder'])+"/check.rpt", "r")
+      check_file = open(os.path.expanduser(flow_settings['synth_folder']) + "/check.rpt", "r")
       for line in check_file:
         if "Error" in line:
           print "Your design has errors. Refer to check.rpt in synthesis directory"
@@ -126,14 +129,14 @@ def hardblock_flow(flow_settings):
       if flow_settings['synthesis_only']:
 
         # read total area from the report file:
-        file = open(os.path.expanduser(flow_settings['synth_folder'])+"/area.rpt" ,"r")
+        file = open(os.path.expanduser(flow_settings['synth_folder']) + "/area.rpt" ,"r")
         for line in file:
           if line.startswith('Total cell area:'):
             total_area = re.findall(r'\d+\.{0,1}\d*', line)
         file.close()
 
         # Read timing parameters
-        file = open(os.path.expanduser(flow_settings['synth_folder'])+"/timing.rpt" ,"r")
+        file = open(os.path.expanduser(flow_settings['synth_folder']) + "/timing.rpt" ,"r")
         for line in file:
           if 'library setup time' in line:
             library_setup_time = re.findall(r'\d+\.{0,1}\d*', line)
@@ -147,7 +150,7 @@ def hardblock_flow(flow_settings):
         file.close()    
 
         # Read dynamic power
-        file = open(os.path.expanduser(flow_settings['synth_folder'])+"/power.rpt" ,"r")
+        file = open(os.path.expanduser(flow_settings['synth_folder']) + "/power.rpt" ,"r")
         for line in file:
           if 'Total Dynamic Power' in line:
             total_dynamic_power = re.findall(r'\d+\.\d*', line)
@@ -162,9 +165,9 @@ def hardblock_flow(flow_settings):
 
         # write the final report file:
         file = open("report.txt" ,"w")
-        file.write("total area = " +str(total_area[0])+ "\n")
-        file.write("total delay = "+str(total_delay)+" ns\n")
-        file.write("total power = "+str(total_dynamic_power[0])+" W\n")
+        file.write("total area = "  + str(total_area[0]) +  "\n")
+        file.write("total delay = " + str(total_delay) + " ns\n")
+        file.write("total power = " + str(total_dynamic_power[0]) + " W\n")
         file.close()
 
         #return
@@ -173,47 +176,47 @@ def hardblock_flow(flow_settings):
       ###########################################
       # Place and Route
       ###########################################
-      subprocess.call("mkdir -p "+os.path.expanduser(flow_settings['pr_folder'])+"\n", shell=True)
+      subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['pr_folder']) + "\n", shell=True)
       for metal_layer in flow_settings['metal_layers']:
         for core_utilization in flow_settings['core_utilization']:
           # generate the EDI (encounter) configuration
           file = open("edi.conf", "w")
           file.write("global rda_Input \n")
           file.write("set cwd .\n\n")
-          file.write("set rda_Input(ui_leffile) "+flow_settings['lef_files']+"\n")
-          file.write("set rda_Input(ui_timelib,min) "+flow_settings['best_case_libs']+"\n")
-          file.write("set rda_Input(ui_timelib) "+flow_settings['standard_libs']+"\n")
-          file.write("set rda_Input(ui_timelib,max) "+flow_settings['worst_case_libs']+"\n")
-          file.write("set rda_Input(ui_netlist) "+os.path.expanduser(flow_settings['synth_folder'])+"/synthesized.v"+"\n")
+          file.write("set rda_Input(ui_leffile) " + flow_settings['lef_files'] + "\n")
+          file.write("set rda_Input(ui_timelib,min) " + flow_settings['best_case_libs'] + "\n")
+          file.write("set rda_Input(ui_timelib) " + flow_settings['standard_libs'] + "\n")
+          file.write("set rda_Input(ui_timelib,max) " + flow_settings['worst_case_libs'] + "\n")
+          file.write("set rda_Input(ui_netlist) " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.v" + "\n")
           file.write("set rda_Input(ui_netlisttype) {Verilog} \n")
           file.write("set rda_Input(import_mode) {-treatUndefinedCellAsBbox 0 -keepEmptyModule 1}\n")
-          file.write("set rda_Input(ui_timingcon_file) "+os.path.expanduser(flow_settings['synth_folder'])+"/synthesized.sdc"+"\n")
-          file.write("set rda_Input(ui_topcell) "+flow_settings['top_level']+"\n\n")
+          file.write("set rda_Input(ui_timingcon_file) " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.sdc" + "\n")
+          file.write("set rda_Input(ui_topcell) " + flow_settings['top_level'] + "\n\n")
 
           gnd_pin = flow_settings['gnd_pin']
           gnd_net = flow_settings['gnd_net']
           pwr_pin = flow_settings['pwr_pin']
           pwr_net = flow_settings['pwr_net']
-          file.write("set rda_Input(ui_gndnet) {"+gnd_net+"} \n")
-          file.write("set rda_Input(ui_pwrnet) {"+pwr_net+"} \n")
+          file.write("set rda_Input(ui_gndnet) {" + gnd_net + "} \n")
+          file.write("set rda_Input(ui_pwrnet) {" + pwr_net + "} \n")
           
-          file.write("set rda_Input(ui_pg_connections) [list {PIN:"+gnd_pin+":} {NET:"+gnd_net+":} {NET:"+pwr_net+":} {PIN:"+pwr_pin+":} ] \n")
+          file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":} {NET:" + gnd_net + ":} {NET:" + pwr_net + ":} {PIN:" + pwr_pin + ":} ] \n")
 
-          file.write("set rda_Input(PIN:"+gnd_pin+":) {"+gnd_pin+"} \n")
-          file.write("set rda_Input(TIEL::) {"+gnd_pin+"} \n")
-          file.write("set rda_Input(NET:"+gnd_net+":) {"+gnd_net+"} \n")
-          file.write("set rda_Input(PIN:"+pwr_pin+":) {"+pwr_pin+"} \n")
-          file.write("set rda_Input(TIEH::) {"+pwr_pin+"} \n")
-          file.write("set rda_Input(NET:"+pwr_net+":) {"+pwr_net+"} \n\n")
+          file.write("set rda_Input(PIN:" + gnd_pin + ":) {" + gnd_pin + "} \n")
+          file.write("set rda_Input(TIEL::) {" + gnd_pin + "} \n")
+          file.write("set rda_Input(NET:" + gnd_net + ":) {" + gnd_net + "} \n")
+          file.write("set rda_Input(PIN:" + pwr_pin + ":) {" + pwr_pin + "} \n")
+          file.write("set rda_Input(TIEH::) {" + pwr_pin + "} \n")
+          file.write("set rda_Input(NET:" + pwr_net + ":) {" + pwr_net + "} \n\n")
 
           if (flow_settings['inv_footprint'] != "None"):
-            file.write("set rda_Input(ui_inv_footprint) {"+flow_settings['inv_footprint']+"}\n")
+            file.write("set rda_Input(ui_inv_footprint) {" + flow_settings['inv_footprint'] + "}\n")
           
           if (flow_settings['buf_footprint'] != "None"):
-            file.write("set rda_Input(ui_buf_footprint) {"+flow_settings['buf_footprint']+"}\n")
+            file.write("set rda_Input(ui_buf_footprint) {" + flow_settings['buf_footprint'] + "}\n")
 
           if (flow_settings['delay_footprint'] != "None"):
-            file.write("set rda_Input(ui_delay_footprint) {"+flow_settings['delay_footprint']+"}\n")
+            file.write("set rda_Input(ui_delay_footprint) {" + flow_settings['delay_footprint'] + "}\n")
 
           file.close()
 
@@ -223,17 +226,33 @@ def hardblock_flow(flow_settings):
           # generate the EDI (encounter) script
           file = open("edi.tcl", "w")
           file.write("loadConfig edi.conf \n")
-          file.write("floorPlan -site " + flow_settings['core_site_name'] + " -r "+str(flow_settings['height_to_width_ratio'])+" "+str(core_utilization)+" "+ str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core'])+ " ")
-          file.write(str(flow_settings['space_around_core'])+ " "+ str(flow_settings['space_around_core']) + "\n")
-          file.write("setMaxRouteLayer "+str(metal_layer)+ " \n")
+          file.write("floorPlan -site " + flow_settings['core_site_name'] \
+                     + " -r " + str(flow_settings['height_to_width_ratio']) \
+                     + " " + str(core_utilization) \
+                     + " " + str(flow_settings['space_around_core']) \
+                     + " " + str(flow_settings['space_around_core']) + " ")
+          file.write(str(flow_settings['space_around_core']) + " " + str(flow_settings['space_around_core']) + "\n")
+          file.write("setMaxRouteLayer " + str(metal_layer) + " \n")
           file.write("fit \n")
-          file.write("addRing -spacing_bottom "+str(flow_settings['power_ring_spacing'])+" -spacing_right "+str(flow_settings['power_ring_spacing'])+" -spacing_top "+str(flow_settings['power_ring_spacing'])+" -spacing_left "+str(flow_settings['power_ring_spacing'])+" ")
-          file.write("-width_right "+str(flow_settings['power_ring_width'])+" -width_left "+str(flow_settings['power_ring_width'])+" -width_bottom "+str(flow_settings['power_ring_width'])+" -width_top "+str(flow_settings['power_ring_width'])+" ")
-          file.write("-layer_bottom "+metal_layer_bottom+" -center 1 -stacked_via_top_layer "+metal_layer_top+" -around core -layer_top "+metal_layer_top+"  -layer_right "+metal_layer_second+" -layer_left "+metal_layer_second+" -nets { "+ gnd_net + " " + pwr_net +" } -stacked_via_bottom_layer "+metal_layer_bottom+" \n")
+          file.write("addRing -spacing_bottom " + str(flow_settings['power_ring_spacing']) \
+                     + " -spacing_right " + str(flow_settings['power_ring_spacing']) \
+                     + " -spacing_top " + str(flow_settings['power_ring_spacing']) \
+                     + " -spacing_left " + str(flow_settings['power_ring_spacing']) + " ")
+          file.write("-width_right " + str(flow_settings['power_ring_width']) \
+                     + " -width_left " + str(flow_settings['power_ring_width']) \
+                     + " -width_bottom " + str(flow_settings['power_ring_width']) \
+                     + " -width_top " + str(flow_settings['power_ring_width']) + " ")
+          file.write("-layer_bottom " + metal_layer_bottom \
+                     + " -center 1 -stacked_via_top_layer "+ metal_layer_top \
+                     + " -around core -layer_top " + metal_layer_top \
+                     + " -layer_right " + metal_layer_second \
+                     + " -layer_left " + metal_layer_second \
+                     + " -nets { " + gnd_net + " " + pwr_net + " }" \
+                     +  "-stacked_via_bottom_layer " + metal_layer_bottom + " \n")
 
-          file.write("setPlaceMode -fp false -maxRouteLayer "+str(metal_layer)+ "\n")
+          file.write("setPlaceMode -fp false -maxRouteLayer " + str(metal_layer) + "\n")
           file.write("placeDesign -inPlaceOpt -noPrePlaceOpt \n")
-          file.write("checkPlace "+flow_settings['top_level']+" \n")
+          file.write("checkPlace " + flow_settings['top_level'] +" \n")
 
           file.write("trialroute \n")
           file.write("buildTimingGraph \n")
@@ -244,18 +263,28 @@ def hardblock_flow(flow_settings):
           file.write("addFiller -cell {" + " ".join([str(item) for item in flow_settings['filler_cell_names']]) + "} -prefix FILL -merge true \n")  
           
           file.write("clearGlobalNets \n")
-          file.write("globalNetConnect "+gnd_net+" -type pgpin -pin "+gnd_pin+" -inst {} \n")
-          file.write("globalNetConnect "+pwr_net+" -type pgpin -pin "+pwr_pin+" -inst {} \n")
-          file.write("globalNetConnect "+gnd_net+" -type net -net "+gnd_net+" \n")
-          file.write("globalNetConnect "+pwr_net+" -type net -net "+pwr_net+" \n")
-          file.write("globalNetConnect "+pwr_net+" -type pgpin -pin "+pwr_pin+" -inst * \n")
-          file.write("globalNetConnect "+gnd_net+" -type pgpin -pin "+gnd_pin+" -inst * \n")
-          file.write("globalNetConnect "+pwr_net+" -type tiehi -inst * \n")
-          file.write("globalNetConnect "+gnd_net+" -type tielo -inst * \n")
+          file.write("globalNetConnect " + gnd_net + " -type pgpin -pin " + gnd_pin + " -inst {} \n")
+          file.write("globalNetConnect " + pwr_net + " -type pgpin -pin " + pwr_pin + " -inst {} \n")
+          file.write("globalNetConnect " + gnd_net + " -type net -net " + gnd_net + " \n")
+          file.write("globalNetConnect " + pwr_net + " -type net -net " + pwr_net + " \n")
+          file.write("globalNetConnect " + pwr_net + " -type pgpin -pin " + pwr_pin + " -inst * \n")
+          file.write("globalNetConnect " + gnd_net + " -type pgpin -pin " + gnd_pin + " -inst * \n")
+          file.write("globalNetConnect " + pwr_net + " -type tiehi -inst * \n")
+          file.write("globalNetConnect " + gnd_net + " -type tielo -inst * \n")
 
-          file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe } -layerChangeRange { "+metal_layer_bottom+" "+metal_layer_top+" } -blockPinTarget { nearestRingStripe nearestTarget } -padPinPortConnect { allPort oneGeom } -checkAlignedSecondaryPin 1 -blockPin useLef -allowJogging 1 -crossoverViaBottomLayer "+metal_layer_bottom+" -allowLayerChange 1 -targetViaTopLayer "+metal_layer_top+" -crossoverViaTopLayer "+metal_layer_top+" -targetViaBottomLayer "+metal_layer_bottom+" -nets { "+ gnd_net + " " + pwr_net +" } \n")
-
-
+          file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe } " \
+                     + "-layerChangeRange { " + metal_layer_bottom + " " + metal_layer_top + " } " \
+                     + "-blockPinTarget { nearestRingStripe nearestTarget } " \
+                     + "-padPinPortConnect { allPort oneGeom } " \
+                     + "-checkAlignedSecondaryPin 1 " \
+                     + "-blockPin useLef " \
+                     + "-allowJogging 1 " \
+                     + "-crossoverViaBottomLayer " + metal_layer_bottom + " " \
+                     + "-allowLayerChange 1 " \
+                     + "-targetViaTopLayer " + metal_layer_top \
+                     + " -crossoverViaTopLayer " + metal_layer_top \
+                     + " -targetViaBottomLayer " + metal_layer_bottom \
+                     + " -nets { " + gnd_net + " " + pwr_net + " } \n")
 
           file.write("routeDesign -globalDetail\n")
           file.write("setExtractRCMode -engine postRoute \n")
@@ -264,24 +293,22 @@ def hardblock_flow(flow_settings):
           file.write("timeDesign -postRoute -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/timeDesignReports" + "\n")
           file.write("optDesign -postRoute -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/optDesignReports" + "\n")
 
-
           #by default, violations are reported in designname.geom.rpt
-          file.write("verifyGeometry -report " + (os.path.expanduser(flow_settings['pr_folder'])+"/"+flow_settings['top_level']+".geom.rpt") + "\n")
+          file.write("verifyGeometry -report " + (os.path.expanduser(flow_settings['pr_folder']) + "/" + flow_settings['top_level'] + ".geom.rpt") + "\n")
           #by default, violations are reported in designname.conn.rpt
-          file.write("verifyConnectivity -type all -report " + (os.path.expanduser(flow_settings['pr_folder'])+"/"+flow_settings['top_level']+".conn.rpt") + "\n")
+          file.write("verifyConnectivity -type all -report " + (os.path.expanduser(flow_settings['pr_folder']) + "/" + flow_settings['top_level'] + ".conn.rpt") + "\n")
 
           # report area
-          file.write("summaryReport -outFile "+os.path.expanduser(flow_settings['pr_folder'])+"/pr_report.txt \n")
-
+          file.write("summaryReport -outFile " + os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt \n")
 
           # save design
-          file.write(r'saveNetlist '+os.path.expanduser(flow_settings['pr_folder'])+r'/netlist.v'+ "\n")
-          file.write(r'saveDesign '+os.path.expanduser(flow_settings['pr_folder'])+r'/design.enc'+" \n")
-          file.write(r'rcOut -spef '+os.path.expanduser(flow_settings['pr_folder'])+r'/spef.spef'+" \n")
-          file.write(r'write_sdf -ideal_clock_network '+os.path.expanduser(flow_settings['pr_folder'])+r'/sdf.sdf'+" \n")
+          file.write(r'saveNetlist ' + os.path.expanduser(flow_settings['pr_folder']) + r'/netlist.v' + "\n")
+          file.write(r'saveDesign ' + os.path.expanduser(flow_settings['pr_folder']) + r'/design.enc' + " \n")
+          file.write(r'rcOut -spef ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + " \n")
+          file.write(r'write_sdf -ideal_clock_network ' + os.path.expanduser(flow_settings['pr_folder']) + r'/sdf.sdf' + " \n")
           #file.write(r'streamOut '+os.path.expanduser(flow_settings['pr_folder'])+r'/final.gds2' +' -mapFile ' + os.path.expanduser(flow_settings['pr_folder'])+r'/streamOut.map' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
           #we just let the tool create the map file, since we dont have one available
-          file.write(r'streamOut '+os.path.expanduser(flow_settings['pr_folder'])+r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
+          file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
           file.write("exit \n")
           file.close()
 
@@ -290,11 +317,11 @@ def hardblock_flow(flow_settings):
           # clean after EDI!
           #subprocess.call('rm -rf edi.tcl', shell=True)
           #subprocess.call('rm -rf edi.conf', shell=True)
-          subprocess.call('mv encounter.log '+os.path.expanduser(flow_settings['pr_folder'])+'/encounter_log.log', shell=True)
-          subprocess.call('mv encounter.cmd '+os.path.expanduser(flow_settings['pr_folder'])+'/encounter.cmd', shell=True)
+          subprocess.call('mv encounter.log ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter_log.log', shell=True)
+          subprocess.call('mv encounter.cmd ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter.cmd', shell=True)
 
           # read total area from the report file:
-          file = open(os.path.expanduser(flow_settings['pr_folder'])+"/pr_report.txt" ,"r")
+          file = open(os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt" ,"r")
           for line in file:
             if line.startswith('Total area of Core:'):
               total_area = re.findall(r'\d+\.{0,1}\d*', line)
@@ -317,7 +344,7 @@ def hardblock_flow(flow_settings):
             
             
             file = open("modelsim.do", "w")
-            file.write("cd "+os.path.expanduser("./modelsim_dir")+"\n")
+            file.write("cd " + os.path.expanduser("./modelsim_dir") + "\n")
             file.write("vlib work \n")
             file.write("vlog -work work ../../test/testbench.v \n")
             file.write("vlog -work work ../../pr/netlist.v \n")
@@ -343,22 +370,22 @@ def hardblock_flow(flow_settings):
               x = 2**len(flow_settings['mode_signal'])
             # backannotate into primetime
             # This part should be reported for all the modes in the design.
-            subprocess.call("mkdir -p "+os.path.expanduser(flow_settings['primetime_folder'])+"\n", shell=True)
+            subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['primetime_folder']) + "\n", shell=True)
             file = open("primetime.tcl", "w")
             file.write("set sh_enable_page_mode true \n")
 
-            file.write("set search_path "+flow_settings['primetime_lib_path']+" \n")
-            file.write("set link_path " +r'"* '+flow_settings['primetime_lib_name']+'"'+" \n") 
+            file.write("set search_path " + flow_settings['primetime_lib_path'] + " \n")
+            file.write("set link_path "  + r'"* ' + flow_settings['primetime_lib_name'] + '"' + " \n") 
 
-            file.write("read_verilog "+os.path.expanduser(flow_settings['pr_folder'])+"/netlist.v \n")
+            file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               for y in range (0, len(flow_settings['mode_signal'])):
-                file.write("set_case_analysis "+str((x >> y) & 1)+" "+ flow_settings['mode_signal'][y]+" \n")
+                file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] + " \n")
             file.write("link \n")
 
-            file.write("create_clock -period "+clock_period+" "+flow_settings['clock_pin_name']+" \n")
-            file.write("read_parasitics -increment "+os.path.expanduser(flow_settings['pr_folder'])+"/spef.spef \n")
-            file.write("report_timing > "+os.path.expanduser(flow_settings['primetime_folder'])+"/timing.rpt \n")
+            file.write("create_clock -period " + clock_period + " " + flow_settings['clock_pin_name'] + " \n")
+            file.write("read_parasitics -increment " + os.path.expanduser(flow_settings['pr_folder']) + "/spef.spef \n")
+            file.write("report_timing > " + os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt \n")
             file.write("quit \n")
             file.close()
 
@@ -369,7 +396,7 @@ def hardblock_flow(flow_settings):
             #subprocess.call('rm -rf primetime.tcl', shell=True)
 
             # Read timing parameters
-            file = open(os.path.expanduser(flow_settings['primetime_folder'])+"/timing.rpt" ,"r")
+            file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt" ,"r")
             for line in file:
               if 'library setup time' in line:
                 library_setup_time = re.findall(r'\d+\.{0,1}\d*', line)
@@ -384,27 +411,27 @@ def hardblock_flow(flow_settings):
             file = open("primetime_power.tcl", "w")
             file.write("set sh_enable_page_mode true \n")
 
-            file.write("set search_path "+flow_settings['primetime_lib_path']+" \n")
-            file.write("set link_path " +r'"* '+flow_settings['primetime_lib_name']+'"'+" \n") 
+            file.write("set search_path " + flow_settings['primetime_lib_path'] + " \n")
+            file.write("set link_path "  + r'"* ' + flow_settings['primetime_lib_name'] + '"' + " \n") 
 
-            file.write("read_verilog "+os.path.expanduser(flow_settings['pr_folder'])+"/netlist.v \n")
+            file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
             file.write("link \n")
 
-            file.write("create_clock -period "+str(total_delay)+" "+flow_settings['clock_pin_name']+" \n")
+            file.write("create_clock -period " + str(total_delay) + " " + flow_settings['clock_pin_name'] + " \n")
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               for y in range (0, len(flow_settings['mode_signal'])):
-                file.write("set_case_analysis "+str((x >> y) & 1)+" "+ flow_settings['mode_signal'][y]+ " \n")
+                file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] +  " \n")
             file.write("set power_enable_analysis TRUE \n")
-            file.write(r'set power_analysis_mode "averaged"'+"\n")
+            file.write(r'set power_analysis_mode "averaged"' + "\n")
             if flow_settings['read_saif_file']:
               file.write("read_saif saif.saif \n")
             else:
-              file.write("set_switching_activity -static_probability "+str(flow_settings['static_probability'])+" -toggle_rate "+str(flow_settings['toggle_rate'])+" [get_nets] \n")
+              file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [get_nets] \n")
             #file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
             #file.write("read_vcd -input ./modelsim_dir/vcd.vcd \n")
-            file.write(r'read_parasitics -increment '+os.path.expanduser(flow_settings['pr_folder'])+r'/spef.spef'+"\n")
+            file.write(r'read_parasitics -increment ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + "\n")
             #file.write("update_power \n")
-            file.write(r'report_power > '+os.path.expanduser(flow_settings['primetime_folder'])+r'/power.rpt'+" \n")
+            file.write(r'report_power > ' + os.path.expanduser(flow_settings['primetime_folder']) + r'/power.rpt' + " \n")
             file.write("quit\n")
             file.close()
 
@@ -416,7 +443,7 @@ def hardblock_flow(flow_settings):
 
 
             # Read dynamic power
-            file = open(os.path.expanduser(flow_settings['primetime_folder'])+"/power.rpt" ,"r")
+            file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/power.rpt" ,"r")
             for line in file:
               if 'Total Dynamic Power' in line:
                 total_dynamic_power = re.findall(r'\d+\.{0,1}\d*', line)
@@ -431,12 +458,12 @@ def hardblock_flow(flow_settings):
 
             # write the final report file:
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
-              file = open("report_mode"+str(x)+"_"+str(flow_settings['top_level'])+"_"+str(clock_period)+"_"+str(wire_selection)+"_wire_"+str(metal_layer)+"_"+str(core_utilization)+".txt" ,"w")
+              file = open("report_mode" + str(x) + "_" + str(flow_settings['top_level']) + "_" + str(clock_period) + "_" + str(wire_selection) + "_wire_" + str(metal_layer) + "_" + str(core_utilization) + ".txt" ,"w")
             else:
-              file = open("report_"+str(flow_settings['top_level'])+"_"+str(clock_period)+"_"+str(wire_selection)+"_wire_"+str(metal_layer)+"_"+str(core_utilization)+".txt" ,"w")
-            file.write("total area = " +str(total_area[0])+ " um^2 \n")
-            file.write("total delay = "+str(total_delay)+" ns \n")
-            file.write("total power = "+str(total_dynamic_power[0])+" W \n")
+              file = open("report_" + str(flow_settings['top_level']) + "_" + str(clock_period) + "_" + str(wire_selection) + "_wire_" + str(metal_layer) + "_" + str(core_utilization) + ".txt" ,"w")
+            file.write("total area = "  + str(total_area[0]) +  " um^2 \n")
+            file.write("total delay = " + str(total_delay) + " ns \n")
+            file.write("total power = " + str(total_dynamic_power[0]) + " W \n")
             file.close()
             if total_dynamic_power[0] > the_power:
               the_power = total_dynamic_power[0]

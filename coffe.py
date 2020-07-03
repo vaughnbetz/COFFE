@@ -136,7 +136,7 @@ sys.stdout.flush()
 if is_size_transistors:
     tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
 else:
-  # in case of disabeling floorplanning there is no need to 
+  # in case of disabling floorplanning there is no need to 
   # update delays before updating area. Tried both ways and 
   # they give exactly the same results
   #fpga_inst.update_delays(spice_interface)
