@@ -5655,7 +5655,7 @@ class FPGA:
             self.width_dict["cc_area_total"] = math.sqrt(cc_area_total)
 
             self.area_dict["local_mux_total"] = local_mux_area + local_mux_sram_area
-            self.width_dict["local_mux_total"] = math.sqrt(local_mux_area + local_mux_area)
+            self.width_dict["local_mux_total"] = math.sqrt(local_mux_area + local_mux_sram_area)
 
             self.area_dict["lut_total"] = lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"]
             self.width_dict["lut_total"] = math.sqrt(lut_area + self.specs.N*(2**self.specs.K)*self.area_dict["sram"])
