@@ -8,7 +8,7 @@
 ########## General Design Settings ##########
 #############################################
 # The folder in which all the design files are located:
-design_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/input_files/simple_dsp_slice_45nm/dsp_slice_hdl
+design_folder=/home/projects/ljohn/aarora1/coffe2_aman/COFFE/input_files/simple_dsp_slice_45nm/dsp_slice_hdl
 
 # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
 design_language=verilog
@@ -32,7 +32,7 @@ clock_period=3.0
 top_level=dsp_slice
 
 # The name of the folder in which post-synthesis files and synthesis reports are to be stored
-synth_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_synth
+synth_folder=/home/projects/ljohn/aarora1/coffe2_aman/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_synth
 
 # Do you want to be informed of warnings during synthesis?
 show_warnings=True
@@ -119,7 +119,7 @@ height_to_width_ratio=4.0
 space_around_core=10
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
-pr_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_pnr
+pr_folder=/home/projects/ljohn/aarora1/coffe2_aman/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_pnr
 
 
 ##############################################
@@ -134,7 +134,7 @@ primetime_lib_path=/home/projects/ljohn/aarora1/cadence_gpdk/gsclib045_all_v4.4/
 primetime_lib_name=fast_vdd1v0_basicCells.modif.db
 
 # The name of the folder in which primetime results/reports are to be stored
-primetime_folder=/home/projects/ljohn/aarora1/coffe2_aman2/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_pt
+primetime_folder=/home/projects/ljohn/aarora1/coffe2_aman/COFFE/output_files/simple_dsp_slice_45nm/dsp_slice_pt
 
 # COFFE parameters:
 name=hard_block
@@ -144,9 +144,9 @@ height=4
 num_gen_outputs=9
 num_dedicated_outputs=0
 soft_logic_per_block=0.1
-area_scale_factor=0.12
-freq_scale_factor=1.35
-power_scale_factor=0.3
+area_scale_factor=0.21
+freq_scale_factor=1.33
+power_scale_factor=0.46
 input_usage=0.8
 num_crossbars=1
 crossbar_modelling=optimistic

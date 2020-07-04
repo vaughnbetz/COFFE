@@ -248,7 +248,7 @@ def hardblock_flow(flow_settings):
                      + " -layer_right " + metal_layer_second \
                      + " -layer_left " + metal_layer_second \
                      + " -nets { " + gnd_net + " " + pwr_net + " }" \
-                     +  "-stacked_via_bottom_layer " + metal_layer_bottom + " \n")
+                     + " -stacked_via_bottom_layer " + metal_layer_bottom + " \n")
 
           file.write("setPlaceMode -fp false -maxRouteLayer " + str(metal_layer) + "\n")
           file.write("placeDesign -inPlaceOpt -noPrePlaceOpt \n")
