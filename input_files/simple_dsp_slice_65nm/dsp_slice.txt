@@ -87,6 +87,7 @@ gnd_net=gnd!
 gnd_pin=gnd!
 pwr_net=vdd!
 pwr_pin=vdd!
+tilehi_tielo_cells_between_power_gnd=False
 
 #specify footprint names for inverters, buffers, delays.
 #this is optional. you can get these values from the lib file.

@@ -728,6 +728,7 @@ def load_hard_params(filename):
         'gnd_pin': '',
         'pwr_net': '',
         'pwr_pin': '',
+        'tilehi_tielo_cells_between_power_gnd': True,
         'inv_footprint': '',
         'buf_footprint': '',
         'delay_footprint': '',
@@ -816,6 +817,8 @@ def load_hard_params(filename):
             hard_params['pwr_net'] = value.strip()
         elif param == 'pwr_pin':
             hard_params['pwr_pin'] = value.strip()
+        elif param == 'tilehi_tielo_cells_between_power_gnd':
+            hard_params['tilehi_tielo_cells_between_power_gnd'] = (value == "True")
         elif param == 'inv_footprint':
             hard_params['inv_footprint'] = value.strip()
         elif param == 'buf_footprint':

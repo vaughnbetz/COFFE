@@ -200,7 +200,10 @@ def hardblock_flow(flow_settings):
           file.write("set rda_Input(ui_gndnet) {" + gnd_net + "} \n")
           file.write("set rda_Input(ui_pwrnet) {" + pwr_net + "} \n")
           
-          file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":} {NET:" + gnd_net + ":} {NET:" + pwr_net + ":} {PIN:" + pwr_pin + ":} ] \n")
+          if flow_settings['tilehi_tielo_cells_between_power_gnd'] is True:
+            file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":}" + " {TIEL::} " + "{NET:" + gnd_net + ":} {NET:" + pwr_net + ":}" + " {TIEH::} " + "{PIN:" + pwr_pin + ":} ] \n")
+          else:
+            file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":} {NET:" + gnd_net + ":} {NET:" + pwr_net + ":} {PIN:" + pwr_pin + ":} ] \n")
 
           file.write("set rda_Input(PIN:" + gnd_pin + ":) {" + gnd_pin + "} \n")
           file.write("set rda_Input(TIEL::) {" + gnd_pin + "} \n")
