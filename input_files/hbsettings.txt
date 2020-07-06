@@ -1,4 +1,8 @@
 #This is a sample settings file for the hard block flow
+#The hard block flow is detailed in the paper: 
+#"COFFE 2: Automatic Modelling and Optimization of Complex and Heterogeneous FPGA Architectures"
+#https://dl.acm.org/doi/10.1145/3301298
+#Most of the variables below have comments with them. The paper provides more context and details too.
 
 #############################################
 ########## General Design Settings ##########
@@ -9,6 +13,8 @@ design_folder=../simplyinvert/
 # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
 design_language=verilog
 
+# The exponents of delay and area in the cost function.
+# cost = (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
 delay_cost_exp=1.0
 area_cost_exp=1.0
 
@@ -29,7 +35,6 @@ top_level=registered_inverter
 synth_folder=~/COFFE-master/latest/COFFE/input_files/syntha/
 
 # Do you want to be informed of warnings during synthesis?
-
 show_warnings=True
 
 # Should the flow terminate after synthesis?
@@ -44,6 +49,8 @@ read_saif_file=False
 static_probability=0.5
 toggle_rate=25
 
+# Should COFFE generate an activity file for the design (using modelsim)
+generate_activity_file=False
 
 # Location of the library files.
 # if you have more than one library, please provide them similiar to the example below.
@@ -58,34 +65,57 @@ target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_En
 
 # Libraries required in EDI:
 
+#this can be a list of numbers
 metal_layers=6
 
+#names of metal layers starting from the bottom-most layer on the left. use a python list format. 
+metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6"]
+
+#mention the wireload model to be used. this is present in .lib files.
+#if the library doesn't have wireload models, specify None.
+#multiple values can be specified. just add more rows like:
 #wire_selection=WireAreaLowkCon
 wire_selection=WireAreaLowkAgr
 #wire_selection=WireAreaForZero
 
+#specify names of ground and power pins and nets in the library
+gnd_net=VSS
+gnd_pin=VSS
+pwr_net=VDD
+pwr_pin=VDD
 
+#specify footprint names for inverters, buffers, delays.
+#this is optional. you can get these values from the lib file.
+#you can also specify None, if you can't find them in the lib file.
+inv_footprint=INVD0
+buf_footprint=BUFFD1
+delay_footprint=DEL0
 
+#list of filler cell names. use a python list format.
+#the names can be obtained from .lib files.
+filler_cell_names=["FILL1", "FILL16", "FILL1_LL", "FILL2", "FILL32", "FILL64", "FILL8", "FILL_NW_FA_LL", "FILL_NW_HH", "FILL_NW_LL"]
+
+#name of the core site in the floorplan. can be obtained from lef files.
+core_site_name=core
+
+#specify the utilization of the core site. you can specify multiple ones on different lines.
 core_utilization=0.85
 
+#specify LEF files in the library. remember to specify the tech/header file first and then the file that has macros/cells.
 lef_files="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/tpzn65gpgv2_9lm.lef"
 
-
+#list names (full paths) of the .lib files for various corners
 best_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplusbc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2bc.lib"
 
 standard_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2tc.lib"
 
 worst_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib"
 
-
-
-# EDI settings:
+# EDI (Cadence Encounter) settings:
 power_ring_width=3
 power_ring_spacing=3
 height_to_width_ratio=1.0
-
 space_around_core=5
-
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
 pr_folder=~/COFFE-master/latest/COFFE/input_files/pr/
@@ -98,9 +128,12 @@ pr_folder=~/COFFE-master/latest/COFFE/input_files/pr/
 #mode_signal=mode_0
 #mode_signal=mode_1
 
+#the directory containing the primetime library and the name of the library file
 primetime_lib_path=". /CMC/tools/synopsys/syn_vA-2007.12-SP5/libraries/syn /CMC/tools/synopsys/syn_vA-2007.12-SP5/dw/syn_ver /CMC/tools/synopsys/syn_vA-2007.12-SP5/dw/sim_ver /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
+primetime_lib_name=tcbn65gpluswc.db tpzn65gpgv2wc.db
 
 
+# The name of the folder in which primetime results/reports are to be stored
 primetime_folder=~/COFFE-master/latest/COFFE/input_files/final_analysis/
 
 # COFFE parameters:
