@@ -724,6 +724,8 @@ def load_hard_params(filename):
         'wire_selection': [],
         'metal_layers': [],
         'metal_layer_names': [],
+        'power_ring_metal_layer_names' : [],
+        'map_file': '',
         'gnd_net': '',
         'gnd_pin': '',
         'pwr_net': '',
@@ -809,6 +811,10 @@ def load_hard_params(filename):
             hard_params['metal_layers'].append(value)
         elif param == 'metal_layer_names':
             hard_params['metal_layer_names'] += eval(value)
+        elif param == 'power_ring_metal_layer_names':
+            hard_params['power_ring_metal_layer_names'] += eval(value)
+        elif param == 'map_file':
+            hard_params['map_file'] = value.strip()
         elif param == 'gnd_net':
             hard_params['gnd_net'] = value.strip()
         elif param == 'gnd_pin':

@@ -63,13 +63,21 @@ target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_En
 ########## Place and Route Settings ##########
 ##############################################
 
-# Libraries required in EDI:
+# EDI (Cadence Encounter) settings
 
 #this can be a list of numbers
 metal_layers=6
 
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
-metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6"]
+metal_layer_names=["M1", "M2", "M3", "M4", "M5", "AP"]
+
+#names of metal layers to use for each side of the power ring
+#order: top, bottom, left, right
+power_ring_metal_layer_names=["M1", "M1", "M2", "M2"]
+
+#name of the file to use for layer mapping. used for stream out.
+#set it to None if you want the tool to create a generic map file
+map_file=streamOut.map
 
 #mention the wireload model to be used. this is present in .lib files.
 #if the library doesn't have wireload models, specify None.
@@ -112,7 +120,6 @@ standard_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/t
 
 worst_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib"
 
-# EDI (Cadence Encounter) settings:
 power_ring_width=3
 power_ring_spacing=3
 height_to_width_ratio=1.0

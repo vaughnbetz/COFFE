@@ -87,7 +87,7 @@ def hardblock_flow(flow_settings):
       if flow_settings['read_saif_file']:
         file.write("read_saif saif.saif \n")
       else:
-        file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [get_nets] \n")
+        file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [all_nets] \n")
 
       file.write("ungroup -all -flatten \n")
       file.write("report_power > " + os.path.expanduser(flow_settings['synth_folder']) + "/power.rpt\n")
@@ -226,6 +226,11 @@ def hardblock_flow(flow_settings):
           metal_layer_bottom = flow_settings["metal_layer_names"][0]
           metal_layer_second = flow_settings["metal_layer_names"][1]
           metal_layer_top = flow_settings["metal_layer_names"][int(metal_layer)-1]
+          power_ring_metal_top = flow_settings["power_ring_metal_layer_names"][0] 
+          power_ring_metal_bottom = flow_settings["power_ring_metal_layer_names"][1] 
+          power_ring_metal_left = flow_settings["power_ring_metal_layer_names"][2] 
+          power_ring_metal_right = flow_settings["power_ring_metal_layer_names"][3] 
+
           # generate the EDI (encounter) script
           file = open("edi.tcl", "w")
           file.write("loadConfig edi.conf \n")
@@ -240,17 +245,19 @@ def hardblock_flow(flow_settings):
           file.write("addRing -spacing_bottom " + str(flow_settings['power_ring_spacing']) \
                      + " -spacing_right " + str(flow_settings['power_ring_spacing']) \
                      + " -spacing_top " + str(flow_settings['power_ring_spacing']) \
-                     + " -spacing_left " + str(flow_settings['power_ring_spacing']) + " ")
-          file.write("-width_right " + str(flow_settings['power_ring_width']) \
+                     + " -spacing_left " + str(flow_settings['power_ring_spacing']) \
+                     + " -width_right " + str(flow_settings['power_ring_width']) \
                      + " -width_left " + str(flow_settings['power_ring_width']) \
                      + " -width_bottom " + str(flow_settings['power_ring_width']) \
-                     + " -width_top " + str(flow_settings['power_ring_width']) + " ")
-          file.write("-layer_bottom " + metal_layer_bottom \
-                     + " -center 1 -stacked_via_top_layer "+ metal_layer_top \
-                     + " -around core -layer_top " + metal_layer_top \
-                     + " -layer_right " + metal_layer_second \
-                     + " -layer_left " + metal_layer_second \
+                     + " -width_top " + str(flow_settings['power_ring_width']) \
+                     + " -center 1" \
+                     + " -around core" \
+                     + " -layer_top " + power_ring_metal_top \
+                     + " -layer_bottom " + power_ring_metal_bottom \
+                     + " -layer_left " + power_ring_metal_left \
+                     + " -layer_right " + power_ring_metal_right \
                      + " -nets { " + gnd_net + " " + pwr_net + " }" \
+                     + " -stacked_via_top_layer "+ metal_layer_top \
                      + " -stacked_via_bottom_layer " + metal_layer_bottom + " \n")
 
           file.write("setPlaceMode -fp false -maxRouteLayer " + str(metal_layer) + "\n")
@@ -275,16 +282,16 @@ def hardblock_flow(flow_settings):
           file.write("globalNetConnect " + pwr_net + " -type tiehi -inst * \n")
           file.write("globalNetConnect " + gnd_net + " -type tielo -inst * \n")
 
-          file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe } " \
-                     + "-layerChangeRange { " + metal_layer_bottom + " " + metal_layer_top + " } " \
-                     + "-blockPinTarget { nearestRingStripe nearestTarget } " \
-                     + "-padPinPortConnect { allPort oneGeom } " \
-                     + "-checkAlignedSecondaryPin 1 " \
-                     + "-blockPin useLef " \
-                     + "-allowJogging 1 " \
-                     + "-crossoverViaBottomLayer " + metal_layer_bottom + " " \
-                     + "-allowLayerChange 1 " \
-                     + "-targetViaTopLayer " + metal_layer_top \
+          file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe }" \
+                     + " -layerChangeRange { " + metal_layer_bottom + " " + metal_layer_top + " }" \
+                     + " -blockPinTarget { nearestRingStripe nearestTarget }" \
+                     + " -padPinPortConnect { allPort oneGeom }" \
+                     + " -checkAlignedSecondaryPin 1" \
+                     + " -blockPin useLef" \
+                     + " -allowJogging 1" \
+                     + " -crossoverViaBottomLayer " + metal_layer_bottom \
+                     + " -allowLayerChange 1" \
+                     + " -targetViaTopLayer " + metal_layer_top \
                      + " -crossoverViaTopLayer " + metal_layer_top \
                      + " -targetViaBottomLayer " + metal_layer_bottom \
                      + " -nets { " + gnd_net + " " + pwr_net + " } \n")
@@ -309,9 +316,11 @@ def hardblock_flow(flow_settings):
           file.write(r'saveDesign ' + os.path.expanduser(flow_settings['pr_folder']) + r'/design.enc' + " \n")
           file.write(r'rcOut -spef ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + " \n")
           file.write(r'write_sdf -ideal_clock_network ' + os.path.expanduser(flow_settings['pr_folder']) + r'/sdf.sdf' + " \n")
-          #file.write(r'streamOut '+os.path.expanduser(flow_settings['pr_folder'])+r'/final.gds2' +' -mapFile ' + os.path.expanduser(flow_settings['pr_folder'])+r'/streamOut.map' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
-          #we just let the tool create the map file, since we dont have one available
-          file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
+          #If the user specified a layer mapping file, then use that. Otherwise, just let the tool create a default one.
+          if flow_settings['map_file'] != "None":
+            file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -mapFile ' + flow_settings['map_file'] + ' -stripes 1 -units 1000 -mode ALL' + "\n")
+          else:
+            file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
           file.write("exit \n")
           file.close()
 
@@ -426,10 +435,10 @@ def hardblock_flow(flow_settings):
                 file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] +  " \n")
             file.write("set power_enable_analysis TRUE \n")
             file.write(r'set power_analysis_mode "averaged"' + "\n")
-            if flow_settings['read_saif_file']:
-              file.write("read_saif saif.saif \n")
+            if flow_settings['generate_activity_file']:
+							file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
             else:
-              file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [get_nets] \n")
+              file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [all_nets] \n")
             #file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
             #file.write("read_vcd -input ./modelsim_dir/vcd.vcd \n")
             file.write(r'read_parasitics -increment ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + "\n")
