@@ -71,6 +71,14 @@ metal_layers=4
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
 metal_layer_names=["Metal1", "Metal2", "Metal3", "Metal4"]
 
+#names of metal layers to use for each side of the power ring
+#order: top, bottom, left, right
+power_ring_metal_layer_names=["Metal1", "Metal1", "Metal2", "Metal2"]
+
+#name of the file to use for layer mapping. used for stream out.
+#set it to None if you want the tool to create a generic map file
+map_file=None
+
 #mention the wireload model to be used. this is present in .lib files.
 #if the library doesn't have wireload models, specify None.
 #multiple values can be specified. just add more rows like:
