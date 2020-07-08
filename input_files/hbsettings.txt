@@ -50,7 +50,7 @@ static_probability=0.5
 toggle_rate=25
 
 # Should COFFE generate an activity file for the design (using modelsim)
-generate_activity_file=False
+generate_activity_file=True
 
 # Location of the library files.
 # if you have more than one library, please provide them similiar to the example below.
