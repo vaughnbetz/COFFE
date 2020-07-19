@@ -327,8 +327,8 @@ def hardblock_flow(flow_settings):
           # Run the scrip in EDI
           subprocess.call('encounter -nowin -init edi.tcl', shell=True) 
           # clean after EDI!
-          #subprocess.call('rm -rf edi.tcl', shell=True)
-          #subprocess.call('rm -rf edi.conf', shell=True)
+          subprocess.call('rm -rf edi.tcl', shell=True)
+          subprocess.call('rm -rf edi.conf', shell=True)
           subprocess.call('mv encounter.log ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter_log.log', shell=True)
           subprocess.call('mv encounter.cmd ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter.cmd', shell=True)
 
@@ -405,7 +405,7 @@ def hardblock_flow(flow_settings):
             subprocess.call('dc_shell-t -f primetime.tcl', shell=True) 
 
             # clean after prime time
-            #subprocess.call('rm -rf primetime.tcl', shell=True)
+            subprocess.call('rm -rf primetime.tcl', shell=True)
 
             # Read timing parameters
             file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt" ,"r")
@@ -451,7 +451,7 @@ def hardblock_flow(flow_settings):
             subprocess.call('dc_shell-t -f primetime_power.tcl', shell=True) 
 
             # clean after prime time
-            #subprocess.call('rm -rf primetime_power.tcl', shell=True)
+            subprocess.call('rm -rf primetime_power.tcl', shell=True)
 
 
             # Read dynamic power
