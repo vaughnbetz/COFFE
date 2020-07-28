@@ -74,8 +74,8 @@ outputs/*
 #ignore results
 input_files/bulk_example/
 input_files/*
-!input_files/*.txt
-#input_files/
+!input_files/*/*.txt
+!input_files/*/*/*.v
 
 sainity_check/sainity_check/
 

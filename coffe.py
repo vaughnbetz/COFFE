@@ -1,11 +1,14 @@
+###############################################################
 ### COFFE: CIRCUIT OPTIMIZATION FOR FPGA EXPLORATION
+###############################################################
 # Created by: Charles Chiasson (charles.chiasson@gmail.com)
 #         at: University of Toronto
 #         in: 2013        
-      
+###############################################################
 # BRAM simulation added by Sadegh Yazdanshenas in 2016
 # MTJ and SRAM designs by Kosuke Tatsumura
 # COFFE 2.0 by Sadegh Yazdanshenas 2015-2018     
+###############################################################
 
 # The big picture:
 #
@@ -66,22 +69,20 @@ parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPG
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
 
-
 args = parser.parse_args()
 
 is_size_transistors = not args.no_sizing
 
+# Load the input architecture description file
+arch_params_dict = utils.load_arch_params(args.arch_description)
 
 # Make the top-level spice folder if it doesn't already exist
 # if it's already there delete its content
-arch_folder = utils.create_output_dir(args.arch_description)
+arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['arch_out_folder'])
 
 # Print the options to both terminal and report file
 report_file_path = os.path.join(arch_folder, "report.txt") 
 utils.print_run_options(args, report_file_path)
-
-# Load the input architecture description file
-arch_params_dict = utils.load_arch_params(args.arch_description)
 
 # Print architecture and process details to terminal and report file
 utils.print_architecture_params(arch_params_dict, report_file_path)
@@ -93,18 +94,15 @@ default_dir = os.getcwd()
 # Create an HSPICE interface
 spice_interface = spice.SpiceInterface()
 
-
 # Record start time
 total_start_time = time.time()
 
 # Create an FPGA instance
 fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
                      
-
 ###############################################################
 ## GENERATE FILES
 ###############################################################
-
 
 # Change to the architecture directory
 os.chdir(arch_folder)  
@@ -128,20 +126,17 @@ report_file.close()
 # Go to architecture directory
 os.chdir(arch_folder)
 
-
 ###############################################################
 ## TRANSISTOR SIZING
 ###############################################################
-
 
 sys.stdout.flush()
 
 # Size FPGA transistors
 if is_size_transistors:
-    # TODO: pass the args object instead of passing all its memebers
     tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
 else:
-  # in case of disabeling floorplanning there is no need to 
+  # in case of disabling floorplanning there is no need to 
   # update delays before updating area. Tried both ways and 
   # they give exactly the same results
   #fpga_inst.update_delays(spice_interface)
@@ -164,7 +159,6 @@ else:
 # Obtain Memory core power
 if arch_params_dict['enable_bram_module'] == 1:
   fpga_inst.update_power(spice_interface)
-
 
 # Go back to the base directory
 os.chdir(default_dir)
