@@ -883,6 +883,8 @@ def load_hard_params(filename):
             hard_params['primetime_folder'] = value
         elif param == 'core_site_name':
             hard_params['core_site_name'] = value
+        elif param == 'mode_signal':
+            hard_params['mode_signal'].append(value)
 
     hard_file.close()
     return hard_params
