@@ -480,8 +480,8 @@ def hardblock_flow(flow_settings):
             if total_dynamic_power[0] > the_power:
               the_power = total_dynamic_power[0]
               
-            if lowest_cost > math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['area_cost_exp'])):
-              lowest_cost = math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['area_cost_exp']))
+            if lowest_cost > math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['delay_cost_exp'])):
+              lowest_cost = math.pow(float(total_area[0]), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['delay_cost_exp']))
               lowest_cost_area = float(total_area[0])
               lowest_cost_delay = float(total_delay)
               lowest_cost_power = float(the_power)
