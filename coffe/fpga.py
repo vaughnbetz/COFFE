@@ -6957,11 +6957,62 @@ class FPGA:
         # This is the driving part of the configurable decoder.
         configurable_decoder_drive = self.RAM.configurabledecoderiii.delay
 
+        # ###############################################
+        # Overall frequency calculation of the RAM
+        # ###############################################
+        # Ref [1]: "High Density, Low Energy, Magnetic Tunnel Junction Based Block RAMs for Memory-rich FPGAs",
+        # Tatsumara et al, FPT'16
+        # Ref [2]: "Don't Forget the Memory: Automatic Block RAM Modelling, Optimization, and Architecture Exploration",
+        # Yazdanshenas et al, FPGA'17
+        # 
+        # -----------------------------------------------
+        # For SRAM
+        # -----------------------------------------------
+        # From [1]:
+        # Delay of the RAM read path is a sum of 3 delays:
+        # Tread = T1 + T2 + T3
+        # = max (row decoder, pre-charge time) + (wordline driver + bit line delay) + (sense amp + output crossbar)
+        # For an output registered SRAM (assumed here), the cycle time of the RAM is limited by:
+        # Tread' = Tread + Tmicro_reg_setup
+        # The write path delay (Twrite) is always faster than Tread so it doesn't affect the cycle time.
+        #
+        # The formulae below use a slightly different terminology/notation:
+        # 1. They include configurable decoder related delays as well, which are required because RAM blocks on FPGAs
+        #    have configurable decoders for providing configurable depths and widths.
+        # 2. Instead of breaking down the delay into 3 components,the delay is broken down into 2 components (T1 and T2).
+        # 3. Bit line delay (a part of T2 from the paper) is self.RAM.samp.delay in the code below.
+        # 4. Sense amp delay (a part of T3 from the paper) is self.RAM.samp_part2.delay in the code below.
+        # 5. The Tmicro_reg_setup value is hardcoded as 2e-11
+
         if self.RAM.memory_technology == "SRAM":
             self.RAM.T1 = max(self.RAM.estimated_rowdecoder_delay, configurable_decoder_delay, self.RAM.precharge.delay)
             self.RAM.T2 = self.RAM.wordlinedriver.delay + self.RAM.samp.delay + self.RAM.samp_part2.delay  
             self.RAM.frequency = max(self.RAM.T1 + self.RAM.T2 , configurable_decoder_delay + configurable_decoder_drive)
             self.RAM.frequency += self.RAM.pgateoutputcrossbar.delay + 2e-11
+
+        # -----------------------------------------------
+        # For MTJ
+        # -----------------------------------------------
+        # From [1]:
+        # The write operation consists of precharge (T1) and cell-write (T2) phases. 
+        # T1 is the maximum of BL-discharging time and the row decoder delay. 
+        # T2 is the sum of word line delay and the MTJ cell writing time. 
+        # Twrite = T1 + T2.
+        #
+        # The read operation consists of precharge (T1), stabilize (T3), sense (T4) and latch (T5) phases. 
+        # T1 is the same as the write operation.
+        # T3 is the sum of wordline delay and the BL-charging time.
+        # T4 is the sense amp delay.
+        # T5 is the sum of crossbar delay and Tmicro_reg_setup.
+        # Tread = T1 + T3 + T4 + T5
+        #
+        # Overall frequency = max(Tread, Twrite)
+        # 
+        # The formulae below use a different terminology/notation:
+        # 1. They include confgurable decoder related delays as well, which are required because RAM blocks on FPGAs
+        #    have configurable decoders for providing configurable depths and widths.
+        # 2. There is no separation of Tread and Twrite and the T1/T2/etc components are not the same.
+        # 3. The Tmicro_reg_setup value is hardcoded as 3e-9
 
         elif self.RAM.memory_technology == "MTJ":
 
