@@ -429,6 +429,9 @@ def print_vpr_delays(report_file, fpga_inst):
         path_delay = lut_input.delay
         print_and_write(report_file, ("  lut_" + input_name).ljust(50) + str(driver_delay+path_delay))
     
+    if fpga_inst.specs.enable_bram_block == 1:
+        print_and_write(report_file, "  RAM block frequency".ljust(50) + str(fpga_inst.RAM.frequency))
+        
     print_and_write(report_file, "")
  
 
