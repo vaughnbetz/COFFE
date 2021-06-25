@@ -2,17 +2,23 @@
 This guide is supposed to help clarify which of the COFFE-related papers should be cited when using COFFE.
 Generally, it's a good idea to cite the paper describing the latest version of COFFE:
 
-Sadegh Yazdanshenas and Vaughn Betz. "Automatic circuit design and modelling for heterogeneous FPGAs." International Conference on Field Programmable Technology (FPT), pages 9-16. IEEE, 2017.
+S. Yazdanshenas and V. Betz, "COFFE 2: Automatic Modelling and Optimization of Complex and Heterogeneous FPGA Architectures", ACM TRETS, Vol. 12, No. 1, April 2018, pp. 3:1 - 3:27.
 
-If you are using Latex, you can cite the publication by adding the following to your bibliography file:
+If you are using Latex, you can cite the publication by adding the following to your bibiolography file:
 
-@inproceedings{yazdanshenas2017automatic,
-  title={Automatic circuit design and modelling for heterogeneous {FPGAs}},
-  author={Yazdanshenas, Sadegh and Betz, Vaughn},
-  booktitle={International Conference on Field Programmable Technology (FPT)},
-  pages={9--16},
-  year={2017},
-  organization={IEEE}
+@article{10.1145/3301298,
+author = {Yazdanshenas, Sadegh and Betz, Vaughn},
+title = {COFFE 2: Automatic Modelling and Optimization of Complex and Heterogeneous FPGA Architectures},
+issue_date = {April 2018},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {12},
+number = {1},
+issn = {1936-7406},
+url = {https://doi.org/10.1145/3301298},
+doi = {10.1145/3301298},
+articleno = {3},
+numpages = {27},
 }
 
 
