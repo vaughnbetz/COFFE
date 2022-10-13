@@ -1197,7 +1197,7 @@ def create_output_dir(arch_file_name, arch_out_folder):
         arch_desc_words = arch_file_name.split('.')
         arch_folder = arch_desc_words[0]
     else:
-        arch_folder = arch_out_folder
+        arch_folder = os.path.expanduser(arch_out_folder)
 
     if not os.path.exists(arch_folder):
         os.makedirs(arch_folder)

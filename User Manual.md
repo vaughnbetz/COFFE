@@ -29,6 +29,62 @@ To run COFFE, simply run coffe.py and follow the instructions.
 There are several sample input files in the test directory accompanying COFFE which stimulate all existing features. These files describe what each of the parameters are; simply read them and change them to form your desired architecture.
 We have also included several tests with COFFE which should smoothly run when using the latest version. To test your setup, you can run those.
 
+# How to run a test for ASIC flow (using stratix III like DSP)
+The following test was tested with the following tools:
+-Synopsys Design Compiler 2017
+-Cadence Encounter 2009
+
+Prerequisites:
+Make sure the ASIC tools are on your environments path, this can be done with the following commands:
+$(which dc_shell-t)
+$(which encounter)
+
+1. Now the configuration files for the asic tools must be edited to match the environment and ASIC PDK being used
+(If you're using UofT servers you can skip this portion as they're already setup)
+
+  open up the following file in editor:
+  - ~/COFFE/input_files/strtx_III_dsp/dsp_hb_settings.txt
+
+  If you only want to run the asic flow, set the "asic_flow_only" param to True
+
+  - set the "target_libraries" and "link_libraries" parameters to the absolute paths to the standard cell front end .db files provided by semiconductor PDK (surrounded by quotes).
+  - set the "inv_footprint", "buf_footprint", and "delay_footprint" params to footprints, found in front end .lib files from pdk (found under similar names to "INVD0" "BUFFD1" "DEL0")
+
+  The following params can be found in the PDK back end .lef files
+  - set "metal_layer_names", "filler_cell_names", "core_site_name" params
+  - set the "lef_files" param to the absolute path of the .lef files 
+
+  Note: 
+    make sure the number of metal layers being used is less than or equal to the number of metal_layer_names defined.
+    make sure the .lef file has the correct number of metal layers as well
+
+  - set the "best_case_libs", "standard_libs", and "worst_case_libs" to the corresponding absolute paths to PDK ".lib" files
+  - set the primetime_lib_path to the absolute paths of the following design compiler directories and the front end PDK dirs used
+  Optional Parameter Changes:
+  - if desired one can sweep target frequency, number of metal layers, wire load model, core utilization, and mode of operation (this currently only works for dsp block)
+    - to add additional sweep parameters one would define the variable to be swept again with the new value:
+      - Ex. 
+        clock_period=2.0
+        clock_period=2.5
+        etc...
+2. run the following command (run this with python2):
+  - $(python2 coffe.py -i 1 input_files/strtx_III_dsp/dsp_coffe_params.txt)
+
+3. Once the program has finished go to the following directory:
+  - ~/COFFE/analyze_results
+
+  run the following command the argument points to where the .txt reports from post ASIC flow exist, which should be the same as the arch_out_folder param in dsp_coffe_params.txt):
+    - $(python2 condense_results.py -r ../output_files/strtx_III_dsp/arch_out_dir)
+
+  The above command creates a csv file with all reports from the specified directory.
+  To plot the power, area, and delay results against target frequency run the following command (this requires python3 and matplotlib to be installed):
+  - $(python3 plot_coffe_results.py -c report_csv_out/condensed_report.csv)
+
+
+
+
+
+
 ## How to report an issue.
 
 If you encounter an issue running COFFE, or if you have any questions about the features we support, please file an issue in github.

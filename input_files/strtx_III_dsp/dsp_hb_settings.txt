@@ -5,7 +5,7 @@
 #############################################
 
 # The folder in which all the design files are located:
-design_folder=/fs1/eecg/vaughn/morestep/COFFE/input_files/strtx_III_dsp_sadegh/dsp_block_hdl
+design_folder=~/COFFE/input_files/strtx_III_dsp/dsp_block_hdl
 
 # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
 design_language=verilog
@@ -35,7 +35,7 @@ clock_period=2.0
 top_level=dsp
 
 # The name of the folder in which post-synthesis files and synthesis reports are to be stored
-synth_folder=~/COFFE/output_files/strtx_III_dsp_sadegh/synth
+synth_folder=~/COFFE/output_files/strtx_III_dsp/synth
 
 # Do you want to be informed of warnings during synthesis?
 
@@ -83,7 +83,7 @@ power_ring_metal_layer_names=["M1", "M1", "M2", "M2"]
 #name of the file to use for layer mapping. used for stream out.
 #set it to None if you want the tool to create a generic map file
 map_file=streamOut.map
-wire_selection=WireAreaLowkCon
+#wire_selection=WireAreaLowkCon
 wire_selection=WireAreaLowkAgr
 #wire_selection=WireAreaForZero
 #specify names of ground and power pins and nets in the library
@@ -97,7 +97,6 @@ tilehi_tielo_cells_between_power_gnd=True
 #specify footprint names for inverters, buffers, delays.
 #this is optional. you can get these values from the lib file.
 #you can also specify None, if you can't find them in the lib file.
-#SM: not sure if these are the correct standard cells to be using, as there are many options (need to figure out what DX refers to)
 inv_footprint=INVD0
 buf_footprint=BUFFD1
 delay_footprint=DEL0
@@ -134,7 +133,7 @@ space_around_core=5
 
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
-pr_folder=~/COFFE/output_files/strtx_III_dsp_sadegh/pr
+pr_folder=~/COFFE/output_files/strtx_III_dsp/pr
 
 
 ##############################################
@@ -146,7 +145,7 @@ mode_signal=mode_1
 
 primetime_lib_path=". /CMC/tools/synopsys/syn_vN-2017.09/libraries/syn /CMC/tools/synopsys/syn_vN-2017.09/dw/syn_ver /CMC/tools/synopsys/syn_vN-2017.09/dw/sim_ver /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
 
-primetime_folder=~/COFFE/output_files/strtx_III_dsp_sadegh/pt
+primetime_folder=~/COFFE/output_files/strtx_III_dsp/pt
 
 # COFFE parameters:
 name=hard_block
