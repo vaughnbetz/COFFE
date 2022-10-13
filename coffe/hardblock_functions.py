@@ -25,17 +25,11 @@ def hardblock_flow(flow_settings):
   ###########################################
   design_files = []
   if flow_settings['design_language'] == 'verilog':
-    for file in os.listdir(os.path.expanduser(flow_settings['design_folder'])):
-      if file.endswith(".v"):
-        design_files.append(file)
+    design_files = [fn for _, _, fs in os.walk(flow_settings['design_folder']) for fn in fs if fn.endswith(".v")]
   elif flow_settings['design_language'] == 'vhdl':
-    for file in os.listdir(os.path.expanduser(flow_settings['design_folder'])):
-      if file.endswith(".vhdl"):
-        design_files.append(file)
+    design_files = [fn for _, _, fs in os.walk(flow_settings['design_folder']) for fn in fs if fn.endswith(".vhdl")]
   elif flow_settings['design_language'] == 'sverilog':
-    for file in os.listdir(os.path.expanduser(flow_settings['design_folder'])):
-      if file.endswith(".sv"):
-        design_files.append(file)    
+    design_files = [fn for _, _, fs in os.walk(flow_settings['design_folder']) for fn in fs if fn.endswith(".sv") or fn.endswith(".v")]
   subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['synth_folder']) + "\n", shell=True)
   # Make sure we managed to read the design files
   assert len(design_files) >= 1
@@ -105,12 +99,11 @@ def hardblock_flow(flow_settings):
       file.close()
 
       # Run the scrip in design compiler shell
-      subprocess.call('dc_shell-t -f dc_script.tcl', shell=True, executable='/bin/tcsh') 
+      subprocess.call('dc_shell-t -f dc_script.tcl | tee dc.log', shell=True) 
       # clean after DC!
       subprocess.call('rm -rf command.log', shell=True)
       subprocess.call('rm -rf default.svf', shell=True)
       subprocess.call('rm -rf filenames.log', shell=True)
-      subprocess.call('rm -rf dc_script.tcl', shell=True) 
 
       # Make sure it worked properly
       # Open the timing report and make sure the critical path is non-zero:
@@ -124,8 +117,18 @@ def hardblock_flow(flow_settings):
           print "In spite of the warning, the rest of the flow will continue to execute."
       check_file.close()
 
-      #if the user doesn't want to perform place and route, extract the results from DC reports and end
+      #Copy synthesis results to a unique dir in synth dir
+      synth_report_str = "period_" + clock_period + "_" + "wire_mdl_" + wire_selection
+      report_dest_str = os.path.expanduser(flow_settings['synth_folder']) + "/" + synth_report_str + "_reports"
+      mkdir_cmd_str = "mkdir -p " + report_dest_str
+      copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['synth_folder']) + "/*.rpt " + report_dest_str
+      copy_logs_cmd_str = "cp " + "dc.log "+ "dc_script.tcl " + report_dest_str
+      subprocess.call(mkdir_cmd_str,shell=True)
+      subprocess.call(copy_rep_cmd_str,shell=True)
+      subprocess.call(copy_logs_cmd_str,shell=True)
+      subprocess.call('rm -f dc.log dc_script.tcl',shell=True)
 
+      #if the user doesn't want to perform place and route, extract the results from DC reports and end
       if flow_settings['synthesis_only']:
 
         # read total area from the report file:
@@ -161,7 +164,7 @@ def hardblock_flow(flow_settings):
               total_dynamic_power[0] *= 0.000001
             else:
               total_dynamic_power[0] = 0
-        file.close()    
+        file.close()
 
         # write the final report file:
         file = open("report.txt" ,"w")
@@ -325,13 +328,11 @@ def hardblock_flow(flow_settings):
           file.close()
 
           # Run the scrip in EDI
-          subprocess.call('encounter -nowin -init edi.tcl', shell=True) 
+          subprocess.call('encounter -nowin -init edi.tcl | tee edi.log', shell=True) 
           # clean after EDI!
-          subprocess.call('rm -rf edi.tcl', shell=True)
-          subprocess.call('rm -rf edi.conf', shell=True)
           subprocess.call('mv encounter.log ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter_log.log', shell=True)
           subprocess.call('mv encounter.cmd ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter.cmd', shell=True)
-
+          
           # read total area from the report file:
           file = open(os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt" ,"r")
           for line in file:
@@ -339,6 +340,17 @@ def hardblock_flow(flow_settings):
               total_area = re.findall(r'\d+\.{0,1}\d*', line)
           file.close()
           
+          #Copy pnr results to a unique dir in pnr dir
+          pnr_report_str = synth_report_str + "_" + "metal_layers_" + metal_layer + "_" + "util_" + core_utilization
+          report_dest_str = os.path.expanduser(flow_settings['pr_folder']) + "/" + pnr_report_str + "_reports"
+          mkdir_cmd_str = "mkdir -p " + report_dest_str
+          copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['pr_folder']) + "/*.rpt " + os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt " + report_dest_str
+          copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + report_dest_str
+          subprocess.call(mkdir_cmd_str,shell=True)
+          subprocess.call(copy_rep_cmd_str,shell=True)
+          subprocess.call(copy_logs_cmd_str,shell=True)
+          subprocess.call('rm -f edi.log edi.conf edi.tcl', shell=True)
+
           if len(flow_settings['mode_signal']) > 0:
             mode_enabled = True
           else:
@@ -387,25 +399,30 @@ def hardblock_flow(flow_settings):
             file.write("set sh_enable_page_mode true \n")
 
             file.write("set search_path " + flow_settings['primetime_lib_path'] + " \n")
-            file.write("set link_path "  + r'"* ' + flow_settings['primetime_lib_name'] + '"' + " \n") 
+            file.write("set my_top_level " + flow_settings['top_level'] + "\n")
+            file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
+            file.write("set target_library " + flow_settings['target_libraries'] + "\n")
+            file.write("set link_library " + flow_settings['link_libraries'] + "\n")
 
             file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               for y in range (0, len(flow_settings['mode_signal'])):
                 file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] + " \n")
             file.write("link \n")
+            
+            file.write("set my_period " + str(clock_period) + " \n")
+            file.write("set find_clock [ find port [list $my_clock_pin] ] \n")
+            file.write("if { $find_clock != [list] } { \n")
+            file.write("set clk_name $my_clock_pin \n")
+            file.write("create_clock -period $my_period $clk_name} \n\n")
 
-            file.write("create_clock -period " + clock_period + " " + flow_settings['clock_pin_name'] + " \n")
             file.write("read_parasitics -increment " + os.path.expanduser(flow_settings['pr_folder']) + "/spef.spef \n")
             file.write("report_timing > " + os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt \n")
             file.write("quit \n")
             file.close()
 
             # run prime time
-            subprocess.call('dc_shell-t -f primetime.tcl', shell=True) 
-
-            # clean after prime time
-            subprocess.call('rm -rf primetime.tcl', shell=True)
+            subprocess.call('dc_shell-t -f primetime.tcl | tee pt.log', shell=True) 
 
             # Read timing parameters
             file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt" ,"r")
@@ -424,12 +441,19 @@ def hardblock_flow(flow_settings):
             file.write("set sh_enable_page_mode true \n")
 
             file.write("set search_path " + flow_settings['primetime_lib_path'] + " \n")
-            file.write("set link_path "  + r'"* ' + flow_settings['primetime_lib_name'] + '"' + " \n") 
+            file.write("set my_top_level " + flow_settings['top_level'] + "\n")
+            file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
+            file.write("set target_library " + flow_settings['target_libraries'] + "\n")
+            file.write("set link_library " + flow_settings['link_libraries'] + "\n")
 
             file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
             file.write("link \n")
 
-            file.write("create_clock -period " + str(total_delay) + " " + flow_settings['clock_pin_name'] + " \n")
+            file.write("set my_period " + str(clock_period) + " \n")
+            file.write("set find_clock [ find port [list $my_clock_pin] ] \n")
+            file.write("if { $find_clock != [list] } { \n")
+            file.write("set clk_name $my_clock_pin \n")
+            file.write("create_clock -period $my_period $clk_name} \n\n")
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               for y in range (0, len(flow_settings['mode_signal'])):
                 file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] +  " \n")
@@ -438,7 +462,7 @@ def hardblock_flow(flow_settings):
             if flow_settings['generate_activity_file']:
 							file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
             else:
-              file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " [all_nets] \n")
+              file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " -base_clock $my_clock_pin -type inputs \n")
             #file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
             #file.write("read_vcd -input ./modelsim_dir/vcd.vcd \n")
             file.write(r'read_parasitics -increment ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + "\n")
@@ -448,12 +472,19 @@ def hardblock_flow(flow_settings):
             file.close()
 
             # run prime time
-            subprocess.call('dc_shell-t -f primetime_power.tcl', shell=True) 
+            subprocess.call('dc_shell-t -f primetime_power.tcl | tee pt_pwr.log', shell=True) 
 
-            # clean after prime time
-            subprocess.call('rm -rf primetime_power.tcl', shell=True)
-
-
+            #copy reports and logs to a unique dir in pt dir
+            pt_report_str = pnr_report_str + "_" + "mode_" + str(x)
+            report_dest_str = os.path.expanduser(flow_settings['primetime_folder']) + "/" + pt_report_str + "_reports"
+            mkdir_cmd_str = "mkdir -p " + report_dest_str
+            copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['primetime_folder']) + "/*.rpt " + report_dest_str
+            copy_logs_cmd_str = "cp " + "pt.log pt_pwr.log primetime.tcl primetime_power.tcl " + report_dest_str
+            subprocess.call(mkdir_cmd_str,shell=True)
+            subprocess.call(copy_rep_cmd_str,shell=True)
+            subprocess.call(copy_logs_cmd_str,shell=True)
+            subprocess.call('rm -f pt.log pt_pwr.log primetime.tcl primetime_power.tcl', shell=True)
+            
             # Read dynamic power
             file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/power.rpt" ,"r")
             for line in file:

@@ -5175,8 +5175,10 @@ class _hard_block(_CompoundCircuit):
         if self.parameters['num_dedicated_outputs'] > 0:
             self.dedicated.generate_top()
 
-        # hard flow
+        # hard block flow
         self.flow_results = hardblock_functions.hardblock_flow(self.parameters)
+        if(self.parameters["asic_flow_only"] == True):
+            sys.exit()
         #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
         self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
 

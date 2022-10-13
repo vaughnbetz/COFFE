@@ -509,6 +509,8 @@ def load_arch_params(filename):
         'FAs_per_flut':2,
         'hb_files' : [],
         'arch_out_folder': "None",
+        # 'coffe_design_name' : "coffe_test",
+        # 'coffe_repo_path' : "None"
     }
 
     params_file = open(filename, 'r')
@@ -658,6 +660,10 @@ def load_arch_params(filename):
             arch_params['hb_files'].append(value)
         elif param == 'arch_out_folder':
             arch_params['arch_out_folder'] = value
+        # elif param == 'coffe_design_name':
+        #     arch_params['coffe_design_name'] = str(value)
+        # elif param == 'coffe_repo_path':
+        #     arch_params['coffe_repo_path'] = str(value)
 
     params_file.close()
     
@@ -704,6 +710,7 @@ def load_hard_params(filename):
         'synth_folder': "",
         'show_warnings': False,
         'synthesis_only': False,
+        'asic_flow_only': False,
         'read_saif_file': False,
         'static_probability': -1.0,
         'toggle_rate': -1,
@@ -850,6 +857,8 @@ def load_hard_params(filename):
             hard_params['show_warnings'] = (value == "True")
         elif param == 'synthesis_only':
             hard_params['synthesis_only'] = (value == "True")
+        elif param == 'asic_flow_only':
+            hard_params['asic_flow_only'] = (value == "True")
         elif param == 'read_saif_file':
             hard_params['read_saif_file'] = (value == "True")
         elif param == 'static_probability':
@@ -978,7 +987,9 @@ def check_arch_params (arch_params, filename):
     if arch_params['enable_bram_module'] == 1 and arch_params['use_finfet'] == True:
         print_error_not_compatable("finfet", "BRAM")           
     if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
-        print_error_not_compatable("finfet", "flut")           
+        print_error_not_compatable("finfet", "flut")      
+    # if arch_params['coffe_repo_path'].split("/")[-1] != "COFFE":
+    #     print_error (arch_params['coffe_repo_path'],"coffe_repo_path",filename)
 
 
 
