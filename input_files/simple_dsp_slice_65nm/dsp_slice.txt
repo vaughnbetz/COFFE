@@ -26,7 +26,7 @@ area_cost_exp=1.0
 clock_pin_name=clk
 
 # Desired clock period in ns
-clock_period=1.82
+clock_period=3.0
 
 # Name of the top-level entity in the design
 top_level=dsp_slice
@@ -54,13 +54,21 @@ generate_activity_file=False
 
 # Location of the library files.
 # if you have more than one library, please provide them similiar to the example below.
-
 #link_libraries=/usr/local/packages/cadence_2007/FreePDK45/osu_soc/lib/files/gscl45nm.db dw_foundation.sldb
 #link_libraries=/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db dw_foundation.sldb
-# Using the libraries from 65nm pdk
+
+# uncomment below for UT austin
+# link_libraries="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.db dw_foundation.sldb"
+
+# uncomment below for University of Toronto
 link_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.db dw_foundation.sldb"
 
 #target_libraries=/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db
+
+# uncomment below for UT austin
+#target_libraries=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.db
+
+# uncomment below for University of Toronto
 target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.db /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2tc.db"
 
 ##############################################
@@ -70,13 +78,23 @@ target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_En
 # Libraries required in EDI:
 
 #this can be a list of numbers
-metal_layers=6
+metal_layers=4
 
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
+
+# uncomment below for UT austin
+#metal_layer_names=["ME1", "ME2", "ME3", "ME4"]
+
+# uncomment below for University of Toronto
 metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6"]
 
 #names of metal layers to use for each side of the power ring
 #order: top, bottom, left, right
+
+# uncomment below for UT austin
+# power_ring_metal_layer_names=["ME1", "ME1", "ME2", "ME2"]
+
+# uncomment below for University of Toronto
 power_ring_metal_layer_names=["M1", "M1", "M2", "M2"]
 
 #name of the file to use for layer mapping. used for stream out.
@@ -93,35 +111,69 @@ map_file=None
 wire_selection=WireAreaLowkAgr
 
 #specify names of ground and power pins and nets in the library
-gnd_net=VSS!
-gnd_pin=VSS!
-pwr_net=VDD!
-pwr_pin=VDD!
+
+# uncomment below for University of Toronto
+gnd_net=VSS
+gnd_pin=VSS
+pwr_net=VDD
+pwr_pin=VDD
+
+# uncomment below for UT austin
+#gnd_net=gnd!
+#gnd_pin=gnd!
+#pwr_net=vdd!
+#pwr_pin=vdd!
+
 tilehi_tielo_cells_between_power_gnd=False
 
 
 #specify footprint names for inverters, buffers, delays.
 #this is optional. you can get these values from the lib file.
 #you can also specify None, if you can't find them in the lib file.
-#SM: not sure if these are the correct standard cells to be using, as there are many options (need to figure out what DX refers to)
+# uncomment below for University of Toronto
 inv_footprint=INVD0
 buf_footprint=BUFFD0
 delay_footprint=INVD0
 
+# uncomment below for UT austin
+#inv_footprint=INVX
+#buf_footprint=BUFX
+#delay_footprint=INVX
+
 #list of filler cell names. use a python list format.
 #the names can be obtained from .lib files.
+
+# uncomment below for University of Toronto
 filler_cell_names=["GFILL", "GFILL10", "GFILL2", "GFILL3", "GFILL4"]
 
+# uncomment below for UT austin
+#filler_cell_names=["FILL1", "FILL2", "FILL3", "FILL4"]
+
 #name of the core site in the floorplan. can be obtained from lef files.
+
+# uncomment below for University of Toronto
 core_site_name=core
+
+# uncomment below for UT austin
+#core_site_name=Core
 
 #specify the utilization of the core site. you can specify multiple ones on different lines.
 core_utilization=0.90
-
 #specify LEF files in the library. remember to specify the tech/header file first and then the file that has macros/cells.
+# uncomment below for UT austin
+#lef_files="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/lef/ceid_vlsiLab_umc65ll_header.lef /home/projects/ljohn/aarora1/ceid/ceid_umc65ll/lef/ceid_vlsiLab_umc65ll_allStdCells.lef"
+
+# uncomment below for University of Toronto
 lef_files="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_6lmT1.lef"
 
 #list names (full paths) of the .lib files for various corners
+
+# uncomment below for UT austin
+#best_case_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
+#standard_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
+#worst_case_libs=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.lib
+
+# uncomment below for University of Toronto
 best_case_libs=/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplusbc.lib
 
 standard_libs=/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.lib
@@ -144,11 +196,17 @@ pr_folder=~/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pnr
 
 #mode_signal=mode_0
 #mode_signal=mode_1
-
 #the directory containing the primetime library and the name of the library file
+# uncomment below for UT austin
+#primetime_lib_path=/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys
+#primetime_lib_name=ceid_vlsiLab_umc65ll_stdCells.db
+
+# uncomment below for University of Toronto
 primetime_lib_path="/CMC/tools/synopsys/syn_vN-2017.09/libraries/syn /CMC/tools/synopsys/syn_vN-2017.09/dw/syn_ver /CMC/tools/synopsys/syn_vN-2017.09/dw/sim_ver /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
 primetime_lib_name=tcbn65gplustc.db
 
+
+#the directory containing the primetime library and the name of the library file
 # The name of the folder in which primetime results/reports are to be stored
 primetime_folder=~/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pt
 
