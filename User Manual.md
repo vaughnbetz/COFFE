@@ -80,6 +80,10 @@ $(which encounter)
   To plot the power, area, and delay results against target frequency run the following command (this requires python3 and matplotlib to be installed):
   - $(python3 plot_coffe_results.py -c report_csv_out/condensed_report.csv)
 
+4. A script that runs all of the above commands can be run from COFFE repo:
+  - $(chmod +x ./unit_test.sh)
+  - $(./unit_test.sh)
+
 
 
 

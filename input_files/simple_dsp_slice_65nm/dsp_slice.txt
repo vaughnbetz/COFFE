@@ -18,6 +18,8 @@ design_language=verilog
 delay_cost_exp=1.0
 area_cost_exp=1.0
 
+process_lib_paths="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
+
 ########################################
 ########## Synthesis Settings ##########
 ########################################
@@ -26,7 +28,7 @@ area_cost_exp=1.0
 clock_pin_name=clk
 
 # Desired clock period in ns
-clock_period=3.0
+clock_period=1.82
 
 # Name of the top-level entity in the design
 top_level=dsp_slice
@@ -61,7 +63,7 @@ generate_activity_file=False
 # link_libraries="/home/projects/ljohn/aarora1/ceid/ceid_umc65ll/synopsys/ceid_vlsiLab_umc65ll_stdCells.db dw_foundation.sldb"
 
 # uncomment below for University of Toronto
-link_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.db dw_foundation.sldb"
+#link_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.db dw_foundation.sldb"
 
 #target_libraries=/home/projects/ljohn/aarora1/FreePDK45/FreePDK45/osu_soc/lib/files/gscl45nm.db
 
@@ -78,7 +80,7 @@ target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_En
 # Libraries required in EDI:
 
 #this can be a list of numbers
-metal_layers=4
+metal_layers=6
 
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
 
@@ -86,7 +88,7 @@ metal_layers=4
 #metal_layer_names=["ME1", "ME2", "ME3", "ME4"]
 
 # uncomment below for University of Toronto
-metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6"]
+metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "AP"]
 
 #names of metal layers to use for each side of the power ring
 #order: top, bottom, left, right
@@ -202,8 +204,8 @@ pr_folder=~/COFFE/output_files/simple_dsp_slice_65nm/dsp_slice_pnr
 #primetime_lib_name=ceid_vlsiLab_umc65ll_stdCells.db
 
 # uncomment below for University of Toronto
-primetime_lib_path="/CMC/tools/synopsys/syn_vN-2017.09/libraries/syn /CMC/tools/synopsys/syn_vN-2017.09/dw/syn_ver /CMC/tools/synopsys/syn_vN-2017.09/dw/sim_ver /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
-primetime_lib_name=tcbn65gplustc.db
+#primetime_lib_path="/CMC/tools/synopsys/syn_vN-2017.09/libraries/syn /CMC/tools/synopsys/syn_vN-2017.09/dw/syn_ver /CMC/tools/synopsys/syn_vN-2017.09/dw/sim_ver /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
+#primetime_lib_name=tcbn65gplustc.db
 
 
 #the directory containing the primetime library and the name of the library file

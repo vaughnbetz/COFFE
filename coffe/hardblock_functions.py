@@ -10,25 +10,28 @@ import re
 import shutil
 import math
 
-def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_selection):
-  ###########################################
-  # Synthesis
-  ###########################################
+
+def write_synth_tcl(flow_settings,clock_period,wire_selection):
+  """
+  Writes the dc_script.tcl file which will be executed to run synthesis using Synopsys Design Compiler, tested under 2017 version
+  """
   file = open("dc_script.tcl","w")
-  file.write("cd " + os.path.expanduser(flow_settings['synth_folder']) + "\n")
-  file.write("set search_path " + "\"" + " ".join(search_path_dirs) + "\"" + " \n")
-  if len(design_files) == 1:
-    file.write("set my_files " + design_files[0] + "\n")
+  file.write("cd " + flow_settings['synth_folder'] + "\n")
+  file.write("set search_path " + flow_settings["search_path"] + " \n")
+  if len(flow_settings["design_files"]) == 1:
+    file.write("set my_files " + flow_settings["design_files"][0] + "\n")
   else:
     file.write("set my_files [list ")
-    for entity in design_files:
+    for entity in flow_settings["design_files"]:
+      #currently set to ignore filenames of parameters.v/c_functions.v this should be updated in the future as its design specific TODO
       if not (entity == "parameters.v" or entity == "c_functions.v"):
         file.write(entity + " ")
     file.write("] \n")
   file.write("set my_top_level " + flow_settings['top_level'] + "\n")
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set link_library " + flow_settings['link_libraries'] + "\n")
-  file.write("set target_library " + flow_settings['target_libraries'] + "\n")
+  #after pre_processing function, the target_library and link_library vars should be set (link_library is all files in cwd and target_library)
+  file.write("set target_library " + flow_settings["target_library"] + "\n")
+  file.write("set link_library " + flow_settings["link_library"] + "\n")
   file.write(r'set power_analysis_mode "averaged"' + "\n")
   file.write("define_design_lib WORK -path ./WORK \n")
   if flow_settings['design_language'] == 'verilog':
@@ -39,7 +42,7 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
     file.write("analyze -f sverilog $my_files \n")
   file.write("elaborate $my_top_level \n")
   file.write("current_design $my_top_level \n")
-  file.write("check_design >  " + os.path.expanduser(flow_settings['synth_folder']) + "/checkprecompile.rpt\n")
+  file.write("check_design >  " + flow_settings['synth_folder'] + "/checkprecompile.rpt\n")
   file.write("link \n")
   file.write("uniquify \n")
   #If wire_selection is None, then no wireload model is used during synthesis. This does imply results 
@@ -53,26 +56,33 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
   file.write("set clk_name $my_clock_pin \n")
   file.write("create_clock -period $my_period $clk_name} \n\n")
   file.write("compile_ultra\n")
-  file.write("check_design >  " + os.path.expanduser(flow_settings['synth_folder']) + "/check.rpt\n")
+  file.write("check_design >  " + flow_settings['synth_folder'] + "/check.rpt\n")
   file.write("link \n")
-  file.write("write_file -format ddc -hierarchy -output " + os.path.expanduser(flow_settings['synth_folder']) + "/" +  flow_settings['top_level']  + ".ddc \n")
+  file.write("write_file -format ddc -hierarchy -output " + flow_settings['synth_folder'] + "/" +  flow_settings['top_level']  + ".ddc \n")
   if flow_settings['read_saif_file']:
     file.write("read_saif saif.saif \n")
   else:
     file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " -base_clock $my_clock_pin -type inputs \n")
   file.write("ungroup -all -flatten \n")
-  file.write("report_power > " + os.path.expanduser(flow_settings['synth_folder']) + "/power.rpt\n")
-  file.write("report_area -nosplit -hierarchy > " + os.path.expanduser(flow_settings['synth_folder']) + "/area.rpt\n")
-  file.write("report_resources -nosplit -hierarchy > " + os.path.expanduser(flow_settings['synth_folder']) + "/resources.rpt\n")      
-  file.write("report_timing > " + os.path.expanduser(flow_settings['synth_folder']) + "/timing.rpt\n")
+  file.write("report_power > " + flow_settings['synth_folder'] + "/power.rpt\n")
+  file.write("report_area -nosplit -hierarchy > " + flow_settings['synth_folder'] + "/area.rpt\n")
+  file.write("report_resources -nosplit -hierarchy > " + flow_settings['synth_folder'] + "/resources.rpt\n")      
+  file.write("report_timing > " + flow_settings['synth_folder'] + "/timing.rpt\n")
   file.write("change_names -hier -rule verilog \n") 
-  file.write("write -f verilog -output " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.v\n")
-  file.write("write_sdf " + os.path.expanduser(flow_settings['synth_folder']) + "/synthsized.sdf \n")
-  file.write("write_parasitics -output " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.spef \n")
-  file.write("write_sdc " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.sdc \n")
+  file.write("write -f verilog -output " + flow_settings['synth_folder'] + "/synthesized.v\n")
+  file.write("write_sdf " + flow_settings['synth_folder'] + "/synthsized.sdf \n")
+  file.write("write_parasitics -output " + flow_settings['synth_folder'] + "/synthesized.spef \n")
+  file.write("write_sdc " + flow_settings['synth_folder'] + "/synthesized.sdc \n")
   file.write("quit \n")
   file.close()
 
+#search_path_dirs,design_files,
+def run_synth(flow_settings,clock_period,wire_selection):
+  """"
+  runs the synthesis flow for specific clock period and wireload model
+  Prereqs: flow_settings_pre_process() function to properly format params for scripts
+  """
+  write_synth_tcl(flow_settings,clock_period,wire_selection)
   # Run the scrip in design compiler shell
   subprocess.call('dc_shell-t -f dc_script.tcl | tee dc.log', shell=True,executable="/bin/bash") 
   # clean after DC!
@@ -82,7 +92,7 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
 
   # Make sure it worked properly
   # Open the timing report and make sure the critical path is non-zero:
-  check_file = open(os.path.expanduser(flow_settings['synth_folder']) + "/check.rpt", "r")
+  check_file = open(flow_settings['synth_folder'] + "/check.rpt", "r")
   for line in check_file:
     if "Error" in line:
       print "Your design has errors. Refer to check.rpt in synthesis directory"
@@ -94,9 +104,9 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
 
   #Copy synthesis results to a unique dir in synth dir
   synth_report_str = "period_" + clock_period + "_" + "wire_mdl_" + wire_selection
-  report_dest_str = os.path.expanduser(flow_settings['synth_folder']) + "/" + synth_report_str + "_reports"
+  report_dest_str = flow_settings['synth_folder'] + "/" + synth_report_str + "_reports"
   mkdir_cmd_str = "mkdir -p " + report_dest_str
-  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['synth_folder']) + "/*.rpt " + report_dest_str
+  copy_rep_cmd_str = "cp " + flow_settings['synth_folder'] + "/*.rpt " + report_dest_str
   copy_logs_cmd_str = "cp " + "dc.log "+ "dc_script.tcl " + report_dest_str
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
@@ -106,13 +116,13 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
   #if the user doesn't want to perform place and route, extract the results from DC reports and end
   if flow_settings['synthesis_only']:
     # read total area from the report file:
-    file = open(os.path.expanduser(flow_settings['synth_folder']) + "/area.rpt" ,"r")
+    file = open(flow_settings['synth_folder'] + "/area.rpt" ,"r")
     for line in file:
       if line.startswith('Total cell area:'):
         total_area = re.findall(r'\d+\.{0,1}\d*', line)
     file.close()
     # Read timing parameters
-    file = open(os.path.expanduser(flow_settings['synth_folder']) + "/timing.rpt" ,"r")
+    file = open(flow_settings['synth_folder'] + "/timing.rpt" ,"r")
     for line in file:
       if 'library setup time' in line:
         library_setup_time = re.findall(r'\d+\.{0,1}\d*', line)
@@ -124,7 +134,7 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
       total_delay =  float(data_arrival_time[0])
     file.close()    
     # Read dynamic power
-    file = open(os.path.expanduser(flow_settings['synth_folder']) + "/power.rpt" ,"r")
+    file = open(flow_settings['synth_folder'] + "/power.rpt" ,"r")
     for line in file:
       if 'Total Dynamic Power' in line:
         total_dynamic_power = re.findall(r'\d+\.\d*', line)
@@ -146,11 +156,10 @@ def run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_sele
     exit()
   return synth_report_str
 
-
-def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
-  ###########################################
-  # Place and Route
-  ###########################################
+def write_pnr_script(flow_settings,metal_layer,core_utilization):
+  """"
+  writes the tcl script for place and route using Cadence Encounter, tested under 2009 version
+  """
   # generate the EDI (encounter) configuration
   file = open("edi.conf", "w")
   file.write("global rda_Input \n")
@@ -277,6 +286,12 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
     file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
   file.write("exit \n")
   file.close()
+def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
+  """
+  runs place and route using cadence encounter
+  Prereqs: flow_settings_pre_process() function to properly format params for scripts
+  """
+  write_pnr_script(flow_settings,metal_layer,core_utilization)
   # Run the scrip in EDI
   subprocess.call('encounter -nowin -init edi.tcl | tee edi.log', shell=True,executable="/bin/bash") 
   # clean after EDI!
@@ -301,6 +316,9 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
   return pnr_report_str, total_area
 
 def run_sim():
+  """
+  Runs simulation using a user inputted testbench, not tested and unsure of which hard block its modeling USE AT OWN RISK (ie use saif file option in hardblock settings file)
+  """
   # Create a modelsim folder
   #subprocess.call("mkdir -p"+os.path.expanduser("./modelsim_dir")+"\n", shell=True)
   # Create a modelsim .do file:
@@ -324,57 +342,18 @@ def run_sim():
   subprocess.call('wlf2vcd -o test.vcd out.wlf', shell=True)
   subprocess.call('vcd2saif -input test.vcd -o saif.saif', shell=True)
 
-def run_power_timing(flow_settings,mode_enabled,clock_period,pnr_report_str):
-  ###########################################
-  # Primetime
-  ###########################################
-  if not mode_enabled:
-    x = 2**len(flow_settings['mode_signal'])
-  # backannotate into primetime
-  # This part should be reported for all the modes in the design.
-  file = open("primetime.tcl", "w")
-  file.write("set sh_enable_page_mode true \n")
-  file.write("set search_path " + flow_settings['primetime_lib_path'] + " \n")
-  file.write("set my_top_level " + flow_settings['top_level'] + "\n")
-  file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set target_library " + flow_settings['target_libraries'] + "\n")
-  file.write("set link_library " + flow_settings['link_libraries'] + "\n")
-  file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
-  if mode_enabled and x <2**len(flow_settings['mode_signal']):
-    for y in range (0, len(flow_settings['mode_signal'])):
-      file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] + " \n")
-  file.write("link \n")
-  file.write("set my_period " + str(clock_period) + " \n")
-  file.write("set find_clock [ find port [list $my_clock_pin] ] \n")
-  file.write("if { $find_clock != [list] } { \n")
-  file.write("set clk_name $my_clock_pin \n")
-  file.write("create_clock -period $my_period $clk_name} \n\n")
-  file.write("read_parasitics -increment " + os.path.expanduser(flow_settings['pr_folder']) + "/spef.spef \n")
-  file.write("report_timing > " + os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt \n")
-  file.write("quit \n")
-  file.close()
-  # run prime time
-  subprocess.call('dc_shell-t -f primetime.tcl | tee pt.log', shell=True,executable="/bin/bash") 
-  # Read timing parameters
-  file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt" ,"r")
-  for line in file:
-    if 'library setup time' in line:
-      library_setup_time = re.findall(r'\d+\.{0,1}\d*', line)
-    if 'data arrival time' in line:
-      data_arrival_time = re.findall(r'\d+\.{0,1}\d*', line)
-  try:
-    total_delay =  float(library_setup_time[0]) + float(data_arrival_time[0])
-  except NameError:
-    total_delay =  float(data_arrival_time[0])
-  file.close()
+def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
+  """"
+  writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
+  """
   # Create a script to measure power:
   file = open("primetime_power.tcl", "w")
   file.write("set sh_enable_page_mode true \n")
-  file.write("set search_path " + flow_settings['primetime_lib_path'] + " \n")
+  file.write("set search_path " + flow_settings['search_path'] + " \n")
   file.write("set my_top_level " + flow_settings['top_level'] + "\n")
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set target_library " + flow_settings['target_libraries'] + "\n")
-  file.write("set link_library " + flow_settings['link_libraries'] + "\n")
+  file.write("set target_library " + flow_settings['target_library'] + "\n")
+  file.write("set link_library " + flow_settings['link_library'] + "\n")
   file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
   file.write("link \n")
   file.write("set my_period " + str(clock_period) + " \n")
@@ -399,6 +378,51 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,pnr_report_str):
   file.write("quit\n")
   file.close()
 
+def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
+  """"""
+  # backannotate into primetime
+  # This part should be reported for all the modes in the design.
+  file = open("primetime.tcl", "w")
+  file.write("set sh_enable_page_mode true \n")
+  file.write("set search_path " + flow_settings['search_path'] + " \n")
+  file.write("set my_top_level " + flow_settings['top_level'] + "\n")
+  file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
+  file.write("set target_library " + flow_settings['target_library'] + "\n")
+  file.write("set link_library " + flow_settings['link_library'] + "\n")
+  file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
+  if mode_enabled and x <2**len(flow_settings['mode_signal']):
+    for y in range (0, len(flow_settings['mode_signal'])):
+      file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] + " \n")
+  file.write("link \n")
+  file.write("set my_period " + str(clock_period) + " \n")
+  file.write("set find_clock [ find port [list $my_clock_pin] ] \n")
+  file.write("if { $find_clock != [list] } { \n")
+  file.write("set clk_name $my_clock_pin \n")
+  file.write("create_clock -period $my_period $clk_name} \n\n")
+  file.write("read_parasitics -increment " + os.path.expanduser(flow_settings['pr_folder']) + "/spef.spef \n")
+  file.write("report_timing > " + os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt \n")
+  file.write("quit \n")
+  file.close()
+
+def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str):
+  if not mode_enabled:
+    x = 2**len(flow_settings['mode_signal'])
+  write_pt_timing_script(flow_settings,mode_enabled,clock_period,x)
+  # run prime time
+  subprocess.call('dc_shell-t -f primetime.tcl | tee pt.log', shell=True,executable="/bin/bash") 
+  # Read timing parameters
+  file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/timing.rpt" ,"r")
+  for line in file:
+    if 'library setup time' in line:
+      library_setup_time = re.findall(r'\d+\.{0,1}\d*', line)
+    if 'data arrival time' in line:
+      data_arrival_time = re.findall(r'\d+\.{0,1}\d*', line)
+  try:
+    total_delay =  float(library_setup_time[0]) + float(data_arrival_time[0])
+  except NameError:
+    total_delay =  float(data_arrival_time[0])
+  file.close()
+  write_pt_power_script(flow_settings,mode_enabled,clock_period,x)
   # run prime time
   subprocess.call('dc_shell-t -f primetime_power.tcl | tee pt_pwr.log', shell=True,executable="/bin/bash") 
   #copy reports and logs to a unique dir in pt dir
@@ -425,43 +449,85 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,pnr_report_str):
         total_dynamic_power[0] = 0
   file.close() 
   return library_setup_time, data_arrival_time, total_delay, total_dynamic_power   
-    
-# wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
-def hardblock_flow(flow_settings):
 
-  # Enter all the signals that change modes
-  lowest_cost = sys.float_info.max
-  lowest_cost_area = 1.0
-  lowest_cost_delay = 1.0
-  lowest_cost_power = 1.0
 
+# #this function adds additional hardblock flow parameters which don't require user input  
+# def add_hb_params(flow_settings,cur_env):
+
+
+def flow_settings_pre_process(processed_flow_settings,cur_env):
+  """Takes values from the flow_settings dict and converts them into data structures which can be used to write synthesis script"""
+  # formatting design_files
   design_files = []
-  if flow_settings['design_language'] == 'verilog':
+  if processed_flow_settings['design_language'] == 'verilog':
     ext_re = re.compile(".*.v")
-  elif flow_settings['design_language'] == 'vhdl':
+  elif processed_flow_settings['design_language'] == 'vhdl':
     ext_re = re.compile(".*.vhdl")
-  elif flow_settings['design_language'] == 'sverilog':
+  elif processed_flow_settings['design_language'] == 'sverilog':
     ext_re = re.compile(".*(.sv)|(.v)")
 
-  design_folder = os.path.expanduser(flow_settings['design_folder'])
+  design_folder = os.path.expanduser(processed_flow_settings['design_folder'])
   design_files = [fn for _, _, fs in os.walk(design_folder) for fn in fs if ext_re.search(fn)]
+  #The syn_write_tcl_script function expects this to be a list of all design files
+  processed_flow_settings["design_files"] = design_files
+  # formatting search_path
   search_path_dirs = []
+  search_path_dirs.append(".")
+  try:
+    syn_root = cur_env.get("SYNOPSYS")
+    search_path_dirs = [os.path.join(syn_root,"libraries",dirname) for dirname in ["syn","syn_ver","sim_ver"] ]
+  except:
+    print("could not find 'SYNOPSYS' environment variable set, please run the following command to your sysopsys home directory")
+    print("export SYNOPSYS=/abs/path/to/synopsys/home")
+    print("Ex. export SYNOPSYS=/CMC/tools/synopsys/syn_vN-2017.09/")
+    sys.exit(1)
+  
+  for p_lib_path in processed_flow_settings["process_lib_paths"]:
+    search_path_dirs.append(p_lib_path)
   search_path_dirs.append(design_folder)
   for root,dirnames,fnames in os.walk(design_folder):
     for dirname,fname in zip(dirnames,fnames):
       if(ext_re.search(fname)):
         search_path_dirs.append(os.path.join(root,dirname))
-  subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['synth_folder']) + "\n", shell=True)
-  subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['pr_folder']) + "\n", shell=True)
-  subprocess.call("mkdir -p " + os.path.expanduser(flow_settings['primetime_folder']) + "\n", shell=True)
+  search_path_str = "\"" + " ".join(search_path_dirs) + "\""
+  processed_flow_settings["search_path"] = search_path_str
+  #formatting target libs
+  processed_flow_settings["target_library"] = "\"" + " ".join(processed_flow_settings['target_libraries']) + "\""
+  processed_flow_settings["link_library"] = "\"" + "* $target_library" + "\""
+  #formatting all paths to files to expand them to user space
+  for flow_key, flow_val in processed_flow_settings.items():
+    if("folder" in flow_key):
+      processed_flow_settings[flow_key] = os.path.expanduser(flow_val)
+
+  #formatting process specific params
+  processed_flow_settings["lef_files"] = "\"" + " ".join(processed_flow_settings['lef_files']) + "\""
+  processed_flow_settings["best_case_libs"] = "\"" + " ".join(processed_flow_settings['best_case_libs']) + "\""
+  processed_flow_settings["standard_libs"] = "\"" + " ".join(processed_flow_settings['standard_libs']) + "\""
+  processed_flow_settings["worst_case_libs"] = "\"" + " ".join(processed_flow_settings['worst_case_libs']) + "\""
+    
+# wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
+def hardblock_flow(flow_settings): 
+  cur_env = os.environ.copy()
+  #add_hb_params(flow_settings,cur_env)
+  # processed_flow_settings = {}
+  processed_flow_settings = flow_settings
+  flow_settings_pre_process(processed_flow_settings,cur_env)
+  # Enter all the signals that change modes
+  lowest_cost = sys.float_info.max
+  lowest_cost_area = 1.0
+  lowest_cost_delay = 1.0
+  lowest_cost_power = 1.0
+  subprocess.call("mkdir -p " + flow_settings['synth_folder'] + "\n", shell=True)
+  subprocess.call("mkdir -p " + flow_settings['pr_folder'] + "\n", shell=True)
+  subprocess.call("mkdir -p " + flow_settings['primetime_folder'] + "\n", shell=True)
   # Make sure we managed to read the design files
-  assert len(design_files) >= 1
+  assert len(processed_flow_settings["design_files"]) >= 1
   for clock_period in flow_settings['clock_period']:
     for wire_selection in flow_settings['wire_selection']:
-      synth_report_str = run_synth(flow_settings,search_path_dirs,design_files,clock_period,wire_selection)
+      synth_report_str = run_synth(processed_flow_settings,clock_period,wire_selection)
       for metal_layer in flow_settings['metal_layers']:
         for core_utilization in flow_settings['core_utilization']:
-          pnr_report_str, total_area = run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str)
+          pnr_report_str, total_area = run_pnr(processed_flow_settings,metal_layer,core_utilization,synth_report_str)
           if len(flow_settings['mode_signal']) > 0:
             mode_enabled = True
           else:
@@ -471,7 +537,7 @@ def hardblock_flow(flow_settings):
           if flow_settings['generate_activity_file'] is True:
             run_sim()
           for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
-            library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,pnr_report_str)
+            library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str)
             # write the final report file:
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               file = open("report_mode" + str(x) + "_" + str(flow_settings['top_level']) + "_" + str(clock_period) + "_" + str(wire_selection) + "_wire_" + str(metal_layer) + "_" + str(core_utilization) + ".txt" ,"w")
