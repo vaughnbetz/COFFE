@@ -17,6 +17,7 @@ def write_synth_tcl(flow_settings,clock_period,wire_selection):
   """
   file = open("dc_script.tcl","w")
   file.write("cd " + flow_settings['synth_folder'] + "\n")
+  #search path should have all directories which contain source , std cell libs, DesignCompiler libs
   file.write("set search_path " + flow_settings["search_path"] + " \n")
   if len(flow_settings["design_files"]) == 1:
     file.write("set my_files " + flow_settings["design_files"][0] + "\n")
@@ -156,134 +157,195 @@ def run_synth(flow_settings,clock_period,wire_selection):
     exit()
   return synth_report_str
 
+
+def write_innovus_view_file(flow_settings):
+  """Write .view file for innovus place and route, this is used for for creating the delay corners from timing libs and importings constraints"""
+  view_fname = flow_settings["top_level"]
+  file = open(flow_settings["top_level"]+".view","w")
+  file.write("# Version:1.0 MMMC View Definition File\n# Do Not Remove Above Line")
+  #I created a typical delay corner but I don't think its being used as its not called in create_analysis_view command, however, may be useful? not sure but its here
+  #One could put RC values (maybe temperature in here) later for now they will all be the same
+  file.write("create_rc_corner -name RC_BEST -preRoute_res {1.0} -preRoute_cap {1.0} -preRoute_clkres {0.0} -preRoute_clkcap {0.0} -postRoute_res {1.0} -postRoute_cap {1.0} -postRoute_xcap {1.0} -postRoute_clkres {0.0} -postRoute_clkcap {0.0}"+ "\n")
+  file.write("create_rc_corner -name RC_TYP -preRoute_res {1.0} -preRoute_cap {1.0} -preRoute_clkres {0.0} -preRoute_clkcap {0.0} -postRoute_res {1.0} -postRoute_cap {1.0} -postRoute_xcap {1.0} -postRoute_clkres {0.0} -postRoute_clkcap {0.0}" + "\n")
+  file.write("create_rc_corner -name RC_WORST -preRoute_res {1.0} -preRoute_cap {1.0} -preRoute_clkres {0.0} -preRoute_clkcap {0.0} -postRoute_res {1.0} -postRoute_cap {1.0} -postRoute_xcap {1.0} -postRoute_clkres {0.0} -postRoute_clkcap {0.0}" + "\n")
+  #create libraries for each timing corner
+  file.write("create_library_set -name MIN_TIMING -timing {" + flow_settings["best_case_libs"] + "}" + "\n")
+  file.write("create_library_set -name TYP_TIMING -timing {" + flow_settings["standard_libs"] + "}" + "\n")
+  file.write("create_library_set -name MAX_TIMING -timing {" + flow_settings["worst_case_libs"] + "}" + "\n")
+  #import constraints from synthesis generated sdc
+  file.write("create_constraint_mode -name CONSTRAINTS -sdc_files {" + flow_settings['synth_folder'] + "/synthesized.sdc" + "}"  + "\n")
+  file.write("create_delay_corner -name MIN_DELAY -library_set {MIN_TIMING} -rc_corner {RC_BEST}" + "\n")
+  file.write("create_delay_corner -name TYP_DELAY -library_set {TYP_TIMING} -rc_corner {RC_TYP}" + "\n")
+  file.write("create_delay_corner -name MAX_DELAY -library_set {MAX_TIMING} -rc_corner {RC_WORST}" + "\n")
+  file.write("create_analysis_view -name BEST_CASE -constraint_mode {CONSTRAINTS} -delay_corner {MIN_DELAY}" + "\n")
+  file.write("create_analysis_view -name TYP_CASE -constraint_mode {CONSTRAINTS} -delay_corner {TYP_DELAY}" + "\n")
+  file.write("create_analysis_view -name WORST_CASE -constraint_mode {CONSTRAINTS} -delay_corner {MAX_DELAY}" + "\n")
+  #This sets our analysis view to be using our worst case analysis view for setup and best for timing,
+  #This makes sense as the BC libs would have the most severe hold violations and vice versa for setup 
+  file.write("set_analysis_view -setup {WORST_CASE} -hold {BEST_CASE}" + "\n")
+
+def write_innovus_globals(flow_settings):
+  print('tes')
+
 def write_pnr_script(flow_settings,metal_layer,core_utilization):
   """"
   writes the tcl script for place and route using Cadence Encounter, tested under 2009 version
   """
-  # generate the EDI (encounter) configuration
-  file = open("edi.conf", "w")
-  file.write("global rda_Input \n")
-  file.write("set cwd .\n\n")
-  file.write("set rda_Input(ui_leffile) " + flow_settings['lef_files'] + "\n")
-  file.write("set rda_Input(ui_timelib,min) " + flow_settings['best_case_libs'] + "\n")
-  file.write("set rda_Input(ui_timelib) " + flow_settings['standard_libs'] + "\n")
-  file.write("set rda_Input(ui_timelib,max) " + flow_settings['worst_case_libs'] + "\n")
-  file.write("set rda_Input(ui_netlist) " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.v" + "\n")
-  file.write("set rda_Input(ui_netlisttype) {Verilog} \n")
-  file.write("set rda_Input(import_mode) {-treatUndefinedCellAsBbox 0 -keepEmptyModule 1}\n")
-  file.write("set rda_Input(ui_timingcon_file) " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.sdc" + "\n")
-  file.write("set rda_Input(ui_topcell) " + flow_settings['top_level'] + "\n\n")
-  gnd_pin = flow_settings['gnd_pin']
-  gnd_net = flow_settings['gnd_net']
-  pwr_pin = flow_settings['pwr_pin']
-  pwr_net = flow_settings['pwr_net']
-  file.write("set rda_Input(ui_gndnet) {" + gnd_net + "} \n")
-  file.write("set rda_Input(ui_pwrnet) {" + pwr_net + "} \n")
-  if flow_settings['tilehi_tielo_cells_between_power_gnd'] is True:
-    file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":}" + " {TIEL::} " + "{NET:" + gnd_net + ":} {NET:" + pwr_net + ":}" + " {TIEH::} " + "{PIN:" + pwr_pin + ":} ] \n")
-  else:
-    file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":} {NET:" + gnd_net + ":} {NET:" + pwr_net + ":} {PIN:" + pwr_pin + ":} ] \n")
-  file.write("set rda_Input(PIN:" + gnd_pin + ":) {" + gnd_pin + "} \n")
-  file.write("set rda_Input(TIEL::) {" + gnd_pin + "} \n")
-  file.write("set rda_Input(NET:" + gnd_net + ":) {" + gnd_net + "} \n")
-  file.write("set rda_Input(PIN:" + pwr_pin + ":) {" + pwr_pin + "} \n")
-  file.write("set rda_Input(TIEH::) {" + pwr_pin + "} \n")
-  file.write("set rda_Input(NET:" + pwr_net + ":) {" + pwr_net + "} \n\n")
-  if (flow_settings['inv_footprint'] != "None"):
-    file.write("set rda_Input(ui_inv_footprint) {" + flow_settings['inv_footprint'] + "}\n")
-  if (flow_settings['buf_footprint'] != "None"):
-    file.write("set rda_Input(ui_buf_footprint) {" + flow_settings['buf_footprint'] + "}\n")
-  if (flow_settings['delay_footprint'] != "None"):
-    file.write("set rda_Input(ui_delay_footprint) {" + flow_settings['delay_footprint'] + "}\n")
-  file.close()
-  metal_layer_bottom = flow_settings["metal_layer_names"][0]
-  metal_layer_second = flow_settings["metal_layer_names"][1]
-  metal_layer_top = flow_settings["metal_layer_names"][int(metal_layer)-1]
-  power_ring_metal_top = flow_settings["power_ring_metal_layer_names"][0] 
-  power_ring_metal_bottom = flow_settings["power_ring_metal_layer_names"][1] 
-  power_ring_metal_left = flow_settings["power_ring_metal_layer_names"][2] 
-  power_ring_metal_right = flow_settings["power_ring_metal_layer_names"][3] 
-  # generate the EDI (encounter) script
-  file = open("edi.tcl", "w")
-  file.write("loadConfig edi.conf \n")
-  file.write("floorPlan -site " + flow_settings['core_site_name'] \
-              + " -r " + str(flow_settings['height_to_width_ratio']) \
-              + " " + str(core_utilization) \
-              + " " + str(flow_settings['space_around_core']) \
-              + " " + str(flow_settings['space_around_core']) + " ")
-  file.write(str(flow_settings['space_around_core']) + " " + str(flow_settings['space_around_core']) + "\n")
-  file.write("setMaxRouteLayer " + str(metal_layer) + " \n")
-  file.write("fit \n")
-  file.write("addRing -spacing_bottom " + str(flow_settings['power_ring_spacing']) \
-              + " -spacing_right " + str(flow_settings['power_ring_spacing']) \
-              + " -spacing_top " + str(flow_settings['power_ring_spacing']) \
-              + " -spacing_left " + str(flow_settings['power_ring_spacing']) \
-              + " -width_right " + str(flow_settings['power_ring_width']) \
-              + " -width_left " + str(flow_settings['power_ring_width']) \
-              + " -width_bottom " + str(flow_settings['power_ring_width']) \
-              + " -width_top " + str(flow_settings['power_ring_width']) \
-              + " -center 1" \
-              + " -around core" \
-              + " -layer_top " + power_ring_metal_top \
-              + " -layer_bottom " + power_ring_metal_bottom \
-              + " -layer_left " + power_ring_metal_left \
-              + " -layer_right " + power_ring_metal_right \
-              + " -nets { " + gnd_net + " " + pwr_net + " }" \
-              + " -stacked_via_top_layer "+ metal_layer_top \
-              + " -stacked_via_bottom_layer " + metal_layer_bottom + " \n")
-  file.write("setPlaceMode -fp false -maxRouteLayer " + str(metal_layer) + "\n")
-  file.write("placeDesign -inPlaceOpt -noPrePlaceOpt \n")
-  file.write("checkPlace " + flow_settings['top_level'] +" \n")
-  file.write("trialroute \n")
-  file.write("buildTimingGraph \n")
-  file.write("timeDesign -preCTS -idealClock -numPaths 10 -prefix preCTS -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/timeDesignpreCTSReports" + "\n")
-  file.write("optDesign -preCTS -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/optDesignpreCTSReports" + "\n")
-  # I won't do a CTS anyway as the blocks are small.
-  file.write("addFiller -cell {" + " ".join([str(item) for item in flow_settings['filler_cell_names']]) + "} -prefix FILL -merge true \n")  
-  file.write("clearGlobalNets \n")
-  file.write("globalNetConnect " + gnd_net + " -type pgpin -pin " + gnd_pin + " -inst {} \n")
-  file.write("globalNetConnect " + pwr_net + " -type pgpin -pin " + pwr_pin + " -inst {} \n")
-  file.write("globalNetConnect " + gnd_net + " -type net -net " + gnd_net + " \n")
-  file.write("globalNetConnect " + pwr_net + " -type net -net " + pwr_net + " \n")
-  file.write("globalNetConnect " + pwr_net + " -type pgpin -pin " + pwr_pin + " -inst * \n")
-  file.write("globalNetConnect " + gnd_net + " -type pgpin -pin " + gnd_pin + " -inst * \n")
-  file.write("globalNetConnect " + pwr_net + " -type tiehi -inst * \n")
-  file.write("globalNetConnect " + gnd_net + " -type tielo -inst * \n")
-  file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe }" \
-              + " -layerChangeRange { " + metal_layer_bottom + " " + metal_layer_top + " }" \
-              + " -blockPinTarget { nearestRingStripe nearestTarget }" \
-              + " -padPinPortConnect { allPort oneGeom }" \
-              + " -checkAlignedSecondaryPin 1" \
-              + " -blockPin useLef" \
-              + " -allowJogging 1" \
-              + " -crossoverViaBottomLayer " + metal_layer_bottom \
-              + " -allowLayerChange 1" \
-              + " -targetViaTopLayer " + metal_layer_top \
-              + " -crossoverViaTopLayer " + metal_layer_top \
-              + " -targetViaBottomLayer " + metal_layer_bottom \
-              + " -nets { " + gnd_net + " " + pwr_net + " } \n")
-  file.write("routeDesign -globalDetail\n")
-  file.write("setExtractRCMode -engine postRoute \n")
-  file.write("extractRC \n")
-  file.write("buildTimingGraph \n")
-  file.write("timeDesign -postRoute -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/timeDesignReports" + "\n")
-  file.write("optDesign -postRoute -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/optDesignReports" + "\n")
-  #by default, violations are reported in designname.geom.rpt
-  file.write("verifyGeometry -report " + (os.path.expanduser(flow_settings['pr_folder']) + "/" + flow_settings['top_level'] + ".geom.rpt") + "\n")
-  #by default, violations are reported in designname.conn.rpt
-  file.write("verifyConnectivity -type all -report " + (os.path.expanduser(flow_settings['pr_folder']) + "/" + flow_settings['top_level'] + ".conn.rpt") + "\n")
-  # report area
-  file.write("summaryReport -outFile " + os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt \n")
-  # save design
-  file.write(r'saveNetlist ' + os.path.expanduser(flow_settings['pr_folder']) + r'/netlist.v' + "\n")
-  file.write(r'saveDesign ' + os.path.expanduser(flow_settings['pr_folder']) + r'/design.enc' + " \n")
-  file.write(r'rcOut -spef ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + " \n")
-  file.write(r'write_sdf -ideal_clock_network ' + os.path.expanduser(flow_settings['pr_folder']) + r'/sdf.sdf' + " \n")
-  #If the user specified a layer mapping file, then use that. Otherwise, just let the tool create a default one.
-  if flow_settings['map_file'] != "None":
-    file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -mapFile ' + flow_settings['map_file'] + ' -stripes 1 -units 1000 -mode ALL' + "\n")
-  else:
-    file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
+  if(flow_settings["pnr_tool"] == "encounter"):
+    # generate the EDI (encounter) configuration
+    file = open("edi.conf", "w")
+    file.write("global rda_Input \n")
+    file.write("set cwd .\n\n")
+    file.write("set rda_Input(ui_leffile) " + flow_settings['lef_files'] + "\n")
+    file.write("set rda_Input(ui_timelib,min) " + flow_settings['best_case_libs'] + "\n")
+    file.write("set rda_Input(ui_timelib) " + flow_settings['standard_libs'] + "\n")
+    file.write("set rda_Input(ui_timelib,max) " + flow_settings['worst_case_libs'] + "\n")
+    file.write("set rda_Input(ui_netlist) " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.v" + "\n")
+    file.write("set rda_Input(ui_netlisttype) {Verilog} \n")
+    file.write("set rda_Input(import_mode) {-treatUndefinedCellAsBbox 0 -keepEmptyModule 1}\n")
+    file.write("set rda_Input(ui_timingcon_file) " + os.path.expanduser(flow_settings['synth_folder']) + "/synthesized.sdc" + "\n")
+    file.write("set rda_Input(ui_topcell) " + flow_settings['top_level'] + "\n\n")
+    gnd_pin = flow_settings['gnd_pin']
+    gnd_net = flow_settings['gnd_net']
+    pwr_pin = flow_settings['pwr_pin']
+    pwr_net = flow_settings['pwr_net']
+    file.write("set rda_Input(ui_gndnet) {" + gnd_net + "} \n")
+    file.write("set rda_Input(ui_pwrnet) {" + pwr_net + "} \n")
+    if flow_settings['tilehi_tielo_cells_between_power_gnd'] is True:
+      file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":}" + " {TIEL::} " + "{NET:" + gnd_net + ":} {NET:" + pwr_net + ":}" + " {TIEH::} " + "{PIN:" + pwr_pin + ":} ] \n")
+    else:
+      file.write("set rda_Input(ui_pg_connections) [list {PIN:" + gnd_pin + ":} {NET:" + gnd_net + ":} {NET:" + pwr_net + ":} {PIN:" + pwr_pin + ":} ] \n")
+    file.write("set rda_Input(PIN:" + gnd_pin + ":) {" + gnd_pin + "} \n")
+    file.write("set rda_Input(TIEL::) {" + gnd_pin + "} \n")
+    file.write("set rda_Input(NET:" + gnd_net + ":) {" + gnd_net + "} \n")
+    file.write("set rda_Input(PIN:" + pwr_pin + ":) {" + pwr_pin + "} \n")
+    file.write("set rda_Input(TIEH::) {" + pwr_pin + "} \n")
+    file.write("set rda_Input(NET:" + pwr_net + ":) {" + pwr_net + "} \n\n")
+    if (flow_settings['inv_footprint'] != "None"):
+      file.write("set rda_Input(ui_inv_footprint) {" + flow_settings['inv_footprint'] + "}\n")
+    if (flow_settings['buf_footprint'] != "None"):
+      file.write("set rda_Input(ui_buf_footprint) {" + flow_settings['buf_footprint'] + "}\n")
+    if (flow_settings['delay_footprint'] != "None"):
+      file.write("set rda_Input(ui_delay_footprint) {" + flow_settings['delay_footprint'] + "}\n")
+    file.close()
+    metal_layer_bottom = flow_settings["metal_layer_names"][0]
+    metal_layer_second = flow_settings["metal_layer_names"][1]
+    metal_layer_top = flow_settings["metal_layer_names"][int(metal_layer)-1]
+    power_ring_metal_top = flow_settings["power_ring_metal_layer_names"][0] 
+    power_ring_metal_bottom = flow_settings["power_ring_metal_layer_names"][1] 
+    power_ring_metal_left = flow_settings["power_ring_metal_layer_names"][2] 
+    power_ring_metal_right = flow_settings["power_ring_metal_layer_names"][3] 
+    # generate the EDI (encounter) script
+    file = open("edi.tcl", "w")
+    file.write("loadConfig edi.conf \n")
+    file.write("floorPlan -site " + flow_settings['core_site_name'] \
+                + " -r " + str(flow_settings['height_to_width_ratio']) \
+                + " " + str(core_utilization) \
+                + " " + str(flow_settings['space_around_core']) \
+                + " " + str(flow_settings['space_around_core']) + " ")
+    file.write(str(flow_settings['space_around_core']) + " " + str(flow_settings['space_around_core']) + "\n")
+    file.write("setMaxRouteLayer " + str(metal_layer) + " \n")
+    file.write("fit \n")
+    file.write("addRing -spacing_bottom " + str(flow_settings['power_ring_spacing']) \
+                + " -spacing_right " + str(flow_settings['power_ring_spacing']) \
+                + " -spacing_top " + str(flow_settings['power_ring_spacing']) \
+                + " -spacing_left " + str(flow_settings['power_ring_spacing']) \
+                + " -width_right " + str(flow_settings['power_ring_width']) \
+                + " -width_left " + str(flow_settings['power_ring_width']) \
+                + " -width_bottom " + str(flow_settings['power_ring_width']) \
+                + " -width_top " + str(flow_settings['power_ring_width']) \
+                + " -center 1" \
+                + " -around core" \
+                + " -layer_top " + power_ring_metal_top \
+                + " -layer_bottom " + power_ring_metal_bottom \
+                + " -layer_left " + power_ring_metal_left \
+                + " -layer_right " + power_ring_metal_right \
+                + " -nets { " + gnd_net + " " + pwr_net + " }" \
+                + " -stacked_via_top_layer "+ metal_layer_top \
+                + " -stacked_via_bottom_layer " + metal_layer_bottom + " \n")
+    file.write("setPlaceMode -fp false -maxRouteLayer " + str(metal_layer) + "\n")
+    file.write("placeDesign -inPlaceOpt -noPrePlaceOpt \n")
+    file.write("checkPlace " + flow_settings['top_level'] +" \n")
+    file.write("trialroute \n")
+    file.write("buildTimingGraph \n")
+    file.write("timeDesign -preCTS -idealClock -numPaths 10 -prefix preCTS -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/timeDesignpreCTSReports" + "\n")
+    file.write("optDesign -preCTS -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/optDesignpreCTSReports" + "\n")
+    # I won't do a CTS anyway as the blocks are small.
+    file.write("addFiller -cell {" + " ".join([str(item) for item in flow_settings['filler_cell_names']]) + "} -prefix FILL -merge true \n")  
+    file.write("clearGlobalNets \n")
+    file.write("globalNetConnect " + gnd_net + " -type pgpin -pin " + gnd_pin + " -inst {} \n")
+    file.write("globalNetConnect " + pwr_net + " -type pgpin -pin " + pwr_pin + " -inst {} \n")
+    file.write("globalNetConnect " + gnd_net + " -type net -net " + gnd_net + " \n")
+    file.write("globalNetConnect " + pwr_net + " -type net -net " + pwr_net + " \n")
+    file.write("globalNetConnect " + pwr_net + " -type pgpin -pin " + pwr_pin + " -inst * \n")
+    file.write("globalNetConnect " + gnd_net + " -type pgpin -pin " + gnd_pin + " -inst * \n")
+    file.write("globalNetConnect " + pwr_net + " -type tiehi -inst * \n")
+    file.write("globalNetConnect " + gnd_net + " -type tielo -inst * \n")
+    file.write("sroute -connect { blockPin padPin padRing corePin floatingStripe }" \
+                + " -layerChangeRange { " + metal_layer_bottom + " " + metal_layer_top + " }" \
+                + " -blockPinTarget { nearestRingStripe nearestTarget }" \
+                + " -padPinPortConnect { allPort oneGeom }" \
+                + " -checkAlignedSecondaryPin 1" \
+                + " -blockPin useLef" \
+                + " -allowJogging 1" \
+                + " -crossoverViaBottomLayer " + metal_layer_bottom \
+                + " -allowLayerChange 1" \
+                + " -targetViaTopLayer " + metal_layer_top \
+                + " -crossoverViaTopLayer " + metal_layer_top \
+                + " -targetViaBottomLayer " + metal_layer_bottom \
+                + " -nets { " + gnd_net + " " + pwr_net + " } \n")
+    file.write("routeDesign -globalDetail\n")
+    file.write("setExtractRCMode -engine postRoute \n")
+    file.write("extractRC \n")
+    file.write("buildTimingGraph \n")
+    file.write("timeDesign -postRoute -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/timeDesignReports" + "\n")
+    file.write("optDesign -postRoute -outDir " + os.path.expanduser(flow_settings['pr_folder']) + "/optDesignReports" + "\n")
+    #by default, violations are reported in designname.geom.rpt
+    file.write("verifyGeometry -report " + (os.path.expanduser(flow_settings['pr_folder']) + "/" + flow_settings['top_level'] + ".geom.rpt") + "\n")
+    #by default, violations are reported in designname.conn.rpt
+    file.write("verifyConnectivity -type all -report " + (os.path.expanduser(flow_settings['pr_folder']) + "/" + flow_settings['top_level'] + ".conn.rpt") + "\n")
+    # report area
+    file.write("summaryReport -outFile " + os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt \n")
+    # save design
+    file.write(r'saveNetlist ' + os.path.expanduser(flow_settings['pr_folder']) + r'/netlist.v' + "\n")
+    file.write(r'saveDesign ' + os.path.expanduser(flow_settings['pr_folder']) + r'/design.enc' + " \n")
+    file.write(r'rcOut -spef ' + os.path.expanduser(flow_settings['pr_folder']) + r'/spef.spef' + " \n")
+    file.write(r'write_sdf -ideal_clock_network ' + os.path.expanduser(flow_settings['pr_folder']) + r'/sdf.sdf' + " \n")
+    #If the user specified a layer mapping file, then use that. Otherwise, just let the tool create a default one.
+    if flow_settings['map_file'] != "None":
+      file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -mapFile ' + flow_settings['map_file'] + ' -stripes 1 -units 1000 -mode ALL' + "\n")
+    else:
+      file.write(r'streamOut ' + os.path.expanduser(flow_settings['pr_folder']) + r'/final.gds2' + ' -stripes 1 -units 1000 -mode ALL' + "\n")
+  elif(flow_settings["pnr_tool"] == "innovus"):
+
+    """
+    ###### 10/17/2022 11:00pm  ######
+    setDesignMode -process 65
+    floorPlan -site core -r 4.0 0.85 10 10 10 10
+    setDesignMode -topRoutingLayer 7
+    earlyGlobalRoute
+    timeDesign -preCTS -idealClock -numPaths 10 -prefix preCTS -outDir /fs1/eecg/vaughn/morestep/COFFE/output_files/strtx_III_dsp/pr/timeDesignpreCTSReports
+    optDesign -preCTS -outDir /fs1/eecg/vaughn/morestep/COFFE/output_files/strtx_III_dsp/pr/optDesignpreCTSReports
+    addFiller -cell {FILL1 FILL16 FILL1_LL FILL2 FILL32 FILL64 FILL8 FILL_NW_FA_LL FILL_NW_HH FILL_NW_LL} -prefix FILL -merge true 
+    clearGlobalNets 
+    globalNetConnect VSS -type pgpin -pin VSS -inst {} 
+    globalNetConnect VDD -type pgpin -pin VDD -inst {} 
+    globalNetConnect VSS -type net -net VSS 
+    globalNetConnect VDD -type net -net VDD 
+    globalNetConnect VDD -type pgpin -pin VDD -inst * 
+    globalNetConnect VSS -type pgpin -pin VSS -inst * 
+    globalNetConnect VDD -type tiehi -inst * 
+    globalNetConnect VSS -type tielo -inst * 
+    sroute -connect { blockPin padPin padRing corePin floatingStripe } -layerChangeRange { M1 M7 } -blockPinTarget { nearestRingStripe nearestTarget } -padPinPortConnect { allPort oneGeom } -checkAlignedSecondaryPin 1 -blockPin useLef -allowJogging 1 -crossoverViaBottomLayer M1 -allowLayerChange 1 -targetViaTopLayer M7 -crossoverViaTopLayer M7 -targetViaBottomLayer M1 -nets { VSS VDD } 
+    routeDesign -globalDetail
+    setExtractRCMode -engine postRoute 
+    extractRC 
+    buildTimingGraph
+    setAnalysisMode -analysisType onChipVariation -cppr both
+    timeDesign -postRoute -outDir /fs1/eecg/vaughn/morestep/COFFE/output_files/strtx_III_dsp/pr/timeDesignReports
+    optDesign -postRoute -outDir /fs1/eecg/vaughn/morestep/COFFE/output_files/strtx_III_dsp/pr/optDesignReports
+    #setRouteMode -earlyGlobalMaxRouteLayer 7 (this command does same as top command)
+    """
   file.write("exit \n")
   file.close()
 def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
@@ -344,7 +406,8 @@ def run_sim():
 
 def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   """"
-  writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
+  writes the tcl script for power analysis using Synopsys Design Compiler, tested under 2017 version
+  Update: changed the [all_nets] argument used in set_switching_activity to use -baseClk and -inputs args instead
   """
   # Create a script to measure power:
   file = open("primetime_power.tcl", "w")
@@ -352,7 +415,7 @@ def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   file.write("set search_path " + flow_settings['search_path'] + " \n")
   file.write("set my_top_level " + flow_settings['top_level'] + "\n")
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set target_library " + flow_settings['target_library'] + "\n")
+  file.write("set target_library " + flow_settings['primetime_libs'] + "\n")
   file.write("set link_library " + flow_settings['link_library'] + "\n")
   file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
   file.write("link \n")
@@ -379,7 +442,9 @@ def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   file.close()
 
 def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
-  """"""
+  """
+  writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
+  """
   # backannotate into primetime
   # This part should be reported for all the modes in the design.
   file = open("primetime.tcl", "w")
@@ -387,7 +452,7 @@ def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
   file.write("set search_path " + flow_settings['search_path'] + " \n")
   file.write("set my_top_level " + flow_settings['top_level'] + "\n")
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set target_library " + flow_settings['target_library'] + "\n")
+  file.write("set target_library " + flow_settings['primetime_libs'] + "\n")
   file.write("set link_library " + flow_settings['link_library'] + "\n")
   file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
   if mode_enabled and x <2**len(flow_settings['mode_signal']):
@@ -504,7 +569,7 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["best_case_libs"] = "\"" + " ".join(processed_flow_settings['best_case_libs']) + "\""
   processed_flow_settings["standard_libs"] = "\"" + " ".join(processed_flow_settings['standard_libs']) + "\""
   processed_flow_settings["worst_case_libs"] = "\"" + " ".join(processed_flow_settings['worst_case_libs']) + "\""
-    
+  processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
 # wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
 def hardblock_flow(flow_settings): 
   cur_env = os.environ.copy()
@@ -536,6 +601,7 @@ def hardblock_flow(flow_settings):
           # Optional: use modelsim to generate an activity file for the design:
           if flow_settings['generate_activity_file'] is True:
             run_sim()
+          #loops over every combination of user inputted modes to set the set_case_analysis value (determines value of mode mux)
           for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
             library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str)
             # write the final report file:

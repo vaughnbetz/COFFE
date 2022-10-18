@@ -697,6 +697,9 @@ def check_hard_params(hard_params,optional_params):
         if ((val == "" or val == -1 or val == -1.0 or val == []) and key not in optional_params):
             print("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key))
             sys.exit(1)
+        elif(key == "pnr_tool" and val != "encounter" and val != "innovus" ):
+            print("ERROR: pnr_tool must be set as either \"encounter\" or \"innovus\" ")
+            sys.exit(1)
 
 def load_hard_params(filename):
     """ Parse the hard block description file and load values into dictionary. 
@@ -743,7 +746,7 @@ def load_hard_params(filename):
         'space_around_core': -1,
         'pr_folder': "",
         #'primetime_lib_path': '',
-        #'primetime_lib_name': '',
+        'primetime_lib_names': '',
         'primetime_folder': "" ,
         'delay_cost_exp': 1.0,
         'area_cost_exp': 1.0,
@@ -766,6 +769,8 @@ def load_hard_params(filename):
         'mode_signal': [],
         'process_lib_paths': [],
         'process_params_file': "",
+        'pnr_tool': "",
+        'process_size': "",
     }
 
     hard_file = open(filename, 'r')
@@ -871,9 +876,15 @@ def load_hard_params(filename):
             hard_params['mode_signal'].append(value)
         elif param == "process_params_file":
             hard_params["process_params_file"] = value
+        elif param == "pnr_tool":
+            hard_params["pnr_tool"] = value
+        elif param == "process_size":
+            hard_params["process_size"] = value
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
             hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
+        elif param == "primetime_libs":
+            hard_params["primetime_libs"] = sanatize_str_input_to_list(value)
         elif param == 'target_libraries':
             hard_params['target_libraries'] = sanatize_str_input_to_list(value)
         elif param == 'lef_files':
@@ -975,6 +986,8 @@ def load_hard_params(filename):
                 hard_params['pwr_pin'] = value.strip()
             elif param == 'wire_selection':
                 hard_params['wire_selection'].append(value)
+            elif param == "primetime_libs":
+                hard_params["primetime_libs"] = sanatize_str_input_to_list(value)
             
         process_param_file.close()
     #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
