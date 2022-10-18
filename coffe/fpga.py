@@ -5765,8 +5765,9 @@ class FPGA:
             RAM_area += self.area_dict[self.RAM.pgateoutputcrossbar.name + "_sram"] 
             # add the wordline drivers:
             RAM_wordlinedriver_area = self.area_dict[self.RAM.wordlinedriver.name] * self.number_of_banks
+            RAM_wordlinedriver_area = RAM_wordlinedriver_area * 2 # We have 2 wordline drivers per row
             RAM_area += self.area_dict["level_shifters"]
-            RAM_area += 2 * RAM_wordlinedriver_area
+            RAM_area += RAM_wordlinedriver_area
 
             # write into dictionaries:
             self.area_dict["wordline_total"] = RAM_wordlinedriver_area
