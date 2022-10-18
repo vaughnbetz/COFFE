@@ -25,7 +25,7 @@ process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
 # Name of the clock pin in the design
 clock_pin_name=clk
 # Desired clock period in ns
-##clock_period=1.53
+#clock_period=1.53
 #clock_period=1.66
 #clock_period=1.81
 clock_period=2.0
@@ -70,13 +70,14 @@ target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_En
 
 # Libraries required in EDI:
 
+#metal_layers=9
 #metal_layers=8
 #metal_layers=7
 #metal_layers=6
 #metal_layers=5
 
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
-#metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "M7", "AP"]
+#metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9","AP"]
 
 #names of metal layers to use for each side of the power ring
 #order: top, bottom, left, right
@@ -132,7 +133,7 @@ power_ring_width=3
 power_ring_spacing=3
 height_to_width_ratio=4.0
 
-space_around_core=5
+space_around_core=10
 
 # The folder in which place and route reports and post-routing netlists and spef files will be stored
 pr_folder=~/COFFE/output_files/strtx_III_dsp/pr
@@ -141,8 +142,8 @@ pr_folder=~/COFFE/output_files/strtx_III_dsp/pr
 ########## Prime Time Settings ###############
 ##############################################
 
-mode_signal=mode_0
-mode_signal=mode_1
+#mode_signal=mode_0
+#mode_signal=mode_1
 
 primetime_folder=~/COFFE/output_files/strtx_III_dsp/pt
 

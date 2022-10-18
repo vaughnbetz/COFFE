@@ -3,10 +3,15 @@
 #############################################
 ############# ASIC Flow Settings ############
 #############################################
+#node size of process in nm
+#process_size=65
+
 process_lib_paths="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c"
 
+########################################
+########## Synthesis Settings ##########
+########################################
 # Standard cell libs which we are targeting for synthesis
-
 target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db"
 
 ##############################################
@@ -23,13 +28,14 @@ best_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/
 standard_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2tc.lib"
 worst_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib"
 
+
 #metal_layers=8
 metal_layers=7
 #metal_layers=6
 #metal_layers=5
 
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
-metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "M7", "AP"]
+metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "AP"]
 
 #names of metal layers to use for each side of the power ring
 #order: top, bottom, left, right
@@ -60,3 +66,10 @@ filler_cell_names=["FILL1", "FILL16", "FILL1_LL", "FILL2", "FILL32", "FILL64", "
 
 #name of the core site in the floorplan. can be obtained from lef files.
 core_site_name=core
+
+
+##############################################
+############## Power & Timing ################
+##############################################
+
+primetime_libs="tcbn65gpluswc.db tpzn65gpgv2wc.db"

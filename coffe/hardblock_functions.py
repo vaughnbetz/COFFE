@@ -352,7 +352,7 @@ def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   file.write("set search_path " + flow_settings['search_path'] + " \n")
   file.write("set my_top_level " + flow_settings['top_level'] + "\n")
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set target_library " + flow_settings['target_library'] + "\n")
+  file.write("set target_library " + flow_settings['primetime_libs'] + "\n")
   file.write("set link_library " + flow_settings['link_library'] + "\n")
   file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
   file.write("link \n")
@@ -387,7 +387,7 @@ def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
   file.write("set search_path " + flow_settings['search_path'] + " \n")
   file.write("set my_top_level " + flow_settings['top_level'] + "\n")
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
-  file.write("set target_library " + flow_settings['target_library'] + "\n")
+  file.write("set target_library " + flow_settings['primetime_libs'] + "\n")
   file.write("set link_library " + flow_settings['link_library'] + "\n")
   file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
   if mode_enabled and x <2**len(flow_settings['mode_signal']):
@@ -504,6 +504,7 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["best_case_libs"] = "\"" + " ".join(processed_flow_settings['best_case_libs']) + "\""
   processed_flow_settings["standard_libs"] = "\"" + " ".join(processed_flow_settings['standard_libs']) + "\""
   processed_flow_settings["worst_case_libs"] = "\"" + " ".join(processed_flow_settings['worst_case_libs']) + "\""
+  processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
     
 # wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
 def hardblock_flow(flow_settings): 
