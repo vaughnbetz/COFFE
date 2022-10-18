@@ -769,8 +769,8 @@ def load_hard_params(filename):
         'mode_signal': [],
         'process_lib_paths': [],
         'process_params_file': "",
-        #'pnr_tool': "",
-        #'process_size': "",
+        'pnr_tool': "",
+        'process_size': "",
     }
 
     hard_file = open(filename, 'r')
@@ -876,10 +876,10 @@ def load_hard_params(filename):
             hard_params['mode_signal'].append(value)
         elif param == "process_params_file":
             hard_params["process_params_file"] = value
-        # elif param == "pnr_tool":
-        #     hard_params["pnr_tool"] = value
-        # elif param == "process_size":
-        #     hard_params["process_size"] = value
+        elif param == "pnr_tool":
+            hard_params["pnr_tool"] = value
+        elif param == "process_size":
+            hard_params["process_size"] = value
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
             hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
