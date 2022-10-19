@@ -570,7 +570,7 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["standard_libs"] = "\"" + " ".join(processed_flow_settings['standard_libs']) + "\""
   processed_flow_settings["worst_case_libs"] = "\"" + " ".join(processed_flow_settings['worst_case_libs']) + "\""
   processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
-    
+
 # wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
 def hardblock_flow(flow_settings): 
   cur_env = os.environ.copy()
