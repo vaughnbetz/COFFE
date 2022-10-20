@@ -1,0 +1,163 @@
+#This is a sample settings file for the hard block flow
+
+#############################################
+########## General Design Settings ##########
+#############################################
+
+# The folder in which all the design files are located:
+design_folder=~/COFFE/input_files/strtx_III_dsp/dsp_block_hdl
+
+# The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+design_language=verilog
+# The exponents of delay and area in the cost function.
+# cost = (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
+delay_cost_exp=1.0
+area_cost_exp=1.0
+
+#ASIC flow settings
+#path to absolute paths needed for process parameters (relative to coffe home repo)
+process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
+
+########################################
+########## Synthesis Settings ##########
+########################################
+
+# Name of the clock pin in the design
+clock_pin_name=clk
+# Desired clock period in ns
+#clock_period=1.53
+#clock_period=1.66
+#clock_period=1.81
+clock_period=2.0
+#clock_period=2.22
+#clock_period=2.5
+
+# Name of the top-level entity in the design
+#top_level=ASU_conv
+top_level=dsp
+
+# The name of the folder in which post-synthesis files and synthesis reports are to be stored
+synth_folder=~/COFFE/output_files/strtx_III_dsp/synth
+
+# Do you want to be informed of warnings during synthesis?
+
+show_warnings=True
+
+# Should the flow terminate after synthesis?
+# A value of "False" will continue into placement and routing
+synthesis_only=False
+
+# Do you want to provide a saif file for power analysis?
+# In case of setting this to "True" a saif.saif file should be provided
+read_saif_file=False
+
+# If you don't want to provide a saif file, specify the switching activity parameters below:
+static_probability=0.5
+toggle_rate=25
+
+# Should COFFE generate an activity file for the design (using modelsim)
+generate_activity_file=False
+# Location of the library files.
+# if you have more than one library, please provide them similiar to the example below.
+
+#link_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db"
+
+target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db"
+
+##############################################
+########## Place and Route Settings ##########
+##############################################
+
+# Libraries required in EDI:
+
+#metal_layers=9
+#metal_layers=8
+#metal_layers=7
+#metal_layers=6
+#metal_layers=5
+
+#names of metal layers starting from the bottom-most layer on the left. use a python list format. 
+#metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9","AP"]
+
+#names of metal layers to use for each side of the power ring
+#order: top, bottom, left, right
+#power_ring_metal_layer_names=["M1", "M1", "M2", "M2"]
+
+#name of the file to use for layer mapping. used for stream out.
+#set it to None if you want the tool to create a generic map file
+map_file=streamOut.map
+
+#wire_selection=WireAreaLowkCon
+#wire_selection=WireAreaLowkAgr
+#wire_selection=WireAreaForZero
+#specify names of ground and power pins and nets in the library
+#gnd_net=VSS
+#gnd_pin=VSS
+#pwr_net=VDD
+#pwr_pin=VDD
+
+tilehi_tielo_cells_between_power_gnd=True
+
+
+#specify footprint names for inverters, buffers, delays.
+#this is optional. you can get these values from the lib file.
+#you can also specify None, if you can't find them in the lib file.
+#inv_footprint=INVD0
+#buf_footprint=BUFFD1
+#delay_footprint=DEL0
+
+#list of filler cell names. use a python list format.
+#the names can be obtained from .lib files.
+#filler_cell_names=["FILL1", "FILL16", "FILL1_LL", "FILL2", "FILL32", "FILL64", "FILL8", "FILL_NW_FA_LL", "FILL_NW_HH", "FILL_NW_LL"]
+
+#name of the core site in the floorplan. can be obtained from lef files.
+#core_site_name=core
+
+#specify the utilization of the core site. you can specify multiple ones on different lines.
+#core_utilization=0.85
+core_utilization=0.90
+#core_utilization=0.95
+
+#lef_files="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/tpzn65gpgv2_9lm.lef"
+
+#best_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplusbc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2bc.lib"
+
+#standard_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2tc.lib"
+
+#worst_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib"
+
+
+
+# EDI settings:
+power_ring_width=3
+power_ring_spacing=3
+height_to_width_ratio=4.0
+
+space_around_core=10
+
+# The folder in which place and route reports and post-routing netlists and spef files will be stored
+pr_folder=~/COFFE/output_files/strtx_III_dsp/pr
+
+##############################################
+########## Prime Time Settings ###############
+##############################################
+
+#mode_signal=mode_0
+#mode_signal=mode_1
+
+primetime_folder=~/COFFE/output_files/strtx_III_dsp/pt
+
+# COFFE parameters:
+name=hard_block
+num_gen_inputs=288
+crossbar_population=0.5
+height=1
+num_gen_outputs=288
+num_dedicated_outputs=0
+soft_logic_per_block=0.1
+area_scale_factor=0.12
+freq_scale_factor=1.35
+power_scale_factor=0.3
+input_usage=0.8
+num_crossbars=1
+crossbar_modelling=optimistic

@@ -46,6 +46,8 @@ import coffe.vpr
 import datetime
 import math
 
+
+
 print "\nCOFFE 2.0\n"
 print "Man is a tool-using animal."
 print "Without tools he is nothing, with tools he is all."
@@ -65,106 +67,113 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
+parser.add_argument('-ho',"--hardblock_only",help="run only a single hardblock through the asic flow", action='store_true',default=False)
 
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
 
 args = parser.parse_args()
 
-is_size_transistors = not args.no_sizing
-
 # Load the input architecture description file
 arch_params_dict = utils.load_arch_params(args.arch_description)
-
-# Make the top-level spice folder if it doesn't already exist
-# if it's already there delete its content
 arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['arch_out_folder'])
-
-# Print the options to both terminal and report file
-report_file_path = os.path.join(arch_folder, "report.txt") 
-utils.print_run_options(args, report_file_path)
-
-# Print architecture and process details to terminal and report file
-utils.print_architecture_params(arch_params_dict, report_file_path)
-
-# Default_dir is the dir you ran COFFE from. COFFE will be switching directories 
-# while running HSPICE, this variable is so that we can get back to our starting point
-default_dir = os.getcwd()
-
-# Create an HSPICE interface
-spice_interface = spice.SpiceInterface()
-
-# Record start time
-total_start_time = time.time()
-
-# Create an FPGA instance
-fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
-                     
-###############################################################
-## GENERATE FILES
-###############################################################
-
-# Change to the architecture directory
-os.chdir(arch_folder)  
-
-# Generate FPGA and associated SPICE files
-fpga_inst.generate(is_size_transistors) 
-
-# Go back to the base directory
-os.chdir(default_dir)
-
-# Extract initial transistor sizes from file and overwrite the 
-# default initial sizes if this option was used.
-if args.initial_sizes != "default" :
-  utils.use_initial_tran_size(args.initial_sizes, fpga_inst, tran_sizing, arch_params_dict['use_tgate'])
-
-# Print FPGA implementation details
-report_file = open(report_file_path, 'a')
-fpga_inst.print_details(report_file)  
-report_file.close()
-
-# Go to architecture directory
-os.chdir(arch_folder)
-
-###############################################################
-## TRANSISTOR SIZING
-###############################################################
-
-sys.stdout.flush()
-
-# Size FPGA transistors
-if is_size_transistors:
-    tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
+if(args.hardblock_only):
+  # Change to the architecture directory
+  for hardblock_fname in arch_params_dict["hb_files"]:
+    hard_block = fpga._hard_block(hardblock_fname,False)
+    os.chdir(arch_folder)
+    hard_block.generate_top()
 else:
-  # in case of disabling floorplanning there is no need to 
-  # update delays before updating area. Tried both ways and 
-  # they give exactly the same results
-  #fpga_inst.update_delays(spice_interface)
+  is_size_transistors = not args.no_sizing
+  # Make the top-level spice folder if it doesn't already exist
+  # if it's already there delete its content
+  # arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['arch_out_folder'])
 
-  # same thing here no need to update area before calculating 
-  # the lb_height value. Also tested and gave same results
-  #fpga_inst.update_area()
-  fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
-  fpga_inst.update_area()
-  fpga_inst.compute_distance()
-  fpga_inst.update_wires()
-  fpga_inst.update_wire_rc()
+  # Print the options to both terminal and report file
+  report_file_path = os.path.join(arch_folder, "report.txt") 
+  utils.print_run_options(args, report_file_path)
 
-  # commented this part to avoid doing floorplannig for
-  # a non-sizing run
-  #fpga_inst.determine_height()
+  # Print architecture and process details to terminal and report file
+  utils.print_architecture_params(arch_params_dict, report_file_path)
 
-  fpga_inst.update_delays(spice_interface)
+  # Default_dir is the dir you ran COFFE from. COFFE will be switching directories 
+  # while running HSPICE, this variable is so that we can get back to our starting point
+  default_dir = os.getcwd()
 
-# Obtain Memory core power
-if arch_params_dict['enable_bram_module'] == 1:
-  fpga_inst.update_power(spice_interface)
+  # Create an HSPICE interface
+  spice_interface = spice.SpiceInterface()
 
-# Go back to the base directory
-os.chdir(default_dir)
+  # Record start time
+  total_start_time = time.time()
 
-# Print out final COFFE report to file
-utils.print_summary(arch_folder, fpga_inst, total_start_time)
+  # Create an FPGA instance
+  fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
+                      
+  ###############################################################
+  ## GENERATE FILES
+  ###############################################################
 
-# Print vpr architecure file
-coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])
+  # Change to the architecture directory
+  os.chdir(arch_folder)  
+
+  # Generate FPGA and associated SPICE files
+  fpga_inst.generate(is_size_transistors) 
+
+  # Go back to the base directory
+  os.chdir(default_dir)
+
+  # Extract initial transistor sizes from file and overwrite the 
+  # default initial sizes if this option was used.
+  if args.initial_sizes != "default" :
+    utils.use_initial_tran_size(args.initial_sizes, fpga_inst, tran_sizing, arch_params_dict['use_tgate'])
+
+  # Print FPGA implementation details
+  report_file = open(report_file_path, 'a')
+  fpga_inst.print_details(report_file)  
+  report_file.close()
+
+  # Go to architecture directory
+  os.chdir(arch_folder)
+
+  ###############################################################
+  ## TRANSISTOR SIZING
+  ###############################################################
+
+  sys.stdout.flush()
+
+  # Size FPGA transistors
+  if is_size_transistors:
+      tran_sizing.size_fpga_transistors(fpga_inst, args, spice_interface)                                    
+  else:
+    # in case of disabling floorplanning there is no need to 
+    # update delays before updating area. Tried both ways and 
+    # they give exactly the same results
+    #fpga_inst.update_delays(spice_interface)
+
+    # same thing here no need to update area before calculating 
+    # the lb_height value. Also tested and gave same results
+    #fpga_inst.update_area()
+    fpga_inst.lb_height = math.sqrt(fpga_inst.area_dict["tile"])
+    fpga_inst.update_area()
+    fpga_inst.compute_distance()
+    fpga_inst.update_wires()
+    fpga_inst.update_wire_rc()
+
+    # commented this part to avoid doing floorplannig for
+    # a non-sizing run
+    #fpga_inst.determine_height()
+
+    fpga_inst.update_delays(spice_interface)
+
+  # Obtain Memory core power
+  if arch_params_dict['enable_bram_module'] == 1:
+    fpga_inst.update_power(spice_interface)
+
+  # Go back to the base directory
+  os.chdir(default_dir)
+
+  # Print out final COFFE report to file
+  utils.print_summary(arch_folder, fpga_inst, total_start_time)
+
+  # Print vpr architecure file
+  coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])

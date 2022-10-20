@@ -509,6 +509,8 @@ def load_arch_params(filename):
         'FAs_per_flut':2,
         'hb_files' : [],
         'arch_out_folder': "None",
+        # 'coffe_design_name' : "coffe_test",
+        # 'coffe_repo_path' : "None"
     }
 
     params_file = open(filename, 'r')
@@ -658,6 +660,10 @@ def load_arch_params(filename):
             arch_params['hb_files'].append(value)
         elif param == 'arch_out_folder':
             arch_params['arch_out_folder'] = value
+        # elif param == 'coffe_design_name':
+        #     arch_params['coffe_design_name'] = str(value)
+        # elif param == 'coffe_repo_path':
+        #     arch_params['coffe_repo_path'] = str(value)
 
     params_file.close()
     
@@ -673,7 +679,27 @@ def load_arch_params(filename):
     return arch_params 
 
 
+def sanatize_str_input_to_list(value):
+    """Makes sure unneeded quotes arent included when a string of values is seperated by a space and saved into
+    string seperated by spaces and surrouneded with quotes"""
+    vals = (value.strip("\"")).split(" ")
+    return vals
 
+def check_hard_params(hard_params,optional_params):
+    """
+    This function checks the hardblock/process parameters to make sure that all the parameters have been read in.
+    Right now, this functions just checks really basic stuff like 
+    checking for unset values
+    """
+
+    #TODO make this sort of a documentation for each parameter
+    for key,val in hard_params.items():
+        if ((val == "" or val == -1 or val == -1.0 or val == []) and key not in optional_params):
+            print("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key))
+            sys.exit(1)
+        elif(key == "pnr_tool" and val != "encounter" and val != "innovus" ):
+            print("ERROR: pnr_tool must be set as either \"encounter\" or \"innovus\" ")
+            sys.exit(1)
 
 def load_hard_params(filename):
     """ Parse the hard block description file and load values into dictionary. 
@@ -707,20 +733,20 @@ def load_hard_params(filename):
         'read_saif_file': False,
         'static_probability': -1.0,
         'toggle_rate': -1,
-        'link_libraries': '',
-        'target_libraries': '',
-        'lef_files': '',
-        'best_case_libs': '',
-        'standard_libs': '',
-        'worst_case_libs': '',
+        #'link_libraries': '',
+        'target_libraries': [],
+        'lef_files': [],
+        'best_case_libs': [],
+        'standard_libs': [],
+        'worst_case_libs': [],
         'power_ring_width': -1,
         'power_ring_spacing': -1,
         'height_to_width_ratio': -1.0,
         'core_utilization': [],
         'space_around_core': -1,
         'pr_folder': "",
-        'primetime_lib_path': '',
-        'primetime_lib_name': '',
+        #'primetime_lib_path': '',
+        'primetime_libs': [],
         'primetime_folder': "" ,
         'delay_cost_exp': 1.0,
         'area_cost_exp': 1.0,
@@ -741,9 +767,11 @@ def load_hard_params(filename):
         'generate_activity_file': False,
         'core_site_name':'',
         'mode_signal': [],
+        'process_lib_paths': [],
+        'process_params_file': "",
+        #'pnr_tool': "",
+        #'process_size': "",
     }
-
-
 
     hard_file = open(filename, 'r')
     for line in hard_file:
@@ -806,36 +834,12 @@ def load_hard_params(filename):
             hard_params['clock_pin_name'] = value
         elif param == 'clock_period':
             hard_params['clock_period'].append(value)
-        elif param == 'wire_selection':
-            hard_params['wire_selection'].append(value)
         elif param == 'core_utilization':
             hard_params['core_utilization'].append(value)
-        elif param == 'metal_layers':
-            hard_params['metal_layers'].append(value)
-        elif param == 'metal_layer_names':
-            hard_params['metal_layer_names'] += eval(value)
-        elif param == 'power_ring_metal_layer_names':
-            hard_params['power_ring_metal_layer_names'] += eval(value)
         elif param == 'map_file':
             hard_params['map_file'] = value.strip()
-        elif param == 'gnd_net':
-            hard_params['gnd_net'] = value.strip()
-        elif param == 'gnd_pin':
-            hard_params['gnd_pin'] = value.strip()
-        elif param == 'pwr_net':
-            hard_params['pwr_net'] = value.strip()
-        elif param == 'pwr_pin':
-            hard_params['pwr_pin'] = value.strip()
         elif param == 'tilehi_tielo_cells_between_power_gnd':
             hard_params['tilehi_tielo_cells_between_power_gnd'] = (value == "True")
-        elif param == 'inv_footprint':
-            hard_params['inv_footprint'] = value.strip()
-        elif param == 'buf_footprint':
-            hard_params['buf_footprint'] = value.strip()
-        elif param == 'delay_footprint':
-            hard_params['delay_footprint'] = value.strip()
-        elif param == 'filler_cell_names':
-            hard_params['filler_cell_names'] += eval(value)
         elif param == 'generate_activity_file':
             hard_params['generate_activity_file'] = (value == "True")
         elif param == 'crossbar_modelling':
@@ -856,18 +860,6 @@ def load_hard_params(filename):
             hard_params['static_probability'] = value
         elif param == 'toggle_rate':
             hard_params['toggle_rate'] = value
-        elif param == 'link_libraries':
-            hard_params['link_libraries'] = value
-        elif param == 'target_libraries':
-            hard_params['target_libraries'] = value
-        elif param == 'lef_files':
-            hard_params['lef_files'] = value
-        elif param == 'best_case_libs':
-            hard_params['best_case_libs'] = value
-        elif param == 'standard_libs':
-            hard_params['standard_libs'] = value
-        elif param == 'worst_case_libs':
-            hard_params['worst_case_libs'] = value
         elif param == 'power_ring_width':
             hard_params['power_ring_width'] = value
         elif param == 'power_ring_spacing':
@@ -878,18 +870,130 @@ def load_hard_params(filename):
             hard_params['space_around_core'] = value
         elif param == 'pr_folder':
             hard_params['pr_folder'] = value
-        elif param == 'primetime_lib_path':
-            hard_params['primetime_lib_path'] = value
-        elif param == 'primetime_lib_name':
-            hard_params['primetime_lib_name'] = value
         elif param == 'primetime_folder':
             hard_params['primetime_folder'] = value
-        elif param == 'core_site_name':
-            hard_params['core_site_name'] = value
         elif param == 'mode_signal':
             hard_params['mode_signal'].append(value)
-
+        elif param == "process_params_file":
+            hard_params["process_params_file"] = value
+        # elif param == "pnr_tool":
+        #     hard_params["pnr_tool"] = value
+        # elif param == "process_size":
+        #     hard_params["process_size"] = value
+        #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
+        if param == "process_lib_paths":
+            hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
+        elif param == "primetime_libs":
+            hard_params["primetime_libs"] = sanatize_str_input_to_list(value)
+        elif param == 'target_libraries':
+            hard_params['target_libraries'] = sanatize_str_input_to_list(value)
+        elif param == 'lef_files':
+            hard_params['lef_files'] = sanatize_str_input_to_list(value)
+        elif param == 'best_case_libs':
+            hard_params['best_case_libs'] = sanatize_str_input_to_list(value)
+        elif param == 'standard_libs':
+            hard_params['standard_libs'] = sanatize_str_input_to_list(value)
+        elif param == 'worst_case_libs':
+            hard_params['worst_case_libs'] = sanatize_str_input_to_list(value)
+        elif param == 'core_site_name':
+            hard_params['core_site_name'] = value
+        elif param == 'inv_footprint':
+            hard_params['inv_footprint'] = value.strip()
+        elif param == 'buf_footprint':
+            hard_params['buf_footprint'] = value.strip()
+        elif param == 'delay_footprint':
+            hard_params['delay_footprint'] = value.strip()
+        elif param == 'filler_cell_names':
+            hard_params['filler_cell_names'] += eval(value)
+        elif param == 'metal_layer_names':
+            hard_params['metal_layer_names'] += eval(value)
+        elif param == 'power_ring_metal_layer_names':
+            hard_params['power_ring_metal_layer_names'] += eval(value)
+        elif param == 'metal_layers':
+            hard_params['metal_layers'].append(value)
+        elif param == 'gnd_net':
+            hard_params['gnd_net'] = value.strip()
+        elif param == 'gnd_pin':
+            hard_params['gnd_pin'] = value.strip()
+        elif param == 'pwr_net':
+            hard_params['pwr_net'] = value.strip()
+        elif param == 'pwr_pin':
+            hard_params['pwr_pin'] = value.strip()
+        elif param == 'wire_selection':
+            hard_params['wire_selection'].append(value)
+    
     hard_file.close()
+
+    if hard_params["process_params_file"] != "":
+        process_param_file = open(hard_params["process_params_file"],"r")
+        for line in process_param_file:
+            # Ignore comment lines
+            if line.startswith('#'):
+                continue
+            
+            # Remove line feeds and spaces
+            line = line.replace('\n', '')
+            line = line.replace('\r', '')
+            line = line.replace('\t', '')
+            
+            # Ignore empty lines
+            if line == "":
+                continue
+            
+            # Split lines at '='
+            words = line.split('=')
+            if words[0] not in hard_params.keys():
+                print("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename)
+                sys.exit()
+            
+            param = words[0]
+            value = words[1]
+            if param == "process_lib_paths":
+                hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
+            elif param == 'target_libraries':
+                hard_params['target_libraries'] = sanatize_str_input_to_list(value)
+            elif param == 'lef_files':
+                hard_params['lef_files'] = sanatize_str_input_to_list(value)
+            elif param == 'best_case_libs':
+                hard_params['best_case_libs'] = sanatize_str_input_to_list(value)
+            elif param == 'standard_libs':
+                hard_params['standard_libs'] = sanatize_str_input_to_list(value)
+            elif param == 'worst_case_libs':
+                hard_params['worst_case_libs'] = sanatize_str_input_to_list(value)
+            elif param == 'core_site_name':
+                hard_params['core_site_name'] = value
+            elif param == 'inv_footprint':
+                hard_params['inv_footprint'] = value.strip()
+            elif param == 'buf_footprint':
+                hard_params['buf_footprint'] = value.strip()
+            elif param == 'delay_footprint':
+                hard_params['delay_footprint'] = value.strip()
+            elif param == 'filler_cell_names':
+                hard_params['filler_cell_names'] += eval(value)
+            elif param == 'metal_layer_names':
+                hard_params['metal_layer_names'] += eval(value)
+            elif param == 'power_ring_metal_layer_names':
+                hard_params['power_ring_metal_layer_names'] += eval(value)
+            elif param == 'metal_layers':
+                hard_params['metal_layers'].append(value)
+            elif param == 'gnd_net':
+                hard_params['gnd_net'] = value.strip()
+            elif param == 'gnd_pin':
+                hard_params['gnd_pin'] = value.strip()
+            elif param == 'pwr_net':
+                hard_params['pwr_net'] = value.strip()
+            elif param == 'pwr_pin':
+                hard_params['pwr_pin'] = value.strip()
+            elif param == 'wire_selection':
+                hard_params['wire_selection'].append(value)
+            elif param == "primetime_libs":
+                hard_params["primetime_libs"] = sanatize_str_input_to_list(value)
+            
+        process_param_file.close()
+    #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
+    optional_params = ["process_params_file","mode_signal"]
+    check_hard_params(hard_params,optional_params)
+
     return hard_params
 
 
@@ -978,7 +1082,9 @@ def check_arch_params (arch_params, filename):
     if arch_params['enable_bram_module'] == 1 and arch_params['use_finfet'] == True:
         print_error_not_compatable("finfet", "BRAM")           
     if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
-        print_error_not_compatable("finfet", "flut")           
+        print_error_not_compatable("finfet", "flut")      
+    # if arch_params['coffe_repo_path'].split("/")[-1] != "COFFE":
+    #     print_error (arch_params['coffe_repo_path'],"coffe_repo_path",filename)
 
 
 
@@ -1186,7 +1292,7 @@ def create_output_dir(arch_file_name, arch_out_folder):
         arch_desc_words = arch_file_name.split('.')
         arch_folder = arch_desc_words[0]
     else:
-        arch_folder = arch_out_folder
+        arch_folder = os.path.expanduser(arch_out_folder)
 
     if not os.path.exists(arch_folder):
         os.makedirs(arch_folder)
