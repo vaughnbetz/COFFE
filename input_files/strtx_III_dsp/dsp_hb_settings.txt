@@ -17,7 +17,9 @@ area_cost_exp=1.0
 #ASIC flow settings
 #path to absolute paths needed for process parameters (relative to coffe home repo)
 process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
-
+#run_synth=False
+#run_pnr=True
+#run_pt=False
 ########################################
 ########## Synthesis Settings ##########
 ########################################
@@ -25,12 +27,12 @@ process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
 # Name of the clock pin in the design
 clock_pin_name=clk
 # Desired clock period in ns
-#clock_period=1.53
+clock_period=1.53
 #clock_period=1.66
 #clock_period=1.81
 clock_period=2.0
 #clock_period=2.22
-#clock_period=2.5
+clock_period=2.5
 
 # Name of the top-level entity in the design
 #top_level=ASU_conv
@@ -67,6 +69,8 @@ target_libraries="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_En
 ##############################################
 ########## Place and Route Settings ##########
 ##############################################
+
+pnr_tool=innovus
 
 # Libraries required in EDI:
 
@@ -114,9 +118,10 @@ tilehi_tielo_cells_between_power_gnd=True
 #core_site_name=core
 
 #specify the utilization of the core site. you can specify multiple ones on different lines.
-#core_utilization=0.85
+core_utilization=0.80
+core_utilization=0.85
 core_utilization=0.90
-#core_utilization=0.95
+core_utilization=0.95
 
 #lef_files="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/tpzn65gpgv2_9lm.lef"
 
@@ -129,8 +134,8 @@ core_utilization=0.90
 
 
 # EDI settings:
-power_ring_width=3
-power_ring_spacing=3
+power_ring_width=1.8
+power_ring_spacing=1.8
 height_to_width_ratio=4.0
 
 space_around_core=10
@@ -142,8 +147,8 @@ pr_folder=~/COFFE/output_files/strtx_III_dsp/pr
 ########## Prime Time Settings ###############
 ##############################################
 
-#mode_signal=mode_0
-#mode_signal=mode_1
+mode_signal=mode_0
+mode_signal=mode_1
 
 primetime_folder=~/COFFE/output_files/strtx_III_dsp/pt
 

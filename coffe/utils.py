@@ -878,8 +878,6 @@ def load_hard_params(filename):
             hard_params["process_params_file"] = value
         elif param == "pnr_tool":
             hard_params["pnr_tool"] = value
-        elif param == "process_size":
-            hard_params["process_size"] = value
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
             hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
@@ -921,6 +919,8 @@ def load_hard_params(filename):
             hard_params['pwr_pin'] = value.strip()
         elif param == 'wire_selection':
             hard_params['wire_selection'].append(value)
+        elif param == "process_size":
+            hard_params["process_size"] = value
     
     hard_file.close()
 
@@ -988,6 +988,8 @@ def load_hard_params(filename):
                 hard_params['wire_selection'].append(value)
             elif param == "primetime_libs":
                 hard_params["primetime_libs"] = sanatize_str_input_to_list(value)
+            elif param == "process_size":
+                hard_params["process_size"] = value
             
         process_param_file.close()
     #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
