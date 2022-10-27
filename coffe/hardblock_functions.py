@@ -104,7 +104,7 @@ def run_synth(flow_settings,clock_period,wire_selection):
   check_file.close()
 
   #Copy synthesis results to a unique dir in synth dir
-  synth_report_str = "period_" + clock_period + "_" + "wire_mdl_" + wire_selection
+  synth_report_str = flow_settings["top_level"] + "_period_" + clock_period + "_" + "wire_mdl_" + wire_selection
   report_dest_str = flow_settings['synth_folder'] + "/" + synth_report_str + "_reports"
   mkdir_cmd_str = "mkdir -p " + report_dest_str
   copy_rep_cmd_str = "cp " + flow_settings['synth_folder'] + "/* " + report_dest_str
@@ -190,6 +190,10 @@ def write_innovus_view_file(flow_settings):
 
 
 def write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_fname):
+  """
+  This function writes the innvous script which actually performs place and route.
+  Precondition to this script is the creation of an initialization script which is sourced on the first line.
+  """
   #some format adjustment (could move to preproc function)
   core_utilization = str(core_utilization)
   metal_layer = str(metal_layer)
@@ -262,8 +266,7 @@ def write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_
     "saveNetlist " + os.path.join(flow_settings["pr_folder"],"netlist.v"),
     "saveDesign " +  os.path.join(flow_settings["pr_folder"],"design.enc"),
     "rcOut -spef " +  os.path.join(flow_settings["pr_folder"],"spef.spef"),
-    "write_sdf -ideal_clock_network " + os.path.join(flow_settings["pr_folder"],"sdf.sdf"),
-    "exit"]
+    "write_sdf -ideal_clock_network " + os.path.join(flow_settings["pr_folder"],"sdf.sdf")]
   #If the user specified a layer mapping file, then use that. Otherwise, just let the tool create a default one.
   if flow_settings['map_file'] != "None":
     file_lines.append("streamOut " +  os.path.join(flow_settings["pr_folder"],"final.gds2") + " -mapFile " + flow_settings["map_file"] + " -stripes 1 -units 1000 -mode ALL")
@@ -271,10 +274,16 @@ def write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_
     file_lines.append("streamOut " +  os.path.join(flow_settings["pr_folder"],"final.gds2") + " -stripes 1 -units 1000 -mode ALL")
   for line in file_lines:
     file_write_ln(file,line)
+  file_write_ln(file,"exit")
   file.close()
   return fname
 
 def write_innovus_init_script(flow_settings,view_fname):
+  """
+  This function generates init script which sets variables used in pnr,
+  The contents of this file were generated from using the innovus GUI
+  setting relavent files/nets graphically and exporting the .globals file
+  """
   flow_settings["lef_files"] = flow_settings["lef_files"].strip("\"")
   fname = flow_settings["top_level"]+"_innovus_init.tcl"
   file = open(fname,"w")
@@ -288,7 +297,8 @@ def write_innovus_init_script(flow_settings,view_fname):
     "set defHierChar /",
     "set distributed_client_message_echo 1",
     "set distributed_mmmc_disable_reports_auto_redirection 0",
-    "set dlgflprecConfigFile /CMC/tools/cadence/INNOVUS21.12.000_lnx86/tools.lnx86/dlApp/run_flprec.cfg",
+    #The below config file comes from the INNOVUS directory, if not using an x86 system this will probably break
+    "set dlgflprecConfigFile " + os.path.join(flow_settings["EDI_HOME"],"tools.lnx86/dlApp/run_flprec.cfg"),
     "set enable_ilm_dual_view_gui_and_attribute 1",
     "set enc_enable_print_mode_command_reset_options 1",
     "set init_design_settop 0",
@@ -324,6 +334,9 @@ def write_innovus_init_script(flow_settings,view_fname):
 
 
 def write_enc_script(flow_settings,metal_layer,core_utilization,synth_report_str):
+  """
+  Writes script for place and route using cadence encounter (tested under 2009 version)
+  """
   # generate the EDI (encounter) configuration
   file = open("edi.conf", "w")
   file.write("global rda_Input \n")
@@ -525,7 +538,9 @@ def run_sim():
 def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   """"
   writes the tcl script for power analysis using Synopsys Design Compiler, tested under 2017 version
-  Update: changed the [all_nets] argument used in set_switching_activity to use -baseClk and -inputs args instead
+  Update: changed the [all_nets] argument used in set_switching_activity to use -baseClk and -inputs args instead.
+  This function takes the RC values generated from pnr script in form of .spef file and the user inputted switching probability or 
+  a .saif file generated from a testbench to estimate power.
   """
   # Create a script to measure power:
   file = open("primetime_power.tcl", "w")
@@ -664,6 +679,14 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
     print("export SYNOPSYS=/abs/path/to/synopsys/home")
     print("Ex. export SYNOPSYS=/CMC/tools/synopsys/syn_vN-2017.09/")
     sys.exit(1)
+  #Place and route
+  if(processed_flow_settings["pnr_tool"] == "innovus"):
+    try:
+      edi_root = cur_env.get("EDI_HOME")
+      processed_flow_settings["EDI_HOME"] = edi_root
+    except:
+      print("could not find 'EDI_HOME' environment variable set, please source your ASIC tools or run the following command to your INNOVUS/ENCOUNTER home directory")
+      sys.exit(1)
   
   for p_lib_path in processed_flow_settings["process_lib_paths"]:
     search_path_dirs.append(p_lib_path)

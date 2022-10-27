@@ -700,6 +700,9 @@ def check_hard_params(hard_params,optional_params):
         elif(key == "pnr_tool" and val != "encounter" and val != "innovus" ):
             print("ERROR: pnr_tool must be set as either \"encounter\" or \"innovus\" ")
             sys.exit(1)
+    if(hard_params["pnr_tool"] == "innovus" and hard_params["process_size"] == ""):
+            print("param process_size is unset, please go to your hardblock/process params file and set it")
+            sys.exit(1)
 
 def load_hard_params(filename):
     """ Parse the hard block description file and load values into dictionary. 
