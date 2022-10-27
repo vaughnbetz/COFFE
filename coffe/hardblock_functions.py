@@ -105,7 +105,7 @@ def run_synth(flow_settings,clock_period,wire_selection):
 
   #Copy synthesis results to a unique dir in synth dir
   synth_report_str = flow_settings["top_level"] + "_period_" + clock_period + "_" + "wire_mdl_" + wire_selection
-  report_dest_str = flow_settings['synth_folder'] + "/" + synth_report_str + "_reports"
+  report_dest_str = os.path.join(flow_settings['synth_folder'],synth_report_str + "_reports")
   mkdir_cmd_str = "mkdir -p " + report_dest_str
   copy_rep_cmd_str = "cp " + flow_settings['synth_folder'] + "/* " + report_dest_str
   copy_logs_cmd_str = "cp " + "dc.log "+ "dc_script.tcl " + report_dest_str
@@ -257,7 +257,7 @@ def write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_
     "optDesign -postRoute -outDir " +  os.path.join(flow_settings["pr_folder"],"optDesignReports"),
     "verify_drc -report " + os.path.join(flow_settings["pr_folder"],"geom.rpt"),
     "verifyConnectivity -type all -report " + os.path.join(flow_settings["pr_folder"],"conn.rpt"),
-    "report_timing > " + os.path.join(flow_settings["pr_folder"],flow_settings["top_level"] +"setup_timing.rpt"),
+    "report_timing > " + os.path.join(flow_settings["pr_folder"],"setup_timing.rpt"),
     "setAnalysisMode -checkType hold",
     "report_timing > " + os.path.join(flow_settings["pr_folder"],"hold_timing.rpt"),
     "report_power > " + os.path.join(flow_settings["pr_folder"],"power.rpt"),
@@ -492,19 +492,23 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
   #Copy pnr results to a unique dir in pnr dir
   clean_logs_cmd_str = copy_logs_cmd_str.split(" ")
   clean_logs_cmd_str[0] = "rm -f"
+  del clean_logs_cmd_str[-1] #removes the last element in the string (this is the desintation report directory)
   clean_logs_cmd_str = " ".join(clean_logs_cmd_str)
 
   mkdir_cmd_str = "mkdir -p " + report_dest_str
   #+ os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt " 
   copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['pr_folder']) + "/* " + report_dest_str
+  copy_rec_cmd_str = " ".join(["cp -r",os.path.join(flow_settings['pr_folder'],"design.enc.dat"),report_dest_str])
   # if flow_settings["pnr_tool"] == "encounter":
   #   copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + report_dest_str
   # elif flow_settings["pnr_tool"] == "innovus":
   #   copy_logs_cmd_str = "cp " + "inn.log " + "edi.tcl " + "edi.conf " + report_dest_str
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
+  subprocess.call(copy_rec_cmd_str,shell=True)
   subprocess.call(copy_logs_cmd_str,shell=True)
   subprocess.call(clean_logs_cmd_str,shell=True)
+
   # subprocess.call('rm -f edi.log edi.conf edi.tcl encounter.log encounter.cmd', shell=True)
   return pnr_report_str, total_area
 
