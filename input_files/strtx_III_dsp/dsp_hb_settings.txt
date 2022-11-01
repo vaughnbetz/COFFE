@@ -4,6 +4,14 @@
 ########## General Design Settings ##########
 #############################################
 
+########### GENERAL INFORMATION #############
+# To sweep asic flow parameters you can create
+# parameter lists by setting the same parameter to another value
+# Ex.
+# period=2.0
+# period=1.66
+# ^ this would sweep period and evaluate asic flow for both values
+
 # The folder in which all the design files are located:
 design_folder=~/COFFE/input_files/strtx_III_dsp/dsp_block_hdl
 
