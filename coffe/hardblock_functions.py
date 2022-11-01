@@ -17,6 +17,7 @@ def write_synth_tcl(flow_settings,clock_period,wire_selection):
   """
   file = open("dc_script.tcl","w")
   file.write("cd " + flow_settings['synth_folder'] + "\n")
+  #search path should have all directories which contain source , std cell libs, DesignCompiler libs
   file.write("set search_path " + flow_settings["search_path"] + " \n")
   if len(flow_settings["design_files"]) == 1:
     file.write("set my_files " + flow_settings["design_files"][0] + "\n")
@@ -84,7 +85,7 @@ def run_synth(flow_settings,clock_period,wire_selection):
   """
   write_synth_tcl(flow_settings,clock_period,wire_selection)
   # Run the scrip in design compiler shell
-  subprocess.call('dc_shell-t -f dc_script.tcl | tee dc.log', shell=True,executable="/bin/bash") 
+  subprocess.call('dc_shell-t -f dc_script.tcl | tee dc.log', shell=True,executable="/bin/bash")
   # clean after DC!
   subprocess.call('rm -rf command.log', shell=True)
   subprocess.call('rm -rf default.svf', shell=True)
@@ -103,10 +104,10 @@ def run_synth(flow_settings,clock_period,wire_selection):
   check_file.close()
 
   #Copy synthesis results to a unique dir in synth dir
-  synth_report_str = "period_" + clock_period + "_" + "wire_mdl_" + wire_selection
-  report_dest_str = flow_settings['synth_folder'] + "/" + synth_report_str + "_reports"
+  synth_report_str = flow_settings["top_level"] + "_period_" + clock_period + "_" + "wiremdl_" + wire_selection
+  report_dest_str = os.path.join(flow_settings['synth_folder'],synth_report_str + "_reports")
   mkdir_cmd_str = "mkdir -p " + report_dest_str
-  copy_rep_cmd_str = "cp " + flow_settings['synth_folder'] + "/*.rpt " + report_dest_str
+  copy_rep_cmd_str = "cp " + flow_settings['synth_folder'] + "/* " + report_dest_str
   copy_logs_cmd_str = "cp " + "dc.log "+ "dc_script.tcl " + report_dest_str
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
@@ -156,9 +157,186 @@ def run_synth(flow_settings,clock_period,wire_selection):
     exit()
   return synth_report_str
 
-def write_pnr_script(flow_settings,metal_layer,core_utilization):
-  """"
-  writes the tcl script for place and route using Cadence Encounter, tested under 2009 version
+def file_write_ln(fd, line):
+  fd.write(line + "\n")
+
+def write_innovus_view_file(flow_settings):
+  """Write .view file for innovus place and route, this is used for for creating the delay corners from timing libs and importings constraints"""
+  fname = flow_settings["top_level"]+".view"
+  file = open(fname,"w")
+  file.write("# Version:1.0 MMMC View Definition File\n# Do Not Remove Above Line\n")
+  #I created a typical delay corner but I don't think its being used as its not called in create_analysis_view command, however, may be useful? not sure but its here
+  #One could put RC values (maybe temperature in here) later for now they will all be the same
+  file.write("create_rc_corner -name RC_BEST -preRoute_res {1.0} -preRoute_cap {1.0} -preRoute_clkres {0.0} -preRoute_clkcap {0.0} -postRoute_res {1.0} -postRoute_cap {1.0} -postRoute_xcap {1.0} -postRoute_clkres {0.0} -postRoute_clkcap {0.0}"+ "\n")
+  file.write("create_rc_corner -name RC_TYP -preRoute_res {1.0} -preRoute_cap {1.0} -preRoute_clkres {0.0} -preRoute_clkcap {0.0} -postRoute_res {1.0} -postRoute_cap {1.0} -postRoute_xcap {1.0} -postRoute_clkres {0.0} -postRoute_clkcap {0.0}" + "\n")
+  file.write("create_rc_corner -name RC_WORST -preRoute_res {1.0} -preRoute_cap {1.0} -preRoute_clkres {0.0} -preRoute_clkcap {0.0} -postRoute_res {1.0} -postRoute_cap {1.0} -postRoute_xcap {1.0} -postRoute_clkres {0.0} -postRoute_clkcap {0.0}" + "\n")
+  #create libraries for each timing corner
+  file.write("create_library_set -name MIN_TIMING -timing {" + flow_settings["best_case_libs"] + "}" + "\n")
+  file.write("create_library_set -name TYP_TIMING -timing {" + flow_settings["standard_libs"] + "}" + "\n")
+  file.write("create_library_set -name MAX_TIMING -timing {" + flow_settings["worst_case_libs"] + "}" + "\n")
+  #import constraints from synthesis generated sdc
+  file.write("create_constraint_mode -name CONSTRAINTS -sdc_files {" + flow_settings['synth_folder'] + "/synthesized.sdc" + "}"  + "\n")
+  file.write("create_delay_corner -name MIN_DELAY -library_set {MIN_TIMING} -rc_corner {RC_BEST}" + "\n")
+  file.write("create_delay_corner -name TYP_DELAY -library_set {TYP_TIMING} -rc_corner {RC_TYP}" + "\n")
+  file.write("create_delay_corner -name MAX_DELAY -library_set {MAX_TIMING} -rc_corner {RC_WORST}" + "\n")
+  file.write("create_analysis_view -name BEST_CASE -constraint_mode {CONSTRAINTS} -delay_corner {MIN_DELAY}" + "\n")
+  file.write("create_analysis_view -name TYP_CASE -constraint_mode {CONSTRAINTS} -delay_corner {TYP_DELAY}" + "\n")
+  file.write("create_analysis_view -name WORST_CASE -constraint_mode {CONSTRAINTS} -delay_corner {MAX_DELAY}" + "\n")
+  #This sets our analysis view to be using our worst case analysis view for setup and best for timing,
+  #This makes sense as the BC libs would have the most severe hold violations and vice versa for setup 
+  file.write("set_analysis_view -setup {WORST_CASE} -hold {BEST_CASE}" + "\n")
+  file.close()
+  return fname
+
+
+def write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_fname):
+  """
+  This function writes the innvous script which actually performs place and route.
+  Precondition to this script is the creation of an initialization script which is sourced on the first line.
+  """
+  #some format adjustment (could move to preproc function)
+  core_utilization = str(core_utilization)
+  metal_layer = str(metal_layer)
+  flow_settings["power_ring_spacing"] = str(flow_settings["power_ring_spacing"])
+
+  metal_layer_bottom = flow_settings["metal_layer_names"][0]
+  metal_layer_second = flow_settings["metal_layer_names"][1]
+  metal_layer_top = flow_settings["metal_layer_names"][int(metal_layer)-1]
+  power_ring_metal_top = flow_settings["power_ring_metal_layer_names"][0] 
+  power_ring_metal_bottom = flow_settings["power_ring_metal_layer_names"][1] 
+  power_ring_metal_left = flow_settings["power_ring_metal_layer_names"][2] 
+  power_ring_metal_right = flow_settings["power_ring_metal_layer_names"][3] 
+  #output files
+  output_files = []  
+  fname = flow_settings["top_level"] + "_innovus.tcl"
+  file = open(fname,"w")
+  file_lines = [
+    "source " + init_script_fname,
+    "setDesignMode -process " + flow_settings["process_size"],
+    "floorPlan -site " +
+    " ".join([flow_settings["core_site_name"],
+    "-r",flow_settings["height_to_width_ratio"],core_utilization,
+    flow_settings["space_around_core"],
+    flow_settings["space_around_core"],
+    flow_settings["space_around_core"],
+    flow_settings["space_around_core"]]),
+    "setDesignMode -topRoutingLayer " + metal_layer,
+    "fit",
+    # "addRing -type core_rings -nets {VDD VSS} -layer {top M1 bottom M1 left M2 right M2} -width 3 -spacing 3 -offset 3 -follow io"
+    " ".join(["addRing", "-type core_rings","-nets","{" + " ".join([flow_settings["pwr_net"],flow_settings["gnd_net"]]) + "}",
+      "-layer {" + " ".join(["top",metal_layer_bottom,"bottom",metal_layer_bottom,"left",metal_layer_second,"right",metal_layer_second]) + "}",
+      "-width", flow_settings["power_ring_width"],
+      "-spacing", flow_settings["power_ring_spacing"],
+      "-offset", flow_settings["power_ring_width"],
+      "-follow io"]),
+    "setPlaceMode -fp false",
+    "place_design -noPrePlaceOpt",
+    "earlyGlobalRoute",
+    "timeDesign -preCTS -idealClock -numPaths 10 -prefix preCTS -outDir " + os.path.join(flow_settings["pr_folder"],"timeDesignpreCTSReports"),
+    "optDesign -preCTS -outDir " + os.path.join(flow_settings["pr_folder"],"optDesignpreCTSReports"),
+    "addFiller -cell {" +  " ".join(flow_settings["filler_cell_names"]) + "} -prefix FILL -merge true",
+    "clearGlobalNets",
+    "globalNetConnect " + flow_settings["gnd_pin"] + " -type pgpin -pin " + flow_settings["gnd_pin"] + " -inst {}",
+    "globalNetConnect " + flow_settings["pwr_pin"] + " -type pgpin -pin " + flow_settings["pwr_pin"] + " -inst {}",
+    "globalNetConnect " + flow_settings["gnd_net"] + " -type net -net  " + flow_settings["gnd_net"],
+    "globalNetConnect " + flow_settings["pwr_net"] + " -type net -net  " + flow_settings["pwr_net"],
+    "globalNetConnect " + flow_settings["pwr_pin"] + " -type pgpin -pin  " + flow_settings["pwr_pin"] + " -inst *",
+    "globalNetConnect " + flow_settings["gnd_pin"] + " -type pgpin -pin  " + flow_settings["gnd_pin"] + " -inst *",
+    "globalNetConnect " + flow_settings["pwr_pin"] + " -type tiehi -inst *",
+    "globalNetConnect " + flow_settings["gnd_pin"] + " -type tielo -inst *",
+    "sroute -connect { blockPin padPin padRing corePin floatingStripe } -layerChangeRange { "+ " ".join([metal_layer_bottom,metal_layer_top]) + " }"\
+     + " -blockPinTarget { nearestRingStripe nearestTarget } -padPinPortConnect { allPort oneGeom } -checkAlignedSecondaryPin 1 -blockPin useLef -allowJogging 1"\
+     + " -crossoverViaBottomLayer " + metal_layer_bottom + " -targetViaBottomLayer " + metal_layer_bottom + " -allowLayerChange 1"\
+     + " -targetViaTopLayer " + metal_layer_top + " -crossoverViaTopLayer " + metal_layer_top + " -nets {" + " ".join([flow_settings["gnd_net"],flow_settings["pwr_net"]]) +  "}",
+    "routeDesign -globalDetail",
+    "setExtractRCMode -engine postRoute",
+    "extractRC",
+    "buildTimingGraph",
+    "setAnalysisMode -analysisType onChipVariation -cppr both",
+    "timeDesign -postRoute -outDir " +  os.path.join(flow_settings["pr_folder"],"timeDesignReports"),
+    "optDesign -postRoute -outDir " +  os.path.join(flow_settings["pr_folder"],"optDesignReports"),
+    "verify_drc -report " + os.path.join(flow_settings["pr_folder"],"geom.rpt"),
+    "verifyConnectivity -type all -report " + os.path.join(flow_settings["pr_folder"],"conn.rpt"),
+    "report_timing > " + os.path.join(flow_settings["pr_folder"],"setup_timing.rpt"),
+    "setAnalysisMode -checkType hold",
+    "report_timing > " + os.path.join(flow_settings["pr_folder"],"hold_timing.rpt"),
+    "report_power > " + os.path.join(flow_settings["pr_folder"],"power.rpt"),
+    "report_constraint -all_violators > " + os.path.join(flow_settings["pr_folder"],"violators.rpt"),
+    "report_area > " + os.path.join(flow_settings["pr_folder"],"area.rpt"),
+    "summaryReport -outFile " + os.path.join(flow_settings["pr_folder"],"pr_report.txt"),
+    "saveNetlist " + os.path.join(flow_settings["pr_folder"],"netlist.v"),
+    "saveDesign " +  os.path.join(flow_settings["pr_folder"],"design.enc"),
+    "rcOut -spef " +  os.path.join(flow_settings["pr_folder"],"spef.spef"),
+    "write_sdf -ideal_clock_network " + os.path.join(flow_settings["pr_folder"],"sdf.sdf")]
+  #If the user specified a layer mapping file, then use that. Otherwise, just let the tool create a default one.
+  if flow_settings['map_file'] != "None":
+    file_lines.append("streamOut " +  os.path.join(flow_settings["pr_folder"],"final.gds2") + " -mapFile " + flow_settings["map_file"] + " -stripes 1 -units 1000 -mode ALL")
+  else:
+    file_lines.append("streamOut " +  os.path.join(flow_settings["pr_folder"],"final.gds2") + " -stripes 1 -units 1000 -mode ALL")
+  for line in file_lines:
+    file_write_ln(file,line)
+  file_write_ln(file,"exit")
+  file.close()
+  return fname
+
+def write_innovus_init_script(flow_settings,view_fname):
+  """
+  This function generates init script which sets variables used in pnr,
+  The contents of this file were generated from using the innovus GUI
+  setting relavent files/nets graphically and exporting the .globals file
+  """
+  flow_settings["lef_files"] = flow_settings["lef_files"].strip("\"")
+  fname = flow_settings["top_level"]+"_innovus_init.tcl"
+  file = open(fname,"w")
+  file_lines = [
+    "set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default",
+    "suppressMessage ENCEXT-2799",
+    "set ::TimeLib::tsgMarkCellLatchConstructFlag 1",
+    "set conf_qxconf_file NULL",
+    "set conf_qxlib_file NULL",
+    "set dbgDualViewAwareXTree 1",
+    "set defHierChar /",
+    "set distributed_client_message_echo 1",
+    "set distributed_mmmc_disable_reports_auto_redirection 0",
+    #The below config file comes from the INNOVUS directory, if not using an x86 system this will probably break
+    "set dlgflprecConfigFile " + os.path.join(flow_settings["EDI_HOME"],"tools.lnx86/dlApp/run_flprec.cfg"),
+    "set enable_ilm_dual_view_gui_and_attribute 1",
+    "set enc_enable_print_mode_command_reset_options 1",
+    "set init_design_settop 0",
+    "set init_gnd_net " + flow_settings["gnd_net"],
+    #/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/tpzn65gpgv2_9lm.lef
+    "set init_lef_file {" + flow_settings["lef_files"]  + "}",
+    "set init_mmmc_file {" + view_fname + "}",
+    "set init_pwr_net " + flow_settings["pwr_net"],
+    "set init_top_cell " + flow_settings["top_level"],
+    "set init_verilog ../synth/synthesized.v",
+    "get_message -id GLOBAL-100 -suppress",
+    "get_message -id GLOBAL-100 -suppress",
+    "set latch_time_borrow_mode max_borrow",
+    "set pegDefaultResScaleFactor 1",
+    "set pegDetailResScaleFactor 1",
+    "set pegEnableDualViewForTQuantus 1",
+    "get_message -id GLOBAL-100 -suppress",
+    "get_message -id GLOBAL-100 -suppress",
+    "set report_inactive_arcs_format {from to when arc_type sense reason}",
+    "set spgUnflattenIlmInCheckPlace 2",
+    "get_message -id GLOBAL-100 -suppress",
+    "get_message -id GLOBAL-100 -suppress",
+    "set timing_remove_data_path_pessimism_min_slack_threshold -1.70141e+38",
+    "set defStreamOutCheckUncolored false",
+    "set init_verilog_tolerate_port_mismatch 0",
+    "set load_netlist_ignore_undefined_cell 1",
+    "init_design"
+  ]
+  for line in file_lines:
+    file_write_ln(file,line)
+  file.close()
+  return fname
+
+
+def write_enc_script(flow_settings,metal_layer,core_utilization):
+  """
+  Writes script for place and route using cadence encounter (tested under 2009 version)
   """
   # generate the EDI (encounter) configuration
   file = open("edi.conf", "w")
@@ -291,12 +469,21 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
   runs place and route using cadence encounter
   Prereqs: flow_settings_pre_process() function to properly format params for scripts
   """
-  write_pnr_script(flow_settings,metal_layer,core_utilization)
-  # Run the scrip in EDI
-  subprocess.call('encounter -nowin -init edi.tcl | tee edi.log', shell=True,executable="/bin/bash") 
-  # clean after EDI!
-  subprocess.call('mv encounter.log ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter_log.log', shell=True)
-  subprocess.call('mv encounter.cmd ' + os.path.expanduser(flow_settings['pr_folder']) + '/encounter.cmd', shell=True)
+  pnr_report_str = synth_report_str + "_" + "metal_layers_" + metal_layer + "_" + "util_" + core_utilization
+  report_dest_str = os.path.join(flow_settings['pr_folder'],pnr_report_str + "_reports")
+  if(flow_settings["pnr_tool"] == "encounter"):
+    write_enc_script(flow_settings,metal_layer,core_utilization)
+    copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + "encounter.log " + "encounter.cmd " + report_dest_str
+    # Run the scrip in EDI
+    subprocess.call('encounter -nowin -init edi.tcl | tee edi.log', shell=True,executable="/bin/bash") 
+  elif(flow_settings["pnr_tool"] == "innovus"):
+    view_fname = write_innovus_view_file(flow_settings)
+    init_script_fname = write_innovus_init_script(flow_settings,view_fname)
+    innovus_script_fname = write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_fname)
+    run_innovus_cmd = "innovus -no_gui -init " + innovus_script_fname + " | tee inn.log"
+    copy_logs_cmd_str = " ".join(["cp","inn.log",init_script_fname, view_fname,innovus_script_fname,report_dest_str])
+    subprocess.call(run_innovus_cmd, shell=True,executable="/bin/bash") 
+
   # read total area from the report file:
   file = open(os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt" ,"r")
   for line in file:
@@ -304,15 +491,21 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
       total_area = re.findall(r'\d+\.{0,1}\d*', line)
   file.close()
   #Copy pnr results to a unique dir in pnr dir
-  pnr_report_str = synth_report_str + "_" + "metal_layers_" + metal_layer + "_" + "util_" + core_utilization
-  report_dest_str = os.path.expanduser(flow_settings['pr_folder']) + "/" + pnr_report_str + "_reports"
+  clean_logs_cmd_str = copy_logs_cmd_str.split(" ")
+  clean_logs_cmd_str[0] = "rm -f"
+  #removes the last element in the string (this is the desintation report directory)
+  del clean_logs_cmd_str[-1]
+  clean_logs_cmd_str = " ".join(clean_logs_cmd_str)
+
   mkdir_cmd_str = "mkdir -p " + report_dest_str
-  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['pr_folder']) + "/*.rpt " + os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt " + report_dest_str
-  copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + report_dest_str
+  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['pr_folder']) + "/* " + report_dest_str
+  copy_rec_cmd_str = " ".join(["cp -r",os.path.join(flow_settings['pr_folder'],"design.enc.dat"),report_dest_str])
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
+  subprocess.call(copy_rec_cmd_str,shell=True)
   subprocess.call(copy_logs_cmd_str,shell=True)
-  subprocess.call('rm -f edi.log edi.conf edi.tcl', shell=True)
+  subprocess.call(clean_logs_cmd_str,shell=True)
+
   return pnr_report_str, total_area
 
 def run_sim():
@@ -344,7 +537,10 @@ def run_sim():
 
 def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   """"
-  writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
+  writes the tcl script for power analysis using Synopsys Design Compiler, tested under 2017 version
+  Update: changed the [all_nets] argument used in set_switching_activity to use -baseClk and -inputs args instead.
+  This function takes the RC values generated from pnr script in form of .spef file and the user inputted switching probability or 
+  a .saif file generated from a testbench to estimate power.
   """
   # Create a script to measure power:
   file = open("primetime_power.tcl", "w")
@@ -354,7 +550,7 @@ def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   file.write("set my_clock_pin " + flow_settings['clock_pin_name'] + "\n")
   file.write("set target_library " + flow_settings['primetime_libs'] + "\n")
   file.write("set link_library " + flow_settings['link_library'] + "\n")
-  file.write("read_verilog " + os.path.expanduser(flow_settings['pr_folder']) + "/netlist.v \n")
+  file.write("read_verilog " + os.path.join(flow_settings['pr_folder'],"netlist.v") + "\n")
   file.write("link \n")
   file.write("set my_period " + str(clock_period) + " \n")
   file.write("set find_clock [ find port [list $my_clock_pin] ] \n")
@@ -379,7 +575,10 @@ def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
   file.close()
 
 def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
-  """"""
+  """
+  writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
+  This should look for setup/hold violations using the worst case (hold) and best case (setup) libs
+  """
   # backannotate into primetime
   # This part should be reported for all the modes in the design.
   file = open("primetime.tcl", "w")
@@ -405,6 +604,9 @@ def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
   file.close()
 
 def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str):
+  """
+  This runs STA using PrimeTime and the pnr generated .spef and netlist file to get a more accurate result for delay
+  """
   if not mode_enabled:
     x = 2**len(flow_settings['mode_signal'])
   write_pt_timing_script(flow_settings,mode_enabled,clock_period,x)
@@ -429,7 +631,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str):
   pt_report_str = pnr_report_str + "_" + "mode_" + str(x)
   report_dest_str = os.path.expanduser(flow_settings['primetime_folder']) + "/" + pt_report_str + "_reports"
   mkdir_cmd_str = "mkdir -p " + report_dest_str
-  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['primetime_folder']) + "/*.rpt " + report_dest_str
+  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['primetime_folder']) + "/* " + report_dest_str
   copy_logs_cmd_str = "cp " + "pt.log pt_pwr.log primetime.tcl primetime_power.tcl " + report_dest_str
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
@@ -477,10 +679,18 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
     syn_root = cur_env.get("SYNOPSYS")
     search_path_dirs = [os.path.join(syn_root,"libraries",dirname) for dirname in ["syn","syn_ver","sim_ver"] ]
   except:
-    print("could not find 'SYNOPSYS' environment variable set, please run the following command to your sysopsys home directory")
+    print("could not find 'SYNOPSYS' environment variable set, please source your ASIC tools or run the following command to your sysopsys home directory")
     print("export SYNOPSYS=/abs/path/to/synopsys/home")
     print("Ex. export SYNOPSYS=/CMC/tools/synopsys/syn_vN-2017.09/")
     sys.exit(1)
+  #Place and route
+  if(processed_flow_settings["pnr_tool"] == "innovus"):
+    try:
+      edi_root = cur_env.get("EDI_HOME")
+      processed_flow_settings["EDI_HOME"] = edi_root
+    except:
+      print("could not find 'EDI_HOME' environment variable set, please source your ASIC tools or run the following command to your INNOVUS/ENCOUNTER home directory")
+      sys.exit(1)
   
   for p_lib_path in processed_flow_settings["process_lib_paths"]:
     search_path_dirs.append(p_lib_path)
@@ -505,7 +715,7 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["standard_libs"] = "\"" + " ".join(processed_flow_settings['standard_libs']) + "\""
   processed_flow_settings["worst_case_libs"] = "\"" + " ".join(processed_flow_settings['worst_case_libs']) + "\""
   processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
-    
+
 # wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
 def hardblock_flow(flow_settings): 
   cur_env = os.environ.copy()
@@ -537,6 +747,7 @@ def hardblock_flow(flow_settings):
           # Optional: use modelsim to generate an activity file for the design:
           if flow_settings['generate_activity_file'] is True:
             run_sim()
+          #loops over every combination of user inputted modes to set the set_case_analysis value (determines value of mode mux)
           for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
             library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str)
             # write the final report file:

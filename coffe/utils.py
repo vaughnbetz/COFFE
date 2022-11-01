@@ -700,6 +700,9 @@ def check_hard_params(hard_params,optional_params):
         elif(key == "pnr_tool" and val != "encounter" and val != "innovus" ):
             print("ERROR: pnr_tool must be set as either \"encounter\" or \"innovus\" ")
             sys.exit(1)
+    if(hard_params["pnr_tool"] == "innovus" and hard_params["process_size"] == ""):
+            print("param process_size is unset, please go to your hardblock/process params file and set it")
+            sys.exit(1)
 
 def load_hard_params(filename):
     """ Parse the hard block description file and load values into dictionary. 
@@ -769,8 +772,8 @@ def load_hard_params(filename):
         'mode_signal': [],
         'process_lib_paths': [],
         'process_params_file': "",
-        #'pnr_tool': "",
-        #'process_size': "",
+        'pnr_tool': "",
+        'process_size': "",
     }
 
     hard_file = open(filename, 'r')
@@ -876,10 +879,8 @@ def load_hard_params(filename):
             hard_params['mode_signal'].append(value)
         elif param == "process_params_file":
             hard_params["process_params_file"] = value
-        # elif param == "pnr_tool":
-        #     hard_params["pnr_tool"] = value
-        # elif param == "process_size":
-        #     hard_params["process_size"] = value
+        elif param == "pnr_tool":
+            hard_params["pnr_tool"] = value
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
             hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
@@ -921,6 +922,8 @@ def load_hard_params(filename):
             hard_params['pwr_pin'] = value.strip()
         elif param == 'wire_selection':
             hard_params['wire_selection'].append(value)
+        elif param == "process_size":
+            hard_params["process_size"] = value
     
     hard_file.close()
 
@@ -988,6 +991,8 @@ def load_hard_params(filename):
                 hard_params['wire_selection'].append(value)
             elif param == "primetime_libs":
                 hard_params["primetime_libs"] = sanatize_str_input_to_list(value)
+            elif param == "process_size":
+                hard_params["process_size"] = value
             
         process_param_file.close()
     #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
