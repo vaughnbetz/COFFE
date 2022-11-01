@@ -577,6 +577,7 @@ def write_pt_power_script(flow_settings,mode_enabled,clock_period,x):
 def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
   """
   writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
+  This should look for setup/hold violations using the worst case (hold) and best case (setup) libs
   """
   # backannotate into primetime
   # This part should be reported for all the modes in the design.
@@ -603,6 +604,9 @@ def write_pt_timing_script(flow_settings,mode_enabled,clock_period,x):
   file.close()
 
 def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str):
+  """
+  This runs STA using PrimeTime and the pnr generated .spef and netlist file to get a more accurate result for delay
+  """
   if not mode_enabled:
     x = 2**len(flow_settings['mode_signal'])
   write_pt_timing_script(flow_settings,mode_enabled,clock_period,x)
