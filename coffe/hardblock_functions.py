@@ -104,7 +104,7 @@ def run_synth(flow_settings,clock_period,wire_selection):
   check_file.close()
 
   #Copy synthesis results to a unique dir in synth dir
-  synth_report_str = flow_settings["top_level"] + "_period_" + clock_period + "_" + "wire_mdl_" + wire_selection
+  synth_report_str = flow_settings["top_level"] + "_period_" + clock_period + "_" + "wiremdl_" + wire_selection
   report_dest_str = os.path.join(flow_settings['synth_folder'],synth_report_str + "_reports")
   mkdir_cmd_str = "mkdir -p " + report_dest_str
   copy_rep_cmd_str = "cp " + flow_settings['synth_folder'] + "/* " + report_dest_str
@@ -262,6 +262,7 @@ def write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_
     "report_timing > " + os.path.join(flow_settings["pr_folder"],"hold_timing.rpt"),
     "report_power > " + os.path.join(flow_settings["pr_folder"],"power.rpt"),
     "report_constraint -all_violators > " + os.path.join(flow_settings["pr_folder"],"violators.rpt"),
+    "report_area > " + os.path.join(flow_settings["pr_folder"],"area.rpt"),
     "summaryReport -outFile " + os.path.join(flow_settings["pr_folder"],"pr_report.txt"),
     "saveNetlist " + os.path.join(flow_settings["pr_folder"],"netlist.v"),
     "saveDesign " +  os.path.join(flow_settings["pr_folder"],"design.enc"),
@@ -333,7 +334,7 @@ def write_innovus_init_script(flow_settings,view_fname):
   return fname
 
 
-def write_enc_script(flow_settings,metal_layer,core_utilization,synth_report_str):
+def write_enc_script(flow_settings,metal_layer,core_utilization):
   """
   Writes script for place and route using cadence encounter (tested under 2009 version)
   """
@@ -469,10 +470,10 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
   Prereqs: flow_settings_pre_process() function to properly format params for scripts
   """
   pnr_report_str = synth_report_str + "_" + "metal_layers_" + metal_layer + "_" + "util_" + core_utilization
-  report_dest_str = os.path.expanduser(flow_settings['pr_folder']) + "/" + pnr_report_str + "_reports"
+  report_dest_str = os.path.join(flow_settings['pr_folder'],pnr_report_str + "_reports")
   if(flow_settings["pnr_tool"] == "encounter"):
     write_enc_script(flow_settings,metal_layer,core_utilization)
-    copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + report_dest_str
+    copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + "encounter.log " + "encounter.cmd " + report_dest_str
     # Run the scrip in EDI
     subprocess.call('encounter -nowin -init edi.tcl | tee edi.log', shell=True,executable="/bin/bash") 
   elif(flow_settings["pnr_tool"] == "innovus"):
@@ -492,24 +493,19 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str):
   #Copy pnr results to a unique dir in pnr dir
   clean_logs_cmd_str = copy_logs_cmd_str.split(" ")
   clean_logs_cmd_str[0] = "rm -f"
-  del clean_logs_cmd_str[-1] #removes the last element in the string (this is the desintation report directory)
+  #removes the last element in the string (this is the desintation report directory)
+  del clean_logs_cmd_str[-1]
   clean_logs_cmd_str = " ".join(clean_logs_cmd_str)
 
   mkdir_cmd_str = "mkdir -p " + report_dest_str
-  #+ os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt " 
   copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['pr_folder']) + "/* " + report_dest_str
   copy_rec_cmd_str = " ".join(["cp -r",os.path.join(flow_settings['pr_folder'],"design.enc.dat"),report_dest_str])
-  # if flow_settings["pnr_tool"] == "encounter":
-  #   copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + report_dest_str
-  # elif flow_settings["pnr_tool"] == "innovus":
-  #   copy_logs_cmd_str = "cp " + "inn.log " + "edi.tcl " + "edi.conf " + report_dest_str
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
   subprocess.call(copy_rec_cmd_str,shell=True)
   subprocess.call(copy_logs_cmd_str,shell=True)
   subprocess.call(clean_logs_cmd_str,shell=True)
 
-  # subprocess.call('rm -f edi.log edi.conf edi.tcl encounter.log encounter.cmd', shell=True)
   return pnr_report_str, total_area
 
 def run_sim():
@@ -631,7 +627,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str):
   pt_report_str = pnr_report_str + "_" + "mode_" + str(x)
   report_dest_str = os.path.expanduser(flow_settings['primetime_folder']) + "/" + pt_report_str + "_reports"
   mkdir_cmd_str = "mkdir -p " + report_dest_str
-  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['primetime_folder']) + "/*.rpt " + report_dest_str
+  copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['primetime_folder']) + "/* " + report_dest_str
   copy_logs_cmd_str = "cp " + "pt.log pt_pwr.log primetime.tcl primetime_power.tcl " + report_dest_str
   subprocess.call(mkdir_cmd_str,shell=True)
   subprocess.call(copy_rep_cmd_str,shell=True)
