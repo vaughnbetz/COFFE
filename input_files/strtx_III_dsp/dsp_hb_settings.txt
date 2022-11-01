@@ -83,6 +83,9 @@ tilehi_tielo_cells_between_power_gnd=True
 #core_site_name=core
 
 #specify the utilization of the core site. you can specify multiple ones on different lines.
+# description of utilization parameter can be found here:
+# https://community.cadence.com/cadence_technology_forums/f/digital-implementation/48060/what-is-the-meaning-of-cell-utlilization
+
 #core_utilization=0.80
 core_utilization=0.85
 core_utilization=0.90
@@ -91,6 +94,9 @@ core_utilization=0.95
 # EDI settings (Cadence Encounter or innovus):
 # These settings are the width of power/gnd wires and the spacing between them
 # The space_around_core param is the distance between core and IO (leaves enough space for power rings)
+# Calculations: 
+# 1.8 x 2 (ring for VDD and VSS) + 1.8 x 3 (spacing between IO ring and first ring, the rings and last ring and core) = 9 um (1 um of extra space)
+
 power_ring_width=1.8
 power_ring_spacing=1.8
 height_to_width_ratio=4.0
