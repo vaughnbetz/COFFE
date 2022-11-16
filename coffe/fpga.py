@@ -5140,9 +5140,9 @@ class _dedicated_routing_driver(_SizableCircuit):
 class _hard_block(_CompoundCircuit):
     """ hard block class"""
 
-    def __init__(self, filename, use_tgate):
+    def __init__(self, filename, use_tgate, cli_args=None):
         #Call the hard block parameter parser
-        self.parameters = utils.load_hard_params(filename)
+        self.parameters = utils.load_hard_params(filename,cli_args)
         # Subcircuit name
         self.name = self.parameters['name']
         #create the inner objects
@@ -5184,6 +5184,13 @@ class _hard_block(_CompoundCircuit):
 		
         if self.parameters['num_dedicated_outputs'] > 0:
             self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+
+    def generate_hb_scripts(self):
+        print("Generating hardblock tcl scripts for Synthesis, Place and Route, and Static Timing Analysis")
+        hardblock_functions.hardblock_script_gen(self.parameters)
+        print("Finished Generating scripts, exiting...")
+        sys.exit(1)
+
 
     def update_area(self, area_dict, width_dict):
         """ Update area. To do this, we use area_dict which is a dictionary, maintained externally, that contains

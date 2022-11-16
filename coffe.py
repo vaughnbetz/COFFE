@@ -48,10 +48,10 @@ import math
 
 
 
-print "\nCOFFE 2.0\n"
-print "Man is a tool-using animal."
-print "Without tools he is nothing, with tools he is all."
-print "                           - Thomas Carlyle\n\n"
+print ("\nCOFFE 2.0\n")
+print ("Man is a tool-using animal.")
+print ("Without tools he is nothing, with tools he is all.")
+print ("                           - Thomas Carlyle\n\n")
 
 # TODO: see the effect on disabling floorplanning on results and runtime
 # if it is worth it we could add an argument which could disable 
@@ -67,8 +67,9 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
+#arguments for ASIC flow 
 parser.add_argument('-ho',"--hardblock_only",help="run only a single hardblock through the asic flow", action='store_true',default=False)
-
+parser.add_argument('-g',"--gen_hb_scripts",help="generates all hardblock scripts which can be run by a user",action='store_true',default=False)
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
 
@@ -81,8 +82,17 @@ if(args.hardblock_only):
   # Change to the architecture directory
   for hardblock_fname in arch_params_dict["hb_files"]:
     hard_block = fpga._hard_block(hardblock_fname,False)
-    os.chdir(arch_folder)
-    hard_block.generate_top()
+    if(args.gen_hb_scripts):
+      asic_work_dir = "asic_work"
+      asic_work_path = os.path.join(arch_params_dict["coffe_design_out_folder"],asic_work_dir)
+      if(not os.path.isdir(asic_work_path)):
+        os.mkdir(asic_work_path)
+      os.chdir(asic_work_path)
+      hard_block.generate_hb_scripts()
+    else:
+      os.chdir(arch_folder)
+      hard_block.generate_top()
+  
 else:
   is_size_transistors = not args.no_sizing
   # Make the top-level spice folder if it doesn't already exist

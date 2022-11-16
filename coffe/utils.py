@@ -509,7 +509,7 @@ def load_arch_params(filename):
         'FAs_per_flut':2,
         'hb_files' : [],
         'arch_out_folder': "None",
-        # 'coffe_design_name' : "coffe_test",
+        'coffe_design_out_folder' : "",
         # 'coffe_repo_path' : "None"
     }
 
@@ -660,16 +660,18 @@ def load_arch_params(filename):
             arch_params['hb_files'].append(value)
         elif param == 'arch_out_folder':
             arch_params['arch_out_folder'] = value
-        # elif param == 'coffe_design_name':
-        #     arch_params['coffe_design_name'] = str(value)
+        elif param == 'coffe_design_out_folder':
+            arch_params['coffe_design_out_folder'] = os.path.expanduser(str(value))
         # elif param == 'coffe_repo_path':
         #     arch_params['coffe_repo_path'] = str(value)
 
     params_file.close()
     
+    #TODO fix the below stuff
+    optional_arch_params = ["coffe_design_out_folder"]
     # Check that we read everything
     for param, value in arch_params.iteritems():
-        if value == -1 or value == "":
+        if ((value == -1 or value == "") and (param not in optional_arch_params) ):
             print "ERROR: Did not find architecture parameter " + param + " in " + filename
             sys.exit()
     
@@ -704,11 +706,12 @@ def check_hard_params(hard_params,optional_params):
             print("param process_size is unset, please go to your hardblock/process params file and set it")
             sys.exit(1)
 
-def load_hard_params(filename):
+def load_hard_params(filename,cli_args=False):
     """ Parse the hard block description file and load values into dictionary. 
         Returns this dictionary.
     """
     
+
     # This is the dictionary of parameters we expect to find
     hard_params = {
         'name': "",
@@ -725,6 +728,7 @@ def load_hard_params(filename):
         'power_scale_factor': -1.0,
         'input_usage': -1.0,
         # Flow Settings:
+        'hb_run_type': "",
         'design_folder': "",
         'design_language': '',
         'clock_pin_name': "",
@@ -774,7 +778,9 @@ def load_hard_params(filename):
         'process_params_file': "",
         'pnr_tool': "",
         'process_size': "",
+        'hb_run_type': "",
     }
+    
 
     hard_file = open(filename, 'r')
     for line in hard_file:
@@ -881,6 +887,9 @@ def load_hard_params(filename):
             hard_params["process_params_file"] = value
         elif param == "pnr_tool":
             hard_params["pnr_tool"] = value
+        elif param == "hb_run_type":
+            hard_params["hb_run_type"] = str(value)
+
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
             hard_params["process_lib_paths"] = sanatize_str_input_to_list(value)
@@ -996,7 +1005,7 @@ def load_hard_params(filename):
             
         process_param_file.close()
     #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
-    optional_params = ["process_params_file","mode_signal"]
+    optional_params = ["process_params_file","mode_signal","hb_run_type"]
     check_hard_params(hard_params,optional_params)
 
     return hard_params
