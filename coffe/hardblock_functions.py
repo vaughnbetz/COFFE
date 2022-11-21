@@ -9,7 +9,8 @@ import subprocess
 import re
 import shutil
 import math
-
+import glob
+import multiprocessing as mp
 
 """
 Notes:
@@ -56,6 +57,13 @@ def write_synth_tcl(flow_settings,clock_period,wire_selection,rel_outputs=False,
   else:
     sw_activity_str = "set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " -base_clock $my_clock_pin -type inputs"
 
+  #Ungrouping settings command
+  #this regex causes ff and vcr modules to be grouped ".*ff.*|.*vcr.*"
+  if flow_settings["ungroup_regex"] != "": #TODO make sure default value of ungroup regex works for this
+    set_ungroup_cmd = "set_attributes [get_cells -regex" + "\"" + flow_settings["ungroup_regex"] + "\"" + "] ungroup false" #this will ungroup all blocks
+  else:
+    set_ungroup_cmd = "# NO UNGROUPING SETTINGS APPLIED, MODULES WILL BE FLATTENED ACCORDING TO DC"
+    
   synthesized_fname = "synthesized"
   file_lines = [
     #This line sets the naming convention of DC to not add parameters to module insts
@@ -81,7 +89,37 @@ def write_synth_tcl(flow_settings,clock_period,wire_selection,rel_outputs=False,
     "if { $find_clock != [list] } { ",
     "set clk_name $my_clock_pin ",
     "create_clock -period $my_period $clk_name}",
-    "set_ungroup vcr_top_1 false", #DEPENDANCY
+    set_ungroup_cmd,
+    #"set_attributes [get_cells] ungroup false", #this will ungroup all blocks
+    # "set_ungroup vcr_top_1 false", #DEPENDANCY
+    #"set_ungroup all false",
+    #"set_ungroup ungroup -start_level 3 -all"
+    #"set_ungroup channel_in_ff false", #DEPENDANCY
+    #"set_ungroup flow_ctrl_in_ff false", #DEPENDANCY
+    #"set_ungroup channel_out_ff false", #DEPENDANCY
+    #"set_ungroup flow_ctrl_out_ff false", #DEPENDANCY
+    #"set_ungroup c_dff_1_1 false",
+    #"set_ungroup c_dff_2_31 false",
+    # "set_ungroup \gen_port_regs[0].channel_in_ff false",
+    # "set_ungroup gen_port_regs[0].flow_ctrl_in_ff false",
+    # "set_ungroup gen_port_regs[4].channel_out_ff false",
+    # "set_ungroup gen_port_regs[4].channel_in_ff false",
+    # "set_ungroup gen_port_regs[3].channel_out_ff false",
+    # "set_ungroup gen_port_regs[3].channel_in_ff false",
+    # "set_ungroup gen_port_regs[2].channel_out_ff false",
+    # "set_ungroup gen_port_regs[2].channel_in_ff false",
+    # "set_ungroup gen_port_regs[1].channel_out_ff false",
+    # "set_ungroup gen_port_regs[1].channel_in_ff false",
+    # "set_ungroup gen_port_regs[0].channel_out_ff false",
+    # "set_ungroup gen_port_regs[4].flow_ctrl_out_ff false",
+    # "set_ungroup gen_port_regs[4].flow_ctrl_in_ff false",
+    # "set_ungroup gen_port_regs[3].flow_ctrl_out_ff false",
+    # "set_ungroup gen_port_regs[3].flow_ctrl_in_ff false",
+    # "set_ungroup gen_port_regs[2].flow_ctrl_out_ff false",
+    # "set_ungroup gen_port_regs[2].flow_ctrl_in_ff false",
+    # "set_ungroup gen_port_regs[1].flow_ctrl_out_ff false",
+    # "set_ungroup gen_port_regs[1].flow_ctrl_in_ff false",
+    # "set_ungroup gen_port_regs[0].flow_ctrl_out_ff false",
     "compile_ultra",
     "check_design >  " +                            os.path.join(report_path,"check.rpt"),
     "write -format verilog -hierarchy -output " +   os.path.join(output_path,synthesized_fname+"_hier.v"),
@@ -242,35 +280,42 @@ def write_edit_port_script():
   fd = open("port_vars.tcl","w")
   file_lines = [
     #side 0
-    "set my_0_ch_in_ports {\"channel_in_ip[0]\" \"channel_in_ip[1]\" \"channel_in_ip[2]\" \"channel_in_ip[3]\" \"channel_in_ip[4]\" \"channel_in_ip[5]\" \"channel_in_ip[6]\" \"channel_in_ip[7]\" \"channel_in_ip[8]\" \"channel_in_ip[9]\" \"channel_in_ip[10]\" \"channel_in_ip[11]\" \"channel_in_ip[12]\" \"channel_in_ip[13]\" \"channel_in_ip[14]\" \"channel_in_ip[15]\" \"channel_in_ip[16]\" \"channel_in_ip[17]\" \"channel_in_ip[18]\" \"channel_in_ip[19]\" \"channel_in_ip[20]\" \"channel_in_ip[21]\" \"channel_in_ip[22]\" \"channel_in_ip[23]\" \"channel_in_ip[24]\" \"channel_in_ip[25]\" \"channel_in_ip[26]\" \"channel_in_ip[27]\" \"channel_in_ip[28]\" \"channel_in_ip[29]\" \"channel_in_ip[30]\" \"channel_in_ip[31]\" \"channel_in_ip[32]\" \"channel_in_ip[33]\" \"channel_in_ip[34]\" \"channel_in_ip[35]\" \"channel_in_ip[36]\" \"channel_in_ip[37]\" \"channel_in_ip[38]\" \"channel_in_ip[39]\" \"channel_in_ip[40]\" \"channel_in_ip[41]\" \"channel_in_ip[42]\" \"channel_in_ip[43]\" \"channel_in_ip[44]\" \"channel_in_ip[45]\" \"channel_in_ip[46]\" \"channel_in_ip[47]\" \"channel_in_ip[48]\" \"channel_in_ip[49]\" \"channel_in_ip[50]\" \"channel_in_ip[51]\" \"channel_in_ip[52]\" \"channel_in_ip[53]\" \"channel_in_ip[54]\" \"channel_in_ip[55]\" \"channel_in_ip[56]\" \"channel_in_ip[57]\" \"channel_in_ip[58]\" \"channel_in_ip[59]\" \"channel_in_ip[60]\" \"channel_in_ip[61]\" \"channel_in_ip[62]\" \"channel_in_ip[63]\" \"channel_in_ip[64]\" \"channel_in_ip[65]\" \"channel_in_ip[66]\" \"channel_in_ip[67]\"}",
+    "set my_0_ch_in_ports {\"channel_in_ip_d[0]\" \"channel_in_ip_d[1]\" \"channel_in_ip_d[2]\" \"channel_in_ip_d[3]\" \"channel_in_ip_d[4]\" \"channel_in_ip_d[5]\" \"channel_in_ip_d[6]\" \"channel_in_ip_d[7]\" \"channel_in_ip_d[8]\" \"channel_in_ip_d[9]\" \"channel_in_ip_d[10]\" \"channel_in_ip_d[11]\" \"channel_in_ip_d[12]\" \"channel_in_ip_d[13]\" \"channel_in_ip_d[14]\" \"channel_in_ip_d[15]\" \"channel_in_ip_d[16]\" \"channel_in_ip_d[17]\" \"channel_in_ip_d[18]\" \"channel_in_ip_d[19]\" \"channel_in_ip_d[20]\" \"channel_in_ip_d[21]\" \"channel_in_ip_d[22]\" \"channel_in_ip_d[23]\" \"channel_in_ip_d[24]\" \"channel_in_ip_d[25]\" \"channel_in_ip_d[26]\" \"channel_in_ip_d[27]\" \"channel_in_ip_d[28]\" \"channel_in_ip_d[29]\" \"channel_in_ip_d[30]\" \"channel_in_ip_d[31]\" \"channel_in_ip_d[32]\" \"channel_in_ip_d[33]\" \"channel_in_ip_d[34]\" \"channel_in_ip_d[35]\" \"channel_in_ip_d[36]\" \"channel_in_ip_d[37]\" \"channel_in_ip_d[38]\" \"channel_in_ip_d[39]\" \"channel_in_ip_d[40]\" \"channel_in_ip_d[41]\" \"channel_in_ip_d[42]\" \"channel_in_ip_d[43]\" \"channel_in_ip_d[44]\" \"channel_in_ip_d[45]\" \"channel_in_ip_d[46]\" \"channel_in_ip_d[47]\" \"channel_in_ip_d[48]\" \"channel_in_ip_d[49]\" \"channel_in_ip_d[50]\" \"channel_in_ip_d[51]\" \"channel_in_ip_d[52]\" \"channel_in_ip_d[53]\" \"channel_in_ip_d[54]\" \"channel_in_ip_d[55]\" \"channel_in_ip_d[56]\" \"channel_in_ip_d[57]\" \"channel_in_ip_d[58]\" \"channel_in_ip_d[59]\" \"channel_in_ip_d[60]\" \"channel_in_ip_d[61]\" \"channel_in_ip_d[62]\" \"channel_in_ip_d[63]\" \"channel_in_ip_d[64]\" \"channel_in_ip_d[65]\" \"channel_in_ip_d[66]\" \"channel_in_ip_d[67]\"}",
     #side 1
-    "set my_1_ch_in_ports {\"channel_in_ip[68]\" \"channel_in_ip[69]\" \"channel_in_ip[70]\" \"channel_in_ip[71]\" \"channel_in_ip[72]\" \"channel_in_ip[73]\" \"channel_in_ip[74]\" \"channel_in_ip[75]\" \"channel_in_ip[76]\" \"channel_in_ip[77]\" \"channel_in_ip[78]\" \"channel_in_ip[79]\" \"channel_in_ip[80]\" \"channel_in_ip[81]\" \"channel_in_ip[82]\" \"channel_in_ip[83]\" \"channel_in_ip[84]\" \"channel_in_ip[85]\" \"channel_in_ip[86]\" \"channel_in_ip[87]\" \"channel_in_ip[88]\" \"channel_in_ip[89]\" \"channel_in_ip[90]\" \"channel_in_ip[91]\" \"channel_in_ip[92]\" \"channel_in_ip[93]\" \"channel_in_ip[94]\" \"channel_in_ip[95]\" \"channel_in_ip[96]\" \"channel_in_ip[97]\" \"channel_in_ip[98]\" \"channel_in_ip[99]\" \"channel_in_ip[100]\" \"channel_in_ip[101]\" \"channel_in_ip[102]\" \"channel_in_ip[103]\" \"channel_in_ip[104]\" \"channel_in_ip[105]\" \"channel_in_ip[106]\" \"channel_in_ip[107]\" \"channel_in_ip[108]\" \"channel_in_ip[109]\" \"channel_in_ip[110]\" \"channel_in_ip[111]\" \"channel_in_ip[112]\" \"channel_in_ip[113]\" \"channel_in_ip[114]\" \"channel_in_ip[115]\" \"channel_in_ip[116]\" \"channel_in_ip[117]\" \"channel_in_ip[118]\" \"channel_in_ip[119]\" \"channel_in_ip[120]\" \"channel_in_ip[121]\" \"channel_in_ip[122]\" \"channel_in_ip[123]\" \"channel_in_ip[124]\" \"channel_in_ip[125]\" \"channel_in_ip[126]\" \"channel_in_ip[127]\" \"channel_in_ip[128]\" \"channel_in_ip[129]\" \"channel_in_ip[130]\" \"channel_in_ip[131]\" \"channel_in_ip[132]\" \"channel_in_ip[133]\" \"channel_in_ip[134]\" \"channel_in_ip[135]\"}",
+    "set my_1_ch_in_ports {\"channel_in_ip_d[68]\" \"channel_in_ip_d[69]\" \"channel_in_ip_d[70]\" \"channel_in_ip_d[71]\" \"channel_in_ip_d[72]\" \"channel_in_ip_d[73]\" \"channel_in_ip_d[74]\" \"channel_in_ip_d[75]\" \"channel_in_ip_d[76]\" \"channel_in_ip_d[77]\" \"channel_in_ip_d[78]\" \"channel_in_ip_d[79]\" \"channel_in_ip_d[80]\" \"channel_in_ip_d[81]\" \"channel_in_ip_d[82]\" \"channel_in_ip_d[83]\" \"channel_in_ip_d[84]\" \"channel_in_ip_d[85]\" \"channel_in_ip_d[86]\" \"channel_in_ip_d[87]\" \"channel_in_ip_d[88]\" \"channel_in_ip_d[89]\" \"channel_in_ip_d[90]\" \"channel_in_ip_d[91]\" \"channel_in_ip_d[92]\" \"channel_in_ip_d[93]\" \"channel_in_ip_d[94]\" \"channel_in_ip_d[95]\" \"channel_in_ip_d[96]\" \"channel_in_ip_d[97]\" \"channel_in_ip_d[98]\" \"channel_in_ip_d[99]\" \"channel_in_ip_d[100]\" \"channel_in_ip_d[101]\" \"channel_in_ip_d[102]\" \"channel_in_ip_d[103]\" \"channel_in_ip_d[104]\" \"channel_in_ip_d[105]\" \"channel_in_ip_d[106]\" \"channel_in_ip_d[107]\" \"channel_in_ip_d[108]\" \"channel_in_ip_d[109]\" \"channel_in_ip_d[110]\" \"channel_in_ip_d[111]\" \"channel_in_ip_d[112]\" \"channel_in_ip_d[113]\" \"channel_in_ip_d[114]\" \"channel_in_ip_d[115]\" \"channel_in_ip_d[116]\" \"channel_in_ip_d[117]\" \"channel_in_ip_d[118]\" \"channel_in_ip_d[119]\" \"channel_in_ip_d[120]\" \"channel_in_ip_d[121]\" \"channel_in_ip_d[122]\" \"channel_in_ip_d[123]\" \"channel_in_ip_d[124]\" \"channel_in_ip_d[125]\" \"channel_in_ip_d[126]\" \"channel_in_ip_d[127]\" \"channel_in_ip_d[128]\" \"channel_in_ip_d[129]\" \"channel_in_ip_d[130]\" \"channel_in_ip_d[131]\" \"channel_in_ip_d[132]\" \"channel_in_ip_d[133]\" \"channel_in_ip_d[134]\" \"channel_in_ip_d[135]\"}",
     #side 2
-    "set my_2_ch_in_ports {\"channel_in_ip[136]\" \"channel_in_ip[137]\" \"channel_in_ip[138]\" \"channel_in_ip[139]\" \"channel_in_ip[140]\" \"channel_in_ip[141]\" \"channel_in_ip[142]\" \"channel_in_ip[143]\" \"channel_in_ip[144]\" \"channel_in_ip[145]\" \"channel_in_ip[146]\" \"channel_in_ip[147]\" \"channel_in_ip[148]\" \"channel_in_ip[149]\" \"channel_in_ip[150]\" \"channel_in_ip[151]\" \"channel_in_ip[152]\" \"channel_in_ip[153]\" \"channel_in_ip[154]\" \"channel_in_ip[155]\" \"channel_in_ip[156]\" \"channel_in_ip[157]\" \"channel_in_ip[158]\" \"channel_in_ip[159]\" \"channel_in_ip[160]\" \"channel_in_ip[161]\" \"channel_in_ip[162]\" \"channel_in_ip[163]\" \"channel_in_ip[164]\" \"channel_in_ip[165]\" \"channel_in_ip[166]\" \"channel_in_ip[167]\" \"channel_in_ip[168]\" \"channel_in_ip[169]\" \"channel_in_ip[170]\" \"channel_in_ip[171]\" \"channel_in_ip[172]\" \"channel_in_ip[173]\" \"channel_in_ip[174]\" \"channel_in_ip[175]\" \"channel_in_ip[176]\" \"channel_in_ip[177]\" \"channel_in_ip[178]\" \"channel_in_ip[179]\" \"channel_in_ip[180]\" \"channel_in_ip[181]\" \"channel_in_ip[182]\" \"channel_in_ip[183]\" \"channel_in_ip[184]\" \"channel_in_ip[185]\" \"channel_in_ip[186]\" \"channel_in_ip[187]\" \"channel_in_ip[188]\" \"channel_in_ip[189]\" \"channel_in_ip[190]\" \"channel_in_ip[191]\" \"channel_in_ip[192]\" \"channel_in_ip[193]\" \"channel_in_ip[194]\" \"channel_in_ip[195]\" \"channel_in_ip[196]\" \"channel_in_ip[197]\" \"channel_in_ip[198]\" \"channel_in_ip[199]\" \"channel_in_ip[200]\" \"channel_in_ip[201]\" \"channel_in_ip[202]\" \"channel_in_ip[203]\"}",
+    "set my_2_ch_in_ports {\"channel_in_ip_d[136]\" \"channel_in_ip_d[137]\" \"channel_in_ip_d[138]\" \"channel_in_ip_d[139]\" \"channel_in_ip_d[140]\" \"channel_in_ip_d[141]\" \"channel_in_ip_d[142]\" \"channel_in_ip_d[143]\" \"channel_in_ip_d[144]\" \"channel_in_ip_d[145]\" \"channel_in_ip_d[146]\" \"channel_in_ip_d[147]\" \"channel_in_ip_d[148]\" \"channel_in_ip_d[149]\" \"channel_in_ip_d[150]\" \"channel_in_ip_d[151]\" \"channel_in_ip_d[152]\" \"channel_in_ip_d[153]\" \"channel_in_ip_d[154]\" \"channel_in_ip_d[155]\" \"channel_in_ip_d[156]\" \"channel_in_ip_d[157]\" \"channel_in_ip_d[158]\" \"channel_in_ip_d[159]\" \"channel_in_ip_d[160]\" \"channel_in_ip_d[161]\" \"channel_in_ip_d[162]\" \"channel_in_ip_d[163]\" \"channel_in_ip_d[164]\" \"channel_in_ip_d[165]\" \"channel_in_ip_d[166]\" \"channel_in_ip_d[167]\" \"channel_in_ip_d[168]\" \"channel_in_ip_d[169]\" \"channel_in_ip_d[170]\" \"channel_in_ip_d[171]\" \"channel_in_ip_d[172]\" \"channel_in_ip_d[173]\" \"channel_in_ip_d[174]\" \"channel_in_ip_d[175]\" \"channel_in_ip_d[176]\" \"channel_in_ip_d[177]\" \"channel_in_ip_d[178]\" \"channel_in_ip_d[179]\" \"channel_in_ip_d[180]\" \"channel_in_ip_d[181]\" \"channel_in_ip_d[182]\" \"channel_in_ip_d[183]\" \"channel_in_ip_d[184]\" \"channel_in_ip_d[185]\" \"channel_in_ip_d[186]\" \"channel_in_ip_d[187]\" \"channel_in_ip_d[188]\" \"channel_in_ip_d[189]\" \"channel_in_ip_d[190]\" \"channel_in_ip_d[191]\" \"channel_in_ip_d[192]\" \"channel_in_ip_d[193]\" \"channel_in_ip_d[194]\" \"channel_in_ip_d[195]\" \"channel_in_ip_d[196]\" \"channel_in_ip_d[197]\" \"channel_in_ip_d[198]\" \"channel_in_ip_d[199]\" \"channel_in_ip_d[200]\" \"channel_in_ip_d[201]\" \"channel_in_ip_d[202]\" \"channel_in_ip_d[203]\"}",
     #side 3 (68 + 68)
-    "set my_3_ch_in_ports {\"channel_in_ip[204]\" \"channel_in_ip[205]\" \"channel_in_ip[206]\" \"channel_in_ip[207]\" \"channel_in_ip[208]\" \"channel_in_ip[209]\" \"channel_in_ip[210]\" \"channel_in_ip[211]\" \"channel_in_ip[212]\" \"channel_in_ip[213]\" \"channel_in_ip[214]\" \"channel_in_ip[215]\" \"channel_in_ip[216]\" \"channel_in_ip[217]\" \"channel_in_ip[218]\" \"channel_in_ip[219]\" \"channel_in_ip[220]\" \"channel_in_ip[221]\" \"channel_in_ip[222]\" \"channel_in_ip[223]\" \"channel_in_ip[224]\" \"channel_in_ip[225]\" \"channel_in_ip[226]\" \"channel_in_ip[227]\" \"channel_in_ip[228]\" \"channel_in_ip[229]\" \"channel_in_ip[230]\" \"channel_in_ip[231]\" \"channel_in_ip[232]\" \"channel_in_ip[233]\" \"channel_in_ip[234]\" \"channel_in_ip[235]\" \"channel_in_ip[236]\" \"channel_in_ip[237]\" \"channel_in_ip[238]\" \"channel_in_ip[239]\" \"channel_in_ip[240]\" \"channel_in_ip[241]\" \"channel_in_ip[242]\" \"channel_in_ip[243]\" \"channel_in_ip[244]\" \"channel_in_ip[245]\" \"channel_in_ip[246]\" \"channel_in_ip[247]\" \"channel_in_ip[248]\" \"channel_in_ip[249]\" \"channel_in_ip[250]\" \"channel_in_ip[251]\" \"channel_in_ip[252]\" \"channel_in_ip[253]\" \"channel_in_ip[254]\" \"channel_in_ip[255]\" \"channel_in_ip[256]\" \"channel_in_ip[257]\" \"channel_in_ip[258]\" \"channel_in_ip[259]\" \"channel_in_ip[260]\" \"channel_in_ip[261]\" \"channel_in_ip[262]\" \"channel_in_ip[263]\" \"channel_in_ip[264]\" \"channel_in_ip[265]\" \"channel_in_ip[266]\" \"channel_in_ip[267]\" \"channel_in_ip[268]\" \"channel_in_ip[269]\" \"channel_in_ip[270]\" \"channel_in_ip[271]\" \"channel_in_ip[272]\" \"channel_in_ip[273]\" \"channel_in_ip[274]\" \"channel_in_ip[275]\" \"channel_in_ip[276]\" \"channel_in_ip[277]\" \"channel_in_ip[278]\" \"channel_in_ip[279]\" \"channel_in_ip[280]\" \"channel_in_ip[281]\" \"channel_in_ip[282]\" \"channel_in_ip[283]\" \"channel_in_ip[284]\" \"channel_in_ip[285]\" \"channel_in_ip[286]\" \"channel_in_ip[287]\" \"channel_in_ip[288]\" \"channel_in_ip[289]\" \"channel_in_ip[290]\" \"channel_in_ip[291]\" \"channel_in_ip[292]\" \"channel_in_ip[293]\" \"channel_in_ip[294]\" \"channel_in_ip[295]\" \"channel_in_ip[296]\" \"channel_in_ip[297]\" \"channel_in_ip[298]\" \"channel_in_ip[299]\" \"channel_in_ip[300]\" \"channel_in_ip[301]\" \"channel_in_ip[302]\" \"channel_in_ip[303]\" \"channel_in_ip[304]\" \"channel_in_ip[305]\" \"channel_in_ip[306]\" \"channel_in_ip[307]\" \"channel_in_ip[308]\" \"channel_in_ip[309]\" \"channel_in_ip[310]\" \"channel_in_ip[311]\" \"channel_in_ip[312]\" \"channel_in_ip[313]\" \"channel_in_ip[314]\" \"channel_in_ip[315]\" \"channel_in_ip[316]\" \"channel_in_ip[317]\" \"channel_in_ip[318]\" \"channel_in_ip[319]\" \"channel_in_ip[320]\" \"channel_in_ip[321]\" \"channel_in_ip[322]\" \"channel_in_ip[323]\" \"channel_in_ip[324]\" \"channel_in_ip[325]\" \"channel_in_ip[326]\" \"channel_in_ip[327]\" \"channel_in_ip[328]\" \"channel_in_ip[329]\" \"channel_in_ip[330]\" \"channel_in_ip[331]\" \"channel_in_ip[332]\" \"channel_in_ip[333]\" \"channel_in_ip[334]\" \"channel_in_ip[335]\" \"channel_in_ip[336]\" \"channel_in_ip[337]\" \"channel_in_ip[338]\" \"channel_in_ip[339]\"}",
+    "set my_3_ch_in_ports {\"channel_in_ip_d[204]\" \"channel_in_ip_d[205]\" \"channel_in_ip_d[206]\" \"channel_in_ip_d[207]\" \"channel_in_ip_d[208]\" \"channel_in_ip_d[209]\" \"channel_in_ip_d[210]\" \"channel_in_ip_d[211]\" \"channel_in_ip_d[212]\" \"channel_in_ip_d[213]\" \"channel_in_ip_d[214]\" \"channel_in_ip_d[215]\" \"channel_in_ip_d[216]\" \"channel_in_ip_d[217]\" \"channel_in_ip_d[218]\" \"channel_in_ip_d[219]\" \"channel_in_ip_d[220]\" \"channel_in_ip_d[221]\" \"channel_in_ip_d[222]\" \"channel_in_ip_d[223]\" \"channel_in_ip_d[224]\" \"channel_in_ip_d[225]\" \"channel_in_ip_d[226]\" \"channel_in_ip_d[227]\" \"channel_in_ip_d[228]\" \"channel_in_ip_d[229]\" \"channel_in_ip_d[230]\" \"channel_in_ip_d[231]\" \"channel_in_ip_d[232]\" \"channel_in_ip_d[233]\" \"channel_in_ip_d[234]\" \"channel_in_ip_d[235]\" \"channel_in_ip_d[236]\" \"channel_in_ip_d[237]\" \"channel_in_ip_d[238]\" \"channel_in_ip_d[239]\" \"channel_in_ip_d[240]\" \"channel_in_ip_d[241]\" \"channel_in_ip_d[242]\" \"channel_in_ip_d[243]\" \"channel_in_ip_d[244]\" \"channel_in_ip_d[245]\" \"channel_in_ip_d[246]\" \"channel_in_ip_d[247]\" \"channel_in_ip_d[248]\" \"channel_in_ip_d[249]\" \"channel_in_ip_d[250]\" \"channel_in_ip_d[251]\" \"channel_in_ip_d[252]\" \"channel_in_ip_d[253]\" \"channel_in_ip_d[254]\" \"channel_in_ip_d[255]\" \"channel_in_ip_d[256]\" \"channel_in_ip_d[257]\" \"channel_in_ip_d[258]\" \"channel_in_ip_d[259]\" \"channel_in_ip_d[260]\" \"channel_in_ip_d[261]\" \"channel_in_ip_d[262]\" \"channel_in_ip_d[263]\" \"channel_in_ip_d[264]\" \"channel_in_ip_d[265]\" \"channel_in_ip_d[266]\" \"channel_in_ip_d[267]\" \"channel_in_ip_d[268]\" \"channel_in_ip_d[269]\" \"channel_in_ip_d[270]\" \"channel_in_ip_d[271]\" \"channel_in_ip_d[272]\" \"channel_in_ip_d[273]\" \"channel_in_ip_d[274]\" \"channel_in_ip_d[275]\" \"channel_in_ip_d[276]\" \"channel_in_ip_d[277]\" \"channel_in_ip_d[278]\" \"channel_in_ip_d[279]\" \"channel_in_ip_d[280]\" \"channel_in_ip_d[281]\" \"channel_in_ip_d[282]\" \"channel_in_ip_d[283]\" \"channel_in_ip_d[284]\" \"channel_in_ip_d[285]\" \"channel_in_ip_d[286]\" \"channel_in_ip_d[287]\" \"channel_in_ip_d[288]\" \"channel_in_ip_d[289]\" \"channel_in_ip_d[290]\" \"channel_in_ip_d[291]\" \"channel_in_ip_d[292]\" \"channel_in_ip_d[293]\" \"channel_in_ip_d[294]\" \"channel_in_ip_d[295]\" \"channel_in_ip_d[296]\" \"channel_in_ip_d[297]\" \"channel_in_ip_d[298]\" \"channel_in_ip_d[299]\" \"channel_in_ip_d[300]\" \"channel_in_ip_d[301]\" \"channel_in_ip_d[302]\" \"channel_in_ip_d[303]\" \"channel_in_ip_d[304]\" \"channel_in_ip_d[305]\" \"channel_in_ip_d[306]\" \"channel_in_ip_d[307]\" \"channel_in_ip_d[308]\" \"channel_in_ip_d[309]\" \"channel_in_ip_d[310]\" \"channel_in_ip_d[311]\" \"channel_in_ip_d[312]\" \"channel_in_ip_d[313]\" \"channel_in_ip_d[314]\" \"channel_in_ip_d[315]\" \"channel_in_ip_d[316]\" \"channel_in_ip_d[317]\" \"channel_in_ip_d[318]\" \"channel_in_ip_d[319]\" \"channel_in_ip_d[320]\" \"channel_in_ip_d[321]\" \"channel_in_ip_d[322]\" \"channel_in_ip_d[323]\" \"channel_in_ip_d[324]\" \"channel_in_ip_d[325]\" \"channel_in_ip_d[326]\" \"channel_in_ip_d[327]\" \"channel_in_ip_d[328]\" \"channel_in_ip_d[329]\" \"channel_in_ip_d[330]\" \"channel_in_ip_d[331]\" \"channel_in_ip_d[332]\" \"channel_in_ip_d[333]\" \"channel_in_ip_d[334]\" \"channel_in_ip_d[335]\" \"channel_in_ip_d[336]\" \"channel_in_ip_d[337]\" \"channel_in_ip_d[338]\" \"channel_in_ip_d[339]\"}",
+    #in ports for ctrl flow
+    "set my_flow_ctrl_in_ports {\"flow_ctrl_out_ip_q[0]\" \"flow_ctrl_out_ip_q[1]\" \"flow_ctrl_out_ip_q[2]\" \"flow_ctrl_out_ip_q[3]\" \"flow_ctrl_out_ip_q[4]\" \"flow_ctrl_out_ip_q[5]\" \"flow_ctrl_out_ip_q[6]\" \"flow_ctrl_out_ip_q[7]\" \"flow_ctrl_out_ip_q[8]\" \"flow_ctrl_out_ip_q[9]\"}",
 
     #side 0
-    "set my_0_ch_out_ports {\"channel_out_op[0]\" \"channel_out_op[1]\" \"channel_out_op[2]\" \"channel_out_op[3]\" \"channel_out_op[4]\" \"channel_out_op[5]\" \"channel_out_op[6]\" \"channel_out_op[7]\" \"channel_out_op[8]\" \"channel_out_op[9]\" \"channel_out_op[10]\" \"channel_out_op[11]\" \"channel_out_op[12]\" \"channel_out_op[13]\" \"channel_out_op[14]\" \"channel_out_op[15]\" \"channel_out_op[16]\" \"channel_out_op[17]\" \"channel_out_op[18]\" \"channel_out_op[19]\" \"channel_out_op[20]\" \"channel_out_op[21]\" \"channel_out_op[22]\" \"channel_out_op[23]\" \"channel_out_op[24]\" \"channel_out_op[25]\" \"channel_out_op[26]\" \"channel_out_op[27]\" \"channel_out_op[28]\" \"channel_out_op[29]\" \"channel_out_op[30]\" \"channel_out_op[31]\" \"channel_out_op[32]\" \"channel_out_op[33]\" \"channel_out_op[34]\" \"channel_out_op[35]\" \"channel_out_op[36]\" \"channel_out_op[37]\" \"channel_out_op[38]\" \"channel_out_op[39]\" \"channel_out_op[40]\" \"channel_out_op[41]\" \"channel_out_op[42]\" \"channel_out_op[43]\" \"channel_out_op[44]\" \"channel_out_op[45]\" \"channel_out_op[46]\" \"channel_out_op[47]\" \"channel_out_op[48]\" \"channel_out_op[49]\" \"channel_out_op[50]\" \"channel_out_op[51]\" \"channel_out_op[52]\" \"channel_out_op[53]\" \"channel_out_op[54]\" \"channel_out_op[55]\" \"channel_out_op[56]\" \"channel_out_op[57]\" \"channel_out_op[58]\" \"channel_out_op[59]\" \"channel_out_op[60]\" \"channel_out_op[61]\" \"channel_out_op[62]\" \"channel_out_op[63]\" \"channel_out_op[64]\" \"channel_out_op[65]\" \"channel_out_op[66]\" \"channel_out_op[67]\"}",
+    "set my_0_ch_out_ports {\"channel_out_op_q[0]\" \"channel_out_op_q[1]\" \"channel_out_op_q[2]\" \"channel_out_op_q[3]\" \"channel_out_op_q[4]\" \"channel_out_op_q[5]\" \"channel_out_op_q[6]\" \"channel_out_op_q[7]\" \"channel_out_op_q[8]\" \"channel_out_op_q[9]\" \"channel_out_op_q[10]\" \"channel_out_op_q[11]\" \"channel_out_op_q[12]\" \"channel_out_op_q[13]\" \"channel_out_op_q[14]\" \"channel_out_op_q[15]\" \"channel_out_op_q[16]\" \"channel_out_op_q[17]\" \"channel_out_op_q[18]\" \"channel_out_op_q[19]\" \"channel_out_op_q[20]\" \"channel_out_op_q[21]\" \"channel_out_op_q[22]\" \"channel_out_op_q[23]\" \"channel_out_op_q[24]\" \"channel_out_op_q[25]\" \"channel_out_op_q[26]\" \"channel_out_op_q[27]\" \"channel_out_op_q[28]\" \"channel_out_op_q[29]\" \"channel_out_op_q[30]\" \"channel_out_op_q[31]\" \"channel_out_op_q[32]\" \"channel_out_op_q[33]\" \"channel_out_op_q[34]\" \"channel_out_op_q[35]\" \"channel_out_op_q[36]\" \"channel_out_op_q[37]\" \"channel_out_op_q[38]\" \"channel_out_op_q[39]\" \"channel_out_op_q[40]\" \"channel_out_op_q[41]\" \"channel_out_op_q[42]\" \"channel_out_op_q[43]\" \"channel_out_op_q[44]\" \"channel_out_op_q[45]\" \"channel_out_op_q[46]\" \"channel_out_op_q[47]\" \"channel_out_op_q[48]\" \"channel_out_op_q[49]\" \"channel_out_op_q[50]\" \"channel_out_op_q[51]\" \"channel_out_op_q[52]\" \"channel_out_op_q[53]\" \"channel_out_op_q[54]\" \"channel_out_op_q[55]\" \"channel_out_op_q[56]\" \"channel_out_op_q[57]\" \"channel_out_op_q[58]\" \"channel_out_op_q[59]\" \"channel_out_op_q[60]\" \"channel_out_op_q[61]\" \"channel_out_op_q[62]\" \"channel_out_op_q[63]\" \"channel_out_op_q[64]\" \"channel_out_op_q[65]\" \"channel_out_op_q[66]\" \"channel_out_op_q[67]\"}",
     #side 1
-    "set my_1_ch_out_ports {\"channel_out_op[68]\" \"channel_out_op[69]\" \"channel_out_op[70]\" \"channel_out_op[71]\" \"channel_out_op[72]\" \"channel_out_op[73]\" \"channel_out_op[74]\" \"channel_out_op[75]\" \"channel_out_op[76]\" \"channel_out_op[77]\" \"channel_out_op[78]\" \"channel_out_op[79]\" \"channel_out_op[80]\" \"channel_out_op[81]\" \"channel_out_op[82]\" \"channel_out_op[83]\" \"channel_out_op[84]\" \"channel_out_op[85]\" \"channel_out_op[86]\" \"channel_out_op[87]\" \"channel_out_op[88]\" \"channel_out_op[89]\" \"channel_out_op[90]\" \"channel_out_op[91]\" \"channel_out_op[92]\" \"channel_out_op[93]\" \"channel_out_op[94]\" \"channel_out_op[95]\" \"channel_out_op[96]\" \"channel_out_op[97]\" \"channel_out_op[98]\" \"channel_out_op[99]\" \"channel_out_op[100]\" \"channel_out_op[101]\" \"channel_out_op[102]\" \"channel_out_op[103]\" \"channel_out_op[104]\" \"channel_out_op[105]\" \"channel_out_op[106]\" \"channel_out_op[107]\" \"channel_out_op[108]\" \"channel_out_op[109]\" \"channel_out_op[110]\" \"channel_out_op[111]\" \"channel_out_op[112]\" \"channel_out_op[113]\" \"channel_out_op[114]\" \"channel_out_op[115]\" \"channel_out_op[116]\" \"channel_out_op[117]\" \"channel_out_op[118]\" \"channel_out_op[119]\" \"channel_out_op[120]\" \"channel_out_op[121]\" \"channel_out_op[122]\" \"channel_out_op[123]\" \"channel_out_op[124]\" \"channel_out_op[125]\" \"channel_out_op[126]\" \"channel_out_op[127]\" \"channel_out_op[128]\" \"channel_out_op[129]\" \"channel_out_op[130]\" \"channel_out_op[131]\" \"channel_out_op[132]\" \"channel_out_op[133]\" \"channel_out_op[134]\" \"channel_out_op[135]\"}",
+    "set my_1_ch_out_ports {\"channel_out_op_q[68]\" \"channel_out_op_q[69]\" \"channel_out_op_q[70]\" \"channel_out_op_q[71]\" \"channel_out_op_q[72]\" \"channel_out_op_q[73]\" \"channel_out_op_q[74]\" \"channel_out_op_q[75]\" \"channel_out_op_q[76]\" \"channel_out_op_q[77]\" \"channel_out_op_q[78]\" \"channel_out_op_q[79]\" \"channel_out_op_q[80]\" \"channel_out_op_q[81]\" \"channel_out_op_q[82]\" \"channel_out_op_q[83]\" \"channel_out_op_q[84]\" \"channel_out_op_q[85]\" \"channel_out_op_q[86]\" \"channel_out_op_q[87]\" \"channel_out_op_q[88]\" \"channel_out_op_q[89]\" \"channel_out_op_q[90]\" \"channel_out_op_q[91]\" \"channel_out_op_q[92]\" \"channel_out_op_q[93]\" \"channel_out_op_q[94]\" \"channel_out_op_q[95]\" \"channel_out_op_q[96]\" \"channel_out_op_q[97]\" \"channel_out_op_q[98]\" \"channel_out_op_q[99]\" \"channel_out_op_q[100]\" \"channel_out_op_q[101]\" \"channel_out_op_q[102]\" \"channel_out_op_q[103]\" \"channel_out_op_q[104]\" \"channel_out_op_q[105]\" \"channel_out_op_q[106]\" \"channel_out_op_q[107]\" \"channel_out_op_q[108]\" \"channel_out_op_q[109]\" \"channel_out_op_q[110]\" \"channel_out_op_q[111]\" \"channel_out_op_q[112]\" \"channel_out_op_q[113]\" \"channel_out_op_q[114]\" \"channel_out_op_q[115]\" \"channel_out_op_q[116]\" \"channel_out_op_q[117]\" \"channel_out_op_q[118]\" \"channel_out_op_q[119]\" \"channel_out_op_q[120]\" \"channel_out_op_q[121]\" \"channel_out_op_q[122]\" \"channel_out_op_q[123]\" \"channel_out_op_q[124]\" \"channel_out_op_q[125]\" \"channel_out_op_q[126]\" \"channel_out_op_q[127]\" \"channel_out_op_q[128]\" \"channel_out_op_q[129]\" \"channel_out_op_q[130]\" \"channel_out_op_q[131]\" \"channel_out_op_q[132]\" \"channel_out_op_q[133]\" \"channel_out_op_q[134]\" \"channel_out_op_q[135]\"}",
     #side 2
-    "set my_2_ch_out_ports {\"channel_out_op[136]\" \"channel_out_op[137]\" \"channel_out_op[138]\" \"channel_out_op[139]\" \"channel_out_op[140]\" \"channel_out_op[141]\" \"channel_out_op[142]\" \"channel_out_op[143]\" \"channel_out_op[144]\" \"channel_out_op[145]\" \"channel_out_op[146]\" \"channel_out_op[147]\" \"channel_out_op[148]\" \"channel_out_op[149]\" \"channel_out_op[150]\" \"channel_out_op[151]\" \"channel_out_op[152]\" \"channel_out_op[153]\" \"channel_out_op[154]\" \"channel_out_op[155]\" \"channel_out_op[156]\" \"channel_out_op[157]\" \"channel_out_op[158]\" \"channel_out_op[159]\" \"channel_out_op[160]\" \"channel_out_op[161]\" \"channel_out_op[162]\" \"channel_out_op[163]\" \"channel_out_op[164]\" \"channel_out_op[165]\" \"channel_out_op[166]\" \"channel_out_op[167]\" \"channel_out_op[168]\" \"channel_out_op[169]\" \"channel_out_op[170]\" \"channel_out_op[171]\" \"channel_out_op[172]\" \"channel_out_op[173]\" \"channel_out_op[174]\" \"channel_out_op[175]\" \"channel_out_op[176]\" \"channel_out_op[177]\" \"channel_out_op[178]\" \"channel_out_op[179]\" \"channel_out_op[180]\" \"channel_out_op[181]\" \"channel_out_op[182]\" \"channel_out_op[183]\" \"channel_out_op[184]\" \"channel_out_op[185]\" \"channel_out_op[186]\" \"channel_out_op[187]\" \"channel_out_op[188]\" \"channel_out_op[189]\" \"channel_out_op[190]\" \"channel_out_op[191]\" \"channel_out_op[192]\" \"channel_out_op[193]\" \"channel_out_op[194]\" \"channel_out_op[195]\" \"channel_out_op[196]\" \"channel_out_op[197]\" \"channel_out_op[198]\" \"channel_out_op[199]\" \"channel_out_op[200]\" \"channel_out_op[201]\" \"channel_out_op[202]\" \"channel_out_op[203]\"}",
+    "set my_2_ch_out_ports {\"channel_out_op_q[136]\" \"channel_out_op_q[137]\" \"channel_out_op_q[138]\" \"channel_out_op_q[139]\" \"channel_out_op_q[140]\" \"channel_out_op_q[141]\" \"channel_out_op_q[142]\" \"channel_out_op_q[143]\" \"channel_out_op_q[144]\" \"channel_out_op_q[145]\" \"channel_out_op_q[146]\" \"channel_out_op_q[147]\" \"channel_out_op_q[148]\" \"channel_out_op_q[149]\" \"channel_out_op_q[150]\" \"channel_out_op_q[151]\" \"channel_out_op_q[152]\" \"channel_out_op_q[153]\" \"channel_out_op_q[154]\" \"channel_out_op_q[155]\" \"channel_out_op_q[156]\" \"channel_out_op_q[157]\" \"channel_out_op_q[158]\" \"channel_out_op_q[159]\" \"channel_out_op_q[160]\" \"channel_out_op_q[161]\" \"channel_out_op_q[162]\" \"channel_out_op_q[163]\" \"channel_out_op_q[164]\" \"channel_out_op_q[165]\" \"channel_out_op_q[166]\" \"channel_out_op_q[167]\" \"channel_out_op_q[168]\" \"channel_out_op_q[169]\" \"channel_out_op_q[170]\" \"channel_out_op_q[171]\" \"channel_out_op_q[172]\" \"channel_out_op_q[173]\" \"channel_out_op_q[174]\" \"channel_out_op_q[175]\" \"channel_out_op_q[176]\" \"channel_out_op_q[177]\" \"channel_out_op_q[178]\" \"channel_out_op_q[179]\" \"channel_out_op_q[180]\" \"channel_out_op_q[181]\" \"channel_out_op_q[182]\" \"channel_out_op_q[183]\" \"channel_out_op_q[184]\" \"channel_out_op_q[185]\" \"channel_out_op_q[186]\" \"channel_out_op_q[187]\" \"channel_out_op_q[188]\" \"channel_out_op_q[189]\" \"channel_out_op_q[190]\" \"channel_out_op_q[191]\" \"channel_out_op_q[192]\" \"channel_out_op_q[193]\" \"channel_out_op_q[194]\" \"channel_out_op_q[195]\" \"channel_out_op_q[196]\" \"channel_out_op_q[197]\" \"channel_out_op_q[198]\" \"channel_out_op_q[199]\" \"channel_out_op_q[200]\" \"channel_out_op_q[201]\" \"channel_out_op_q[202]\" \"channel_out_op_q[203]\"}",
     #side 3 (68 + 68)
-    "set my_3_ch_out_ports {\"channel_out_op[204]\" \"channel_out_op[205]\" \"channel_out_op[206]\" \"channel_out_op[207]\" \"channel_out_op[208]\" \"channel_out_op[209]\" \"channel_out_op[210]\" \"channel_out_op[211]\" \"channel_out_op[212]\" \"channel_out_op[213]\" \"channel_out_op[214]\" \"channel_out_op[215]\" \"channel_out_op[216]\" \"channel_out_op[217]\" \"channel_out_op[218]\" \"channel_out_op[219]\" \"channel_out_op[220]\" \"channel_out_op[221]\" \"channel_out_op[222]\" \"channel_out_op[223]\" \"channel_out_op[224]\" \"channel_out_op[225]\" \"channel_out_op[226]\" \"channel_out_op[227]\" \"channel_out_op[228]\" \"channel_out_op[229]\" \"channel_out_op[230]\" \"channel_out_op[231]\" \"channel_out_op[232]\" \"channel_out_op[233]\" \"channel_out_op[234]\" \"channel_out_op[235]\" \"channel_out_op[236]\" \"channel_out_op[237]\" \"channel_out_op[238]\" \"channel_out_op[239]\" \"channel_out_op[240]\" \"channel_out_op[241]\" \"channel_out_op[242]\" \"channel_out_op[243]\" \"channel_out_op[244]\" \"channel_out_op[245]\" \"channel_out_op[246]\" \"channel_out_op[247]\" \"channel_out_op[248]\" \"channel_out_op[249]\" \"channel_out_op[250]\" \"channel_out_op[251]\" \"channel_out_op[252]\" \"channel_out_op[253]\" \"channel_out_op[254]\" \"channel_out_op[255]\" \"channel_out_op[256]\" \"channel_out_op[257]\" \"channel_out_op[258]\" \"channel_out_op[259]\" \"channel_out_op[260]\" \"channel_out_op[261]\" \"channel_out_op[262]\" \"channel_out_op[263]\" \"channel_out_op[264]\" \"channel_out_op[265]\" \"channel_out_op[266]\" \"channel_out_op[267]\" \"channel_out_op[268]\" \"channel_out_op[269]\" \"channel_out_op[270]\" \"channel_out_op[271]\" \"channel_out_op[272]\" \"channel_out_op[273]\" \"channel_out_op[274]\" \"channel_out_op[275]\" \"channel_out_op[276]\" \"channel_out_op[277]\" \"channel_out_op[278]\" \"channel_out_op[279]\" \"channel_out_op[280]\" \"channel_out_op[281]\" \"channel_out_op[282]\" \"channel_out_op[283]\" \"channel_out_op[284]\" \"channel_out_op[285]\" \"channel_out_op[286]\" \"channel_out_op[287]\" \"channel_out_op[288]\" \"channel_out_op[289]\" \"channel_out_op[290]\" \"channel_out_op[291]\" \"channel_out_op[292]\" \"channel_out_op[293]\" \"channel_out_op[294]\" \"channel_out_op[295]\" \"channel_out_op[296]\" \"channel_out_op[297]\" \"channel_out_op[298]\" \"channel_out_op[299]\" \"channel_out_op[300]\" \"channel_out_op[301]\" \"channel_out_op[302]\" \"channel_out_op[303]\" \"channel_out_op[304]\" \"channel_out_op[305]\" \"channel_out_op[306]\" \"channel_out_op[307]\" \"channel_out_op[308]\" \"channel_out_op[309]\" \"channel_out_op[310]\" \"channel_out_op[311]\" \"channel_out_op[312]\" \"channel_out_op[313]\" \"channel_out_op[314]\" \"channel_out_op[315]\" \"channel_out_op[316]\" \"channel_out_op[317]\" \"channel_out_op[318]\" \"channel_out_op[319]\" \"channel_out_op[320]\" \"channel_out_op[321]\" \"channel_out_op[322]\" \"channel_out_op[323]\" \"channel_out_op[324]\" \"channel_out_op[325]\" \"channel_out_op[326]\" \"channel_out_op[327]\" \"channel_out_op[328]\" \"channel_out_op[329]\" \"channel_out_op[330]\" \"channel_out_op[331]\" \"channel_out_op[332]\" \"channel_out_op[333]\" \"channel_out_op[334]\" \"channel_out_op[335]\" \"channel_out_op[336]\" \"channel_out_op[337]\" \"channel_out_op[338]\" \"channel_out_op[339]\"}",
-
+    "set my_3_ch_out_ports {\"channel_out_op_q[204]\" \"channel_out_op_q[205]\" \"channel_out_op_q[206]\" \"channel_out_op_q[207]\" \"channel_out_op_q[208]\" \"channel_out_op_q[209]\" \"channel_out_op_q[210]\" \"channel_out_op_q[211]\" \"channel_out_op_q[212]\" \"channel_out_op_q[213]\" \"channel_out_op_q[214]\" \"channel_out_op_q[215]\" \"channel_out_op_q[216]\" \"channel_out_op_q[217]\" \"channel_out_op_q[218]\" \"channel_out_op_q[219]\" \"channel_out_op_q[220]\" \"channel_out_op_q[221]\" \"channel_out_op_q[222]\" \"channel_out_op_q[223]\" \"channel_out_op_q[224]\" \"channel_out_op_q[225]\" \"channel_out_op_q[226]\" \"channel_out_op_q[227]\" \"channel_out_op_q[228]\" \"channel_out_op_q[229]\" \"channel_out_op_q[230]\" \"channel_out_op_q[231]\" \"channel_out_op_q[232]\" \"channel_out_op_q[233]\" \"channel_out_op_q[234]\" \"channel_out_op_q[235]\" \"channel_out_op_q[236]\" \"channel_out_op_q[237]\" \"channel_out_op_q[238]\" \"channel_out_op_q[239]\" \"channel_out_op_q[240]\" \"channel_out_op_q[241]\" \"channel_out_op_q[242]\" \"channel_out_op_q[243]\" \"channel_out_op_q[244]\" \"channel_out_op_q[245]\" \"channel_out_op_q[246]\" \"channel_out_op_q[247]\" \"channel_out_op_q[248]\" \"channel_out_op_q[249]\" \"channel_out_op_q[250]\" \"channel_out_op_q[251]\" \"channel_out_op_q[252]\" \"channel_out_op_q[253]\" \"channel_out_op_q[254]\" \"channel_out_op_q[255]\" \"channel_out_op_q[256]\" \"channel_out_op_q[257]\" \"channel_out_op_q[258]\" \"channel_out_op_q[259]\" \"channel_out_op_q[260]\" \"channel_out_op_q[261]\" \"channel_out_op_q[262]\" \"channel_out_op_q[263]\" \"channel_out_op_q[264]\" \"channel_out_op_q[265]\" \"channel_out_op_q[266]\" \"channel_out_op_q[267]\" \"channel_out_op_q[268]\" \"channel_out_op_q[269]\" \"channel_out_op_q[270]\" \"channel_out_op_q[271]\" \"channel_out_op_q[272]\" \"channel_out_op_q[273]\" \"channel_out_op_q[274]\" \"channel_out_op_q[275]\" \"channel_out_op_q[276]\" \"channel_out_op_q[277]\" \"channel_out_op_q[278]\" \"channel_out_op_q[279]\" \"channel_out_op_q[280]\" \"channel_out_op_q[281]\" \"channel_out_op_q[282]\" \"channel_out_op_q[283]\" \"channel_out_op_q[284]\" \"channel_out_op_q[285]\" \"channel_out_op_q[286]\" \"channel_out_op_q[287]\" \"channel_out_op_q[288]\" \"channel_out_op_q[289]\" \"channel_out_op_q[290]\" \"channel_out_op_q[291]\" \"channel_out_op_q[292]\" \"channel_out_op_q[293]\" \"channel_out_op_q[294]\" \"channel_out_op_q[295]\" \"channel_out_op_q[296]\" \"channel_out_op_q[297]\" \"channel_out_op_q[298]\" \"channel_out_op_q[299]\" \"channel_out_op_q[300]\" \"channel_out_op_q[301]\" \"channel_out_op_q[302]\" \"channel_out_op_q[303]\" \"channel_out_op_q[304]\" \"channel_out_op_q[305]\" \"channel_out_op_q[306]\" \"channel_out_op_q[307]\" \"channel_out_op_q[308]\" \"channel_out_op_q[309]\" \"channel_out_op_q[310]\" \"channel_out_op_q[311]\" \"channel_out_op_q[312]\" \"channel_out_op_q[313]\" \"channel_out_op_q[314]\" \"channel_out_op_q[315]\" \"channel_out_op_q[316]\" \"channel_out_op_q[317]\" \"channel_out_op_q[318]\" \"channel_out_op_q[319]\" \"channel_out_op_q[320]\" \"channel_out_op_q[321]\" \"channel_out_op_q[322]\" \"channel_out_op_q[323]\" \"channel_out_op_q[324]\" \"channel_out_op_q[325]\" \"channel_out_op_q[326]\" \"channel_out_op_q[327]\" \"channel_out_op_q[328]\" \"channel_out_op_q[329]\" \"channel_out_op_q[330]\" \"channel_out_op_q[331]\" \"channel_out_op_q[332]\" \"channel_out_op_q[333]\" \"channel_out_op_q[334]\" \"channel_out_op_q[335]\" \"channel_out_op_q[336]\" \"channel_out_op_q[337]\" \"channel_out_op_q[338]\" \"channel_out_op_q[339]\"}",
+    #out ports for ctrl flow
+    "set my_flow_ctrl_out_ports {\"flow_ctrl_in_op_d[0]\" \"flow_ctrl_in_op_d[1]\" \"flow_ctrl_in_op_d[2]\" \"flow_ctrl_in_op_d[3]\" \"flow_ctrl_in_op_d[4]\" \"flow_ctrl_in_op_d[5]\" \"flow_ctrl_in_op_d[6]\" \"flow_ctrl_in_op_d[7]\" \"flow_ctrl_in_op_d[8]\" \"flow_ctrl_in_op_d[9]\"}",
+    
     #gen i/o s these can be assigned pretty much anywhere (can be left to the tool)
-    "set my_gen_pins {\"clk\" \"reset\" \"router_address[0]\" \"router_address[1]\" \"router_address[2]\" \"router_address[3]\" \"router_address[4]\" \"router_address[5]\" \"flow_ctrl_out_ip[0]\" \"flow_ctrl_out_ip[1]\" \"flow_ctrl_out_ip[2]\" \"flow_ctrl_out_ip[3]\" \"flow_ctrl_out_ip[4]\" \"flow_ctrl_out_ip[5]\" \"flow_ctrl_out_ip[6]\" \"flow_ctrl_out_ip[7]\" \"flow_ctrl_out_ip[8]\" \"flow_ctrl_out_ip[9]\" \"flow_ctrl_in_op[0]\" \"flow_ctrl_in_op[1]\" \"flow_ctrl_in_op[2]\" \"flow_ctrl_in_op[3]\" \"flow_ctrl_in_op[4]\" \"flow_ctrl_in_op[5]\" \"flow_ctrl_in_op[6]\" \"flow_ctrl_in_op[7]\" \"flow_ctrl_in_op[8]\" \"flow_ctrl_in_op[9]\" \"error\"}",
+    # \"flow_ctrl_out_ip_q[0]\" \"flow_ctrl_out_ip_q[1]\" \"flow_ctrl_out_ip_q[2]\" \"flow_ctrl_out_ip_q[3]\" \"flow_ctrl_out_ip_q[4]\" \"flow_ctrl_out_ip_q[5]\" \"flow_ctrl_out_ip_q[6]\" \"flow_ctrl_out_ip_q[7]\" \"flow_ctrl_out_ip_q[8]\" \"flow_ctrl_out_ip_q[9]\" \"flow_ctrl_in_op_d[0]\" \"flow_ctrl_in_op_d[1]\" \"flow_ctrl_in_op_d[2]\" \"flow_ctrl_in_op_d[3]\" \"flow_ctrl_in_op_d[4]\" \"flow_ctrl_in_op_d[5]\" \"flow_ctrl_in_op_d[6]\" \"flow_ctrl_in_op_d[7]\" \"flow_ctrl_in_op_d[8]\" \"flow_ctrl_in_op_d[9]\"
+    "set my_gen_pins {\"clk\" \"reset\" \"router_address[0]\" \"router_address[1]\" \"router_address[2]\" \"router_address[3]\" \"router_address[4]\" \"router_address[5]\" \"flow_ctrl_out_ip_q[0]\" \"flow_ctrl_out_ip_q[1]\" \"flow_ctrl_out_ip_q[2]\" \"flow_ctrl_out_ip_q[3]\" \"flow_ctrl_out_ip_q[4]\" \"flow_ctrl_out_ip_q[5]\" \"flow_ctrl_out_ip_q[6]\" \"flow_ctrl_out_ip_q[7]\" \"flow_ctrl_out_ip_q[8]\" \"flow_ctrl_out_ip_q[9]\" \"flow_ctrl_in_op_d[0]\" \"flow_ctrl_in_op_d[1]\" \"flow_ctrl_in_op_d[2]\" \"flow_ctrl_in_op_d[3]\" \"flow_ctrl_in_op_d[4]\" \"flow_ctrl_in_op_d[5]\" \"flow_ctrl_in_op_d[6]\" \"flow_ctrl_in_op_d[7]\" \"flow_ctrl_in_op_d[8]\" \"flow_ctrl_in_op_d[9]\" \"error\"}",
     #assign pin locations
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing 10 -offsetStart 50 -pin $my_0_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing 10 -offsetStart 50 -pin $my_1_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing 10 -offsetStart 50 -pin $my_2_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing 10 -offsetStart 50 -pin $my_3_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing 10 -offsetStart 50 -pin $my_0_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing 10 -offsetStart 50 -pin $my_1_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing 10 -offsetStart 50 -pin $my_2_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing 10 -offsetStart 50 -pin $my_3_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing 10 -offsetStart 50 -pin $my_gen_pins",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing 1 -offsetStart 50 -pin $my_0_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing 1 -offsetStart 50 -pin $my_1_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing 1 -offsetStart 50 -pin $my_2_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing 1 -offsetStart 50 -pin $my_3_ch_in_ports",
+    "",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing 1 -offsetStart 78 -pin $my_0_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing 1 -offsetStart 78 -pin $my_1_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing 1 -offsetStart 78 -pin $my_2_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing 1 -offsetStart 78 -pin $my_3_ch_out_ports",
+    "",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing 1 -offsetStart 105.5 -pin $my_gen_pins",
     #legalize
     "legalizePin"
   ]
@@ -371,43 +416,72 @@ def write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,fp_dims)
   fd.close()
   return fp_script_fname, os.path.join(output_path,fp_save_file)
 
-def write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_script_fname,fp_save_file,syn_output_path):
+def write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_script_fname,fp_save_file,ptn_info_list,syn_output_path):
   """
   Writes script to partition a design 
   """
+  #ptn_insts,ptn_mods
+  #ptn_settings:
+
+  
   report_path = os.path.join("..","reports")
   output_path = os.path.join("..","outputs")
   report_path = os.path.abspath(report_path)
   output_path = os.path.abspath(output_path)
   
+  #ptn_settings 
+  obj_fplan_box_cmds = [" ".join(["setObjFPlanBox","Module",ptn["inst_name"]," ".join([str(coord) for coord in ptn["fp_coords"]])]) for ptn in ptn_info_list]
+  def_ptn_cmds = [" ".join(["definePartition","-hinst",ptn["inst_name"],"-coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1"]) for ptn in ptn_info_list]
+  derive_timing_budget_cmds = [" ".join(["deriveTimingBudget","-ptn",ptn["mod_name"]]) for ptn in ptn_info_list]
+  # print("PTN SCRIPT ")
+  # print(obj_fplan_box_cmds)
+  # print(def_ptn_cmds)
+
   ptn_script_fname = os.path.splitext(os.path.basename(fp_save_file))[0] + "_ptn" + ".tcl"
-  fd = open(ptn_script_fname,"w")
   post_partition_fplan = "_".join([os.path.splitext(fp_save_file)[0],"post_ptn.fp"])
-  ptn_module_name = "genblk1.vcr"
-  ptn_dimensions = []
+
   file_lines = [
     " ".join(["source",init_script_fname]),
     "loadFPlan " + fp_save_file,
     #What this is doing is manually setting the vcr module to the bottom left of the core area with values that get around 70% utiliation
     #TODO update this s.t it works regardless of io boundary settings, io ring settings, target utilization etc
     #This should work regardless of the fp created in the previous script, assuming the 70% utilization target as we just want to stretch the links
-    "setObjFPlanBox Module channel_in_ff"
-    "setObjFPlanBox Module genblk1.vcr 10.0 10.0 350.0 350.0",
-    "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
+    
+    #"setObjFPlanBox Module channel_in_ff"
+    #"setObjFPlanBox Module flow_ctrl_in_ff"
+    #
+    #channel_in_ff 44 920 69 953
+    #channel_out_ff 72 920 97 953
+    #"setObjFPlanBox Module gen_port_regs[1].channel_in_ff 49 951 64 952",
+    #"setObjFPlanBox Module gen_port_regs[1].channel_out_ff 77 951 92 952",
+    
+    #setObjFPlanBox Module gen_port_regs[1].channel_in_ff 44 920 69 953
+    #setObjFPlanBox Module gen_port_regs[1].channel_out_ff 72 920 97 953
+    obj_fplan_box_cmds,
+    def_ptn_cmds,
+    # "setObjFPlanBox Module genblk1.vcr 10.0 10.0 350.0 350.0",
+    # "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
+    # "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
+    # "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
+    
     #Tutorial says that one should save the floorplan after the partition is defined, not sure why maybe will have to add SaveFP command here
     "saveFPlan " + os.path.join(output_path,post_partition_fplan),
     "setPlaceMode -place_hard_fence true",
     "setOptMode -honorFence true",
     "place_opt_design",
     "assignPtnPin",
-    "setBudgetingMode -virtualOptEngine gigaOpt",
-    "setBudgetingMode -constantModel true",
-    "setBudgetingMode -includeLatency true",
-    "deriveTimingBudget -ptn vcr_top_1",
+    derive_timing_budget_cmds,
+    #"setBudgetingMode -virtualOptEngine gigaOpt",
+    #"setBudgetingMode -constantModel true",
+    #"setBudgetingMode -includeLatency true",
+    #"deriveTimingBudget -ptn " + " ".join([ptn["mod_name"] for ptn in ptn_info_list]),
     #commits partition
     "partition",
     "savePartition -dir " + os.path.splitext(os.path.basename(fp_save_file))[0] + "_ptn" + " -def"
   ]
+  flat_list = lambda file_lines:[element for item in file_lines for element in flat_list(item)] if type(file_lines) is list else [file_lines]
+  file_lines = flat_list(file_lines)
+  fd = open(ptn_script_fname,"w")
   for line in file_lines:
     file_write_ln(fd,line)
   file_write_ln(fd,"exit")
@@ -447,7 +521,7 @@ def write_innovus_ptn_block_flow(metal_layer,ptn_dir_name,block_name):
     "timeDesign -postRoute -pathReports -drvReports -slackReports -numPaths 50 -prefix " +  block_name + "_postRoute -outDir timingReports",
     "saveDesign " + block_name + "_imp",
   ]
-  block_ptn_flow_script_fname = ptn_dir_name + "_block_flow.tcl"
+  block_ptn_flow_script_fname = ptn_dir_name + "_" + block_name + "_block_flow.tcl"
   fd = open(block_ptn_flow_script_fname,"w")
   for line in file_lines:
     file_write_ln(fd,line)
@@ -1147,8 +1221,6 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
       else:
         total_dynamic_power[0] = 0
   file.close() 
-  # print(library_setup_time, data_arrival_time, total_delay, total_dynamic_power)
-  # exit(1)
   return library_setup_time, data_arrival_time, total_delay, total_dynamic_power   
 
 
@@ -1214,6 +1286,9 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["worst_case_libs"] = "\"" + " ".join(processed_flow_settings['worst_case_libs']) + "\""
   processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
 
+  #TODO bring these to the top new flow_settings options
+  processed_flow_settings["ungroup_regex"] = ".*ff.*|.*vcr.*"
+
 
 def gen_dir(dir_path):
   if(not os.path.isdir(dir_path)):
@@ -1222,6 +1297,53 @@ def gen_dir(dir_path):
 def gen_n_trav(dir_path):
   gen_dir(dir_path)
   os.chdir(dir_path)
+
+
+def write_top_lvl_synth_bash_script(synth_parallel_script_path):
+  #this writes a top_level script which runs each synthesis script for respective params in parallel
+  script_fname = "top_level_parallel_synth.sh"
+  file_lines = [
+    "#!/bin/bash"
+    ]  
+  for f in os.listdir(synth_parallel_script_path):
+    if(os.path.isfile(os.path.join(synth_parallel_script_path,f) )):
+      file_lines.append(os.path.join(synth_parallel_script_path,f) + " &")
+  fd = open(script_fname,"w")
+  for line in file_lines:
+    file_write_ln(fd,line)
+  fd.close()
+
+
+def write_param_synth_bash_script(param_synth_path):
+  #whatever directory this functions run in will have scripts generated inside of it
+  dc_shell = "dc_shell-t"
+  dc_script_rel_path = "../scripts/dc_script.tcl"
+  file_lines = [
+    "#!/bin/bash",
+    "cd " + os.path.join(param_synth_path,"work"),
+    " ".join([dc_shell,"-f",dc_script_rel_path," > dc.log"])
+  ]
+  fd = open(param_synth_path.split("/")[-1] + "_dc_run_parallel.sh","w")  
+  for line in file_lines:
+    file_write_ln(fd,line)
+  fd.close()
+  
+
+
+def write_synth_parallel_scripts(synth_path):
+  synth_parallel_dir = "synth_parallel_work"
+  os.chdir(synth_path)
+  gen_n_trav(synth_parallel_dir)
+  gen_n_trav("scripts")
+  for dir in os.listdir(synth_path):
+    if("period" in dir): #TODO DEPENDANCY
+      # print(os.path.join(os.getcwd(),dir))
+      write_param_synth_bash_script(os.path.join(synth_path,dir))
+  os.chdir("..")
+  write_top_lvl_synth_bash_script("scripts")
+
+  #go back to the top level of synth path and run the script gen for each param synth
+  
 
 def hardblock_script_gen(flow_settings):
   """
@@ -1276,24 +1398,25 @@ def hardblock_script_gen(flow_settings):
             #expect to be in pnr dir
             parameterized_pnr_dir = parameterized_synth_dir + "_" + "_".join(["mlayer",metal_layer,"util",core_utilization])
             gen_n_trav(parameterized_pnr_dir)
-            param_pnr_path = os.getcwd()         
+            param_pnr_path = os.getcwd()   
             #generate subdirs in parameterized dir
             #once we're in the param_pnr dir, we can create sym link to the previous synth_dir (this makes this directory structure easy to traverse, think doubly linked list)
-            # sym_link_dir = "synth_link"
-            # sym_link_cmd = "ln -s " + param_synth_path + " " + sym_link_dir
-            # subprocess.call(sym_link_cmd,shell=True)
+            sym_link_dir = "synth_link"
+            if(not os.path.isdir(sym_link_dir)):
+              sym_link_cmd = "ln -s " + param_synth_path + " " + os.path.join(os.getcwd(),sym_link_dir)
+              subprocess.call(sym_link_cmd,shell=True)
             #then go back to previous stage and create a sym_link to the next stage
-            # if(os.path.isdir(sym_link_dir)):
-              # os.chdir(sym_link_dir)
-              # sym_link_dir = "pnr_link"
-              # sym_link_cmd = "ln -s " + param_pnr_path + " " + sym_link_dir
-              # subprocess.call(sym_link_cmd,shell=True)
+            if(os.path.isdir(sym_link_dir)):
+              os.chdir(sym_link_dir)
+              sym_link_dir = "pnr_link"
+              if(not os.path.isdir(sym_link_dir)):
+                sym_link_cmd = "ln -s " + param_pnr_path + " " + os.path.join(os.getcwd(),sym_link_dir)
+                subprocess.call(sym_link_cmd,shell=True)
             #change back to original dir
-            # os.chdir(param_pnr_path)
+            os.chdir(param_pnr_path)
             for d in parameterized_subdirs:
               gen_dir(d)
             os.chdir(script_dir)
-            # exit(1)
             if(flow_settings["pnr_tool"] == "encounter"):
               #write encounter scripts
               write_enc_script(flow_settings,metal_layer,core_utilization)
@@ -1307,23 +1430,58 @@ def hardblock_script_gen(flow_settings):
               #First dimensions were 948.4 947.0 such dims were found to have passed timing
               fp_dims_list = [948.4,947.0]
               scaling_array = [1,2,3,4,5,8,10]
+
+              #ptn_block_list = ["vcr_top_1","c_dff_1_7","c_dff_1_6"] #TODO figure out how one can get these
+              
               scaled_dims_list = []
               for scale in scaling_array:
+                ptn1_dict = {
+                  "inst_name": "gen_port_regs[1].channel_in_ff",
+                  "mod_name": "c_dff_1_7",
+                  "fp_coords": [44.0, 920.0, 69.0, 953.0]
+                }
+                ptn2_dict = {
+                  "inst_name": "gen_port_regs[1].channel_out_ff",
+                  "mod_name": "c_dff_1_6",
+                  "fp_coords": [72.0, 920.0, 97.0, 953.0]
+                }
+                ptn3_dict = {
+                  "inst_name": "genblk2.vcr",
+                  "mod_name": "vcr_top_1",
+                  "fp_coords": [30.0, 30.0, 370.0, 370.0]
+                }
+                ptn4_dict = {
+                  "inst_name": "gen_port_regs[2].channel_in_ff",
+                  "mod_name": "c_dff_1_5",
+                  "fp_coords": [927.0, 41.0, 956.0, 68.0] 
+                }
+                ptn5_dict = {
+                  "inst_name": "gen_port_regs[2].channel_out_ff",
+                  "mod_name": "c_dff_1_4",
+                  "fp_coords":  [927.0, 73.0, 956.0, 100.0]
+                }
+
+                ptn_info_list = [ptn1_dict,ptn2_dict,ptn3_dict,ptn4_dict,ptn5_dict]
+                ptn_block_list = [ptn["mod_name"] for ptn in ptn_info_list]
+                #overall floorplan 
                 new_dim_pair = [dim*scale for dim in fp_dims_list]
                 scaled_dims_list.append(new_dim_pair)
               for dim_pair in scaled_dims_list:
                 #creates initial floorplan
                 fp_script_fname, fp_save = write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,dim_pair)
                 #creates partitions
-                ptn_script_fname = write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_script_fname,fp_save,syn_output_path)
-                #runs pnr on subblock ptn
-                write_innovus_ptn_block_flow(metal_layer,os.path.splitext(ptn_script_fname)[0],"vcr_top_1")
+                
+                ptn_script_fname = write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_script_fname,fp_save,ptn_info_list,syn_output_path)
+                
+                for block_name in ptn_block_list:
+                  #runs pnr on subblock ptn
+                  write_innovus_ptn_block_flow(metal_layer,os.path.splitext(ptn_script_fname)[0],block_name)
                 #runs pnr on top level module ptn
                 write_innovus_ptn_top_level_flow(metal_layer,os.path.splitext(ptn_script_fname)[0],"router_wrap")
                 #assembles parititons and gets timing results
                 write_innovus_assemble_script(flow_settings,os.path.splitext(ptn_script_fname)[0],"vcr_top_1","router_wrap")
-
-
+                sys.exit(1)
+            print("test did it exit?")
             os.chdir(top_abs_path)
             gen_n_trav(sta_dir)
             sta_abs_dir = os.getcwd()
@@ -1333,28 +1491,131 @@ def hardblock_script_gen(flow_settings):
               mode_enabled = True if (len(flow_settings['mode_signal']) > 0) else False
               parameterized_sta_dir = parameterized_pnr_dir + "_" + "_".join(["mode",str(mode)])
               gen_n_trav(parameterized_sta_dir)
-              ###############################
-              # sym_link_dir = "pnr_link"
-              # sym_link_cmd = "ln -s " + param_synth_path + " " + sym_link_dir
-              # subprocess.call(sym_link_cmd,shell=True)
-              # then go back to previous stage and create a sym_link to the next stage
-              # if(os.path.isdir(sym_link_dir)):
-                # os.chdir(sym_link_dir)
-              # sym_link_dir = "sta_link"
-              # sym_link_cmd = "ln -s " + param_pnr_path + " " + sym_link_dir
-              # subprocess.call(sym_link_cmd,shell=True)
-              # os.chdir(param_pnr_path)
-              ##############################
               param_sta_path = os.getcwd()
-              # sym_link_cmd = "ln -s " + param_synth_path + " synth_link"
-              # subprocess.run(sym_link_cmd)
+              ###############################
+              sym_link_dir = "pnr_link"
+              if(not os.path.isdir(sym_link_dir)):
+                sym_link_cmd = "ln -s " + param_pnr_path + " " + os.path.join(os.getcwd(),sym_link_dir)
+                subprocess.call(sym_link_cmd,shell=True)
+              #then go back to previous stage and create a sym_link to the next stage
+              if(os.path.isdir(sym_link_dir)):
+                os.chdir(sym_link_dir)
+                sym_link_dir = "sta_link"
+                if(not os.path.isdir(sym_link_dir)):
+                  sym_link_cmd = "ln -s " + param_sta_path + " " + os.path.join(os.getcwd(),sym_link_dir)
+                  subprocess.call(sym_link_cmd,shell=True)
+              os.chdir(param_sta_path)
+              ##############################
               #generate subdirs in parameterized dir
               for d in parameterized_subdirs:
                 gen_dir(d)
               os.chdir(script_dir)
               fpath,report_path = write_pt_timing_script(flow_settings,mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
               #write_pt_power_script(flow_settings,mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
+  write_synth_parallel_scripts(synth_abs_path)
 
+
+def get_innovus_cmd(script_path):
+  innovus_cmd = " ".join(["innovus","-no_gui","-init",script_path])
+  innovus_cmd = innovus_cmd + " > " + os.path.splitext(os.path.basename(innovus_cmd.split(" ")[-1]))[0] + ".log"
+  return innovus_cmd
+
+def run_inn_cmd_series(inn_command_series):
+  for cmd in inn_command_series:
+    cmd_str = get_innovus_cmd(cmd) 
+    #print(cmd_str)
+    subprocess.run(cmd_str,shell=True,executable="/bin/bash")
+
+def hardblock_parallel_flow(flow_settings):
+  #This expects cwd to be asic_work
+  hardblock_script_gen(flow_settings)
+  flow_integration_settings = {
+    "run_synth" : False,
+    "run_pnr" : True,
+    "run_sta" : True
+  }
+
+  ########################### PARALLEL SYNTHESIS SECTION ###########################
+  if flow_integration_settings["run_synth"]:
+    synth_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/synth/synth_parallel_work"
+    #setup the scripts to be able to run
+    pll_synth_scripts = " ".join(glob.glob(os.path.join(synth_parallel_work_path,"scripts","*")))
+    chmod_cmds = ["chmod","+x", pll_synth_scripts]
+    chmod_p = subprocess.Popen(chmod_cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = chmod_p.communicate()
+    print(chmod_cmds,stdout,stderr)
+
+    top_pll_synth_cmds = ["chmod","+x","./top_level_parallel_synth.sh"]
+    parallel_synth_p = subprocess.Popen(top_pll_synth_cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #Runs the parallel synthesis across params
+    top_pll_synth_cmds = ["./top_level_parallel_synth.sh"]
+    parallel_synth_p = subprocess.Popen(top_pll_synth_cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = parallel_synth_p.communicate()
+    print(stdout,stderr)
+  ########################### PARALLEL SYNTHESIS SECTION ###########################
+  ########################### PARALLEL PNR SECTION #################################
+  if flow_integration_settings["pnr_synth"]:
+    pnr_parallel_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/pnr"
+    fp_dim = 948.4
+    scaling_array = [1,2,3,4,5,8,10]
+    #only scripts with dims in the below list will be evauluated
+    scaled_dims = [fp_dim*fac for fac in scaling_array]
+
+    os.chdir(pnr_parallel_path)
+    for param_dir in os.listdir(pnr_parallel_path):
+      os.chdir(param_dir)
+      #iterate through parameterized pnr dirs
+      #loop through scripts in pnr script path
+      #Fp gen script needs to be run on the first iteration of link length sweep
+      fp_gen_scripts = sorted([f for f in os.listdir("scripts") if "fp_gen" in f])
+      ptn_scripts = sorted([f for f in os.listdir("scripts") if "ptn.tcl" in f])
+      top_lvl_ptn_pnr_scripts = sorted([f for f in os.listdir("scripts") if "toplvl" in f])
+      #doesn't need to be done I dont think
+      block_ptn_pnr_scripts = sorted([f for f in os.listdir("scripts") if "block" in f])
+      assembly_scripts = sorted([f for f in os.listdir("scripts") if "assembly" in f])
+
+      os.chdir("work")
+      output_dir = os.path.join("..","outputs")
+      inn_command_series_list = [[fp,ptn,block,tlvl,asm] for fp,ptn,block,tlvl,asm in zip(fp_gen_scripts,ptn_scripts,block_ptn_pnr_scripts,top_lvl_ptn_pnr_scripts,assembly_scripts) ]
+      cmd_series_list = []
+      for inn_command_series in inn_command_series_list:
+        #filter out commands which are out of bounds of our dims we want to evaluate
+        if not any(str(dim) in inn_command_series[0] for dim in scaled_dims):
+          print("not running %s... " % (inn_command_series[0]))
+          continue
+        #if theres already a design saved for the fp flow skip it
+        saved_design = os.path.join(output_dir,os.path.splitext(inn_command_series[1])[0]+"_assembled.dat")
+        if(os.path.exists(saved_design)):
+          print("found %s, Skipping..." % (saved_design))
+          continue
+
+        #if top level flow has been run only run the assembly
+        saved_tl_imp = os.path.join(os.path.splitext(inn_command_series[1])[0],"router_wrap","router_wrap_imp")
+        #if partition flow has been run only run top lvl + assembly
+        ptn_dir = os.path.join(os.path.splitext(inn_command_series[1])[0])
+        cmds = [os.path.join("..","scripts",cmd) for cmd in inn_command_series]
+        if(os.path.isfile(saved_tl_imp)):
+          print("found top level imp, running only assembly")
+          del cmds[0:3]
+        elif(os.path.isdir(ptn_dir)):
+          print("found ptn dir, running only toplvl + assembly")
+          del cmds[0:2]
+        cmd_series_list.append(cmds)
+      with mp.Pool() as pool:
+        pool.map(run_inn_cmd_series,cmd_series_list)
+
+
+
+  ########################### PARALLEL PNR SECTION #################################
+
+  
+  #hardblock flow stuff
+  lowest_cost = sys.float_info.max
+  lowest_cost_area = 1.0
+  lowest_cost_delay = 1.0
+  lowest_cost_power = 1.0
+
+  return (float(lowest_cost_area), float(lowest_cost_delay), float(lowest_cost_power))
 
 # wire loads in the library are WireAreaLowkCon WireAreaLowkAgr WireAreaForZero
 def hardblock_flow(flow_settings): 

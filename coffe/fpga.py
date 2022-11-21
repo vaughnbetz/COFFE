@@ -5190,7 +5190,27 @@ class _hard_block(_CompoundCircuit):
         hardblock_functions.hardblock_script_gen(self.parameters)
         print("Finished Generating scripts, exiting...")
         sys.exit(1)
+    
+    def generate_top_parallel(self):
+        print "Generating top-level submodules"
 
+        self.mux.generate_top()
+        if self.parameters['num_dedicated_outputs'] > 0:
+            self.dedicated.generate_top()
+
+        # hard block flow
+        print("Running Parallel ASIC flow for hardblock...")
+        self.flow_results = hardblock_functions.hardblock_parallel_flow(self.parameters)
+        print("Finished hardblock flow run")
+
+        #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
+        self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
+
+        self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+		
+        if self.parameters['num_dedicated_outputs'] > 0:
+            self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+            
 
     def update_area(self, area_dict, width_dict):
         """ Update area. To do this, we use area_dict which is a dictionary, maintained externally, that contains

@@ -70,6 +70,7 @@ parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPG
 #arguments for ASIC flow 
 parser.add_argument('-ho',"--hardblock_only",help="run only a single hardblock through the asic flow", action='store_true',default=False)
 parser.add_argument('-g',"--gen_hb_scripts",help="generates all hardblock scripts which can be run by a user",action='store_true',default=False)
+parser.add_argument('-p',"--parallel_hb_flow",help="runs the hardblock flow for current parameter selection in a parallel fashion",action='store_true',default=False)
 # quick mode is disabled by default. Try passing -q 0.03 for 3% minimum improvement
 parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimum cost function improvement for resizing")
 
@@ -89,6 +90,13 @@ if(args.hardblock_only):
         os.mkdir(asic_work_path)
       os.chdir(asic_work_path)
       hard_block.generate_hb_scripts()
+    elif(args.parallel_hb_flow):
+      asic_work_dir = "asic_work"
+      asic_work_path = os.path.join(arch_params_dict["coffe_design_out_folder"],asic_work_dir)
+      if(not os.path.isdir(asic_work_path)):
+        os.mkdir(asic_work_path)
+      os.chdir(asic_work_path)
+      hard_block.generate_top_parallel()
     else:
       os.chdir(arch_folder)
       hard_block.generate_top()
