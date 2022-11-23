@@ -5143,6 +5143,9 @@ class _hard_block(_CompoundCircuit):
     def __init__(self, filename, use_tgate, cli_args=None):
         #Call the hard block parameter parser
         self.parameters = utils.load_hard_params(filename,cli_args)
+        ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
+        #put ptn_params into hardblock params 
+        self.parameters["ptn_params"] = ptn_params
         # Subcircuit name
         self.name = self.parameters['name']
         #create the inner objects

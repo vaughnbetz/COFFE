@@ -339,10 +339,9 @@ def write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,fp_dims)
   script_path = os.path.abspath(script_path)
 
   #new file for every dimension
-  fp_script_fname = flow_settings["top_level"] + "_len_" + str(fp_dims[0]) + "_innovus_fp_gen.tcl"
+  fp_script_fname = flow_settings["top_level"] + "_dimlen_" + str(fp_dims[0]) + "_innovus_fp_gen.tcl"
   #new floorplan for every dimension
-  fp_save_file = "_".join([flow_settings["top_level"],"dimlen",str(fp_dims[0]),"mlayers",metal_layer+".fp"])
-
+  fp_save_file = "_".join([flow_settings["top_level"],"dimlen",str(fp_dims[0])+".fp"])
   metal_layer_bottom = flow_settings["metal_layer_names"][0]
   metal_layer_second = flow_settings["metal_layer_names"][1]
   metal_layer_top = flow_settings["metal_layer_names"][int(metal_layer)-1]
@@ -416,14 +415,13 @@ def write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,fp_dims)
   fd.close()
   return fp_script_fname, os.path.join(output_path,fp_save_file)
 
-def write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_script_fname,fp_save_file,ptn_info_list,syn_output_path):
+def write_innovus_ptn_script(flow_settings,init_script_fname,fp_save_file,syn_output_path):
   """
-  Writes script to partition a design 
+  Writes script to partition a design, uses ptn_info_list to 
   """
-  #ptn_insts,ptn_mods
-  #ptn_settings:
-
   
+  ptn_info_list = flow_settings["ptn_params"]["ptn_list"]
+  #
   report_path = os.path.join("..","reports")
   output_path = os.path.join("..","outputs")
   report_path = os.path.abspath(report_path)
@@ -433,9 +431,6 @@ def write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_scr
   obj_fplan_box_cmds = [" ".join(["setObjFPlanBox","Module",ptn["inst_name"]," ".join([str(coord) for coord in ptn["fp_coords"]])]) for ptn in ptn_info_list]
   def_ptn_cmds = [" ".join(["definePartition","-hinst",ptn["inst_name"],"-coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1"]) for ptn in ptn_info_list]
   derive_timing_budget_cmds = [" ".join(["deriveTimingBudget","-ptn",ptn["mod_name"]]) for ptn in ptn_info_list]
-  # print("PTN SCRIPT ")
-  # print(obj_fplan_box_cmds)
-  # print(def_ptn_cmds)
 
   ptn_script_fname = os.path.splitext(os.path.basename(fp_save_file))[0] + "_ptn" + ".tcl"
   post_partition_fplan = "_".join([os.path.splitext(fp_save_file)[0],"post_ptn.fp"])
@@ -446,35 +441,18 @@ def write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_scr
     #What this is doing is manually setting the vcr module to the bottom left of the core area with values that get around 70% utiliation
     #TODO update this s.t it works regardless of io boundary settings, io ring settings, target utilization etc
     #This should work regardless of the fp created in the previous script, assuming the 70% utilization target as we just want to stretch the links
-    
-    #"setObjFPlanBox Module channel_in_ff"
-    #"setObjFPlanBox Module flow_ctrl_in_ff"
-    #
-    #channel_in_ff 44 920 69 953
-    #channel_out_ff 72 920 97 953
-    #"setObjFPlanBox Module gen_port_regs[1].channel_in_ff 49 951 64 952",
-    #"setObjFPlanBox Module gen_port_regs[1].channel_out_ff 77 951 92 952",
-    
-    #setObjFPlanBox Module gen_port_regs[1].channel_in_ff 44 920 69 953
-    #setObjFPlanBox Module gen_port_regs[1].channel_out_ff 72 920 97 953
     obj_fplan_box_cmds,
     def_ptn_cmds,
-    # "setObjFPlanBox Module genblk1.vcr 10.0 10.0 350.0 350.0",
-    # "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
-    # "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
-    # "definePartition -hinst genblk1.vcr -coreSpacing 0.0 0.0 0.0 0.0 -railWidth 0.0 -minPitchLeft 2 -minPitchRight 2 -minPitchTop 2 -minPitchBottom 2 -reservedLayer { 1 2 3 4 5 6 7 8 9 10} -pinLayerTop { 2 4 6 8 10} -pinLayerLeft { 3 5 7 9} -pinLayerBottom { 2 4 6 8 10} -pinLayerRight { 3 5 7 9} -placementHalo 0.0 0.0 0.0 0.0 -routingHalo 0.0 -routingHaloTopLayer 10 -routingHaloBottomLayer 1",
-    
     #Tutorial says that one should save the floorplan after the partition is defined, not sure why maybe will have to add SaveFP command here
     "saveFPlan " + os.path.join(output_path,post_partition_fplan),
     "setPlaceMode -place_hard_fence true",
     "setOptMode -honorFence true",
     "place_opt_design",
     "assignPtnPin",
+    "setBudgetingMode -virtualOptEngine gigaOpt",
+    "setBudgetingMode -constantModel true",
+    "setBudgetingMode -includeLatency true",
     derive_timing_budget_cmds,
-    #"setBudgetingMode -virtualOptEngine gigaOpt",
-    #"setBudgetingMode -constantModel true",
-    #"setBudgetingMode -includeLatency true",
-    #"deriveTimingBudget -ptn " + " ".join([ptn["mod_name"] for ptn in ptn_info_list]),
     #commits partition
     "partition",
     "savePartition -dir " + os.path.splitext(os.path.basename(fp_save_file))[0] + "_ptn" + " -def"
@@ -1289,7 +1267,12 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   #TODO bring these to the top new flow_settings options
   processed_flow_settings["ungroup_regex"] = ".*ff.*|.*vcr.*"
 
+  processed_flow_settings["ptn_params"]["scaling_array"] = [float(scale) for scale in processed_flow_settings["ptn_params"]["scaling_array"]]
+  processed_flow_settings["ptn_params"]["fp_init_dims"] = [float(dim) for dim in processed_flow_settings["ptn_params"]["fp_init_dims"]]
 
+  for ptn_dict in processed_flow_settings["ptn_params"]["ptn_list"]:
+    ptn_dict["fp_coords"] = [float(coord) for coord in ptn_dict["fp_coords"]]
+  
 def gen_dir(dir_path):
   if(not os.path.isdir(dir_path)):
     os.mkdir(dir_path)
@@ -1351,8 +1334,6 @@ def hardblock_script_gen(flow_settings):
   This function should be run into an asic_work directory which will have directory structure generated inside of it
   """
 
-  partition=True
-
   cur_env = os.environ.copy()
   #some constants for directory structure will stay the same for now (dont see a reason why users should be able to change this)
   synth_dir = "synth"
@@ -1367,7 +1348,7 @@ def hardblock_script_gen(flow_settings):
 
   processed_flow_settings = flow_settings
   flow_settings_pre_process(processed_flow_settings,cur_env)
-  
+
   assert len(processed_flow_settings["design_files"]) >= 1
   #create top level directory, synth dir traverse to synth dir
   gen_n_trav(flow_settings["top_level"])
@@ -1375,7 +1356,6 @@ def hardblock_script_gen(flow_settings):
   gen_n_trav(synth_dir)
   synth_abs_path = os.getcwd()
   for clock_period in flow_settings["clock_period"]:
-    #os.chdir(synth_abs_path)
     for wire_selection in flow_settings['wire_selection']:
       os.chdir(synth_abs_path)
       parameterized_synth_dir = "_".join(["period",clock_period,"wiremdl",wire_selection])
@@ -1392,7 +1372,6 @@ def hardblock_script_gen(flow_settings):
       gen_n_trav(pnr_dir)
       pnr_abs_dir = os.getcwd()
       for metal_layer in flow_settings['metal_layers']:
-          #os.chdir(pnr_abs_dir)
           for core_utilization in flow_settings['core_utilization']:
             os.chdir(pnr_abs_dir)
             #expect to be in pnr dir
@@ -1425,53 +1404,30 @@ def hardblock_script_gen(flow_settings):
               view_fpath = write_innovus_view_file(flow_settings,syn_output_path)
               init_script_fname = write_innovus_init_script(flow_settings,view_fpath,syn_output_path)
               innovus_script_fname,pnr_output_path = write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_fname,rel_outputs=True)
+              #TODO below command could be done with the dbGet 
+              #top.terms.name (then looking at parameters for network on chip verilog to determine number of ports per edge)
               write_edit_port_script()
               #the innovus fp script, the first dimensions of fp were found by using a utilization of 10% and reducing the size of the router fp to be around 70% utilization
               #First dimensions were 948.4 947.0 such dims were found to have passed timing
-              fp_dims_list = [948.4,947.0]
-              scaling_array = [1,2,3,4,5,8,10]
-
+              
+              #OLD HARDCODED SETTINGS
+              # fp_dims_list = [948.4,947.0]
+              # scaling_array = [1,2,3,4,5,8,10]
               #ptn_block_list = ["vcr_top_1","c_dff_1_7","c_dff_1_6"] #TODO figure out how one can get these
               
               scaled_dims_list = []
-              for scale in scaling_array:
-                ptn1_dict = {
-                  "inst_name": "gen_port_regs[1].channel_in_ff",
-                  "mod_name": "c_dff_1_7",
-                  "fp_coords": [44.0, 920.0, 69.0, 953.0]
-                }
-                ptn2_dict = {
-                  "inst_name": "gen_port_regs[1].channel_out_ff",
-                  "mod_name": "c_dff_1_6",
-                  "fp_coords": [72.0, 920.0, 97.0, 953.0]
-                }
-                ptn3_dict = {
-                  "inst_name": "genblk2.vcr",
-                  "mod_name": "vcr_top_1",
-                  "fp_coords": [30.0, 30.0, 370.0, 370.0]
-                }
-                ptn4_dict = {
-                  "inst_name": "gen_port_regs[2].channel_in_ff",
-                  "mod_name": "c_dff_1_5",
-                  "fp_coords": [927.0, 41.0, 956.0, 68.0] 
-                }
-                ptn5_dict = {
-                  "inst_name": "gen_port_regs[2].channel_out_ff",
-                  "mod_name": "c_dff_1_4",
-                  "fp_coords":  [927.0, 73.0, 956.0, 100.0]
-                }
-
-                ptn_info_list = [ptn1_dict,ptn2_dict,ptn3_dict,ptn4_dict,ptn5_dict]
+              for scale in flow_settings["ptn_params"]["scaling_array"]:
+                ptn_info_list = flow_settings["ptn_params"]["ptn_list"]
                 ptn_block_list = [ptn["mod_name"] for ptn in ptn_info_list]
                 #overall floorplan 
-                new_dim_pair = [dim*scale for dim in fp_dims_list]
+                new_dim_pair = [dim*scale for dim in flow_settings["ptn_params"]["fp_init_dims"]]
                 scaled_dims_list.append(new_dim_pair)
+              
               for dim_pair in scaled_dims_list:
                 #creates initial floorplan
                 fp_script_fname, fp_save = write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,dim_pair)
                 #creates partitions
-                
-                ptn_script_fname = write_innovus_ptn_script(flow_settings,metal_layer,core_utilization,init_script_fname,fp_save,ptn_info_list,syn_output_path)
+                ptn_script_fname = write_innovus_ptn_script(flow_settings,init_script_fname,fp_save,syn_output_path)
                 
                 for block_name in ptn_block_list:
                   #runs pnr on subblock ptn
@@ -1480,8 +1436,7 @@ def hardblock_script_gen(flow_settings):
                 write_innovus_ptn_top_level_flow(metal_layer,os.path.splitext(ptn_script_fname)[0],"router_wrap")
                 #assembles parititons and gets timing results
                 write_innovus_assemble_script(flow_settings,os.path.splitext(ptn_script_fname)[0],"vcr_top_1","router_wrap")
-                sys.exit(1)
-            print("test did it exit?")
+                
             os.chdir(top_abs_path)
             gen_n_trav(sta_dir)
             sta_abs_dir = os.getcwd()

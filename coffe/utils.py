@@ -4,6 +4,7 @@ import shutil
 import time 
 import datetime
 
+import re
 # Constants used for formatting the subcircuit area/delay/power table. 
 # These denote the widths of various columns - first (FIRS), last (LAST) and the rest (MIDL).
 # We could use better libraries for pretty printing tables, but currently we use a simple method.
@@ -706,6 +707,121 @@ def check_hard_params(hard_params,optional_params):
             print("param process_size is unset, please go to your hardblock/process params file and set it")
             sys.exit(1)
 
+def parse_ptn_param_line(line):
+    #This is a poor parser, just need it to work, when coffe is updated to python3 this can be done via yaml file
+    split_line = line.split(":")
+    #this list contains all characters which can legally bound ptn parameters
+    valid_char_list = ["\"","[","]"]
+    parsed_line = []
+    for line in split_line:
+        read_char_flag = 0
+        clean_line = ""
+        for char in line:
+            #Works for parsing strings
+            if(char in valid_char_list and not read_char_flag):
+                read_char_flag = 1
+                continue
+            elif(char in valid_char_list and read_char_flag):
+                read_char_flag = 0
+                continue
+            if(read_char_flag):
+                clean_line = clean_line + char
+        parsed_line.append(clean_line)
+    #if there are any lists in the parsed_line we can make them into a sublist for convenience
+    updated_parsed_line = []
+    #all characters matching below regex are removed from the line
+    clean_re = re.compile("\[|\]|\s")
+    for subline in parsed_line:
+        #if a comma is in the subline, it is a list
+        if("," in subline):
+            #remove the hard brackets from the line
+            new_subline = clean_re.sub(repl="",string=subline)
+            #seperate subline into list via comma delimiter
+            new_subline = new_subline.split(",")
+        else:
+            new_subline = subline
+        updated_parsed_line.append(new_subline)
+    return updated_parsed_line
+
+def load_ptn_params(filename):
+    """
+    Parse the user defined partition settings, these get read into a dict for each partition in the design
+    """
+    #init ptn data structure
+    #parse the input file and create a ptn dict for each structure
+
+    ptn_params = {
+        "ptn_list" : [], #list of all partitions in design
+        "scaling_array": [], #list of floorplan scales to be swept across
+        "fp_init_dims": [] # two element list of  
+    }
+    top_settings_re = re.compile(".*top_settings\s+begin.*")
+    ptn_begin_re = re.compile(".*ptn\s+begin.*")
+    ptn_end_re = re.compile(".*end.*")
+    fd = open(os.path.expanduser(filename),"r")
+    ptn_params_text = fd.read()
+    ptn_params_list = ptn_params_text.split("\n")
+    ptn_params_clean = [line for line in ptn_params_list if not (line.startswith("#") or line == "")]
+    read_ptn_flag = 0    
+    read_ptn_top_setting_flag = 0
+    parsed_lines = []
+    
+    num_ptns = 0
+    for line in ptn_params_clean:
+        #raise flag if the ptn params are found
+        if(ptn_begin_re.search(line)):
+            read_ptn_flag = 1
+            continue
+        elif(ptn_end_re.search(line)):
+            read_ptn_flag = 0
+            read_ptn_top_setting_flag = 0
+            num_ptns += 1
+            continue
+        elif(top_settings_re.search(line)):
+            read_ptn_top_setting_flag = 1
+            continue
+
+        if(read_ptn_flag or read_ptn_top_setting_flag):
+            parsed_line = parse_ptn_param_line(line)
+            if(read_ptn_flag):
+                parsed_lines.append(parsed_line)
+                #this if statement handles top level settings (ie those applied to all ptns or the design fp)
+            elif(read_ptn_top_setting_flag):
+                if(len(parsed_line) > 1):
+                    ptn_params[parsed_line[0]] = parsed_line[1]
+    ptn_dict = {
+            "inst_name": "",
+            "mod_name": "",
+            "fp_coords": []
+        }
+    #we will have the same number
+    #some bug in python2 or something not sure but you cant assign values to dict list elements in below list in regular way
+    #ptn_params["ptn_list"][ptn_idx][key] = val
+
+    ptn_idx = 0 
+    key_cnt = 0
+    tmp_dict = {}
+    ptn_list = []
+    for line in parsed_lines:
+        #first argument is always dict_key
+        key = line[0]
+        val = line[1]
+        #dont continue if key is not in dict
+        if(key not in ptn_dict):
+            print("ERROR: Found invalid partition parameter (" + key + ") in " + filename)
+            sys.exit(1)
+        tmp_dict[key] = val
+        key_cnt += 1 
+        #If someone ever needs to do anything after all params have been read into a dict inst do it in below if statement
+        if(key_cnt % len(ptn_dict.keys()) == 0):
+            ptn_list.append(tmp_dict)
+            #reset tmp dict
+            tmp_dict = {}            
+            ptn_idx += 1
+
+    ptn_params["ptn_list"] = ptn_list
+    return ptn_params
+
 def load_hard_params(filename,cli_args=False):
     """ Parse the hard block description file and load values into dictionary. 
         Returns this dictionary.
@@ -779,6 +895,7 @@ def load_hard_params(filename,cli_args=False):
         'pnr_tool': "",
         'process_size': "",
         'hb_run_type': "",
+        'ptn_settings_file': ""
     }
     
 
@@ -801,7 +918,7 @@ def load_hard_params(filename,cli_args=False):
         # Split lines at '='
         words = line.split('=')
         if words[0] not in hard_params.keys():
-            print "ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename
+            print("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename)
             sys.exit()
          
         param = words[0]
@@ -933,6 +1050,8 @@ def load_hard_params(filename,cli_args=False):
             hard_params['wire_selection'].append(value)
         elif param == "process_size":
             hard_params["process_size"] = value
+        elif param == "ptn_settings_file":
+            hard_params["ptn_settings_file"] = str(value)
     
     hard_file.close()
 
