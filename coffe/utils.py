@@ -716,12 +716,14 @@ def parse_ptn_param_line(line):
     for line in split_line:
         read_char_flag = 0
         clean_line = ""
+        bounds_char= ""
         for char in line:
             #Works for parsing strings
             if(char in valid_char_list and not read_char_flag):
+                bounds_char = char
                 read_char_flag = 1
                 continue
-            elif(char in valid_char_list and read_char_flag):
+            elif(char == bounds_char and read_char_flag):
                 read_char_flag = 0
                 continue
             if(read_char_flag):
@@ -743,6 +745,7 @@ def parse_ptn_param_line(line):
         updated_parsed_line.append(new_subline)
     return updated_parsed_line
 
+
 def load_ptn_params(filename):
     """
     Parse the user defined partition settings, these get read into a dict for each partition in the design
@@ -753,7 +756,8 @@ def load_ptn_params(filename):
     ptn_params = {
         "ptn_list" : [], #list of all partitions in design
         "scaling_array": [], #list of floorplan scales to be swept across
-        "fp_init_dims": [] # two element list of  
+        "fp_init_dims": [], # two element list of  
+        "fp_pin_spacing": ""
     }
     top_settings_re = re.compile(".*top_settings\s+begin.*")
     ptn_begin_re = re.compile(".*ptn\s+begin.*")
@@ -895,7 +899,10 @@ def load_hard_params(filename,cli_args=False):
         'pnr_tool': "",
         'process_size': "",
         'hb_run_type': "",
-        'ptn_settings_file': ""
+        'ptn_settings_file': "",
+        'partition_flag': False,
+        'ungroup_regex': "",
+        'debug_flag': False,
     }
     
 
@@ -1006,6 +1013,15 @@ def load_hard_params(filename,cli_args=False):
             hard_params["pnr_tool"] = value
         elif param == "hb_run_type":
             hard_params["hb_run_type"] = str(value)
+        elif param == "partition_flag":
+            hard_params["partition_flag"] = (value == "True")
+        elif param == "debug_flag":
+            hard_params["debug_flag"] = value
+        elif param == "ptn_settings_file":
+            hard_params["ptn_settings_file"] = str(value)
+        elif param == "ungroup_regex":
+            hard_params["ungroup_regex"] = str(value)
+        
 
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
@@ -1050,8 +1066,6 @@ def load_hard_params(filename,cli_args=False):
             hard_params['wire_selection'].append(value)
         elif param == "process_size":
             hard_params["process_size"] = value
-        elif param == "ptn_settings_file":
-            hard_params["ptn_settings_file"] = str(value)
     
     hard_file.close()
 
@@ -1124,7 +1138,7 @@ def load_hard_params(filename,cli_args=False):
             
         process_param_file.close()
     #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
-    optional_params = ["process_params_file","mode_signal","hb_run_type"]
+    optional_params = ["process_params_file","mode_signal","hb_run_type","ptn_settings_file"]
     check_hard_params(hard_params,optional_params)
 
     return hard_params
