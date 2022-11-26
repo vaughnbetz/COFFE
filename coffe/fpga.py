@@ -5213,7 +5213,14 @@ class _hard_block(_CompoundCircuit):
 		
         if self.parameters['num_dedicated_outputs'] > 0:
             self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
-            
+
+    def generate_parallel_results(self):
+        print("Generating hardblock parallel results by parsing existing outputs...")
+        out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
+        lowest_cost_results = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
+        print(lowest_cost_results)          
+        sys.exit(1)
+
 
     def update_area(self, area_dict, width_dict):
         """ Update area. To do this, we use area_dict which is a dictionary, maintained externally, that contains

@@ -400,10 +400,10 @@ def write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,fp_dims)
      + " -blockPinTarget { nearestRingStripe nearestTarget } -padPinPortConnect { allPort oneGeom } -checkAlignedSecondaryPin 1 -blockPin useLef -allowJogging 1"\
      + " -crossoverViaBottomLayer " + metal_layer_bottom + " -targetViaBottomLayer " + metal_layer_bottom + " -allowLayerChange 1"\
      + " -targetViaTopLayer " + metal_layer_top + " -crossoverViaTopLayer " + metal_layer_top + " -nets {" + " ".join([flow_settings["gnd_net"],flow_settings["pwr_net"]]) +  "}",
-    # Innovus Guide says to run placement before floorplanning but not sure if its needed as it adds decent runtime
-    #"setPlaceMode -fp false -place_global_place_io_pins true",
-    #"place_design -noPrePlaceOpt",
-    #"earlyGlobalRoute",
+    #Placement needs to be performed to place IO pins... 
+    "setPlaceMode -fp false -place_global_place_io_pins true",
+    "place_design -noPrePlaceOpt",
+    "earlyGlobalRoute",
     # Assign port locations
     "source " + os.path.join(script_path,"port_vars.tcl"),
     "saveFPlan " + os.path.join(output_path,fp_save_file)
@@ -430,7 +430,7 @@ def write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,fp_dims)
 #   fd.close()
 #   return fname
 
-def write_innovus_ptn_script(flow_settings,init_script_fname,fp_save_file,offsets,auto_assign_regs=False):
+def write_innovus_ptn_script(flow_settings,init_script_fname,fp_save_file,offsets,dim_pair,auto_assign_regs=False):
   """
   Writes script to partition a design, uses ptn_info_list extracted from parameter file to define partition locations, has the option to auto assign register partitions but option has not been 
   extended to support unique params.
@@ -463,25 +463,25 @@ def write_innovus_ptn_script(flow_settings,init_script_fname,fp_save_file,offset
           #North side connections
           if("in" in ptn["inst_name"]):
             ptn["fp_coords"][0] = offsets[0] - ff_const_offset #lc x 
-            ptn["fp_coords"][1] = flow_settings["ptn_params"]["fp_init_dims"][1]*(1+fp_dims_error_margin) - ff_depth_from_pins - ff_height #lc y
-            ptn["fp_coords"][2] = offsets[0] + ff_width + ff_const_offset#uc x 
-            ptn["fp_coords"][3] = flow_settings["ptn_params"]["fp_init_dims"][1]*(1+fp_dims_error_margin) - ff_depth_from_pins #uc y
+            ptn["fp_coords"][1] = dim_pair[1] - ff_depth_from_pins - ff_height #lc y
+            ptn["fp_coords"][2] = offsets[0] + ff_width + ff_const_offset #uc x 
+            ptn["fp_coords"][3] = dim_pair[1] - ff_depth_from_pins #uc y
           elif("out" in ptn["inst_name"]):
             ptn["fp_coords"][0] = offsets[1] - ff_const_offset #lc x 
-            ptn["fp_coords"][1] = flow_settings["ptn_params"]["fp_init_dims"][1]*(1+fp_dims_error_margin) - ff_depth_from_pins - ff_height #lc y
+            ptn["fp_coords"][1] = dim_pair[1] - ff_depth_from_pins - ff_height #lc y
             ptn["fp_coords"][2] = offsets[1] + ff_width + ff_const_offset#uc x 
-            ptn["fp_coords"][3] = flow_settings["ptn_params"]["fp_init_dims"][1]*(1+fp_dims_error_margin) - ff_depth_from_pins #uc y
+            ptn["fp_coords"][3] = dim_pair[1] - ff_depth_from_pins #uc y
         elif("2" in ptn["inst_name"]):
           if("in" in ptn["inst_name"]):
             #East side connections
-            ptn["fp_coords"][0] = flow_settings["ptn_params"]["fp_init_dims"][0]*(1+fp_dims_error_margin) - ff_depth_from_pins - ff_height #lc x 
+            ptn["fp_coords"][0] = dim_pair[0] - ff_depth_from_pins - ff_height #lc x 
             ptn["fp_coords"][1] = offsets[0] - ff_const_offset #lc y
-            ptn["fp_coords"][2] = flow_settings["ptn_params"]["fp_init_dims"][0]*(1+fp_dims_error_margin) - ff_depth_from_pins #uc y
+            ptn["fp_coords"][2] = dim_pair[0] - ff_depth_from_pins #uc y
             ptn["fp_coords"][3] = offsets[0] + ff_width + ff_const_offset
           elif("out" in ptn["inst_name"]):
-            ptn["fp_coords"][0] = flow_settings["ptn_params"]["fp_init_dims"][0]*(1+fp_dims_error_margin) - ff_depth_from_pins - ff_height #lc x 
+            ptn["fp_coords"][0] = dim_pair[0] - ff_depth_from_pins - ff_height #lc x 
             ptn["fp_coords"][1] = offsets[1] - ff_const_offset #lc y
-            ptn["fp_coords"][2] = flow_settings["ptn_params"]["fp_init_dims"][0]*(1+fp_dims_error_margin) - ff_depth_from_pins #uc y
+            ptn["fp_coords"][2] = dim_pair[0] - ff_depth_from_pins #uc y
             ptn["fp_coords"][3] = offsets[1] + ff_width + ff_const_offset
 
       
@@ -611,15 +611,15 @@ def write_innovus_assemble_script(flow_settings,ptn_dir_name,block_list,top_leve
     #"optDesign -hold -postRoute",
     #"optDesign -drv -postRoute",
     "timeDesign -postRoute -prefix assembled -outDir " + os.path.join(report_path,ptn_dir_name + "_timingReports"),
-    "verify_drc -report " + os.path.join(report_path, ptn_dir_name + "geom.rpt"),
-    "verifyConnectivity -type all -report " + os.path.join(report_path,ptn_dir_name + "conn.rpt"),
-    "report_timing > " + os.path.join(report_path,ptn_dir_name + "setup_timing.rpt"),
+    "verify_drc -report " + os.path.join(report_path, ptn_dir_name + "_" + "geom.rpt"),
+    "verifyConnectivity -type all -report " + os.path.join(report_path,ptn_dir_name + "_" + "conn.rpt"),
+    "report_timing > " + os.path.join(report_path,ptn_dir_name + "_" + "setup_timing.rpt"),
     "setAnalysisMode -checkType hold",
-    "report_timing > " + os.path.join(report_path,ptn_dir_name + "hold_timing.rpt"),
-    "report_power > " + os.path.join(report_path,ptn_dir_name + "power.rpt"),
-    "report_constraint -all_violators > " + os.path.join(report_path,ptn_dir_name + "violators.rpt"),
-    "report_area > " + os.path.join(report_path,ptn_dir_name + "area.rpt"),
-    "summaryReport -outFile " + os.path.join(report_path,ptn_dir_name + "pr_report.txt"),
+    "report_timing > " + os.path.join(report_path,ptn_dir_name + "_" + "hold_timing.rpt"),
+    "report_power > " + os.path.join(report_path,ptn_dir_name + "_" + "power.rpt"),
+    "report_constraint -all_violators > " + os.path.join(report_path,ptn_dir_name + "_" + "violators.rpt"),
+    "report_area > " + os.path.join(report_path,ptn_dir_name + "_" + "area.rpt"),
+    "summaryReport -outFile " + os.path.join(report_path,ptn_dir_name + "_" + "pr_report.txt"),
     "saveDesign " + os.path.join(output_path,ptn_dir_name + "_assembled")
   ]
   assemble_ptn_flow_script_fname = ptn_dir_name + "_assembly_flow.tcl"
@@ -1231,15 +1231,15 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
   mkdir_cmd_str = "mkdir -p " + report_dest_str
   copy_rep_cmd_str = "cp " + os.path.expanduser(flow_settings['primetime_folder']) + "/* " + report_dest_str
   copy_logs_cmd_str = "cp " + "pt.log pt_pwr.log primetime.tcl primetime_power.tcl " + report_dest_str
-  # subprocess.call(mkdir_cmd_str,shell=True)
-  # subprocess.call(copy_rep_cmd_str,shell=True)
-  # subprocess.call(copy_logs_cmd_str,shell=True)
-  #subprocess.call('rm -f pt.log pt_pwr.log primetime.tcl primetime_power.tcl', shell=True)
-  print("####################### STA #######################")
-  print(mkdir_cmd_str)
-  print(copy_rep_cmd_str)
-  print(copy_logs_cmd_str)
-  print("####################### STA #######################")
+  subprocess.call(mkdir_cmd_str,shell=True)
+  subprocess.call(copy_rep_cmd_str,shell=True)
+  subprocess.call(copy_logs_cmd_str,shell=True)
+  # subprocess.call('rm -f pt.log pt_pwr.log primetime.tcl primetime_power.tcl', shell=True)
+  # print("####################### STA #######################")
+  # print(mkdir_cmd_str)
+  # print(copy_rep_cmd_str)
+  # print(copy_logs_cmd_str)
+  # print("####################### STA #######################")
   # Read dynamic power
   file = open(os.path.expanduser(flow_settings['primetime_folder']) + "/power.rpt" ,"r")
   for line in file:
@@ -1254,19 +1254,6 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
         total_dynamic_power[0] = 0
   file.close() 
   return library_setup_time, data_arrival_time, total_delay, total_dynamic_power   
-
-
-# #this function adds additional hardblock flow parameters which don't require user input  
-# def add_hb_params(flow_settings,cur_env):
-
-
-# def init_dir_structure(flow_settings):
-#   """
-#   This defines the directory structure for creating hb scripts, removes assumptions for filenames which would need to be used later if this didnt exist
-#   """
-#   dir_struct = {
-
-#   }
 
 
 def flow_settings_pre_process(processed_flow_settings,cur_env):
@@ -1345,42 +1332,6 @@ def gen_n_trav(dir_path):
   gen_dir(dir_path)
   os.chdir(dir_path)
 
-
-
-
-
-# def write_param_synth_bash_script(param_synth_path):
-#   #whatever directory this functions run in will have scripts generated inside of it
-#   dc_shell = "dc_shell-t"
-#   dc_script_rel_path = "../scripts/dc_script.tcl"
-#   file_lines = [
-#     "#!/bin/bash",
-#     "cd " + os.path.join(param_synth_path,"work"),
-#     " ".join([dc_shell,"-f",dc_script_rel_path," > dc.log"])
-#   ]
-#   fd = open(param_synth_path.split("/")[-1] + "_dc_run_parallel.sh","w")  
-#   for line in file_lines:
-#     file_write_ln(fd,line)
-#   fd.close()
-  
-
-# def write_param_pnr_bash_script(flow_settings,param_pnr_path):
-#   #whatever directory this functions run in will have scripts generated inside of it
-#   pnr_script_rel_path = os.path.join("..","scripts","_".join([flow_settings["top_level"],flow_settings["pnr_tool"]+".tcl"]))
-#   if(flow_settings["pnr_tool"] == "innovus"):
-#     pnr_cmd = get_innovus_cmd(pnr_script_rel_path)
-#   elif(flow_settings["pnr_tool"] == "encounter"):
-#     pnr_cmd = get_encounter_cmd(pnr_script_rel_path)
-#   file_lines = [
-#     "#!/bin/bash",
-#     "cd " + os.path.join(param_pnr_path,"work"),
-#     pnr_cmd,
-#   ]
-#   fd = open(param_pnr_path.split("/")[-1] + "_pnr_run_parallel.sh","w")  
-#   for line in file_lines:
-#     file_write_ln(fd,line)
-#   fd.close()
-
 def get_dc_cmd(script_path):
   syn_shell = "dc_shell-t"
   return " ".join([syn_shell,"-f",script_path," > dc.log"])
@@ -1457,7 +1408,7 @@ def hardblock_script_gen(flow_settings):
   This function will generate all ASIC flow scripts and run some basic environment/parameter checks to make sure the scripts will function properly but won't run any tools
   This function should be run into an asic_work directory which will have directory structure generated inside of it
   """
-
+  print("Generating hardblock scripts...")
   cur_env = os.environ.copy()
   #some constants for directory structure will stay the same for now (dont see a reason why users should be able to change this)
   synth_dir = "synth"
@@ -1487,6 +1438,12 @@ def hardblock_script_gen(flow_settings):
       parameterized_synth_dir = "_".join(["period",clock_period,"wiremdl",wire_selection])
       gen_n_trav(parameterized_synth_dir)
       param_synth_path = os.getcwd()
+      #############################################
+      sym_link_dir = "synth_link"
+      if(os.path.isdir(sym_link_dir)):
+        sym_link_cmd = "unlink " + os.path.join(os.getcwd(),sym_link_dir)
+        print(sym_link_cmd)
+      #############################################
       #generate subdirs in parameterized dir
       for d in parameterized_subdirs:
         gen_dir(d)
@@ -1519,6 +1476,24 @@ def hardblock_script_gen(flow_settings):
                 if(not os.path.isdir(sym_link_dir)):
                   sym_link_cmd = "ln -s " + param_pnr_path + " " + os.path.join(os.getcwd(),sym_link_dir)
                   subprocess.call(sym_link_cmd,shell=True)
+            else:
+              sym_link_dir = "synth_link"
+              if(os.path.isdir(sym_link_dir)):
+                sym_link_cmd = "unlink " + os.path.join(os.getcwd(),sym_link_dir)
+                print(sym_link_cmd)
+              sym_link_dir = "sta_link"
+              if(os.path.isdir(sym_link_dir)):
+                sym_link_cmd = "unlink " + os.path.join(os.getcwd(),sym_link_dir)
+                print(sym_link_cmd)
+                # subprocess.call(sym_link_cmd,shell=True)
+              #then go back to previous stage and create a sym_link to the next stage
+              # if(os.path.isdir(sym_link_dir)):
+              #   os.chdir(sym_link_dir)
+              #   sym_link_dir = "pnr_link"
+              #   if(os.path.isdir(sym_link_dir)):
+              #     sym_link_cmd = "unlink " + os.path.join(os.getcwd(),sym_link_dir)
+              #     print(sym_link_cmd)
+              #     subprocess.call(sym_link_cmd,shell=True)
             ###############################
             #change back to original dir
             os.chdir(param_pnr_path)
@@ -1554,7 +1529,7 @@ def hardblock_script_gen(flow_settings):
                 #creates initial floorplan
                 fp_script_fname, fp_save = write_innovus_fp_script(flow_settings,metal_layer,init_script_fname,dim_pair)
                 #creates partitions
-                ptn_script_fname = write_innovus_ptn_script(flow_settings,init_script_fname,fp_save,offsets,auto_assign_regs=True)
+                ptn_script_fname = write_innovus_ptn_script(flow_settings,init_script_fname,fp_save,offsets,dim_pair,auto_assign_regs=True)
                 
                 for block_name in ptn_block_list:
                   #runs pnr on subblock ptn
@@ -1591,6 +1566,21 @@ def hardblock_script_gen(flow_settings):
                     sym_link_cmd = "ln -s " + param_sta_path + " " + os.path.join(os.getcwd(),sym_link_dir)
                     subprocess.call(sym_link_cmd,shell=True)
                 os.chdir(param_sta_path)
+              else:
+                sym_link_dir = "pnr_link"
+                if(os.path.isdir(sym_link_dir)):
+                  sym_link_cmd = "unlink " + os.path.join(os.getcwd(),sym_link_dir)
+                  print(sym_link_cmd)
+                  # subprocess.call(sym_link_cmd,shell=True)
+                #then go back to previous stage and create a sym_link to the next stage
+                # if(os.path.isdir(sym_link_dir)):
+                #   os.chdir(sym_link_dir)
+                #   sym_link_dir = "sta_link"
+                  # if(os.path.isdir(sym_link_dir)):
+                  #   print(sym_link_cmd)
+                  #   sym_link_cmd = "unlink " + os.path.join(os.getcwd(),sym_link_dir)
+                  #   subprocess.call(sym_link_cmd,shell=True)
+                os.chdir(param_sta_path)
               ##############################
               #generate subdirs in parameterized dir
               for d in parameterized_subdirs:
@@ -1611,7 +1601,8 @@ def get_encounter_cmd(script_path):
   return encounter_cmd
 
 def run_cmd(cmd_str):
-  subprocess.call(cmd_str,shell=True,executable="/bin/bash")
+  print("cwd: %s\n cmd: %s" %(os.getcwd(),cmd_str))
+  #subprocess.call(cmd_str,shell=True,executable="/bin/bash")
 
 def run_inn_dim_specific_pnr_cmd_series(inn_command_series):
   for dim_cmds in inn_command_series:
@@ -1633,30 +1624,218 @@ def run_inn_dim_specific_pnr_cmd_series(inn_command_series):
       run_cmd(get_innovus_cmd(dim_cmds))
     
 
-# def search_for_lowest_cost_design()
+
+
+def get_params_from_str(param_str):
+  #TODO define this parameter structure somewhere
+  param_dict = {}
+  params = param_str.split("_")
+  for idx in range(0,len(params),2):
+    param_dict[params[idx]] = params[idx+1]
+  return param_dict
+
+
+def truncate(f, n):
+    '''Truncates/pads a float f to n decimal places without rounding'''
+    s = '{}'.format(f)
+    if 'e' in s or 'E' in s:
+        return '{0:.{1}f}'.format(f, n)
+    i, p, d = s.partition('.')
+    return '.'.join([i, (d+'0'*n)[:n]])
+
+def decode_report_str(report_file):
+    tmp = report_file.split("_")
+    period = ""
+    # metal_layers = ""
+    # util = ""
+    # d
+    for idx,string in enumerate(tmp):
+        if(string == "period"):
+            period = tmp[idx+1]
+        break
+    return period
+
+
+def find_lowest_cost_in_result_dict(flow_settings,result_dict):
+  lowest_cost = sys.float_info.max
+  lowest_cost_area = 0.0
+  lowest_cost_delay = 0.0
+  lowest_cost_power = 0.0
+  lowest_cost_dict = { }
+  flow_dict = {
+    "area": 0.0,
+    "delay": 0.0,
+    "power": 0.0
+  }
+  # for flow_type in result_dict.keys():
+  #   lowest_cost_dict[flow_type] = flow_dict
+  
+  param_str = ""
+  for flow_type, flow_dict in result_dict.items():
+    # if(flow_type == "synth"):
+    if(flow_type == "pnr"):
+      for run_params, param_result_dict in flow_dict.items():
+        total_area = param_result_dict["area"]
+        total_delay = param_result_dict["delay"]
+        total_power = param_result_dict["power"]
+        cur_cost = math.pow(float(total_area), float(flow_settings['area_cost_exp'])) * math.pow(float(total_delay), float(flow_settings['delay_cost_exp']))
+        result_dict[flow_type][run_params]["cost"] = cur_cost
+        if lowest_cost > cur_cost:
+          param_str = run_params
+          lowest_cost = cur_cost
+          lowest_cost_area = total_area
+          lowest_cost_delay = total_delay
+          lowest_cost_power = total_power
+    # elif(flow_type == "sta"):
+  return (float(lowest_cost_area), float(lowest_cost_delay), float(lowest_cost_power),lowest_cost,param_str)
+
+def parse_parallel_outputs(flow_settings):
+    """
+    This function parses the ASIC results directory created after running scripts generated from option of coffe flow
+    """
+    #Directory structure of the parallel results is as follows:
+    #results_dir: 
+    #--->synth
+    #-------->parameterized_folder
+    #------------>outputs
+    #------------>reports
+    #------------>work
+    #------------>scripts
+    #--->pnr
+    #......Same as above structure....
+    #--->sta
+    #......Same as above structure....
+    parallel_results_path = os.path.expanduser(flow_settings["parallel_hardblock_folder"])
+    out_dict = {
+        "pnr": {},
+        "synth": {},
+        "sta": {}
+    }
+    decimal_re = re.compile(r"\d+\.{0,1}\d*")
+    timing_str = "setup_timing"
+    area_str = "area"
+    power_str = "power"
+    violator_str = "violators"
+    os.chdir(parallel_results_path)
+    results_path = os.getcwd()
+    for top_level_mod in os.listdir(os.getcwd()):
+        os.chdir(os.path.join(results_path,top_level_mod))
+        top_level_mod_path = os.getcwd()
+        for flow_dir in os.listdir(os.getcwd()):
+            os.chdir(os.path.join(top_level_mod_path,flow_dir))
+            flow_path = os.getcwd()
+            for parameterized_dir in os.listdir(os.getcwd()):
+                if("period" not in parameterized_dir):
+                  continue
+                os.chdir(os.path.join(flow_path,parameterized_dir))
+                parameterized_path = os.getcwd()
+                for dir in os.listdir(os.getcwd()):
+                    os.chdir(os.path.join(parameterized_path,dir))
+                    dir_path = os.getcwd()
+                    if(os.path.basename(dir_path) == "reports" and len(dir_path) > 0 and flow_dir == "pnr"):
+                        for report_file in os.listdir(os.getcwd()):
+                            # gen_dict_entry_key = ""
+                            dict_entry = ""
+                            if("area" in report_file):
+                                #Area report
+                                fd = open(report_file,"r")
+                                for line in fd:
+                                    if("router_wrap" in line):
+                                        area = re.split(r"\s+",line)[-2]
+                                dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=area_str,repl="") #(area_str,os.path.basename(os.path.splitext(report_file)[0]))
+                                period = decode_report_str(dict_entry)
+                                if(dict_entry not in out_dict[flow_dir]):
+                                    out_dict[flow_dir][dict_entry] = {}
+                                out_dict[flow_dir][dict_entry]["area"] = float(area)
+                                fd.close()
+                            elif("setup_timing" in report_file and ".rpt" in report_file):
+                                timing_met_re = re.compile(r"VIOLATED")
+                                #timing report
+                                fd = open(report_file,"r")
+                                text = fd.read()
+                                for line in text.split("\n"):
+                                    if("- Arrival Time" in line):
+                                        arrival_time = float(decimal_re.search(line).group(0))
+                                    elif("Setup" in line):
+                                        lib_setup_time = float(decimal_re.search(line).group(0))
+                                #timing_met = any(("MET" in line) for line in text) 
+                                #timing_met = False if(timing_met_re.search(text)) else True
+                                total_del = arrival_time + lib_setup_time
+                                dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=timing_str,repl="")
+                                if(dict_entry not in out_dict[flow_dir]):
+                                    out_dict[flow_dir][dict_entry] = {}
+                                out_dict[flow_dir][dict_entry]["delay"] = float(truncate(total_del,3))
+                                if(timing_met_re.search(text)):
+                                    timing_met = False
+                                else:
+                                    timing_met = True
+                                out_dict[flow_dir][dict_entry]["timing_met_setup"] = timing_met
+                                fd.close()
+                            elif("violators"in report_file and ".rpt" in report_file):
+                                timing_met_re = re.compile(r"VIOLATED")
+                                fd = open(report_file,"r")
+                                text = fd.read()
+                                if(timing_met_re.search(text)):
+                                    #print(os.path.join(os.getcwd(),report_file))
+                                    #print(timing_met_re.search(text).group(0))
+                                    timing_met = False
+                                else:
+                                    timing_met = True
+                                dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=violator_str,repl="")
+                                if(dict_entry not in out_dict[flow_dir]):
+                                    out_dict[flow_dir][dict_entry] = {}
+                                out_dict[flow_dir][dict_entry]["timing_met_hold"] = timing_met
+
+                            elif("power" in report_file and ".rpt" in report_file):
+                                #power report
+                                fd = open(report_file,"r")
+                                for line in fd:
+                                    if("Total Power:" in line):
+                                        total_power = float(decimal_re.search(line).group(0))
+                                dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=power_str,repl="")
+                                if(dict_entry not in out_dict[flow_dir]):
+                                    out_dict[flow_dir][dict_entry] = {}
+                                out_dict[flow_dir][dict_entry]["power"] = float(truncate(total_power,3))
+                                fd.close()
+                            
+                            if(dict_entry != ""):
+                                #grabbing link dimensions from the fname
+                                dict_ent_params = dict_entry.split("_")
+                                dim_len = 0
+                                period = 0
+                                for idx,e in enumerate(dict_ent_params):
+                                    if("len" in e):
+                                        dim_len = float(dict_ent_params[idx+1])
+                                    elif("period" in e):
+                                        period = float(dict_ent_params[idx+1])
+                                out_dict[flow_dir][dict_entry]["dim_len"] = float(dim_len)  
+                                out_dict[flow_dir][dict_entry]["period"] = float(period)                      
+    return out_dict
 
 
 def hardblock_parallel_flow(flow_settings):
   #This expects cwd to be asic_work
-  hardblock_script_gen(flow_settings)
+  #hardblock_script_gen(flow_settings)
   flow_integration_settings = {
     "run_synth" : False,
     "run_pnr" : True,
     "run_sta" : False
   }
+  flow_settings["override_pnr_outputs"] = False
+
 
   #this dict will filter the parallel run script s.t only the parameters specified will be run
-  # run_param_filter = {
-  #   "period" : "1",
-  #   "wiremdl" : "WireAreaLowkAgr",
-  #   "mlayer" : "8",
-  #   "util" : "0.70",
-  # }
+  run_param_filters = {
+    "period" : ["0.5","0.75", "1", "1.53", "2.0", "4"], 
+    "wiremdl" : ["WireAreaLowkAgr"],
+    "mlayer" : ["8"],
+    "util" : ["0.70"],
+  }
 
   ########################### PARALLEL SYNTHESIS SECTION ###########################
   if flow_integration_settings["run_synth"]:
-    synth_parallel_work_path = os.path.join(os.getcwd(),flow_settings["top_level"],"synth","synth_parallel_work")
-    #synth_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/synth/synth_parallel_work"
+    # synth_parallel_work_path = os.path.join(os.getcwd(),"synth","synth_parallel_work")
+    synth_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/synth/synth_parallel_work"
     os.chdir(synth_parallel_work_path)
     #setup the scripts to be able to run
     pll_synth_scripts = glob.glob(os.path.join(synth_parallel_work_path,"scripts","*"))
@@ -1671,8 +1850,8 @@ def hardblock_parallel_flow(flow_settings):
   ########################### PARALLEL SYNTHESIS SECTION ###########################
   ########################### PARALLEL PNR SECTION #################################
   if flow_integration_settings["run_pnr"]:
-    # pnr_parallel_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/pnr"
-    pnr_parallel_path = os.path.join(os.getcwd(),flow_settings["top_level"],"pnr","pnr_parallel_work")
+    pnr_parallel_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/pnr"
+    # pnr_parallel_path = os.path.join(os.getcwd(),"pnr","pnr_parallel_work")
     #DEPENDANCY OF PNR SCRIPTS
     # run_gen_blocks for each ptn block in design [] denotes parallelism
     # gen_fp(dim) -> gen_ptns(dim) -> [gen_blocks(dim)]  -> pnr(top_lvl) -> assemble(all_parts_of_design) 
@@ -1685,9 +1864,25 @@ def hardblock_parallel_flow(flow_settings):
     if(flow_settings["partition_flag"]):
       os.chdir(pnr_parallel_path)
       for param_dir in os.listdir(pnr_parallel_path):
+        continue_flag = False
         if("period" not in param_dir): 
+          os.chdir(pnr_parallel_path)
           continue
+        # print(os.getcwd())
         os.chdir(param_dir)
+        #Before anything else use filter to only run the selected params:
+        param_dict = get_params_from_str(param_dir)
+        for cur_key,cur_val in param_dict.items():
+          if cur_key in run_param_filters.keys():
+            if all(cur_val != val for val in run_param_filters[cur_key]):
+              continue_flag = True
+              break
+            else:
+              continue_flag = False
+        if(continue_flag):
+          os.chdir(pnr_parallel_path)
+          continue
+        # sys.exit(1)
         #iterate through parameterized pnr dirs
         #loop through scripts in pnr script path
         #First group the scripts according to their dimensions
@@ -1707,49 +1902,56 @@ def hardblock_parallel_flow(flow_settings):
           order_of_exec_pnr_scripts = [e[0] if len(e) == 1 else e for e in order_of_exec_pnr_scripts]
           order_of_exec_pnr_per_dim.append(order_of_exec_pnr_scripts)
 
+
         os.chdir("work")
         output_dir = os.path.join("..","outputs")
 
         cmd_series_list = []
         for inn_command_series in order_of_exec_pnr_per_dim:
+          
           #filter out commands which are out of bounds of our dims we want to evaluate
           if not any(str(dim) in inn_command_series[0] for dim in scaled_dims):
             print("dim out of dimension list, not running %s... " % (inn_command_series[0]))
             continue
-          #if theres already a design saved for the fp flow skip it
-          saved_design = os.path.join(output_dir,os.path.splitext(inn_command_series[1])[0]+"_assembled.dat")
-          if(os.path.exists(saved_design)):
-            print("found %s, Skipping..." % (saved_design))
-            continue
 
-          #if top level flow has been run only run the assembly
-          saved_tl_imp = os.path.join(os.path.splitext(inn_command_series[1])[0],flow_settings["top_level"],flow_settings["top_level"]+"_imp")
-          #if partition flow has been run only run top lvl + assembly
-          ptn_dir = os.path.join(os.path.splitext(inn_command_series[1])[0])
-          cmds = []
-          for cmd in inn_command_series:
-            if(isinstance(cmd,str)):
-              cmds.append(os.path.join("..","scripts",cmd))
-            elif(isinstance(cmd,list)):
-              blk_cmds = [os.path.join("..","scripts",blk_cmd) for blk_cmd in cmd]
-              cmds.append(blk_cmds)
-          if(os.path.isfile(saved_tl_imp)):
-            print("found top level imp, running only assembly")
-            print(os.getcwd())
-            del cmds[0:3]
-          elif(os.path.isdir(ptn_dir)):
-            print("found ptn dir, running only blocks + toplvl + assembly")
-            del cmds[0:2]
-          cmd_series_list.append(cmds)
+          if(not flow_settings["override_pnr_outputs"]):
+            #if theres already a design saved for the fp flow skip it
+            saved_design = os.path.join(output_dir,os.path.splitext(inn_command_series[1])[0]+"_assembled.dat")
+            if(os.path.exists(saved_design)):
+              print("found %s, Skipping..." % (saved_design))
+              continue
 
+            #if top level flow has been run only run the assembly
+            saved_tl_imp = os.path.join(os.path.splitext(inn_command_series[1])[0],flow_settings["top_level"],flow_settings["top_level"]+"_imp")
+            #if partition flow has been run only run top lvl + assembly
+            ptn_dir = os.path.join(os.path.splitext(inn_command_series[1])[0])
+            cmds = []
+            for cmd in inn_command_series:
+              if(isinstance(cmd,str)):
+                cmds.append(os.path.join("..","scripts",cmd))
+              elif(isinstance(cmd,list)):
+                blk_cmds = [os.path.join("..","scripts",blk_cmd) for blk_cmd in cmd]
+                cmds.append(blk_cmds)
+            if(os.path.isfile(saved_tl_imp)):
+              print("found top level imp, running only assembly")
+              del cmds[0:3]
+            elif(os.path.isdir(ptn_dir)):
+              print("found ptn dir, running only blocks + toplvl + assembly")
+              del cmds[0:2]
+            cmd_series_list.append(cmds)
+          else:
+            # cmd_series_list = order_of_exec_pnr_per_dim
+            cmd_series_list = [[os.path.join("..","scripts",cmd) for cmd in cmds] for cmds in order_of_exec_pnr_per_dim]
+
+        #flow_settings["mp_num_cores"]
         pool = mp.Pool()
         #execute all scripts
         pool.map(run_inn_dim_specific_pnr_cmd_series,cmd_series_list)
         pool.close()
         os.chdir(pnr_parallel_path)
     else:
-      #pnr_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/pnr/pnr_parallel_work"
-      pnr_parallel_work_path = os.path.join(os.getcwd(),flow_settings["top_level"],"pnr","pnr_parallel_work")
+      pnr_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/pnr/pnr_parallel_work"
+      # pnr_parallel_work_path = os.path.join(os.getcwd(),"pnr","pnr_parallel_work")
       os.chdir(pnr_parallel_work_path)
       #setup the scripts to be able to run
       pll_pnr_scripts = glob.glob(os.path.join(pnr_parallel_work_path,"scripts","*"))
@@ -1760,23 +1962,25 @@ def hardblock_parallel_flow(flow_settings):
       #Runs the parallel synthesis across params
       top_pll_synth_cmds = ["top_level_parallel.sh"]
       parallel_pnr_p = subprocess.Popen(top_pll_synth_cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      stdout, stderr = parallel_synth_p.communicate()
+      stdout, stderr = parallel_pnr_p.communicate()
 
   ########################### PARALLEL PNR SECTION #################################
   ########################### PARALLEL STA SECTION #################################
     #pnr_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/sta/sta_parallel_work"
-    sta_parallel_work_path = os.path.join(os.getcwd(),flow_settings["top_level"],"sta","sta_parallel_work")
-    os.chdir(pnr_parallel_work_path)
-    #setup the scripts to be able to run
-    pll_pnr_scripts = glob.glob(os.path.join(pnr_parallel_work_path,"scripts","*"))
-    pll_pnr_scripts.append("top_level_parallel.sh")
-    for s in pll_pnr_scripts:
-      os.chmod(s,stat.S_IRWXU)
+    if(flow_integration_settings["run_sta"]):
+      sta_parallel_work_path="/autofs/fs1.ece/fs1.eecg.vaughn/morestep/COFFE/output_files/network_on_chip/asic_work/router_wrap/sta/sta_parallel_work"
+      # sta_parallel_work_path = os.path.join(os.getcwd(),flow_settings["top_level"],"sta","sta_parallel_work")
+      os.chdir(sta_parallel_work_path)
+      #setup the scripts to be able to run
+      pll_sta_scripts = glob.glob(os.path.join(sta_parallel_work_path,"scripts","*"))
+      pll_sta_scripts.append("top_level_parallel.sh")
+      for s in pll_pnr_scripts:
+        os.chmod(s,stat.S_IRWXU)
 
-    #Runs the parallel synthesis across params
-    top_pll_synth_cmds = ["top_level_parallel.sh"]
-    parallel_pnr_p = subprocess.Popen(top_pll_synth_cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = parallel_synth_p.communicate()
+      #Runs the parallel synthesis across params
+      top_pll_synth_cmds = ["top_level_parallel.sh"]
+      parallel_sta_p = subprocess.Popen(top_pll_synth_cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      stdout, stderr = parallel_sta_p.communicate()
   ########################### PARALLEL STA SECTION #################################
   
   

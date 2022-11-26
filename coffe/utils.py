@@ -903,6 +903,8 @@ def load_hard_params(filename,cli_args=False):
         'partition_flag': False,
         'ungroup_regex': "",
         'debug_flag': False,
+        'mp_num_cores': "",
+        'parallel_hardblock_folder': ""
     }
     
 
@@ -1021,7 +1023,11 @@ def load_hard_params(filename,cli_args=False):
             hard_params["ptn_settings_file"] = str(value)
         elif param == "ungroup_regex":
             hard_params["ungroup_regex"] = str(value)
-        
+        elif param == "mp_num_cores":
+            hard_params["mp_num_cores"] = int(value)
+        elif param == "parallel_hardblock_folder":
+            hard_params["parallel_hardblock_folder"] = str(value)
+
 
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
         if param == "process_lib_paths":
