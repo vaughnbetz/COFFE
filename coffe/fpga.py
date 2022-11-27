@@ -5140,12 +5140,13 @@ class _dedicated_routing_driver(_SizableCircuit):
 class _hard_block(_CompoundCircuit):
     """ hard block class"""
 
-    def __init__(self, filename, use_tgate, cli_args=None):
+    def __init__(self, filename, use_tgate, run_options):
         #Call the hard block parameter parser
-        self.parameters = utils.load_hard_params(filename,cli_args)
-        ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
-        #put ptn_params into hardblock params 
-        self.parameters["ptn_params"] = ptn_params
+        self.parameters = utils.load_hard_params(filename,run_options)
+        if(self.parameters["partition_flag"]):
+            ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
+            #put ptn_params into hardblock params 
+            self.parameters["ptn_params"] = ptn_params
         # Subcircuit name
         self.name = self.parameters['name']
         #create the inner objects
@@ -5172,7 +5173,7 @@ class _hard_block(_CompoundCircuit):
 
     def generate_top(self):
 
-        print "Generating top-level submodules"
+        print("Generating top-level submodules")
 
         self.mux.generate_top()
         if self.parameters['num_dedicated_outputs'] > 0:
@@ -5195,8 +5196,7 @@ class _hard_block(_CompoundCircuit):
         sys.exit(1)
     
     def generate_top_parallel(self):
-        print "Generating top-level submodules"
-
+        print("Generating top-level submodules")
         self.mux.generate_top()
         if self.parameters['num_dedicated_outputs'] > 0:
             self.dedicated.generate_top()
@@ -5217,8 +5217,19 @@ class _hard_block(_CompoundCircuit):
     def generate_parallel_results(self):
         print("Generating hardblock parallel results by parsing existing outputs...")
         out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
-        lowest_cost_results = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
-        print(lowest_cost_results)          
+        for flow_type, flow_dict in out_dict.items():
+            print(flow_type)
+            for params_key, param_vals in flow_dict.items():
+                print(params_key)
+                for key,val in param_vals.items():
+                    print(key,val)
+        hardblock_functions.plot_results(out_dict)
+        lowest_cost_dict = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
+        for flow_type, cost_dict in lowest_cost_dict.items():
+            print(flow_type)
+            for k,v in cost_dict.items():
+                print(k,v)
+        
         sys.exit(1)
 
 
@@ -5389,7 +5400,7 @@ class FPGA:
         self.hard_block_files = self.specs.hb_files
         #self.hard_block_files = {}
         for name in self.hard_block_files:
-            hard_block = _hard_block(name, self.specs.use_tgate)
+            hard_block = _hard_block(name, self.specs.use_tgate,run_options)
             self.hardblocklist.append(hard_block)
 
 

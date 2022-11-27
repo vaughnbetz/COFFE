@@ -510,7 +510,7 @@ def load_arch_params(filename):
         'FAs_per_flut':2,
         'hb_files' : [],
         'arch_out_folder': "None",
-        'coffe_design_out_folder' : "",
+        # 'coffe_design_out_folder' : "",
         # 'coffe_repo_path' : "None"
     }
 
@@ -661,8 +661,8 @@ def load_arch_params(filename):
             arch_params['hb_files'].append(value)
         elif param == 'arch_out_folder':
             arch_params['arch_out_folder'] = value
-        elif param == 'coffe_design_out_folder':
-            arch_params['coffe_design_out_folder'] = os.path.expanduser(str(value))
+        # elif param == 'coffe_design_out_folder':
+            # arch_params['coffe_design_out_folder'] = os.path.expanduser(str(value))
         # elif param == 'coffe_repo_path':
         #     arch_params['coffe_repo_path'] = str(value)
 
@@ -688,15 +688,25 @@ def sanatize_str_input_to_list(value):
     vals = (value.strip("\"")).split(" ")
     return vals
 
-def check_hard_params(hard_params,optional_params):
+def check_hard_params(hard_params,run_options):
     """
     This function checks the hardblock/process parameters to make sure that all the parameters have been read in.
     Right now, this functions just checks really basic stuff like 
     checking for unset values
     """
+    #These are optional parameters which have been determined to be optional for all run options
+    optional_params = ["process_params_file","mode_signal","hb_run_type"]#,"ptn_settings_file"]
+    if(hard_params["partition_flag"] == False):
+        optional_params.append("ptn_settings_file")
+        #ungrouping regex is required to partition design
+        optional_params.append("ungroup_regex")     
+    if(not run_options.parallel_hb_flow and not run_options.parse_pll_hb_flow and not run_options.gen_hb_scripts):
+        optional_params.append("parallel_hardblock_folder")
+        optional_params.append("mp_num_cores")
 
     #TODO make this sort of a documentation for each parameter
     for key,val in hard_params.items():
+        #Checks to see if value in parameter dict is unset, if its in the optional params list for this run type then it can be ignored
         if ((val == "" or val == -1 or val == -1.0 or val == []) and key not in optional_params):
             print("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key))
             sys.exit(1)
@@ -826,7 +836,7 @@ def load_ptn_params(filename):
     ptn_params["ptn_list"] = ptn_list
     return ptn_params
 
-def load_hard_params(filename,cli_args=False):
+def load_hard_params(filename,run_options):
     """ Parse the hard block description file and load values into dictionary. 
         Returns this dictionary.
     """
@@ -898,7 +908,7 @@ def load_hard_params(filename,cli_args=False):
         'process_params_file': "",
         'pnr_tool': "",
         'process_size': "",
-        'hb_run_type': "",
+        'hb_run_type': "comb",
         'ptn_settings_file': "",
         'partition_flag': False,
         'ungroup_regex': "",
@@ -1144,9 +1154,7 @@ def load_hard_params(filename,cli_args=False):
             
         process_param_file.close()
     #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
-    optional_params = ["process_params_file","mode_signal","hb_run_type","ptn_settings_file"]
-    check_hard_params(hard_params,optional_params)
-
+    check_hard_params(hard_params,run_options)
     return hard_params
 
 

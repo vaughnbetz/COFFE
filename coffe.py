@@ -84,25 +84,15 @@ arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['a
 if(args.hardblock_only):
   # Change to the architecture directory
   for hardblock_fname in arch_params_dict["hb_files"]:
-    hard_block = fpga._hard_block(hardblock_fname,False)
-    asic_work_dir = "asic_work"
-    asic_work_path = os.path.join(arch_params_dict["coffe_design_out_folder"],asic_work_dir)
-    if(not os.path.isdir(asic_work_path)):
-      os.mkdir(asic_work_path)
-    os.chdir(asic_work_path)
+    hard_block = fpga._hard_block(hardblock_fname,False,args)
+    os.chdir(arch_folder)
     if(args.gen_hb_scripts):
       hard_block.generate_hb_scripts()
     elif(args.parallel_hb_flow):
-      # asic_work_dir = "asic_work"
-      # asic_work_path = os.path.join(arch_params_dict["coffe_design_out_folder"],asic_work_dir)
-      # if(not os.path.isdir(asic_work_path)):
-        # os.mkdir(asic_work_path)
-      # os.chdir(asic_work_path)
       hard_block.generate_top_parallel()
     elif(args.parse_pll_hb_flow):
       hard_block.generate_parallel_results()
     else:
-      os.chdir(arch_folder)
       hard_block.generate_top()
   
 else:
