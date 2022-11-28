@@ -5147,6 +5147,10 @@ class _hard_block(_CompoundCircuit):
             ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
             #put ptn_params into hardblock params 
             self.parameters["ptn_params"] = ptn_params
+        if(os.path.isfile(self.parameters["run_settings_file"])):
+            run_params = utils.load_run_params(self.parameters["run_settings_file"])
+            self.parameters["run_params"] = run_params
+
         # Subcircuit name
         self.name = self.parameters['name']
         #create the inner objects
@@ -5205,6 +5209,7 @@ class _hard_block(_CompoundCircuit):
         print("Running Parallel ASIC flow for hardblock...")
         self.flow_results = hardblock_functions.hardblock_parallel_flow(self.parameters)
         print("Finished hardblock flow run")
+        sys.exit(1)
 
         #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
         self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
@@ -5216,21 +5221,20 @@ class _hard_block(_CompoundCircuit):
 
     def generate_parallel_results(self):
         print("Generating hardblock parallel results by parsing existing outputs...")
-        out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
+        report_csv_fname, out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
         for flow_type, flow_dict in out_dict.items():
             print(flow_type)
             for params_key, param_vals in flow_dict.items():
                 print(params_key)
                 for key,val in param_vals.items():
                     print(key,val)
-        hardblock_functions.plot_results(out_dict)
         lowest_cost_dict = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
         for flow_type, cost_dict in lowest_cost_dict.items():
             print(flow_type)
             for k,v in cost_dict.items():
                 print(k,v)
-        
-        sys.exit(1)
+        plot_return = hardblock_functions.run_plot_script(self.parameters,report_csv_fname)
+        # sys.exit(1)
 
 
     def update_area(self, area_dict, width_dict):

@@ -3,6 +3,10 @@ import csv
 import sys
 import argparse
 
+import pandas as pd
+import numpy as np
+import os, sys
+
 
 def plot_key_vs_freq(data_dict,key=None,cost=False):
     #use delay to get
@@ -86,16 +90,79 @@ def read_csv(csv_path):
         data_dict[key] = out_list[idx]
     return data_dict
 
+
+def decode_dict_dtypes(param_dtype_dict,param_key,val):
+  dtype_conv = param_dtype_dict[param_key]
+  ret_val = np.NaN
+  if(val != "NA"):
+    if(dtype_conv == "str"):
+        ret_val = str(val)
+    elif(dtype_conv == "float"):
+        ret_val = float(val)
+    elif(dtype_conv == "int"):
+        ret_val = int(val)
+    elif(dtype_conv == "bool"):
+        ret_val = (val == "True")
+
+  return ret_val
+
+def gen_plots_from_csv(report_dict):
+    param_dtype_dict = {
+      "period" : "float",
+      "wiremdl" : "str",
+      "mlayer" : "int",
+      "util" : "float",
+      "dimlen" : "float",
+      "delay" : "float",
+      "area" : "float",
+      "power" : "float",
+      "timing_met_setup" : "bool",
+      "timing_met_hold" : "bool",
+      "mode" : "int",
+      "pnr" : "bool",
+      "synth" : "bool",
+      "sta" : "bool"
+    }
+
+    df = pd.DataFrame.from_dict(report_dict)
+
+    for col in df:
+        df[col] = df[col].apply(lambda x: decode_dict_dtypes(param_dtype_dict,col,x))
+
+    pnr_df = df[df["pnr"] == True]
+    for period in df.period.unique():
+        fig_df = pnr_df[pnr_df["period"] == float(period)]
+        fig,(ax1,ax2,ax3) = plt.subplots(nrows=1,ncols=3,figsize=(20,6))
+        axes = [ax1,ax2,ax3]
+        fig_df["color"] = np.where(fig_df["timing_met_setup"] == False,"red","blue")
+        fig_df.plot.scatter(ax=ax1,x='dimlen',y='delay',style='x',c='color')
+        fig_df.plot.scatter(ax=ax2,x='dimlen',y='area',style='x',c='color')
+        fig_df.plot.scatter(ax=ax3,x='dimlen',y='power',style='x',c='color')
+        ax1.set_ylabel("Delay (ps)")
+        ax2.set_ylabel("Area (um^2)")
+        ax3.set_ylabel("Power (uW)")
+        for ax in axes:
+            ax.set_xlabel("Length of router links (um)")
+        fig_name = os.path.join("/fs1/eecg/vaughn/morestep/COFFE/output_files/network_on_chip/condensed_results",str(period)+"_area_delay_fig.png")
+        # print(fig_name)
+        fig.savefig(fig_name)
+        # print(pnr_df)
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c','--csv_path',type=str,help="path to condensed csv file")
+    parser.add_argument('-p','--csv_pll_path',type=str,help="path to condensed pll csv results file",default="")
+    parser.add_argument('-c','--csv_path',type=str,help="path to condensed csv file",default="")
     args = parser.parse_args()
     arg_dict = vars(args)
-    data_dict = read_csv(arg_dict['csv_path'])
-    plot_key_vs_freq(data_dict,"area")
-    plot_key_vs_freq(data_dict,"delay")
-    plot_key_vs_freq(data_dict,"power")
-    plot_key_vs_freq(data_dict,cost=True)
+    if(arg_dict["csv_pll_path"] != ""):
+        pll_data_dict = read_csv(arg_dict['csv_pll_path'])
+        gen_plots_from_csv(pll_data_dict)
+    if(arg_dict["csv_path"] != ""):
+        data_dict = read_csv(arg_dict['csv_path'])
+        plot_key_vs_freq(data_dict,"area")
+        plot_key_vs_freq(data_dict,"delay")
+        plot_key_vs_freq(data_dict,"power")
+        plot_key_vs_freq(data_dict,cost=True)
 
 if __name__ == "__main__":
     main()

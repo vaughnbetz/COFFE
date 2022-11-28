@@ -511,7 +511,7 @@ def load_arch_params(filename):
         'hb_files' : [],
         'arch_out_folder': "None",
         # 'coffe_design_out_folder' : "",
-        # 'coffe_repo_path' : "None"
+        # 'coffe_repo_path' : "~/COFFE"
     }
 
     params_file = open(filename, 'r')
@@ -664,7 +664,7 @@ def load_arch_params(filename):
         # elif param == 'coffe_design_out_folder':
             # arch_params['coffe_design_out_folder'] = os.path.expanduser(str(value))
         # elif param == 'coffe_repo_path':
-        #     arch_params['coffe_repo_path'] = str(value)
+        #     arch_params['coffe_repo_path'] = os.path.expanduser(str(value))
 
     params_file.close()
     
@@ -695,14 +695,18 @@ def check_hard_params(hard_params,run_options):
     checking for unset values
     """
     #These are optional parameters which have been determined to be optional for all run options
-    optional_params = ["process_params_file","mode_signal","hb_run_type"]#,"ptn_settings_file"]
+    optional_params = ["process_params_file","mode_signal","hb_run_type","condensed_results_folder","run_settings_file"]#,"ptn_settings_file"]
     if(hard_params["partition_flag"] == False):
         optional_params.append("ptn_settings_file")
         #ungrouping regex is required to partition design
         optional_params.append("ungroup_regex")     
     if(not run_options.parallel_hb_flow and not run_options.parse_pll_hb_flow and not run_options.gen_hb_scripts):
         optional_params.append("parallel_hardblock_folder")
+    if(not run_options.parallel_hb_flow):
         optional_params.append("mp_num_cores")
+    # if(not run_options.parse_pll_hb_flow):
+    #     optional_params.append("coffe_repo_path")
+    
 
     #TODO make this sort of a documentation for each parameter
     for key,val in hard_params.items():
@@ -717,20 +721,91 @@ def check_hard_params(hard_params,run_options):
             print("param process_size is unset, please go to your hardblock/process params file and set it")
             sys.exit(1)
 
+
+
+def load_run_params(filename):
+
+    run_flow_stages = ["synth","pnr","sta"]
+    per_flow_blocks = ["param_filters"]
+    param_block_begin_str = "begin"
+    begin_res = [re.compile(".*"+flow_stage+"\s+"+param_block_begin_str+".*") for flow_stage in run_flow_stages]
+    sub_begin_res = [re.compile(".*"+per_flow_block+"\s+"+param_block_begin_str+".*") for per_flow_block in per_flow_blocks]
+    end_re = re.compile(".*end.*")
+    # end_res = [re.compile(".*"+flow_stage+"\s+"+param_block_end_str+".*") for flow_stage in run_flow_stages]
+    fd = open(filename,"r")
+    #read in file and get a list of all lines without comments
+    run_params_text = fd.read()
+    run_params_list = run_params_text.split("\n")
+    run_params_clean = [line for line in run_params_list if not (line.startswith("#") or line == "")]
+    
+    run_params_dict = {}
+    
+
+    flow_str = ""
+    per_flow_block_str = ""
+    param_nest_lvl = 0
+
+    for line in run_params_clean:
+        skip_parse = 0
+        for idx,begin_re in enumerate(begin_res):
+            if begin_re.search(line):
+                flow_str = run_flow_stages[idx]
+                flow_tmp_dict = {}
+                flow_tmp_dict[flow_str] = {}
+                param_nest_lvl += 1
+                skip_parse = 1
+                break
+        for idx,sub_begin_re in enumerate(sub_begin_res):
+            if sub_begin_re.search(line):
+                per_flow_block_str = per_flow_blocks[idx]
+                flow_tmp_dict[flow_str][per_flow_block_str] = {}
+                param_nest_lvl += 1
+                skip_parse = 1
+                break
+        if(end_re.search(line)):
+            param_nest_lvl -= 1
+            if(param_nest_lvl == 0):
+                run_params_dict[flow_str] = flow_tmp_dict[flow_str]
+                flow_str = ""
+            elif(param_nest_lvl == 1):
+                per_flow_block_str = ""
+            skip_parse = 1
+        
+        if(skip_parse):
+            continue
+        parsed_line = parse_ptn_param_line(line)
+
+        if(flow_str != "" and per_flow_block_str != ""):
+            if(not isinstance(parsed_line[1],list)):
+                flow_tmp_dict[flow_str][per_flow_block_str][parsed_line[0]] = [parsed_line[1]]
+            else:
+                flow_tmp_dict[flow_str][per_flow_block_str][parsed_line[0]] = parsed_line[1]
+        elif(flow_str != ""):
+            flow_tmp_dict[flow_str][parsed_line[0]] = parsed_line[1]
+
+    #need to make sure all elements in the dict are stored as list
+    
+    fd.close()
+    return run_params_dict
+
 def parse_ptn_param_line(line):
+    # white_sp_re = re.compile("\s+")
     #This is a poor parser, just need it to work, when coffe is updated to python3 this can be done via yaml file
     split_line = line.split(":")
     #this list contains all characters which can legally bound ptn parameters
-    valid_char_list = ["\"","[","]"]
+    valid_char_start_list = ["\"","["]
+    valid_char_end_list = ["\"","]"]
     parsed_line = []
+    # print(split_line)
     for line in split_line:
         read_char_flag = 0
+        # t_line = white_sp_re.sub(string=line,repl="")
         clean_line = ""
         bounds_char= ""
         for char in line:
             #Works for parsing strings
-            if(char in valid_char_list and not read_char_flag):
-                bounds_char = char
+            if(char in valid_char_start_list and not read_char_flag):
+                bounds_char = valid_char_end_list[valid_char_start_list.index(char)]
                 read_char_flag = 1
                 continue
             elif(char == bounds_char and read_char_flag):
@@ -739,22 +814,23 @@ def parse_ptn_param_line(line):
             if(read_char_flag):
                 clean_line = clean_line + char
         parsed_line.append(clean_line)
+    # print(parsed_line)
     #if there are any lists in the parsed_line we can make them into a sublist for convenience
     updated_parsed_line = []
     #all characters matching below regex are removed from the line
-    clean_re = re.compile("\[|\]|\s")
+    clean_re = re.compile("\[|\]|\s|\"")
     for subline in parsed_line:
+        #remove the hard brackets, quotes and spaces from the line
+        new_subline = clean_re.sub(repl="",string=subline)
         #if a comma is in the subline, it is a list
         if("," in subline):
-            #remove the hard brackets from the line
-            new_subline = clean_re.sub(repl="",string=subline)
             #seperate subline into list via comma delimiter
             new_subline = new_subline.split(",")
-        else:
-            new_subline = subline
+        # else:
+        #     new_subline = clean_re.sub(repl="",string=subline)
         updated_parsed_line.append(new_subline)
+    # print(updated_parsed_line)
     return updated_parsed_line
-
 
 def load_ptn_params(filename):
     """
@@ -768,6 +844,11 @@ def load_ptn_params(filename):
         "scaling_array": [], #list of floorplan scales to be swept across
         "fp_init_dims": [], # two element list of  
         "fp_pin_spacing": ""
+    }
+    ptn_dict = {
+        "inst_name": "",
+        "mod_name": "",
+        "fp_coords": []
     }
     top_settings_re = re.compile(".*top_settings\s+begin.*")
     ptn_begin_re = re.compile(".*ptn\s+begin.*")
@@ -803,11 +884,7 @@ def load_ptn_params(filename):
             elif(read_ptn_top_setting_flag):
                 if(len(parsed_line) > 1):
                     ptn_params[parsed_line[0]] = parsed_line[1]
-    ptn_dict = {
-            "inst_name": "",
-            "mod_name": "",
-            "fp_coords": []
-        }
+
     #we will have the same number
     #some bug in python2 or something not sure but you cant assign values to dict list elements in below list in regular way
     #ptn_params["ptn_list"][ptn_idx][key] = val
@@ -834,6 +911,7 @@ def load_ptn_params(filename):
             ptn_idx += 1
 
     ptn_params["ptn_list"] = ptn_list
+    fd.close()
     return ptn_params
 
 def load_hard_params(filename,run_options):
@@ -914,7 +992,10 @@ def load_hard_params(filename,run_options):
         'ungroup_regex': "",
         'debug_flag': False,
         'mp_num_cores': "",
-        'parallel_hardblock_folder': ""
+        'parallel_hardblock_folder': "",
+        'condensed_results_folder': "",
+        'coffe_repo_path': "~/COFFE",
+        'run_settings_file': ""
     }
     
 
@@ -1036,7 +1117,13 @@ def load_hard_params(filename,run_options):
         elif param == "mp_num_cores":
             hard_params["mp_num_cores"] = int(value)
         elif param == "parallel_hardblock_folder":
-            hard_params["parallel_hardblock_folder"] = str(value)
+            hard_params["parallel_hardblock_folder"] = os.path.expanduser(str(value))
+        elif param == "run_settings_file":
+            hard_params["run_settings_file"] = os.path.expanduser(str(value))
+        elif param == "condensed_results_folder":
+            hard_params["condensed_results_folder"] = os.path.expanduser(str(value))
+        elif param == "coffe_repo_path":
+            hard_params["coffe_repo_path"] = os.path.expanduser(str(value))
 
 
         #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
@@ -1082,7 +1169,7 @@ def load_hard_params(filename,run_options):
             hard_params['wire_selection'].append(value)
         elif param == "process_size":
             hard_params["process_size"] = value
-    
+            
     hard_file.close()
 
     if hard_params["process_params_file"] != "":
@@ -1152,8 +1239,8 @@ def load_hard_params(filename,run_options):
             elif param == "process_size":
                 hard_params["process_size"] = value
             
+            
         process_param_file.close()
-    #TODO make this more accessable outside of the code, but for now this is how I declare optional parameters
     check_hard_params(hard_params,run_options)
     return hard_params
 
@@ -1244,7 +1331,7 @@ def check_arch_params (arch_params, filename):
         print_error_not_compatable("finfet", "BRAM")           
     if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
         print_error_not_compatable("finfet", "flut")      
-    # if arch_params['coffe_repo_path'].split("/")[-1] != "COFFE":
+    # if arch_params['coffe_repo_path'].split("/")[-1] != "COFFE" or os.path.isdir(arch_params['coffe_repo_path']):
     #     print_error (arch_params['coffe_repo_path'],"coffe_repo_path",filename)
 
 
