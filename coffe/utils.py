@@ -818,18 +818,17 @@ def parse_ptn_param_line(line):
     #if there are any lists in the parsed_line we can make them into a sublist for convenience
     updated_parsed_line = []
     #all characters matching below regex are removed from the line
-    clean_re = re.compile("\[|\]|\s|\"")
+    list_clean_re = re.compile("\[|\]|\s")
+    gen_clean_re = re.compile("\"")
     for subline in parsed_line:
         #remove the hard brackets, quotes and spaces from the line
-        new_subline = clean_re.sub(repl="",string=subline)
         #if a comma is in the subline, it is a list
+        new_subline = gen_clean_re.sub(repl="",string=subline)
         if("," in subline):
             #seperate subline into list via comma delimiter
-            new_subline = new_subline.split(",")
-        # else:
-        #     new_subline = clean_re.sub(repl="",string=subline)
+            new_subline = list_clean_re.sub(repl="",string=new_subline)
+            new_subline = new_subline.split(",")            
         updated_parsed_line.append(new_subline)
-    # print(updated_parsed_line)
     return updated_parsed_line
 
 def load_ptn_params(filename):
@@ -936,7 +935,6 @@ def load_hard_params(filename,run_options):
         'power_scale_factor': -1.0,
         'input_usage': -1.0,
         # Flow Settings:
-        'hb_run_type': "",
         'design_folder': "",
         'design_language': '',
         'clock_pin_name': "",
@@ -986,7 +984,6 @@ def load_hard_params(filename,run_options):
         'process_params_file': "",
         'pnr_tool': "",
         'process_size': "",
-        'hb_run_type': "comb",
         'ptn_settings_file': "",
         'partition_flag': False,
         'ungroup_regex': "",
@@ -1241,6 +1238,17 @@ def load_hard_params(filename,run_options):
             
             
         process_param_file.close()
+
+    #This is a dict containing the possible parameters for the hardblock flow
+    input_param_options = {
+        "period" : "float",
+        "wiremdl" : "str",
+        "mlayer" : "int",
+        "util" : "float",
+        "dimlen" : "float",
+        "mode" : "int"
+    }
+    hard_params["input_param_options"] = input_param_options
     check_hard_params(hard_params,run_options)
     return hard_params
 

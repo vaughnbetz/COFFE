@@ -5197,44 +5197,33 @@ class _hard_block(_CompoundCircuit):
         print("Generating hardblock tcl scripts for Synthesis, Place and Route, and Static Timing Analysis")
         hardblock_functions.hardblock_script_gen(self.parameters)
         print("Finished Generating scripts, exiting...")
-        sys.exit(1)
     
     def generate_top_parallel(self):
         print("Generating top-level submodules")
-        self.mux.generate_top()
-        if self.parameters['num_dedicated_outputs'] > 0:
-            self.dedicated.generate_top()
+        # UNCOMMENT BELOW WHEN PLL FLOW RETURNS BEST RESULT
+        # self.mux.generate_top()
+        # if self.parameters['num_dedicated_outputs'] > 0:
+        #     self.dedicated.generate_top()
 
-        # hard block flow
+        ## hard block flow
         print("Running Parallel ASIC flow for hardblock...")
-        self.flow_results = hardblock_functions.hardblock_parallel_flow(self.parameters)
+        #self.flow_results = 
+        hardblock_functions.hardblock_parallel_flow(self.parameters)
         print("Finished hardblock flow run")
-        sys.exit(1)
 
-        #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
-        self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
+        ##the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
+        # self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
 
-        self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+        # self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
 		
-        if self.parameters['num_dedicated_outputs'] > 0:
-            self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+        # if self.parameters['num_dedicated_outputs'] > 0:
+        #     self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
 
     def generate_parallel_results(self):
         print("Generating hardblock parallel results by parsing existing outputs...")
         report_csv_fname, out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
-        for flow_type, flow_dict in out_dict.items():
-            print(flow_type)
-            for params_key, param_vals in flow_dict.items():
-                print(params_key)
-                for key,val in param_vals.items():
-                    print(key,val)
         lowest_cost_dict = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
-        for flow_type, cost_dict in lowest_cost_dict.items():
-            print(flow_type)
-            for k,v in cost_dict.items():
-                print(k,v)
         plot_return = hardblock_functions.run_plot_script(self.parameters,report_csv_fname)
-        # sys.exit(1)
 
 
     def update_area(self, area_dict, width_dict):

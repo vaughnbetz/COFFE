@@ -53,10 +53,6 @@ print ("Man is a tool-using animal.")
 print ("Without tools he is nothing, with tools he is all.")
 print ("                           - Thomas Carlyle\n\n")
 
-# TODO: see the effect on disabling floorplanning on results and runtime
-# if it is worth it we could add an argument which could disable 
-# floorplanning for a quicker run
-
 # Parse the input arguments with argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('arch_description')
@@ -80,6 +76,8 @@ args = parser.parse_args()
 
 # Load the input architecture description file
 arch_params_dict = utils.load_arch_params(args.arch_description)
+# Make the top-level spice folder if it doesn't already exist
+# if it's already there delete its content
 arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['arch_out_folder'])
 if(args.hardblock_only):
   # Change to the architecture directory
@@ -97,9 +95,6 @@ if(args.hardblock_only):
   
 else:
   is_size_transistors = not args.no_sizing
-  # Make the top-level spice folder if it doesn't already exist
-  # if it's already there delete its content
-  # arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['arch_out_folder'])
 
   # Print the options to both terminal and report file
   report_file_path = os.path.join(arch_folder, "report.txt") 
@@ -128,6 +123,7 @@ else:
   # Change to the architecture directory
   os.chdir(arch_folder)  
 
+  print(os.getcwd())
   # Generate FPGA and associated SPICE files
   fpga_inst.generate(is_size_transistors) 
 
