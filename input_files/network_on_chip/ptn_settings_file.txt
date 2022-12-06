@@ -1,0 +1,43 @@
+############################################ INFO ############################################
+#This file contains settings for floorplanning and partitioning in pnr flow
+############################################ INFO ############################################
+
+
+################## PARTITION SETTINGS #################
+## I basically just used the format of a python dict to read these in
+ptn begin
+    "inst_name": "gen_port_regs[1].channel_in_ff",
+    "mod_name": "c_dff_1_7",
+    "fp_coords": [43.0, 920.0, 68.0, 953.0]
+end
+ptn begin
+    "inst_name": "gen_port_regs[1].channel_out_ff",
+    "mod_name": "c_dff_1_6",
+    "fp_coords": [73.0, 920.0, 98.0, 953.0]
+end
+ptn begin
+    "inst_name": "genblk2.vcr",
+    "mod_name": "vcr_top_1",
+    "fp_coords": [100.0, 100.0, 440.0, 440.0]
+end
+ptn begin
+    "inst_name": "gen_port_regs[2].channel_in_ff",
+    "mod_name": "c_dff_1_5",
+    "fp_coords": [927.0, 41.0, 956.0, 68.0]
+end
+ptn begin
+    "inst_name": "gen_port_regs[2].channel_out_ff",
+    "mod_name": "c_dff_1_4",
+    "fp_coords":  [927.0, 73.0, 956.0, 100.0]
+end
+################## FLOORPLANNING SETTINGS #################
+#scaled array used as higher level param in ptn_settings dict
+#use below format for lists related to key on left
+################## THESE CAN BE USED FOR GEN AND RUN SETTINGS #########################
+top_settings begin
+    "scaling_array" : [1,4,7]
+    "fp_init_dims" : [948.4,947.0]
+    "fp_pin_spacing" : "5"
+end
+#[1,2,3,4,5,8,10]
+  

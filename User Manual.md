@@ -22,12 +22,57 @@ To support arbitrary hybrid block modelling, you will also need a working versio
 We expect newer versions of Synopsys Design Compiler to still work with our flow, but newer versions of Cadence EDI will require changing the scripts.
 To obtain the switching activity of hybrid blocks for more accurate power estimation, you will also need Mentor modelsim. We tested this feature using Mentor Modelsim 10 and we expect other version to continue to work with COFFE.
 
+To set up conda environment one can run the following command to create a conda env from the yaml in COFFE repo and source the env:
+conda create -f conda_env/env.yaml 
+source activate coffe-env
   
 ## How to Run
 
 To run COFFE, simply run coffe.py and follow the instructions.
 There are several sample input files in the test directory accompanying COFFE which stimulate all existing features. These files describe what each of the parameters are; simply read them and change them to form your desired architecture.
 We have also included several tests with COFFE which should smoothly run when using the latest version. To test your setup, you can run those.
+
+# How to run the partitioned NoC flow
+This flow uses the network on chip from https://searchworks.stanford.edu/view/9699342
+
+This test runs the parallel partition ASIC flow.
+
+The following test was tested with the following tools:
+-Synopsys Design Compiler 2017
+-Cadence Innovus 2021
+
+```console
+which dc_shell-t
+#if using encounter
+which encounter
+#if using innovus
+which innovus
+which genus
+```
+
+run the following command:
+
+```console
+python2 coffe.py -p -ho input_files/network_on_chip/noc_coffe_params.txt
+```
+# How to parse partitioned NoC flow results
+
+Make sure the following hardblock settings are set:
+
+"coffe_repo_path"
+This is used to find other python files in coffe in the analyze_results dir
+Ex.
+coffe_repo_path=~/COFFE
+
+"condensed_results_folder"
+This is where parsed results will be generated: 
+Ex.
+condensed_results_folder=~/COFFE/output_files/network_on_chip/condensed_results
+
+```console
+python2 coffe.py -r -ho input_files/network_on_chip/noc_coffe_params.txt
+```
+
 
 # How to run a full test for ASIC flow (using stratix III like DSP)
 Note:

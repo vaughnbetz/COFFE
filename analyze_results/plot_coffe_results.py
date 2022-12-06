@@ -3,6 +3,10 @@ import csv
 import sys
 import argparse
 
+import pandas as pd
+import numpy as np
+import os, sys
+
 
 def plot_key_vs_freq(data_dict,key=None,cost=False):
     #use delay to get
@@ -86,16 +90,110 @@ def read_csv(csv_path):
         data_dict[key] = out_list[idx]
     return data_dict
 
+
+def decode_dict_dtypes(param_dtype_dict,param_key,val):
+  dtype_conv = param_dtype_dict[param_key]
+  ret_val = np.NaN
+  if(val != "NA"):
+    if(dtype_conv == "str"):
+        ret_val = str(val)
+    elif(dtype_conv == "float"):
+        ret_val = float(val)
+    elif(dtype_conv == "int"):
+        ret_val = int(val)
+    elif(dtype_conv == "bool"):
+        ret_val = (val == "True")
+
+  return ret_val
+
+def gen_plots_from_csv(report_dict,partition_flag,plot_out_dir):
+    #TODO Make this better, we need to have the same dict here as in coffe hardblock functions
+    param_dtype_dict = {
+        #input params
+        "top_level" : "str",
+        "period" : "float",
+        "wiremdl" : "str",
+        "mlayer" : "int",
+        "util" : "float",
+        "dimlen" : "float",
+        "mode" : "int",
+        "pnr" : "bool",
+        "synth" : "bool",
+        "sta" : "bool",
+        #output vals
+        "delay" : "float",
+        "area" : "float",
+        "power" : "float",
+        "timing_met_setup" : "bool",
+        "timing_met_hold" : "bool",
+    }
+
+    df = pd.DataFrame.from_dict(report_dict)
+
+    for col in df:
+        df[col] = df[col].apply(lambda x: decode_dict_dtypes(param_dtype_dict,col,x))
+
+    synth_df = df[df["synth"] == True]
+    pnr_df = df[df["pnr"] == True]
+    sta_df = df[df["sta"] == True]
+    y_axis_vars = ["delay","area","power"]
+    if(partition_flag):
+        for period in pnr_df.period.unique():
+            fig_df = pnr_df[pnr_df["period"] == float(period)]
+            #averages values across metal layers
+            # for var in y_axis_vars:
+            #     fig_df[var] = fig_df.groupby("mlayer")[var].transform('mean')
+            fig,(ax1,ax2,ax3) = plt.subplots(nrows=1,ncols=3,figsize=(20,6))
+            fig.suptitle("Innovus PNR PPA estimates varying router link length for Target Freq: %s (MHz)" % str(round(float(1000/period),3)))
+            axes = [ax1,ax2,ax3]
+            fig_df["color"] = np.where(fig_df["timing_met_setup"] == False,"red","blue")
+            fig_df.plot.scatter(ax=ax1,x='dimlen',y='delay',style='x',c='color')
+            fig_df.plot.scatter(ax=ax2,x='dimlen',y='area',style='x',c='color')
+            fig_df.plot.scatter(ax=ax3,x='dimlen',y='power',style='x',c='color')
+            ax1.set_ylabel("Delay (ns)")
+            ax2.set_ylabel("Area (um^2)")
+            ax3.set_ylabel("Power (W)")
+            for ax in axes:
+                ax.set_xlabel("Length of router links (um)")
+            fig_name = os.path.join(plot_out_dir,"period" + "_" + str(period) + "_ppa_ptn_fig.png")
+            fig.savefig(fig_name)
+    else:
+        for top_level in df.top_level.unique():
+            # for mlayer in df.mlayer.unique():
+            #     fig_df = pnr_df[pnr_df["mlayer"] == float(mlayer)]
+            fig_df = pnr_df
+            fig,(ax1,ax2,ax3) = plt.subplots(nrows=1,ncols=3,figsize=(20,6))
+            fig.suptitle("Innovus PNR PPA estimates varying target frequency")
+            axes = [ax1,ax2,ax3]
+            fig_df["color"] = np.where(fig_df["timing_met_setup"] == False,"red","blue")
+            fig_df.plot.scatter(ax=ax1,x='period',y='delay',style='x',c='color')
+            fig_df.plot.scatter(ax=ax2,x='period',y='area',style='x',c='color')
+            fig_df.plot.scatter(ax=ax3,x='period',y='power',style='x',c='color')
+            ax1.set_ylabel("Delay (ns)")
+            ax2.set_ylabel("Area (um^2)")
+            ax3.set_ylabel("Power (uW)")
+            for ax in axes:
+                ax.set_xlabel("Period (ns)")
+                #"_" + "mlayer" + "_" + str(mlayer) +
+            fig_name = os.path.join(plot_out_dir,"toplvl" + "_" + top_level +  "_ppa_fig.png")
+            fig.savefig(fig_name)
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c','--csv_path',type=str,help="path to condensed csv file")
+    parser.add_argument('-p','--csv_pll_path',type=str,help="path to condensed pll csv results file",default="")
+    parser.add_argument('-c','--csv_path',type=str,help="path to condensed csv file",default="")
+    parser.add_argument('-ptn',"--partitioned_results",action="store_true",default=False)
     args = parser.parse_args()
     arg_dict = vars(args)
-    data_dict = read_csv(arg_dict['csv_path'])
-    plot_key_vs_freq(data_dict,"area")
-    plot_key_vs_freq(data_dict,"delay")
-    plot_key_vs_freq(data_dict,"power")
-    plot_key_vs_freq(data_dict,cost=True)
+    if(arg_dict["csv_pll_path"] != ""):
+        pll_data_dict = read_csv(arg_dict['csv_pll_path'])
+        gen_plots_from_csv(pll_data_dict,arg_dict["partitioned_results"],os.path.dirname(arg_dict['csv_pll_path']))
+    if(arg_dict["csv_path"] != ""):
+        data_dict = read_csv(arg_dict['csv_path'])
+        plot_key_vs_freq(data_dict,"area")
+        plot_key_vs_freq(data_dict,"delay")
+        plot_key_vs_freq(data_dict,"power")
+        plot_key_vs_freq(data_dict,cost=True)
 
 if __name__ == "__main__":
     main()

@@ -51,37 +51,6 @@ def make_dir(dir_rel_path):
       os.mkdir(dir_rel_path)
       # print("made directory in the path\n%s" % ( os.getcwd()))
 
-#creates output directories and move to arch out folder to prepare for scripts to run
-def create_out_dirs(hard_params,arch_params):
-    gen_out_dir_name = "output_files"
-    os.chdir(arch_params["coffe_repo_path"])
-    make_dir(gen_out_dir_name)
-    os.chdir(gen_out_dir_name)
-    #make directory for this specific coffe run
-    make_dir(arch_params["coffe_design_name"])
-    os.chdir(arch_params["coffe_design_name"])
-    make_dir(hard_params["arch_dir"])
-    os.chdir(hard_params["arch_dir"])
-    arch_dir = os.getcwd()
-    os.chdir(arch_params["coffe_repo_path"])
-    #return abs path to run ASIC flow from
-    return arch_dir
-
-def modify_hb_params(hard_params,arch_params):
-    # GET DIR NAMES FROM PATHS
-    for hb_key,hb_val in hard_params.items():
-        if "folder" in hb_key:
-          #takes the abs path and gets dir name
-          out_dir_name = hb_val.split("/")[-1]
-          if("synth_" in hb_key):
-              hard_params["synth_dir"] = out_dir_name
-          elif("pr_" in hb_key):
-              hard_params["pnr_dir"] = out_dir_name
-          elif("primetime_"in hb_key):
-              hard_params["pt_dir"] = out_dir_name
-    arch_out_path = arch_params["arch_out_folder"].split("/")[-1]
-    out_dir_name = arch_out_path.split("/")[-1]
-    hard_params["arch_dir"] = out_dir_name
 
 #outputs csv to the report_csv_out dir
 def reports_to_csv(report_path):

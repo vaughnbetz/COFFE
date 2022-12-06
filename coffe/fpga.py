@@ -5140,9 +5140,17 @@ class _dedicated_routing_driver(_SizableCircuit):
 class _hard_block(_CompoundCircuit):
     """ hard block class"""
 
-    def __init__(self, filename, use_tgate):
+    def __init__(self, filename, use_tgate, run_options):
         #Call the hard block parameter parser
-        self.parameters = utils.load_hard_params(filename)
+        self.parameters = utils.load_hard_params(filename,run_options)
+        if(self.parameters["partition_flag"]):
+            ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
+            #put ptn_params into hardblock params 
+            self.parameters["ptn_params"] = ptn_params
+        if(os.path.isfile(self.parameters["run_settings_file"])):
+            run_params = utils.load_run_params(self.parameters["run_settings_file"])
+            self.parameters["run_params"] = run_params
+
         # Subcircuit name
         self.name = self.parameters['name']
         #create the inner objects
@@ -5169,7 +5177,7 @@ class _hard_block(_CompoundCircuit):
 
     def generate_top(self):
 
-        print "Generating top-level submodules"
+        print("Generating top-level submodules")
 
         self.mux.generate_top()
         if self.parameters['num_dedicated_outputs'] > 0:
@@ -5184,6 +5192,39 @@ class _hard_block(_CompoundCircuit):
 		
         if self.parameters['num_dedicated_outputs'] > 0:
             self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+
+    def generate_hb_scripts(self):
+        print("Generating hardblock tcl scripts for Synthesis, Place and Route, and Static Timing Analysis")
+        hardblock_functions.hardblock_script_gen(self.parameters)
+        print("Finished Generating scripts, exiting...")
+    
+    def generate_top_parallel(self):
+        print("Generating top-level submodules")
+        # UNCOMMENT BELOW WHEN PLL FLOW RETURNS BEST RESULT TODO integrate into custom flow
+        # self.mux.generate_top()
+        # if self.parameters['num_dedicated_outputs'] > 0:
+        #     self.dedicated.generate_top()
+
+        ## hard block flow
+        print("Running Parallel ASIC flow for hardblock...")
+        #self.flow_results = 
+        hardblock_functions.hardblock_parallel_flow(self.parameters)
+        print("Finished hardblock flow run")
+
+        ##the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
+        # self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
+
+        # self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+		
+        # if self.parameters['num_dedicated_outputs'] > 0:
+        #     self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+
+    def generate_parallel_results(self):
+        print("Generating hardblock parallel results by parsing existing outputs...")
+        report_csv_fname, out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
+        #lowest_cost_dict = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
+        plot_return = hardblock_functions.run_plot_script(self.parameters,report_csv_fname)
+
 
     def update_area(self, area_dict, width_dict):
         """ Update area. To do this, we use area_dict which is a dictionary, maintained externally, that contains
@@ -5352,7 +5393,7 @@ class FPGA:
         self.hard_block_files = self.specs.hb_files
         #self.hard_block_files = {}
         for name in self.hard_block_files:
-            hard_block = _hard_block(name, self.specs.use_tgate)
+            hard_block = _hard_block(name, self.specs.use_tgate,run_options)
             self.hardblocklist.append(hard_block)
 
 
