@@ -5200,7 +5200,7 @@ class _hard_block(_CompoundCircuit):
     
     def generate_top_parallel(self):
         print("Generating top-level submodules")
-        # UNCOMMENT BELOW WHEN PLL FLOW RETURNS BEST RESULT
+        # UNCOMMENT BELOW WHEN PLL FLOW RETURNS BEST RESULT TODO integrate into custom flow
         # self.mux.generate_top()
         # if self.parameters['num_dedicated_outputs'] > 0:
         #     self.dedicated.generate_top()
@@ -5222,7 +5222,7 @@ class _hard_block(_CompoundCircuit):
     def generate_parallel_results(self):
         print("Generating hardblock parallel results by parsing existing outputs...")
         report_csv_fname, out_dict = hardblock_functions.parse_parallel_outputs(self.parameters)
-        lowest_cost_dict = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
+        #lowest_cost_dict = hardblock_functions.find_lowest_cost_in_result_dict(self.parameters,out_dict)
         plot_return = hardblock_functions.run_plot_script(self.parameters,report_csv_fname)
 
 

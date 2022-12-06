@@ -70,7 +70,7 @@ def run_cmd(cmd_str):
   """
   runs command string in a bash shell
   """
-  # print("cwd: %s\n cmd: %s" %(os.getcwd(),cmd_str))
+  # print("%s" %(cmd_str))
   subprocess.call(cmd_str,shell=True,executable="/bin/bash")
 
 def file_write_ln(fd, line):
@@ -234,7 +234,9 @@ def write_synth_tcl(flow_settings,clock_period,wire_selection,rel_outputs=False)
     "set clk_name $my_clock_pin ",
     "create_clock -period $my_period $clk_name}",
     set_ungroup_cmd,
-    "compile_ultra",
+    # "set_app_var compile_ultra_ungroup_dw false",
+    # "set_app_var compile_seqmap_propagate_constants false",
+    "compile_ultra", #-no_autoungroup",
     "check_design >  " +                            os.path.join(report_path,"check.rpt"),
     "write -format verilog -hierarchy -output " +   os.path.join(output_path,synthesized_fname+"_hier.v"),
     "write_file -format ddc -hierarchy -output " +  os.path.join(output_path,flow_settings['top_level'] + ".ddc"),
@@ -243,9 +245,10 @@ def write_synth_tcl(flow_settings,clock_period,wire_selection,rel_outputs=False)
     "report_power > " +                             os.path.join(report_path,"power.rpt"),
     "report_area -nosplit -hierarchy > " +          os.path.join(report_path,"area.rpt"),
     "report_resources -nosplit -hierarchy > " +     os.path.join(report_path,"resources.rpt"),
-    "report_timing > " +                            os.path.join(report_path,"timing.rpt"),
     "report_design > " +                            os.path.join(report_path,"design.rpt"),
     "all_registers > " +                            os.path.join(report_path,"registers.rpt"),
+    "report_timing -delay max > " +                 os.path.join(report_path,"setup_timing.rpt"),
+    "report_timing -delay min > " +                 os.path.join(report_path,"hold_timing.rpt"),
     "change_names -hier -rule verilog ",    
     "write -f verilog -output " +                   os.path.join(output_path,synthesized_fname+"_flat.v"),
     "write_sdf " +                                  os.path.join(output_path,synthesized_fname+".sdf"),
@@ -308,7 +311,7 @@ def run_synth(flow_settings,clock_period,wire_selection):
   syn_report_path, syn_output_path = write_synth_tcl(flow_settings,clock_period,wire_selection)
   # Run the script in design compiler shell
   synth_run_cmd = "dc_shell-t -f " + "dc_script.tcl" + " | tee dc.log"
-  subprocess.call(synth_run_cmd, shell=True, executable="/bin/bash")
+  run_cmd(synth_run_cmd)
   # clean after DC!
   subprocess.call('rm -rf command.log', shell=True)
   subprocess.call('rm -rf default.svf', shell=True)
@@ -713,9 +716,9 @@ def write_innovus_assemble_script(flow_settings,ptn_dir_name,block_list,top_leve
     "report_area > " + os.path.join(report_path,ptn_dir_name, "area.rpt"),
     "summaryReport -outFile " + os.path.join(report_path,ptn_dir_name, "pr_report.txt"),
     "saveDesign " + os.path.join(output_path,ptn_dir_name + "_assembled"),
-    "saveNetlist " + os.path.join(output_path,ptn_dir_name + "_netlist.v"),
-    "rcOut -spef " +  os.path.join(output_path,ptn_dir_name + "_spef.spef"),
-    "write_sdf " + os.path.join(output_path,ptn_dir_name + "_sdf.sdf"),
+    "saveNetlist " + os.path.join(output_path,ptn_dir_name,"netlist.v"),
+    "rcOut -spef " +  os.path.join(output_path,ptn_dir_name,"spef.spef"),
+    "write_sdf " + os.path.join(output_path,ptn_dir_name,"sdf.sdf"),
     stream_out_cmd
   ]
   assemble_ptn_flow_script_fname = ptn_dir_name + "_assembly_flow.tcl"
@@ -769,6 +772,11 @@ def write_innovus_init_script(flow_settings,view_fpath,syn_output_path):
   The contents of this file were generated from using the innovus GUI
   setting relavent files/nets graphically and exporting the .globals file
   """
+  if(flow_settings["partition_flag"]):
+    init_verilog_cmd = "set init_verilog " + os.path.join(syn_output_path,"synthesized_hier.v")
+  else:
+    init_verilog_cmd = "set init_verilog " + os.path.join(syn_output_path,"synthesized_flat.v")
+
   flow_settings["lef_files"] = flow_settings["lef_files"].strip("\"")
   fname = flow_settings["top_level"]+"_innovus_init.tcl"
   file = open(fname,"w")
@@ -793,7 +801,8 @@ def write_innovus_init_script(flow_settings,view_fpath,syn_output_path):
     "set init_mmmc_file {" + view_fpath + "}",
     "set init_pwr_net " + flow_settings["pwr_net"],
     "set init_top_cell " + flow_settings["top_level"],
-    "set init_verilog " + os.path.join(syn_output_path,"synthesized_hier.v"),
+    #"set init_verilog " + os.path.join(syn_output_path,"synthesized_hier.v"),
+    init_verilog_cmd,
     "get_message -id GLOBAL-100 -suppress",
     "get_message -id GLOBAL-100 -suppress",
     "set latch_time_borrow_mode max_borrow",
@@ -1132,14 +1141,15 @@ def run_pnr(flow_settings,metal_layer,core_utilization,synth_report_str,syn_outp
   if(flow_settings["pnr_tool"] == "encounter"):
     write_enc_script(flow_settings,metal_layer,core_utilization)
     copy_logs_cmd_str = "cp " + "edi.log " + "edi.tcl " + "edi.conf " + "encounter.log " + "encounter.cmd " + report_dest_str
-    subprocess.call('encounter -nowin -init edi.tcl | tee edi.log', shell=True,executable="/bin/bash") 
+    encounter_cmd = "encounter -nowin -init edi.tcl | tee edi.log"
+    run_cmd(encounter_cmd)
   elif(flow_settings["pnr_tool"] == "innovus"):
     view_fpath = write_innovus_view_file(flow_settings,syn_output_path)
     init_script_fname = write_innovus_init_script(flow_settings,view_fpath,syn_output_path)
     innovus_script_fname, pnr_output_path = write_innovus_script(flow_settings,metal_layer,core_utilization,init_script_fname,cts_flag=False)
     run_innovus_cmd = "innovus -no_gui -init " + innovus_script_fname + " | tee inn.log"
     copy_logs_cmd_str = " ".join(["cp", "inn.log", init_script_fname, view_fpath, os.path.join(work_dir,innovus_script_fname), report_dest_str])
-    subprocess.call(run_innovus_cmd, shell=True,executable="/bin/bash") 
+    run_cmd(run_innovus_cmd)
 
   # read total area from the report file:
   file = open(os.path.expanduser(flow_settings['pr_folder']) + "/pr_report.txt" ,"r")
@@ -1210,9 +1220,9 @@ def write_pt_power_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_ou
 
   if "ptn" in pnr_output_folder.split("/")[-1]:
     report_prefix = pnr_output_folder.split("/")[-1]
-    report_power_cmd = "report_timing > " + os.path.join(report_path,report_prefix+"_power.rpt")
+    report_power_cmd = "report_power > " + os.path.join(report_path,report_prefix+"_power.rpt")
   else:
-    report_power_cmd = "report_timing > " + os.path.join(report_path,"power.rpt")
+    report_power_cmd = "report_power > " + os.path.join(report_path,"power.rpt")
 
   file = open(fname, "w")
   file.write("set sh_enable_page_mode true \n")
@@ -1239,9 +1249,8 @@ def write_pt_power_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_ou
     file.write("set_switching_activity -static_probability " + str(flow_settings['static_probability']) + " -toggle_rate " + str(flow_settings['toggle_rate']) + " -base_clock $my_clock_pin -type inputs \n")
   #file.write("read_saif -input saif.saif -instance_name testbench/uut \n")
   #file.write("read_vcd -input ./modelsim_dir/vcd.vcd \n")
-  file.write("read_parasitics -increment " + os.path.join(pnr_output_folder,'spef.spef') + "\n")
+  file.write("read_parasitics -increment " + os.path.join(pnr_output_folder,'spef.spef') + "\n")  
   #file.write("update_power \n")
-  # file.write("report_power > " + os.path.join(report_path,"power.rpt") + " \n")
   file.write(report_power_cmd + " \n")
   file.write("quit\n")
   file.close()
@@ -1259,8 +1268,10 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
   if "ptn" in pnr_output_path.split("/")[-1]:
     report_prefix = pnr_output_path.split("/")[-1]
     report_timing_cmd = "report_timing > " + os.path.join(report_path,report_prefix+"_timing.rpt")
+    report_power_cmd = "report_power > " + os.path.join(report_path,report_prefix + "_power.rpt")
   else:
     report_timing_cmd = "report_timing > " + os.path.join(report_path,"timing.rpt")
+    report_power_cmd = "report_power > " + os.path.join(report_path,"power.rpt")
 
 
   # if mode_enabled and x <2**len(flow_settings['mode_signal']):
@@ -1297,11 +1308,10 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
     #Standard Parasitic Exchange Format. File format to save parasitic information extracted by the place and route tool.
     "read_parasitics -increment " + pnr_output_path + "/spef.spef",
     report_timing_cmd,
-    # "report_timing > " + os.path.join(report_path,report_prefix "timing.rpt"),
-    # "set power_enable_analysis TRUE",
-    # "set power_analysis_mode \"averaged\"",
-    # switching_activity_cmd,
-    # "report_power > " + os.path.join(report_path,report_prefix + "power.rpt"),
+    "set power_enable_analysis TRUE",
+    "set power_analysis_mode \"averaged\"",
+    switching_activity_cmd,
+    report_power_cmd,
     "quit",
   ]
   file_lines = flatten_mixed_list(file_lines)
@@ -1327,7 +1337,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
   pt_timing_fpath,timing_report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,x,pnr_output_path)
   # run prime time, by getting abs path from writing the script, we can run the command in different directory where the script exists
   run_pt_timing_cmd = "dc_shell-t -f " + pt_timing_fpath + " | tee pt_timing.log"
-  subprocess.call(run_pt_timing_cmd, shell=True,executable="/bin/bash")
+  run_cmd(run_pt_timing_cmd)
   # Read timing parameters
   file = open(os.path.join(timing_report_path,"timing.rpt"),"r")
   for line in file:
@@ -1340,9 +1350,12 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
   except NameError:
     total_delay =  float(data_arrival_time[0])
   file.close()
+  
   write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,x,pnr_output_path)
   # run prime time
-  subprocess.call('dc_shell-t -f primetime_power.tcl | tee pt_pwr.log', shell=True,executable="/bin/bash") 
+  pt_pwr_cmd = "dc_shell-t -f primetime_power.tcl | tee pt_pwr.log"
+  run_cmd(pt_pwr_cmd)
+  
   #copy reports and logs to a unique dir in pt dir
   pt_report_str = pnr_report_str + "_" + "mode_" + str(x)
   report_dest_str = os.path.expanduser(flow_settings['primetime_folder']) + "/" + pt_report_str + "_reports"
@@ -1393,12 +1406,13 @@ def write_param_flow_stage_bash_script(flow_settings,param_path):
       for script in os.listdir(os.path.join(param_path,"scripts")):
         #if the script uses ptn generated netlist
         if("dimlen" in script):
-          flow_cmds.append(get_sta_cmd(os.path.join("..","scripts",script) + " &"))
+          flow_cmds.append(get_sta_cmd(os.path.join("..","scripts",script)) + " &")
       flow_cmds.append("wait")
       flow_cmd = "\n".join(flow_cmds)
     else:
       script_rel_path = os.path.join("..","scripts", "pt_timing.tcl") #TODO fix the filename dependancy issues
       timing_cmd = get_sta_cmd(script_rel_path)
+      # flow_cmd = timing_cmd
       script_rel_path = os.path.join("..","scripts", "primetime_power.tcl") #TODO fix the filename dependancy issues
       power_cmd = get_sta_cmd(script_rel_path)
       flow_cmd = "\n".join([timing_cmd,power_cmd])
@@ -1580,6 +1594,10 @@ def hardblock_script_gen(flow_settings):
               for d in parameterized_subdirs:
                 gen_dir(d)
               os.chdir(script_dir)
+              #clean existings scripts
+              prev_scripts = glob.glob("./*.tcl")
+              for file in prev_scripts:
+                os.remove(file)
               if(flow_settings["partition_flag"]):
                 for dim_str,ptn_dir in zip(dim_strs,ptn_dirs):
                   timing_fname = "dimlen_" + dim_str + "_" + "pt_timing.tcl"
@@ -1646,7 +1664,7 @@ def hardblock_parallel_flow(flow_settings):
       #floorplan x dimension (this is used in the filename of generated scripts/outputs/reports)
       fp_dim = float(flow_settings["ptn_params"]["fp_init_dims"][0])
       #get factors which we are scaling the initial dimension value with
-      scaling_array = [int(fac) for fac in flow_settings["ptn_params"]["scaling_array"]]
+      scaling_array = [float(fac) for fac in flow_settings["ptn_params"]["scaling_array"]]
       #multiplies initial dimension to find the filenames of all dims we wish to run
       scaled_dims = [fp_dim*fac for fac in scaling_array]
       os.chdir(pnr_parallel_path)
@@ -1679,7 +1697,6 @@ def hardblock_parallel_flow(flow_settings):
         for dim in scaled_dims:
           dim_group = [f for f in os.listdir("scripts") if str(dim) in f]
           dim_grouped_scripts.append(dim_group)
-        
         #Now group according to order of execution
         order_of_exec_pnr_per_dim = []
         for group in dim_grouped_scripts:
@@ -1768,10 +1785,10 @@ def hardblock_parallel_flow(flow_settings):
       run_pll_flow_stage(pnr_parallel_work_path)
   ########################### PARALLEL PNR SECTION #################################
   ########################### PARALLEL STA SECTION #################################
-    if(flow_settings["run_params"]["sta"]["run_flag"]):
-      print("Running sta scripts in parallel...")
-      sta_parallel_work_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"sta","sta_parallel_work")
-      run_pll_flow_stage(sta_parallel_work_path)
+  if(flow_settings["run_params"]["sta"]["run_flag"]):
+    print("Running sta scripts in parallel...")
+    sta_parallel_work_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"sta","sta_parallel_work")
+    run_pll_flow_stage(sta_parallel_work_path)
   ########################### PARALLEL STA SECTION #################################
   
 
@@ -1806,6 +1823,13 @@ def find_lowest_cost_in_result_dict(flow_settings,result_dict):
   Finds the lowest cost flow result for parameter combinations for each stage of the asic flow,
   uses result dict returned by parse_parallel_outputs
   """
+  #values required for each stage to be able to make this work
+  req_values = {
+    "synth": ["delay","power","area"],
+    "pnr": ["delay","power","area"],
+    "sta": ["delay","power"]
+  }
+
   lowest_cost_dicts = {}
   
   for flow_type, flow_dict in result_dict.items():
@@ -1816,7 +1840,6 @@ def find_lowest_cost_in_result_dict(flow_settings,result_dict):
     lowest_cost_area = 0.0
     lowest_cost_delay = 0.0
     lowest_cost_power = 0.0
-
     if(flow_type == "synth" or flow_type == "pnr"):
       for run_params, param_result_dict in flow_dict.items():
         total_delay = param_result_dict["delay"]
@@ -1863,171 +1886,276 @@ def decode_dict_dtypes(param_dtype_dict,param_key,val):
   return ret_val
 
 
-def parse_area_file(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,area_str):
+def parse_power_file(report_file,flow_dir,dict_entry,out_dict,decimal_re):
+  #power report
+  fd = open(report_file,"r")
+  total_power = None #TODO FIX THIS
+  for line in fd:
+    if(flow_dir == "sta" or flow_dir == "synth"):
+      if 'Total Dynamic Power' in line:
+        total_power = re.findall(r'\d+\.{0,1}\d*', line)
+        total_power = float(total_power[0])
+        if 'mW' in line:
+          total_power *= 0.001
+        elif 'uW' in line:
+          total_power *= 0.000001
+        elif 'W' in line:
+          total_power = total_power
+        else:
+          total_power = 0.0
+    elif(flow_dir == "pnr"):
+      if("Total Power:" in line):
+        total_power = float(decimal_re.search(line).group(0))
+      if("Power Units" in line):
+        if 'mW' in line:
+          power_fac = 0.001
+        elif 'uW' in line:
+          power_fac = 0.000001
+        elif 'W' in line:
+          power_fac = 1.0
+
+  if(total_power != None):
+    if(flow_dir == "pnr"):        
+      total_power *= power_fac
+    out_dict[flow_dir][dict_entry]["power"] = float(truncate(total_power,3)) #if total_power != "NA" else "NA"
+  fd.close()
+  return dict_entry
+
+def parse_area_file(flow_settings,report_file,flow_dir,dict_entry,out_dict,log_file_fd):
   #Below is the index at which the value for total area will be found in either synth or pnr report file
   area_idx = -2 if (flow_dir == "pnr") else 1
+  area=None
   #Area report
   fd = open(report_file,"r")
   for line in fd:
-      if(flow_settings["top_level"] in line):
-          area = re.split(r"\s+",line)[area_idx]
-  dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=area_str,repl="") #(area_str,os.path.basename(os.path.splitext(report_file)[0]))
-  # period = decode_report_str(dict_entry)
-  if(dict_entry not in out_dict[flow_dir]):
-      out_dict[flow_dir][dict_entry] = {}
-  out_dict[flow_dir][dict_entry]["area"] = float(area)
+    if(flow_settings["top_level"] in line):
+      area = re.split(r"\s+",line)[area_idx]
+  if(area != None):
+    out_dict[flow_dir][dict_entry]["area"] = float(area)
   fd.close()
 
+def parse_timing_file(report_file,flow_dir,dict_entry,timing_mode,out_dict,decimal_re,log_file_fd):
+  #init values for setup timing variables
+  arrival_time = None
+  lib_setup_time = None
+
+  timing_met_re = re.compile(r"VIOLATED")
+  if(flow_dir == "synth" or flow_dir == "sta"):
+    arrival_time_str = "data arrival time"
+    lib_setup_time_str = "library setup time"    
+  elif(flow_dir == "pnr"):
+    arrival_time_str = "- Arrival Time"
+    lib_setup_time_str = "Setup"
+  
+  #timing report
+  fd = open(report_file,"r")
+  text = fd.read()
+  if("setup" in timing_mode):
+
+    #look for delay info (only if looking at setup)
+    for line in text.split("\n"):
+      if(arrival_time_str in line):
+        arrival_time = float(decimal_re.findall(line)[0])
+      elif(lib_setup_time_str in line):
+        lib_setup_time = float(decimal_re.findall(line)[0])
+    if(arrival_time == None or lib_setup_time == None):
+      file_write_ln(log_file_fd,"\n".join(["Could not find arrival/setup time variables for param:",dict_entry,"At path:",os.path.join(os.getcwd(),report_file)]))
+    else:
+      total_del = arrival_time + lib_setup_time
+      out_dict[flow_dir][dict_entry]["delay"] = float(truncate(total_del,3))
+  if(timing_met_re.search(text)):
+    timing_met = False
+  else:
+    timing_met = True
+  out_dict[flow_dir][dict_entry]["timing_met_"+timing_mode] = timing_met
+  fd.close()
+  return dict_entry
+
+def check_for_valid_report(report_path):
+  ret_val = True
+  invalid_re = re.compile("Error")
+  fd = open(report_path,"r")
+  text = fd.read()
+  if(invalid_re.search(text)):
+    ret_val = False
+  fd.close()
+
+  return ret_val    
+
+
+def get_dict_entry(report_file,parameterized_dir,report_str):
+  cwd = os.getcwd()
+  #find if this is occuring in a subreport directory or a parameterized dir
+  if(cwd.split("/")[-1] == "reports"): #TODO fix structure dependancy
+    dict_entry  = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=report_str,repl="")
+  elif(cwd.split("/")[-2] == "reports"):
+    dict_entry  = parameterized_dir + "_" + cwd.split("/")[-1] + "_"
+  else:
+    print("unrecognized directory structure, exiting...")
+    sys.exit(1)
+  
+  return dict_entry
+
+def parse_report(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,log_fd,param_dtype_dict):
+  decimal_re = re.compile(r"\d+\.{0,1}\d*")
+  area_str = "area"
+  power_str = "power"
+  dict_entry = ""
+
+  # rep_fd = open(report_file,"r")
+  # rep_lines = rep_fd.read().split("\n")
+  # print(os.path.join(os.getcwd(),report_file))
+  if("area" in report_file and ".rpt" in report_file):
+    #Area parsing
+    #get key value for this set of params
+    dict_entry = get_dict_entry(report_file,parameterized_dir,area_str)
+    if(dict_entry not in out_dict[flow_dir]):
+      out_dict[flow_dir][dict_entry] = {}
+    parse_area_file(flow_settings,report_file,flow_dir,dict_entry,out_dict,log_fd)
+  elif("timing" in report_file and ".rpt" in report_file):
+    #check to see what timing mode file is reporting
+    if("setup" in report_file):
+      timing_mode = "setup"
+      timing_str = timing_mode + "_" + "timing"
+    elif("hold" in report_file):
+      timing_mode = "hold"
+      timing_str = timing_mode + "_" + "timing"
+    # This is to deal with old synthesis script producing a "timing" filename for setup report
+    # TODO remove, I added the hold timing check script to synthesis so shouldnt be an issue unless using old results
+    else:
+      timing_mode = "setup"
+      timing_str = "timing"
+
+    dict_entry = get_dict_entry(report_file,parameterized_dir,timing_str)
+    if(dict_entry not in out_dict[flow_dir]):
+      out_dict[flow_dir][dict_entry] = {}
+    parse_timing_file(report_file,flow_dir,dict_entry,timing_mode,out_dict,decimal_re,log_fd)
+  elif("power" in report_file and ".rpt" in report_file):
+    dict_entry = get_dict_entry(report_file,parameterized_dir,power_str)
+    # print(dict_entry)
+    if(dict_entry not in out_dict[flow_dir]):
+      out_dict[flow_dir][dict_entry] = {}
+    dict_entry = parse_power_file(report_file,flow_dir,dict_entry,out_dict,decimal_re)
+  #This writes the rest of the input params to the dict entry (parsed from the dict_entry)
+  if(dict_entry != ""):
+    # print("dict_entry: %s" % (dict_entry))
+    #assign top level to dict entry if doesnt exist
+    out_dict[flow_dir][dict_entry]["top_level"] = flow_settings["top_level"]
+    #grabbing link dimensions from the fname
+    dict_ent_params = dict_entry.split("_")
+    for idx,e in enumerate(dict_ent_params):
+      if(e in param_dtype_dict.keys()):
+        out_dict[flow_dir][dict_entry][e] = decode_dict_dtypes(param_dtype_dict,e,dict_ent_params[idx+1]) 
 
 def parse_parallel_outputs(flow_settings):
-    """
-    This function parses the ASIC results directory created after running scripts generated from option of coffe flow
-    """
-    #Directory structure of the parallel results is as follows:
-    #results_dir: 
-    #--->synth
-    #-------->parameterized_folder
-    #------------>outputs
-    #------------>reports
-    #------------>work
-    #------------>scripts
-    #--->pnr
-    #......Same as above structure....
-    #--->sta
-    #......Same as above structure....
-    pre_func_dir = os.getcwd()
-    report_csv_fname = "condensed_pll_results.csv"
+  """
+  This function parses the ASIC results directory created after running scripts generated from option of coffe flow
+  """
+  #Directory structure of the parallel results is as follows:
+  #results_dir: 
+  #--->synth
+  #-------->parameterized_folder
+  #------------>outputs
+  #------------>reports
+  #------------>work
+  #------------>scripts
+  #--->pnr
+  #......Same as above structure....
+  #--->sta
+  #......Same as above structure....
+  pre_func_dir = os.getcwd()
+  report_csv_fname = "condensed_pll_results.csv"
+  gen_dir(flow_settings["condensed_results_folder"])
+  parse_pll_outputs_log_file = os.path.join(flow_settings["condensed_results_folder"],"parse_pll_outputs.log")
+  log_fd = open(parse_pll_outputs_log_file,"w")
+  #this dict will contain values parsed from pll outputs
+  out_dict = {
+    "pnr": {},
+    "synth": {},
+    "sta": {}
+  }
+  #this dict contains all parameters and their datatypes which will be used as keys in output dict
+  param_dtype_dict = {
+    #input params
+    "top_level": "str",
+    "period" : "float",
+    "wiremdl" : "str",
+    "mlayer" : "int",
+    "util" : "float",
+    "dimlen" : "float",
+    "mode" : "int",
+    #output values
+    "delay" : "float",
+    "area" : "float",
+    "power" : "float",
+    "timing_met_setup" : "bool",
+    "timing_met_hold" : "bool"
+  }
+  
 
-    #this dict will contain values parsed from pll outputs
-    out_dict = {
-      "pnr": {},
-      "synth": {},
-      "sta": {}
-    }
-    #this dict contains all parameters and their datatypes which will be used as keys in output dict
-    param_dtype_dict = {
-      "period" : "float",
-      "wiremdl" : "str",
-      "mlayer" : "int",
-      "util" : "float",
-      "dimlen" : "float",
-      "delay" : "float",
-      "area" : "float",
-      "power" : "float",
-      "timing_met_setup" : "bool",
-      "timing_met_hold" : "bool",
-      "mode" : "int"
-    }
-    
-    parallel_results_path = os.path.expanduser(flow_settings["parallel_hardblock_folder"])
-    #for parsing decimal values in report directories
-    decimal_re = re.compile(r"\d+\.{0,1}\d*")
-    timing_str = "setup_timing"
-    area_str = "area"
-    power_str = "power"
+  parallel_results_path = os.path.expanduser(flow_settings["parallel_hardblock_folder"])
+  #for parsing decimal values in report directories
 
-    valid_rpt_re = re.compile("^dimlen_[0-9]+|\.[0-9]+_ptn_\w+\.rpt",re.DOTALL|re.MULTILINE) #TODO make this more general
-    valid_rpt_dir_re = re.compile("^dimlen_[0-9]+|\.[0-9]+_ptn$",re.MULTILINE)
-    os.chdir(parallel_results_path)
-    results_path = os.getcwd()
-    for top_level_mod in os.listdir(os.getcwd()):
-        os.chdir(os.path.join(results_path,top_level_mod))
-        top_level_mod_path = os.getcwd()
-        for flow_dir in os.listdir(os.getcwd()):
-            os.chdir(os.path.join(top_level_mod_path,flow_dir))
-            flow_path = os.getcwd()
-            for parameterized_dir in os.listdir(os.getcwd()):
-                if("period" not in parameterized_dir):
-                  continue
-                os.chdir(os.path.join(flow_path,parameterized_dir))
-                parameterized_path = os.getcwd()
-                for dir in os.listdir(os.getcwd()):
-                    os.chdir(os.path.join(parameterized_path,dir))
-                    dir_path = os.getcwd()
-                    if(os.path.basename(dir_path) == "reports" and len(dir_path) > 0):
-                        for report_file in os.listdir(os.getcwd()):
-                            if( (not valid_rpt_re.search(report_file) or not os.path.isfile(report_file)) and flow_dir == "pnr"):
-                              continue
-                            dict_entry = ""
-                            if("area" in report_file):
-                                parse_area_file(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,area_str)
-                            elif("timing" in report_file and ".rpt" in report_file):
-                              # parse_timing_file(report_file,flow_dir,parameterized_dir,out_dict,timing_str)
-                                timing_met_re = re.compile(r"VIOLATED")
-                                if(flow_dir == "synth" or flow_dir == "sta"):
-                                  arrival_time_str = "data arrival time"
-                                  lib_setup_time_str = "library setup time"    
-                                  timing_str = "timing"                              
-                                elif(flow_dir == "pnr"):
-                                  arrival_time_str = "- Arrival Time"
-                                  lib_setup_time_str = "Setup"
-                                  timing_analysis_mode_str = "setup" if ("setup" in report_file) else "hold"
-                                  timing_str = timing_analysis_mode_str + "_" + "timing"
-                                #timing report
-                                fd = open(report_file,"r")
-                                text = fd.read()
-                                for line in text.split("\n"):
-                                    if(arrival_time_str in line):
-                                        arrival_time = float(decimal_re.findall(line)[0])
-                                    elif(lib_setup_time_str in line):
-                                        lib_setup_time = float(decimal_re.findall(line)[0])
-                                total_del = arrival_time + lib_setup_time
-                                dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=timing_str,repl="")
-                                if(dict_entry not in out_dict[flow_dir]):
-                                    out_dict[flow_dir][dict_entry] = {}
-                                out_dict[flow_dir][dict_entry]["delay"] = float(truncate(total_del,3))
-                                if(timing_met_re.search(text)):
-                                    timing_met = False
-                                else:
-                                    timing_met = True
-                                out_dict[flow_dir][dict_entry]["timing_met_"+timing_analysis_mode_str] = timing_met
-                                fd.close()
-                            elif("power" in report_file and ".rpt" in report_file):
-                                #power report
-                                fd = open(report_file,"r")
-                                for line in fd:
-                                  if(flow_dir == "sta" or flow_dir == "synth"):
-                                      if 'Total Dynamic Power' in line:
-                                        total_power = re.findall(r'\d+\.{0,1}\d*', line)
-                                        total_power = float(total_power[0])
-                                        if 'mW' in line:
-                                          total_power *= 0.001
-                                        elif 'uW' in line:
-                                          total_power *= 0.000001
-                                        elif 'W' in line:
-                                          total_power = total_power
-                                        else:
-                                          total_power = 0.0
-                                  elif(flow_dir == "pnr"):
-                                      if("Total Power:" in line):
-                                        total_power = float(decimal_re.search(line).group(0))
-                                      if("Power Units" in line):
-                                        if 'mW' in line:
-                                          power_fac = 0.001
-                                        elif 'uW' in line:
-                                          power_fac = 0.000001
-                                        elif 'W' in line:
-                                          power_fac = 1.0
+  valid_rpt_dir_re = re.compile("^dimlen_[0-9]+|\.[0-9]+_ptn$",re.MULTILINE)
+  os.chdir(parallel_results_path)
+  results_path = os.getcwd()
+  #list containing an output dict for each top level module
+  top_lvl_dicts = []
+  for top_level_mod in os.listdir(os.getcwd()):
+    if(top_level_mod != flow_settings["top_level"]):
+      continue
+    #filter out to only look at a single top level mod
+    os.chdir(os.path.join(results_path,top_level_mod))
+    top_level_mod_path = os.getcwd()
+    for flow_dir in os.listdir(os.getcwd()):
+      os.chdir(os.path.join(top_level_mod_path,flow_dir))
+      flow_path = os.getcwd()
+      for parameterized_dir in os.listdir(os.getcwd()):
+        if("period" not in parameterized_dir): #TODO fix dir name dependancy
+          continue
+        # This would filter out any params that werent in current run set
+        # if(not compare_run_filt_params_to_str(flow_settings,parameterized_dir)):
+        #   continue
+        os.chdir(os.path.join(flow_path,parameterized_dir))
+        parameterized_path = os.getcwd()
+        for dir in os.listdir(os.getcwd()):
+          os.chdir(os.path.join(parameterized_path,dir))
+          dir_path = os.getcwd()
+          if(os.path.basename(dir_path) == "reports" and len(dir_path) > 0):
+            for report_file in os.listdir(os.getcwd()):
+              if(valid_rpt_dir_re.search(report_file) and os.path.isdir(report_file) and len(os.listdir(report_file)) > 0):
+                os.chdir(report_file)
+                for sub_report_file in os.listdir(os.getcwd()):
+                  if(os.path.isfile(sub_report_file)):
+                    parse_report(flow_settings,sub_report_file,flow_dir,parameterized_dir,out_dict,log_fd,param_dtype_dict)
+                  else:
+                    continue
+                os.chdir(dir_path)
+                continue                
+              #checks to see if "Error" string is in the file, if so skip...
+              elif(os.path.isfile(report_file) and not check_for_valid_report(report_file)):
+                continue
+              elif(os.path.isfile(report_file)):
+                parse_report(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,log_fd,param_dtype_dict)
+  
+  #remove the old str format files (they are old runs which dont have relevant results)
+  for flow_key,flow_dict in out_dict.items():
+    # print("############################# %s :" %(flow_key))
+    for param_key, val_out_dict in flow_dict.items():
+      # print("########### %s :" %(param_key))
+      if( (("_ptn_" not in param_key or "mlayers" in param_key) and flow_key == "pnr" and flow_settings["partition_flag"] == True) or ()):
+        # print("deleted %s" % (param_key))
+        del out_dict[flow_key][param_key]
+      # else:
+        # for out_key, out_val in val_out_dict.items():
+          # print( "%s : %s" % (out_key,out_val))
+  #pass area and other params from pnr to sta
 
-                                if(flow_dir == "pnr"):        
-                                  total_power *= power_fac
-
-                                dict_entry = parameterized_dir + "_" + re.sub(string=os.path.basename(os.path.splitext(report_file)[0]),pattern=power_str,repl="")
-                                if(dict_entry not in out_dict[flow_dir]):
-                                    out_dict[flow_dir][dict_entry] = {}
-                                out_dict[flow_dir][dict_entry]["power"] = float(truncate(total_power,3)) #if total_power != "NA" else "NA"
-                                fd.close()
-                            if(dict_entry != ""):
-                                #grabbing link dimensions from the fname
-                                dict_ent_params = dict_entry.split("_")
-                                for idx,e in enumerate(dict_ent_params):
-                                  if(e in param_dtype_dict.keys()):
-                                    out_dict[flow_dir][dict_entry][e] = decode_dict_dtypes(param_dtype_dict,e,dict_ent_params[idx+1])                     
-    #Generate output csv file which can be used by plotting script
-    gen_dir(flow_settings["condensed_results_folder"])
-    write_pll_results_csv(param_dtype_dict,out_dict,os.path.join(flow_settings["condensed_results_folder"],report_csv_fname))
-    os.chdir(pre_func_dir)
-    return report_csv_fname,out_dict
+  #Generate output csv file which can be used by plotting script
+  log_fd.close()
+  write_pll_results_csv(param_dtype_dict,out_dict,os.path.join(flow_settings["condensed_results_folder"],report_csv_fname))
+  os.chdir(pre_func_dir)
+  return report_csv_fname,out_dict
 
 def write_pll_results_csv(param_dtype_dict, out_dict, csv_fpath):
   fd = open(csv_fpath,"w")
@@ -2067,9 +2195,11 @@ def run_plot_script(flow_settings,report_csv_fname):
   
   if(exit_flag):
     return -1
-    
-  plot_script_cmd = plot_script_path + " " + "-p"+ " " + condensed_results_path + " " + analyze_results_dir
-  subprocess.call(plot_script_cmd,shell=True)
+  if(flow_settings["partition_flag"]):  
+    plot_script_cmd = " ".join([plot_script_path,"-p",condensed_results_path,analyze_results_dir,"-ptn"])
+  else:
+    plot_script_cmd = " ".join([plot_script_path,"-p",condensed_results_path,analyze_results_dir])
+  run_cmd(plot_script_cmd)
   return 1
 
 ########################################## PLL PARSE/PLOT RESULTS UTILS ##########################################
