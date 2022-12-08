@@ -123,7 +123,7 @@ else:
   # Change to the architecture directory
   os.chdir(arch_folder)  
 
-  print(os.getcwd())
+  print((os.getcwd()))
   # Generate FPGA and associated SPICE files
   fpga_inst.generate(is_size_transistors) 
 

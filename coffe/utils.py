@@ -107,7 +107,7 @@ def print_area_and_delay(report_file, fpga_inst):
         str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
     
     # Get LUT input names so that we can print inputs in sorted order
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
     lut_input_names.sort()
       
     # LUT input drivers
@@ -198,13 +198,13 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  Row Decoder".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(row_decoder_delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
         "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))    
 
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(LAST_COL_WIDTH))
 
     if fpga_inst.RAM.valid_row_dec_size2 == 1:
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size2.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size2.power/1e-6,4)).ljust(LAST_COL_WIDTH))
     if fpga_inst.RAM.valid_row_dec_size3 == 1:
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size3.power/1e-6,4)).ljust(LAST_COL_WIDTH)
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage3.power/1e-6,4)).ljust(LAST_COL_WIDTH)        
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size3.power/1e-6,4)).ljust(LAST_COL_WIDTH))
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage3.power/1e-6,4)).ljust(LAST_COL_WIDTH))        
 
     # Configurable decoder:
     configdelay = fpga_inst.RAM.configurabledecoderi.delay 
@@ -225,12 +225,12 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  CD driver delay ".ljust(FIRS_COL_WIDTH) + "n/a".ljust(MIDL_COL_WIDTH) + 
         str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))
 
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(LAST_COL_WIDTH))
     if fpga_inst.RAM.cvalidobj2 !=0:
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(LAST_COL_WIDTH))
     if fpga_inst.RAM.cvalidobj1 !=0:    
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder3ii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderiii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder3ii.power/1e-6,4)).ljust(LAST_COL_WIDTH))
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderiii.power/1e-6,4)).ljust(LAST_COL_WIDTH))
 
 
     # BRAM output crossbar:
@@ -277,29 +277,29 @@ def print_area_and_delay(report_file, fpga_inst):
 def print_power(report_file, fpga_inst):
     """ Print power per subcircuit """
     
-    print "  SUBCIRCUIT POWER AT 250MHz (uW)"
-    print "  --------------------------"
+    print("  SUBCIRCUIT POWER AT 250MHz (uW)")
+    print("  --------------------------")
 
-    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power/1e-6) 
-    print "  " + fpga_inst.cb_mux.name.ljust(22) + str(fpga_inst.cb_mux.power/1e-6) 
-    print "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(fpga_inst.logic_cluster.local_mux.power/1e-6) 
-    print "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6) 
-    print "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6) 
+    print("  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power/1e-6)) 
+    print("  " + fpga_inst.cb_mux.name.ljust(22) + str(fpga_inst.cb_mux.power/1e-6)) 
+    print("  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(fpga_inst.logic_cluster.local_mux.power/1e-6)) 
+    print("  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6)) 
+    print("  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6)) 
 
     # Figure out LUT power
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
     lut_input_names.sort()
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
         path_power = lut_input.power
         driver_power = lut_input.driver.power
         not_driver_power = lut_input.not_driver.power
-        print "  " + ("lut_" + input_name).ljust(22) + str((path_power + driver_power + not_driver_power)/1e-6)
-        print "  " + ("  lut_" + input_name + "_data_path").ljust(22) + str(path_power/1e-6)
-        print "  " + ("  lut_" + input_name + "_driver").ljust(22) + str(driver_power/1e-6)
-        print "  " + ("  lut_" + input_name + "_driver_not").ljust(22) + str(not_driver_power/1e-6)
+        print("  " + ("lut_" + input_name).ljust(22) + str((path_power + driver_power + not_driver_power)/1e-6))
+        print("  " + ("  lut_" + input_name + "_data_path").ljust(22) + str(path_power/1e-6))
+        print("  " + ("  lut_" + input_name + "_driver").ljust(22) + str(driver_power/1e-6))
+        print("  " + ("  lut_" + input_name + "_driver_not").ljust(22) + str(not_driver_power/1e-6))
 
-    print ""
+    print("")
 
     
 def print_block_area(report_file, fpga_inst):
@@ -422,7 +422,7 @@ def print_vpr_delays(report_file, fpga_inst):
     print_and_write(report_file, "  LUT output -> CLB output (logic block output)".ljust(50) + str(fpga_inst.logic_cluster.ble.general_output.delay))
     
     # Figure out LUT delays
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
     lut_input_names.sort()
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
@@ -533,8 +533,8 @@ def load_arch_params(filename):
         
         # Split lines at '='
         words = line.split('=')
-        if words[0] not in arch_params.keys():
-            print "ERROR: Found invalid architecture parameter (" + words[0] + ") in " + filename
+        if words[0] not in list(arch_params.keys()):
+            print("ERROR: Found invalid architecture parameter (" + words[0] + ") in " + filename)
             sys.exit()
          
         param = words[0]
@@ -671,9 +671,9 @@ def load_arch_params(filename):
     #TODO fix the below stuff
     optional_arch_params = ["coffe_design_out_folder"]
     # Check that we read everything
-    for param, value in arch_params.iteritems():
+    for param, value in arch_params.items():
         if ((value == -1 or value == "") and (param not in optional_arch_params) ):
-            print "ERROR: Did not find architecture parameter " + param + " in " + filename
+            print("ERROR: Did not find architecture parameter " + param + " in " + filename)
             sys.exit()
     
     # Check architecture parameters to make sure that they are valid
@@ -710,10 +710,10 @@ def check_hard_params(hard_params,run_options):
     
 
     #TODO make this sort of a documentation for each parameter
-    for key,val in hard_params.items():
+    for key,val in list(hard_params.items()):
         #Checks to see if value in parameter dict is unset, if its in the optional params list for this run type then it can be ignored
         if ((val == "" or val == -1 or val == -1.0 or val == []) and key not in optional_params):
-            print("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key))
+            print(("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key)))
             sys.exit(1)
         elif(key == "pnr_tool" and val != "encounter" and val != "innovus" ):
             print("ERROR: pnr_tool must be set as either \"encounter\" or \"innovus\" ")
@@ -899,12 +899,12 @@ def load_ptn_params(filename):
         val = line[1]
         #dont continue if key is not in dict
         if(key not in ptn_dict):
-            print("ERROR: Found invalid partition parameter (" + key + ") in " + filename)
+            print(("ERROR: Found invalid partition parameter (" + key + ") in " + filename))
             sys.exit(1)
         tmp_dict[key] = val
         key_cnt += 1 
         #If someone ever needs to do anything after all params have been read into a dict inst do it in below if statement
-        if(key_cnt % len(ptn_dict.keys()) == 0):
+        if(key_cnt % len(list(ptn_dict.keys())) == 0):
             ptn_list.append(tmp_dict)
             #reset tmp dict
             tmp_dict = {}            
@@ -1015,8 +1015,8 @@ def load_hard_params(filename,run_options):
         
         # Split lines at '='
         words = line.split('=')
-        if words[0] not in hard_params.keys():
-            print("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename)
+        if words[0] not in list(hard_params.keys()):
+            print(("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename))
             sys.exit()
          
         param = words[0]
@@ -1188,8 +1188,8 @@ def load_hard_params(filename,run_options):
             
             # Split lines at '='
             words = line.split('=')
-            if words[0] not in hard_params.keys():
-                print("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename)
+            if words[0] not in list(hard_params.keys()):
+                print(("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename))
                 sys.exit()
             
             param = words[0]
@@ -1346,12 +1346,12 @@ def check_arch_params (arch_params, filename):
 
 
 def print_error(value, argument, filename, msg = ""):
-    print "ERROR: Invalid value (" + value + ") for " + argument + " in " + filename + " " + msg
+    print("ERROR: Invalid value (" + value + ") for " + argument + " in " + filename + " " + msg)
     sys.exit()
 
 
 def print_error_not_compatable(value1, value2):
-    print "ERROR: " + value1 + " and " + value2 + " simulations are not compatible.\n"
+    print("ERROR: " + value1 + " and " + value2 + " simulations are not compatible.\n")
     sys.exit()    
 
 
@@ -1479,19 +1479,19 @@ def extract_initial_tran_size(filename, use_tgate):
 
 def use_initial_tran_size(initial_sizes, fpga_inst, tran_sizing, use_tgate):
 
-    print "Extracting initial transistor sizes from: " + initial_sizes
+    print("Extracting initial transistor sizes from: " + initial_sizes)
     initial_tran_size = extract_initial_tran_size(initial_sizes, use_tgate)
-    print "Setting transistor sizes to extracted values"
+    print("Setting transistor sizes to extracted values")
     tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
     for tran in initial_tran_size :
         fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
-    print "Re-calculating area..."
+    print("Re-calculating area...")
     fpga_inst.update_area()
-    print "Re-calculating wire lengths..."
+    print("Re-calculating wire lengths...")
     fpga_inst.update_wires()
-    print "Re-calculating resistance and capacitance..."
+    print("Re-calculating resistance and capacitance...")
     fpga_inst.update_wire_rc()
-    print ""
+    print("")
 
 
 def check_for_time():
@@ -1503,10 +1503,10 @@ def check_for_time():
         in the code """
     now = datetime.datetime.now()
     if (now.hour == 2 or now.hour == 3):
-        print "-----------------------------------------------------------------"
-        print "      Entered the check for time function @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second)
-        print "-----------------------------------------------------------------"
-        print ""
+        print("-----------------------------------------------------------------")
+        print("      Entered the check for time function @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second))
+        print("-----------------------------------------------------------------")
+        print("")
        
     while (now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30):
     #while (now.minute >= 20) and (now.minute < 25):
@@ -1518,10 +1518,10 @@ def check_for_time():
 
     now = datetime.datetime.now()
     if (now.hour == 2 or now.hour == 3):        
-        print "-----------------------------------------------------------------"
-        print "      Exited the check for time function  @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second)
-        print "-----------------------------------------------------------------"
-        print ""         
+        print("-----------------------------------------------------------------")
+        print("      Exited the check for time function  @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second))
+        print("-----------------------------------------------------------------")
+        print("")         
 
 def print_and_write(file, string):
     """

@@ -95,7 +95,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 	wire_counter = 1
 	tran_counter = 1
 	# These are the switches below driver connection
-	for i in range(1, (level2_size/2)):
+	for i in range(1, int(level2_size/2)):
 		new_node = "n_2_" + str(i)
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + current_node + " " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
@@ -135,7 +135,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		tran_counter = tran_counter + 1
 		current_node = new_node
 	# These are the switches above driver connection
-	for i in range(1, (level2_size/2)):
+	for i in range(1, int(level2_size/2)):
 		new_node = "n_2_" + str(i+level2_size/2)
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + current_node + " " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
@@ -378,7 +378,7 @@ def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 	wire_counter = 1
 	tran_counter = 1
 	# These are the switches below driver connection
-	for i in range(1, (level2_size/2)):
+	for i in range(1, int(level2_size/2)):
 		new_node = "n_2_" + str(i)
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + current_node + " " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
@@ -418,7 +418,7 @@ def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		tran_counter = tran_counter + 1
 		current_node = new_node
 	# These are the switches above driver connection
-	for i in range(1, (level2_size/2)):
+	for i in range(1, int(level2_size/2)):
 		new_node = "n_2_" + str(i+level2_size/2)
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + current_node + " " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +

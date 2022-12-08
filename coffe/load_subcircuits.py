@@ -123,7 +123,7 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
     spice_file.write("******************************************************************************************\n")
     spice_file.write(".SUBCKT local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on\n")
     
-    num_total = num_on + num_partial + num_off
+    num_total = int(num_on + num_partial + num_off)
     interval_counter_partial = 0
     interval_counter_off = 0
     on_counter = 0

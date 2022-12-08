@@ -47,7 +47,7 @@ def get_params_from_str(param_dict,param_str):
   out_dict = {}
   params = param_str.split("_")
   for idx, p in enumerate(params):
-    if(p in param_dict.keys()):
+    if(p in list(param_dict.keys())):
       out_dict[p] = params[idx+1]
   return out_dict
     
@@ -58,8 +58,8 @@ def compare_run_filt_params_to_str(flow_settings,param_str):
   param_dict = get_params_from_str(flow_settings["input_param_options"],param_str)
   #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
   filt_match = 1
-  for cur_key,cur_val in param_dict.items():
-    if cur_key in flow_settings["run_params"]["pnr"]["param_filters"].keys():
+  for cur_key,cur_val in list(param_dict.items()):
+    if cur_key in list(flow_settings["run_params"]["pnr"]["param_filters"].keys()):
       if all(cur_val != val for val in flow_settings["run_params"]["pnr"]["param_filters"][cur_key]):
         filt_match = 0
         break
@@ -130,7 +130,7 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["target_library"] = "\"" + " ".join(processed_flow_settings['target_libraries']) + "\""
   processed_flow_settings["link_library"] = "\"" + "* $target_library" + "\""
   #formatting all paths to files to expand them to user space
-  for flow_key, flow_val in processed_flow_settings.items():
+  for flow_key, flow_val in list(processed_flow_settings.items()):
     if("folder" in flow_key):
       processed_flow_settings[flow_key] = os.path.expanduser(flow_val)
 
@@ -1681,8 +1681,8 @@ def hardblock_parallel_flow(flow_settings):
         #get a dict of the current directories parameter settings
         param_dict = get_params_from_str(flow_settings["input_param_options"],param_dir)
         #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
-        for cur_key,cur_val in param_dict.items():
-          if cur_key in flow_settings["run_params"]["pnr"]["param_filters"].keys():
+        for cur_key,cur_val in list(param_dict.items()):
+          if cur_key in list(flow_settings["run_params"]["pnr"]["param_filters"].keys()):
             if all(cur_val != val for val in flow_settings["run_params"]["pnr"]["param_filters"][cur_key]):
               continue_flag = True
               break
@@ -1729,7 +1729,7 @@ def hardblock_parallel_flow(flow_settings):
             #if theres already an assembled design saved for the fp flow skip it
             saved_design = os.path.join(output_dir,os.path.splitext(inn_command_series[1])[0]+"_assembled.dat")
             if(os.path.exists(saved_design)):
-              print("found %s, Skipping..." % (saved_design))
+              print(("found %s, Skipping..." % (saved_design)))
               # print(os.getcwd())
               continue
 
@@ -1751,12 +1751,12 @@ def hardblock_parallel_flow(flow_settings):
             #if there is a top level implementation, we can delete all commands leading up to assembly script
             if(os.path.isfile(saved_tl_imp)):
               print("found top level imp, running only assembly")
-              print(os.getcwd())
+              print((os.getcwd()))
               del cmds[0:3]
             #if there is a ptn directory, we can delete all commands leading up to block level flow
             elif(os.path.isdir(ptn_dir)):
               print("found ptn dir, running only blocks + toplvl + assembly")
-              print(os.getcwd())
+              print((os.getcwd()))
               del cmds[0:2]
             cmd_series_list.append(cmds)
           else:
@@ -1832,7 +1832,7 @@ def find_lowest_cost_in_result_dict(flow_settings,result_dict):
 
   lowest_cost_dicts = {}
   
-  for flow_type, flow_dict in result_dict.items():
+  for flow_type, flow_dict in list(result_dict.items()):
     param_str = ""
     lowest_cost_dict = {}
     lowest_cost_dicts[flow_type] = {}
@@ -1841,7 +1841,7 @@ def find_lowest_cost_in_result_dict(flow_settings,result_dict):
     lowest_cost_delay = 0.0
     lowest_cost_power = 0.0
     if(flow_type == "synth" or flow_type == "pnr"):
-      for run_params, param_result_dict in flow_dict.items():
+      for run_params, param_result_dict in list(flow_dict.items()):
         total_delay = param_result_dict["delay"]
         total_power = param_result_dict["power"]
         total_area = param_result_dict["area"]
@@ -2044,7 +2044,7 @@ def parse_report(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,l
     #grabbing link dimensions from the fname
     dict_ent_params = dict_entry.split("_")
     for idx,e in enumerate(dict_ent_params):
-      if(e in param_dtype_dict.keys()):
+      if(e in list(param_dtype_dict.keys())):
         out_dict[flow_dir][dict_entry][e] = decode_dict_dtypes(param_dtype_dict,e,dict_ent_params[idx+1]) 
 
 def parse_parallel_outputs(flow_settings):
@@ -2139,9 +2139,9 @@ def parse_parallel_outputs(flow_settings):
                 parse_report(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,log_fd,param_dtype_dict)
   
   #remove the old str format files (they are old runs which dont have relevant results)
-  for flow_key,flow_dict in out_dict.items():
+  for flow_key,flow_dict in list(out_dict.items()):
     # print("############################# %s :" %(flow_key))
-    for param_key, val_out_dict in flow_dict.items():
+    for param_key, val_out_dict in list(flow_dict.items()):
       # print("########### %s :" %(param_key))
       if( (("_ptn_" not in param_key or "mlayers" in param_key) and flow_key == "pnr" and flow_settings["partition_flag"] == True) or ()):
         # print("deleted %s" % (param_key))
@@ -2161,13 +2161,13 @@ def write_pll_results_csv(param_dtype_dict, out_dict, csv_fpath):
   fd = open(csv_fpath,"w")
   w = csv.writer(fd)
   #This is a csv of all flow types combined and seperated by a column name
-  w.writerow(param_dtype_dict.keys() + out_dict.keys())
-  for flow_type,flow_dict in out_dict.items():
-    flow_type_vals = [True if possible_flow == flow_type else False for possible_flow in out_dict.keys()]
-    for param_key,param_dict in flow_dict.items():
+  w.writerow(list(param_dtype_dict.keys()) + list(out_dict.keys()))
+  for flow_type,flow_dict in list(out_dict.items()):
+    flow_type_vals = [True if possible_flow == flow_type else False for possible_flow in list(out_dict.keys())]
+    for param_key,param_dict in list(flow_dict.items()):
       csv_row = []
-      for ref_result_key in param_dtype_dict.keys():
-        if(ref_result_key in param_dict.keys()):
+      for ref_result_key in list(param_dtype_dict.keys()):
+        if(ref_result_key in list(param_dict.keys())):
           val = param_dict[ref_result_key]
         else:
           val = "NA"
@@ -2190,7 +2190,7 @@ def run_plot_script(flow_settings,report_csv_fname):
   exit_flag = 0
   for p in req_paths:
     if(not os.path.exists(p)):
-      print("Plotting function could not find file or directory: %s" % (p))
+      print(("Plotting function could not find file or directory: %s" % (p)))
       exit_flag = 1
   
   if(exit_flag):

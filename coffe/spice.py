@@ -44,7 +44,7 @@ class SpiceInterface(object):
         max_items_per_line = 4
 
         # Get a list of parameter names
-        param_list = parameter_dict.keys()
+        param_list = list(parameter_dict.keys())
 
         # Write out parameters to a "easy to read format" file (this just helps for debug) 
         data_file = open(DATA_SWEEP_PATH, 'w')
@@ -74,7 +74,7 @@ class SpiceInterface(object):
     
         # Add data for each elements in the lists.
         num_settings = len(parameter_dict[param_list[0]])
-        for i in xrange(num_settings):
+        for i in range(num_settings):
             item_counter = 0
             for param_name in param_list:
                 if item_counter >= max_items_per_line:
@@ -186,15 +186,15 @@ class SpiceInterface(object):
             else :
                 hspice_runs = hspice_runs + 1
                 if hspice_runs > 10 :
-                    print "----------------------------------------------------------"
-                    print "                  HSPICE failed to run                    "
-                    print "----------------------------------------------------------"
-                    print ""
+                    print("----------------------------------------------------------")
+                    print("                  HSPICE failed to run                    ")
+                    print("----------------------------------------------------------")
+                    print("")
                     exit(2)
   
         # Update simulation counter with the number of simulations done by 
         # adding the length of the list of parameter values inside the dictionary
-        self.simulation_counter += len(parameter_dict.itervalues().next())
+        self.simulation_counter += len(next(iter(parameter_dict.values())))
 
         # Return to saved cwd
         os.chdir(saved_cwd)
