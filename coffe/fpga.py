@@ -152,7 +152,6 @@ class _Specs:
         self.model_path             = arch_params_dict['model_path']
         self.model_library          = arch_params_dict['model_library']
         self.rest_length_factor     = arch_params_dict['rest_length_factor']
-        self.hb_files               = arch_params_dict['hb_files']
         self.use_tgate              = arch_params_dict['use_tgate']
         self.use_finfet             = arch_params_dict['use_finfet']
 
@@ -5141,16 +5140,9 @@ class _dedicated_routing_driver(_SizableCircuit):
 class _hard_block(_CompoundCircuit):
     """ hard block class"""
 
-    def __init__(self, filename, use_tgate, run_options):
+    def __init__(self,hb_params, use_tgate, run_options):
         #Call the hard block parameter parser
-        self.parameters = utils.load_hard_params(filename,run_options)
-        if(self.parameters["partition_flag"]):
-            ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
-            #put ptn_params into hardblock params 
-            self.parameters["ptn_params"] = ptn_params
-        if(os.path.isfile(self.parameters["run_settings_file"])):
-            run_params = utils.load_run_params(self.parameters["run_settings_file"])
-            self.parameters["run_params"] = run_params
+        self.parameters = hb_params
 
         # Subcircuit name
         self.name = self.parameters['name']
@@ -5281,10 +5273,10 @@ class _hard_block(_CompoundCircuit):
 class FPGA:
     """ This class describes an FPGA. """
         
-    def __init__(self, arch_params_dict, run_options, spice_interface):
-          
+    def __init__(self, coffe_params, run_options, spice_interface):
+        
         # Initialize the specs
-        self.specs = _Specs(arch_params_dict, run_options.quick_mode)
+        self.specs = _Specs(coffe_params["fpga_arch_params"], run_options.quick_mode)
 
 
         ######################################
@@ -5391,11 +5383,10 @@ class FPGA:
         ################################
 
         self.hardblocklist = []
-        self.hard_block_files = self.specs.hb_files
-        #self.hard_block_files = {}
-        for name in self.hard_block_files:
-            hard_block = _hard_block(name, self.specs.use_tgate,run_options)
-            self.hardblocklist.append(hard_block)
+        if("asic_hardblock_params" in coffe_params.keys()):
+            for hb_params in coffe_params["asic_hardblock_params"]["hardblocks"]:
+                hard_block = _hard_block(hb_params, self.specs.use_tgate, run_options)
+                self.hardblocklist.append(hard_block)
 
 
         ##########################################################

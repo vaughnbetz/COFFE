@@ -59,8 +59,8 @@ def compare_run_filt_params_to_str(flow_settings,param_str):
   #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
   filt_match = 1
   for cur_key,cur_val in list(param_dict.items()):
-    if cur_key in list(flow_settings["run_params"]["pnr"]["param_filters"].keys()):
-      if all(cur_val != val for val in flow_settings["run_params"]["pnr"]["param_filters"][cur_key]):
+    if cur_key in list(flow_settings["hb_run_params"]["param_filters"].keys()):
+      if all(cur_val != val for val in flow_settings["hb_run_params"]["param_filters"][cur_key]):
         filt_match = 0
         break
   #if returns 1, then the string is a valid combination of params, else 0
@@ -142,10 +142,10 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
 
   if(processed_flow_settings["partition_flag"]):
-    processed_flow_settings["ptn_params"]["scaling_array"] = [float(scale) for scale in processed_flow_settings["ptn_params"]["scaling_array"]]
-    processed_flow_settings["ptn_params"]["fp_init_dims"] = [float(dim) for dim in processed_flow_settings["ptn_params"]["fp_init_dims"]]
+    processed_flow_settings["ptn_params"]["top_settings"]["scaling_array"] = [float(scale) for scale in processed_flow_settings["ptn_params"]["top_settings"]["scaling_array"]]
+    processed_flow_settings["ptn_params"]["top_settings"]["fp_init_dims"] = [float(dim) for dim in processed_flow_settings["ptn_params"]["top_settings"]["fp_init_dims"]]
 
-    for ptn_dict in processed_flow_settings["ptn_params"]["ptn_list"]:
+    for ptn_dict in processed_flow_settings["ptn_params"]["partitions"]:
       ptn_dict["fp_coords"] = [float(coord) for coord in ptn_dict["fp_coords"]]
 
     processed_flow_settings["parallel_hardblock_folder"] = os.path.expanduser(processed_flow_settings["parallel_hardblock_folder"])
@@ -384,7 +384,7 @@ def write_edit_port_script_pre_ptn(flow_settings):
 
   #offset from start of line in which pins are being placed (Ex. if they are being placed on edge 1 cw the offset would be from NW corner towards NE)
   #grab fp coordinates for the router module
-  rtr_fp_coords = [e["fp_coords"] for e in flow_settings["ptn_params"]["ptn_list"] if e["mod_name"] == rtr_mod_name][0]
+  rtr_fp_coords = [e["fp_coords"] for e in flow_settings["ptn_params"]["partitions"] if e["mod_name"] == rtr_mod_name][0]
   #extract height and width
   rtr_dims = [abs(float(rtr_fp_coords[0]) - float(rtr_fp_coords[2])),abs(float(rtr_fp_coords[1]) - float(rtr_fp_coords[3]))] # w,h
   #below values were tuned manually for reasonable pin placement w.r.t router dimensions
@@ -427,15 +427,15 @@ def write_edit_port_script_pre_ptn(flow_settings):
     "set my_gen_pins {\"clk\" \"reset\" \"router_address[0]\" \"router_address[1]\" \"router_address[2]\" \"router_address[3]\" \"router_address[4]\" \"router_address[5]\" \"flow_ctrl_out_ip_q[0]\" \"flow_ctrl_out_ip_q[1]\" \"flow_ctrl_out_ip_q[2]\" \"flow_ctrl_out_ip_q[3]\" \"flow_ctrl_out_ip_q[4]\" \"flow_ctrl_out_ip_q[5]\" \"flow_ctrl_out_ip_q[6]\" \"flow_ctrl_out_ip_q[7]\" \"flow_ctrl_out_ip_q[8]\" \"flow_ctrl_out_ip_q[9]\" \"flow_ctrl_in_op_d[0]\" \"flow_ctrl_in_op_d[1]\" \"flow_ctrl_in_op_d[2]\" \"flow_ctrl_in_op_d[3]\" \"flow_ctrl_in_op_d[4]\" \"flow_ctrl_in_op_d[5]\" \"flow_ctrl_in_op_d[6]\" \"flow_ctrl_in_op_d[7]\" \"flow_ctrl_in_op_d[8]\" \"flow_ctrl_in_op_d[9]\" \"error\"}",
     #swapped edge 0 and edge 4 channel in/out locations to allow for it to work
     #assign pin locations
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing " + flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_out_offset) + " -pin $my_0_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_in_offset) + " -pin $my_1_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_in_offset) + " -pin $my_2_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(noc_comm_edge_offsets[1]) + " -pin $my_3_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing " + str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_out_offset) + " -pin $my_0_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_in_offset) + " -pin $my_1_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_in_offset) + " -pin $my_2_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(noc_comm_edge_offsets[1]) + " -pin $my_3_ch_in_ports",
     "",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_in_offset) + " -pin $my_0_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_out_offset) + " -pin $my_1_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_out_offset) + " -pin $my_2_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(noc_comm_edge_offsets[0]) + " -pin $my_3_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_in_offset) + " -pin $my_0_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_out_offset) + " -pin $my_1_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_out_offset) + " -pin $my_2_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(noc_comm_edge_offsets[0]) + " -pin $my_3_ch_out_ports",
     "",
 
     "legalizePin"
@@ -529,7 +529,7 @@ def write_innovus_ptn_script(flow_settings,init_script_fname,fp_save_file,offset
   extended to support unique params.
   """
   
-  ptn_info_list = flow_settings["ptn_params"]["ptn_list"]
+  ptn_info_list = flow_settings["ptn_params"]["partitions"]
   #
   report_path = os.path.join("..","reports")
   output_path = os.path.join("..","outputs")
@@ -1552,11 +1552,11 @@ def hardblock_script_gen(flow_settings):
 
               #initializing floorplan settings
               scaled_dims_list = []
-              for scale in flow_settings["ptn_params"]["scaling_array"]:
-                ptn_info_list = flow_settings["ptn_params"]["ptn_list"]
+              for scale in flow_settings["ptn_params"]["top_settings"]["scaling_array"]:
+                ptn_info_list = flow_settings["ptn_params"]["partitions"]
                 ptn_block_list = [ptn["mod_name"] for ptn in ptn_info_list]
                 #overall floorplan 
-                new_dim_pair = [dim*scale for dim in flow_settings["ptn_params"]["fp_init_dims"]]
+                new_dim_pair = [dim*scale for dim in flow_settings["ptn_params"]["top_settings"]["fp_init_dims"]]
                 scaled_dims_list.append(new_dim_pair)
               
               for dim_pair in scaled_dims_list:
@@ -1640,17 +1640,14 @@ def hardblock_parallel_flow(flow_settings):
   os.chdir(flow_settings["parallel_hardblock_folder"])
   
   flow_stages = ["synth","pnr","sta"] 
-  #preprocessing
-  for stage in flow_stages:
-    flow_settings["run_params"][stage]["run_flag"] = (flow_settings["run_params"][stage]["run_flag"] == "True")
   ########################### PARALLEL SYNTHESIS SECTION ###########################
-  if flow_settings["run_params"]["synth"]["run_flag"]:
+  if flow_settings["hb_run_params"]["synth"]["run_flag"]:
     print("Running synthesis scripts in parallel...")
     synth_parallel_work_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"synth","synth_parallel_work")
     run_pll_flow_stage(synth_parallel_work_path)
   ########################### PARALLEL SYNTHESIS SECTION ###########################
   ########################### PARALLEL PNR SECTION #################################
-  if flow_settings["run_params"]["pnr"]["run_flag"]:
+  if flow_settings["hb_run_params"]["pnr"]["run_flag"]:
     print("Running pnr scripts in parallel...")
     #below path should point to pnr directory in pll flow folder
     pnr_parallel_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"pnr")
@@ -1660,11 +1657,10 @@ def hardblock_parallel_flow(flow_settings):
       # gen_fp(dim) -> gen_ptns(dim) -> [gen_blocks(dim)]  -> pnr(top_lvl) -> assemble(all_parts_of_design) 
       #if override outputs is set 
       #pre_processing for filtering ptn commands by specified settings
-      flow_settings["run_params"]["pnr"]["override_outputs"] = (flow_settings["run_params"]["pnr"]["override_outputs"] == "True")
       #floorplan x dimension (this is used in the filename of generated scripts/outputs/reports)
-      fp_dim = float(flow_settings["ptn_params"]["fp_init_dims"][0])
+      fp_dim = float(flow_settings["ptn_params"]["top_settings"]["fp_init_dims"][0])
       #get factors which we are scaling the initial dimension value with
-      scaling_array = [float(fac) for fac in flow_settings["ptn_params"]["scaling_array"]]
+      scaling_array = [float(fac) for fac in flow_settings["ptn_params"]["top_settings"]["scaling_array"]]
       #multiplies initial dimension to find the filenames of all dims we wish to run
       scaled_dims = [fp_dim*fac for fac in scaling_array]
       os.chdir(pnr_parallel_path)
@@ -1682,8 +1678,8 @@ def hardblock_parallel_flow(flow_settings):
         param_dict = get_params_from_str(flow_settings["input_param_options"],param_dir)
         #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
         for cur_key,cur_val in list(param_dict.items()):
-          if cur_key in list(flow_settings["run_params"]["pnr"]["param_filters"].keys()):
-            if all(cur_val != val for val in flow_settings["run_params"]["pnr"]["param_filters"][cur_key]):
+          if cur_key in list(flow_settings["hb_run_params"]["param_filters"].keys()):
+            if all(cur_val != val for val in flow_settings["hb_run_params"]["param_filters"][cur_key]):
               continue_flag = True
               break
 
@@ -1725,7 +1721,7 @@ def hardblock_parallel_flow(flow_settings):
             # continue
 
           #if override outputs is selected the script will not check for intermediate files in the ptn flow and will start from the beginning
-          if(not flow_settings["run_params"]["pnr"]["override_outputs"]):
+          if(not flow_settings["hb_run_params"]["pnr"]["override_outputs"]):
             #if theres already an assembled design saved for the fp flow skip it
             saved_design = os.path.join(output_dir,os.path.splitext(inn_command_series[1])[0]+"_assembled.dat")
             if(os.path.exists(saved_design)):
@@ -1785,7 +1781,7 @@ def hardblock_parallel_flow(flow_settings):
       run_pll_flow_stage(pnr_parallel_work_path)
   ########################### PARALLEL PNR SECTION #################################
   ########################### PARALLEL STA SECTION #################################
-  if(flow_settings["run_params"]["sta"]["run_flag"]):
+  if(flow_settings["hb_run_params"]["sta"]["run_flag"]):
     print("Running sta scripts in parallel...")
     sta_parallel_work_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"sta","sta_parallel_work")
     run_pll_flow_stage(sta_parallel_work_path)
