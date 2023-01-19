@@ -163,7 +163,8 @@ class SpiceInterface(object):
         #    to many instances checking out the license at the same time or license going down temporarly. 
         #    In this case, we check if the ".mt0" exists, if not, we run hspice again. 
         while (not hspice_success) :
-            utils.check_for_time()
+            # last I checked the license is available during the night, so we can try to run hspice uncomment below if this is untrue
+            #utils.check_for_time()
             subprocess.call(["hspice", sp_filename], stdout=output_file, stderr=output_file)
 
             # how come this file is closed here, it should be closed only if there is a success

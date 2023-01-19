@@ -449,7 +449,13 @@ def print_vpr_areas(report_file, fpga_inst):
     print_and_write(report_file, "")
 
     
-def load_params(filename):
+def load_params(filename,run_options):
+    run_params = {
+        "param_filters" : {},
+        "synth": {},
+        "pnr" : {},
+        "sta" : {}
+    }
     # This is the dictionary of parameters we expect to find
     #No defaults for ptn or run settings
     hard_params = {
@@ -519,11 +525,12 @@ def load_params(filename):
         'ptn_settings_file': "",
         'partition_flag': False,
         'ungroup_regex': "",
-        # 'debug_flag': False,
         'mp_num_cores': -1,
         'parallel_hardblock_folder': "",
         'condensed_results_folder': "",
         'coffe_repo_path': "~/COFFE",
+        'hb_run_params': {},
+        'ptn_params': {}
     }
     arch_params = {
         'W': -1,
@@ -588,21 +595,19 @@ def load_params(filename):
     with open(filename, 'r') as file:
         param_dict = yaml.safe_load(file)
 
-    
-    #the parameters which exist in above dict but not in the user input file
-    # key_diff = [x for x in arch_params.keys() if x not in set(param_dict["fpga_arch_params"].keys())]
-    # print(key_diff)
-
     #check to see if the input settings file is a subset of defualt params
     for key in arch_params.keys():
         if(key not in param_dict["fpga_arch_params"].keys()):
             #assign default value if key not found 
             param_dict["fpga_arch_params"][key] = arch_params[key]
-            print(arch_params[key])
-    # if(not all(x in arch_params.keys() for x in param_dict["fpga_arch_params"].keys())):
-    #     print("Invalid parameters in settings file")
-    #     sys.exit()
-    
+
+    if("asic_hardblock_params" in param_dict.keys()):
+        #check to see if the input settings file is a subset of defualt hb params
+        for key in hard_params.keys():
+            for hb_idx, hb_params in enumerate(param_dict["asic_hardblock_params"]["hardblocks"]):
+                if(key not in hb_params.keys()):
+                    #assign default value if key not found 
+                    param_dict["asic_hardblock_params"]["hardblocks"][hb_idx][key] = hard_params[key]
     #load defaults into unspecified values
     for k,v in param_dict.items():
         #if key exists in arch_dict
@@ -741,6 +746,9 @@ def load_params(filename):
         elif param == 'arch_out_folder':
             param_dict["fpga_arch_params"]['arch_out_folder'] = str(value)
     
+    # Check architecture parameters to make sure that they are valid
+    check_arch_params(param_dict["fpga_arch_params"], filename)
+
     if("asic_hardblock_params" in param_dict.keys()):
         for hb_param in param_dict["asic_hardblock_params"]["hardblocks"]:
             for param,value in zip(list(hb_param),list(hb_param.values())):
@@ -834,12 +842,8 @@ def load_params(filename):
                     hb_param["process_params_file"] = str(value)
                 elif param == "pnr_tool":
                     hb_param["pnr_tool"] = str(value)
-                elif param == "hb_run_type":
-                    hb_param["hb_run_type"] = str(value)
                 elif param == "partition_flag":
                     hb_param["partition_flag"] = bool(value)
-                elif param == "debug_flag":
-                    hb_param["debug_flag"] = str(value)
                 elif param == "ptn_settings_file":
                     hb_param["ptn_settings_file"] = str(value)
                 elif param == "ungroup_regex":
@@ -899,6 +903,7 @@ def load_params(filename):
                 "mode" : "int"
             }
             hb_param["input_param_options"] = input_param_options
+            check_hard_params(hb_param,run_options)
     return param_dict    
 
 def load_arch_params(filename):
@@ -1149,7 +1154,7 @@ def check_hard_params(hard_params,run_options):
     checking for unset values
     """
     #These are optional parameters which have been determined to be optional for all run options
-    optional_params = ["process_params_file","mode_signal","hb_run_type","condensed_results_folder"]
+    optional_params = ["process_params_file","mode_signal","condensed_results_folder"]
     if(hard_params["partition_flag"] == False):
         optional_params.append("ptn_settings_file")
         #ungrouping regex is required to partition design
@@ -1554,8 +1559,6 @@ def load_hard_params(filename,run_options):
             hard_params["process_params_file"] = value
         elif param == "pnr_tool":
             hard_params["pnr_tool"] = value
-        elif param == "hb_run_type":
-            hard_params["hb_run_type"] = str(value)
         elif param == "partition_flag":
             hard_params["partition_flag"] = (value == "True")
         elif param == "debug_flag":

@@ -46,8 +46,6 @@ import coffe.vpr
 import datetime
 import math
 
-
-
 print ("\nCOFFE 2.0\n")
 print ("Man is a tool-using animal.")
 print ("Without tools he is nothing, with tools he is all.")
@@ -75,7 +73,8 @@ parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimu
 args = parser.parse_args()
 
 # Load the input architecture description file
-coffe_params = utils.load_params(args.arch_description)
+coffe_params = utils.load_params(args.arch_description,args)
+
 # Make the top-level spice folder if it doesn't already exist
 # if it's already there delete its content
 arch_folder = utils.create_output_dir(args.arch_description, coffe_params["fpga_arch_params"]['arch_out_folder'])

@@ -2247,6 +2247,10 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		
 		
 		print("Sizing will begin now.")
+		# Useful for debugging
+		# tmp_area = get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0)
+		# tmp_delay = get_current_delay(fpga_inst, 0)
+		# print(tmp_area,tmp_delay)
 		current_cost = cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)
 		print("Current Cost: " + str(current_cost))
 		time_before_sizing = time.time()

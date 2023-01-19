@@ -1868,7 +1868,7 @@ class _CarryChainSkipAnd(_SizableCircuit):
 
     def update_area(self, area_dict, width_dict):
         """ Calculate Carry Chain area and update dictionaries. """
-        area_1 = (area_dict["inv_nand"+str(self.nand1_size)+"_xcarry_chain_and_1"] + area_dict["inv_xcarry_chain_and_2"])* int(math.ceil(float(self.skip_size/self.nand1_size)))
+        area_1 = (area_dict["inv_nand"+str(self.nand1_size)+"_xcarry_chain_and_1"] + area_dict["inv_xcarry_chain_and_2"])* int(math.ceil(float(int(self.skip_size/self.nand1_size))))
         area_2 = area_dict["inv_nand"+str(self.nand2_size)+"_xcarry_chain_and_3"] + area_dict["inv_xcarry_chain_and_4"]
         area = area_1 + area_2
         area_with_sram = area
@@ -2751,7 +2751,7 @@ class _LocalRoutingWireLoad:
         print("Generating local routing wire load")
         # Compute load (number of on/partial/off per wire)
         self._compute_load(specs, local_mux)
-        print(self.off_inputs_per_wire)
+        #print(self.off_inputs_per_wire)
         # Generate SPICE deck
         self.wire_names = load_subcircuits.local_routing_load_generate(subcircuit_filename, self.on_inputs_per_wire, self.partial_inputs_per_wire, self.off_inputs_per_wire)
     
@@ -2994,7 +2994,7 @@ class _RoutingWireLoad:
         # Calculate connection block load per tile
         # We assume that cluster inputs are divided evenly between horizontal and vertical routing channels
         # We can get the total number of CB inputs connected to the channel segment by multiplying cluster inputs by cb_mux_size, then divide by W to get cb_inputs/wire
-        cb_load_per_tile = int(round((I/2*cb_mux_size)/W))
+        cb_load_per_tile = int(round((I/2*cb_mux_size)//W))
         # Now we got to find out how many are on, how many are partially on and how many are off
         # For each tile, we have half of the cluster inputs connecting to a routing channel and only a fraction of these inputs are actually used
         # It is logical to assume that used cluster inputs will be connected to used routing wires, so we have I/2*input_usage inputs per tile,
@@ -3163,11 +3163,11 @@ class _pgateoutputcrossbar(_SizableCircuit):
         ptran_count = self.maxwidth
 
         while current_count >1:
-            ptran_count += current_count/2
-            current_count /=2
+            ptran_count += current_count//2
+            current_count //=2
 
         ptran_count *=2
-        ptran_count += self.maxwidth / 2
+        ptran_count += self.maxwidth // 2
 
         area = (area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"] + area_dict["inv_" + self.name + "_3"] * 2) * self.maxwidth + area_dict["ptran_" + self.name + "_4"]  * ptran_count
         #I'll use half of the area to obtain the width. This makes the process of defining wires easier for this crossbar
@@ -3206,7 +3206,7 @@ class _configurabledecoderiii(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print("Generating  stage of the configurable decoder " + self.name)
+        print("Generating stage of the configurable decoder " + self.name)
         
 
         # Call generation function
@@ -3215,7 +3215,7 @@ class _configurabledecoderiii(_SizableCircuit):
         else:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_configurabledecoderiii_lp(subcircuit_filename, self.name, self.required_size)
 
-            print(self.transistor_names)
+            #print(self.transistor_names)
         # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
         self.initial_transistor_sizes["inv_nand"+str(self.required_size)+"_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_nand"+str(self.required_size)+"_" + self.name + "_1_pmos"] = 1
@@ -3341,7 +3341,7 @@ class _configurabledecoder2ii(_SizableCircuit):
         else:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_configurabledecoder2ii_lp(subcircuit_filename, self.name)
 
-            print(self.transistor_names)
+            #print(self.transistor_names)
         # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
         self.initial_transistor_sizes["inv_nand2_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_nand2_" + self.name + "_1_pmos"] = 1
@@ -3548,7 +3548,7 @@ class _wordlinedriver(_SizableCircuit):
         self.is_rowdecoder_2stage = is_rowdecoder_2stage
         self.wl_repeater = 0
         if self.rowsram > 128:
-            self.rowsram /= 2
+            self.rowsram //= 2
             self.wl_repeater = 1
     
     def generate(self, subcircuit_filename, min_tran_width):
@@ -3560,7 +3560,7 @@ class _wordlinedriver(_SizableCircuit):
         else:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_wordline_driver_lp(subcircuit_filename, self.name, self.number_of_banks + 1, self.wl_repeater)
 
-            print(self.transistor_names)
+            #print(self.transistor_names)
         # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
 
         if self.number_of_banks == 1:
@@ -4338,7 +4338,7 @@ class _RAMLocalRoutingWireLoad:
         # Name of this wire
         self.name = "local_routing_wire_load"
         # This is calculated for the widest mode (worst case scenario. Other modes have less usage)
-        self.RAM_input_usage_assumption = float((2 + 2*(row_decoder_bits + col_decoder_bits) + 2** (conf_decoder_bits))/(2 + 2*(row_decoder_bits + col_decoder_bits+ conf_decoder_bits) + 2** (conf_decoder_bits)))
+        self.RAM_input_usage_assumption = float((2 + 2*(row_decoder_bits + col_decoder_bits) + 2** (conf_decoder_bits))//(2 + 2*(row_decoder_bits + col_decoder_bits+ conf_decoder_bits) + 2** (conf_decoder_bits)))
         # Total number of local mux inputs per wire
         self.mux_inputs_per_wire = -1
         # Number of on inputs connected to each wire 
@@ -4677,7 +4677,7 @@ class _RAM(_CompoundCircuit):
             self.cfanin2 = 2**(self.cpredecoder1+self.cpredecoder2+self.cpredecoder3 - 2)
             self.cvalidobj2 = 1
 
-        self.configurabledecoderi = _configurabledecoderinvmux(use_tgate, int(self.stage1output2/2), int(self.stage1output3/2), self.conf_decoder_bits)
+        self.configurabledecoderi = _configurabledecoderinvmux(use_tgate, int(self.stage1output2//2), int(self.stage1output3//2), self.conf_decoder_bits)
         self.configurabledecoderiii = _configurabledecoderiii(use_tgate, self.cfanouttypeconf , self.cfanin1 , self.cfanin2, 2**self.conf_decoder_bits)
 
         self.pgateoutputcrossbar = _pgateoutputcrossbar(2**self.conf_decoder_bits)
@@ -5278,7 +5278,6 @@ class FPGA:
         # Initialize the specs
         self.specs = _Specs(coffe_params["fpga_arch_params"], run_options.quick_mode)
 
-
         ######################################
         ### INITIALIZE SPICE LIBRARY NAMES ###
         ######################################
@@ -5304,7 +5303,7 @@ class FPGA:
         clb_to_r_sb_mux_size = No*self.specs.Fcout*self.specs.L/2
         sb_mux_size_required = int(r_to_r_sb_mux_size + clb_to_r_sb_mux_size)
         # Calculate number of switch block muxes per tile
-        num_sb_mux_per_tile = 2*self.specs.W/self.specs.L
+        num_sb_mux_per_tile = 2*self.specs.W//self.specs.L
         # Initialize the switch block
         self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, self.specs.use_tgate)
 
@@ -5459,7 +5458,30 @@ class FPGA:
         # This is the height of the logic block, once an initial floorplanning solution has been determined, it will be assigned a non-zero value.
         self.lb_height =  0.0
 
+    def debug_print(self,member_str):
+        """ This function prints various FPGA class members in a static order s.t they can be easily compared with one another"""
+        #wire lengths
+        title_buffer = "#"*35
+        if(member_str == "wire_lengths"):
+            print("%s WIRE LENGTHS %s" % (title_buffer,title_buffer))
+            if(not bool(self.wire_lengths)):
+                #if empty dict print that
+                print("EMPTY PARAM")
+            else:
+                for k,v in self.wire_lengths.items():
+                    print("%s---------------%f" % (k,v))
+            print("%s WIRE LENGTHS %s" % (title_buffer,title_buffer))
+        elif(member_str == "width_dict"):
+            print("%s WIDTH DICTS %s" % (title_buffer,title_buffer))
+            if(not bool(self.width_dict)):
+                #if empty dict print that
+                print("EMPTY PARAM")
+            else:
+                for k,v in self.width_dict.items():
+                    print("%s---------------%f" % (k,v))
+            print("%s WIDTH DICTS %s" % (title_buffer,title_buffer))
 
+        
 
     def generate(self, is_size_transistors):
         """ This function generates all SPICE netlists and library files. """
@@ -5580,7 +5602,8 @@ class FPGA:
         # Now, we have to update area_dict and width_dict with the new transistor area values
         # for the basic subcircuits which are inverteres, ptran, tgate, restorers and transistors
         self._update_area_and_width_dicts()
-        
+        #I found that printing width_dict here and comparing against golden results was helpful
+        #self.debug_print("width_dict")
 
         # Calculate area of SRAM
         self.area_dict["sram"] = self.specs.sram_cell_area * self.specs.min_width_tran_area
@@ -5672,7 +5695,7 @@ class FPGA:
 
             cc_area_total = 0.0
             skip_size = 5
-            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/skip_size))
+            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)//skip_size))
             if self.specs.enable_carry_chain == 1:
                 if self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple":
                     cc_area_total =  self.specs.N* (self.area_dict["carry_chain"] * self.specs.FAs_per_flut + (self.specs.FAs_per_flut) * self.area_dict["carry_chain_mux"])
@@ -5815,6 +5838,8 @@ class FPGA:
         
         if self.lb_height != 0.0:  
             self.compute_distance()
+
+        #self.debug_print("width_dict")
 
     def compute_distance(self):
         """ This function computes distances for different stripes for the floorplanner:
@@ -6099,7 +6124,9 @@ class FPGA:
 
         for hardblock in self.hardblocklist:
             hardblock.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)  
-            hardblock.mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)     
+            hardblock.mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)   
+
+        #self.debug_print("wire_lengths")  
 
     def update_wire_rc(self):
         """ This function updates self.wire_rc_dict based on the FPGA's self.wire_lengths and self.wire_layers."""
@@ -7437,8 +7464,8 @@ class FPGA:
                 # Add this as a tuple to the tran_area_list
                 # TODO: tran_size and tran_drive are the same thing?!
                 tran_area_list.append((tran_name, tran_size, tran_drive, tran_area, 
-                                                tran_area_nm, tran_width))
-                                                
+                                                tran_area_nm, tran_width))    
+                                                                                   
         # Assign list to FPGA object
         self.transistor_area_list = tran_area_list
         

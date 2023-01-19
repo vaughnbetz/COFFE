@@ -55,14 +55,17 @@ def compare_run_filt_params_to_str(flow_settings,param_str):
   """
   This function compares the inputted string with run_params filters for the coresponding flow stage
   """
-  param_dict = get_params_from_str(flow_settings["input_param_options"],param_str)
-  #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
-  filt_match = 1
-  for cur_key,cur_val in list(param_dict.items()):
-    if cur_key in list(flow_settings["hb_run_params"]["param_filters"].keys()):
-      if all(cur_val != val for val in flow_settings["hb_run_params"]["param_filters"][cur_key]):
-        filt_match = 0
-        break
+  if( "param_filters" in flow_settings["hb_run_params"].keys()):
+    param_dict = get_params_from_str(flow_settings["input_param_options"],param_str)
+    #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
+    filt_match = 1
+    for cur_key,cur_val in list(param_dict.items()):
+      if cur_key in list(flow_settings["hb_run_params"]["param_filters"].keys()):
+        if all(cur_val != val for val in flow_settings["hb_run_params"]["param_filters"][cur_key]):
+          filt_match = 0
+          break
+  else:
+    filt_match = 1
   #if returns 1, then the string is a valid combination of params, else 0
   return filt_match
 
@@ -1255,7 +1258,7 @@ def write_pt_power_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_ou
   file.write("quit\n")
   file.close()
 
-def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_output_path,rel_outputs=False):
+def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,synth_output_path,pnr_output_path,rel_outputs=False):
   """
   writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
   This should look for setup/hold violations using the worst case (hold) and best case (setup) libs
@@ -1274,9 +1277,11 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
     report_power_cmd = "report_power > " + os.path.join(report_path,"power.rpt")
 
 
+
   # if mode_enabled and x <2**len(flow_settings['mode_signal']):
     # for y in range (0, len(flow_settings['mode_signal'])):
       # file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] + " \n")
+  
   if mode_enabled and x < 2**len(flow_settings['mode_signal']):
     case_analysis_cmds = [" ".join(["set_case_analysis",str((x >> y) & 1),flow_settings['mode_signal'][y]]) for y in range(0,len(flow_settings["mode_signal"]))]
   else:
@@ -1297,14 +1302,11 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
     "set target_library " + flow_settings['primetime_libs'],
     "set link_library " + flow_settings['link_library'],
     "read_verilog " + pnr_output_path + "/netlist.v",
+    "current_design $my_top_level",
     case_analysis_cmds,
     "link",
-    "set my_period " + str(clock_period),
-    "set find_clock [ find port [list $my_clock_pin] ] ",
-    "if { $find_clock != [list] } { ",
-    "set clk_name $my_clock_pin",
-    "create_clock -period $my_period $clk_name",
-    "}",
+    #read constraints file
+    "read_sdc -echo " + synth_output_path + "/synthesized.sdc",
     #Standard Parasitic Exchange Format. File format to save parasitic information extracted by the place and route tool.
     "read_parasitics -increment " + pnr_output_path + "/spef.spef",
     report_timing_cmd,
@@ -1325,7 +1327,7 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
 
 ########################################## GENERIC SCRIPTS ############################################
 ########################################## STA RUN FUNCS ############################################
-def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pnr_output_path):
+def run_power_timing(flow_settings,mode_enabled,clock_period,x,synth_output_path,pnr_report_str,pnr_output_path):
   """
   This runs STA using PrimeTime and the pnr generated .spef and netlist file to get a more accurate result for delay
   """
@@ -1334,7 +1336,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
   #This is done because multimodal setting basically sets a mux to the value of 0 or 1 and each mode represents 1 mux ie to evaluate them all we have 2^num_modes states to test 
   if not mode_enabled:
     x = 2**len(flow_settings['mode_signal'])
-  pt_timing_fpath,timing_report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,x,pnr_output_path)
+  pt_timing_fpath,timing_report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,x,synth_output_path,pnr_output_path)
   # run prime time, by getting abs path from writing the script, we can run the command in different directory where the script exists
   run_pt_timing_cmd = "dc_shell-t -f " + pt_timing_fpath + " | tee pt_timing.log"
   run_cmd(run_pt_timing_cmd)
@@ -1351,10 +1353,10 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
     total_delay =  float(data_arrival_time[0])
   file.close()
   
-  write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,x,pnr_output_path)
+  #write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,x,pnr_output_path)
   # run prime time
-  pt_pwr_cmd = "dc_shell-t -f primetime_power.tcl | tee pt_pwr.log"
-  run_cmd(pt_pwr_cmd)
+  #pt_pwr_cmd = "dc_shell-t -f primetime_power.tcl | tee pt_pwr.log"
+  #run_cmd(pt_pwr_cmd)
   
   #copy reports and logs to a unique dir in pt dir
   pt_report_str = pnr_report_str + "_" + "mode_" + str(x)
@@ -1384,7 +1386,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
 
 ########################################## STATIC TIMING ANALYSIS ############################################
 
-########################################## PARALLLEL FLOW ##########################################
+########################################## PARALLEL FLOW ##########################################
 def write_param_flow_stage_bash_script(flow_settings,param_path):
   """
   Writes a bash wrapper around the tcl script that needs to be run for this particular flow stage
@@ -1412,10 +1414,10 @@ def write_param_flow_stage_bash_script(flow_settings,param_path):
     else:
       script_rel_path = os.path.join("..","scripts", "pt_timing.tcl") #TODO fix the filename dependancy issues
       timing_cmd = get_sta_cmd(script_rel_path)
-      # flow_cmd = timing_cmd
-      script_rel_path = os.path.join("..","scripts", "primetime_power.tcl") #TODO fix the filename dependancy issues
-      power_cmd = get_sta_cmd(script_rel_path)
-      flow_cmd = "\n".join([timing_cmd,power_cmd])
+      flow_cmd = timing_cmd
+      #script_rel_path = os.path.join("..","scripts", "primetime_power.tcl") #TODO fix the filename dependancy issues
+      #power_cmd = get_sta_cmd(script_rel_path)
+      #flow_cmd = "\n".join([timing_cmd,power_cmd])
   if(flow_cmd == ""):
     return
   file_lines = [
@@ -1602,11 +1604,11 @@ def hardblock_script_gen(flow_settings):
                 for dim_str,ptn_dir in zip(dim_strs,ptn_dirs):
                   timing_fname = "dimlen_" + dim_str + "_" + "pt_timing.tcl"
                   power_fname = "dimlen_" + dim_str + "_" + "primetime_power.tcl"
-                  fpath ,report_path = write_pt_timing_script(flow_settings,timing_fname,mode_enabled,clock_period,mode,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
-                  write_pt_power_script(flow_settings,power_fname,mode_enabled,clock_period,mode,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
+                  fpath ,report_path = write_pt_timing_script(flow_settings,timing_fname,mode_enabled,clock_period,mode,syn_output_path,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
+                  #write_pt_power_script(flow_settings,power_fname,mode_enabled,clock_period,mode,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
               else:
-                fpath,report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
-                write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
+                fpath,report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,mode,syn_output_path,pnr_output_path,rel_outputs=True)
+                #write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
   
   write_parallel_scripts(flow_settings,top_abs_path)
   os.chdir(pre_func_dir)
@@ -2237,7 +2239,7 @@ def hardblock_flow(flow_settings):
             run_sim()
           #loops over every combination of user inputted modes to set the set_case_analysis value (determines value of mode mux)
           for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
-            library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pnr_output_path)
+            library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,syn_output_path,pnr_report_str,pnr_output_path)
             # write the final report file:
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               file = open("report_mode" + str(x) + "_" + str(flow_settings['top_level']) + "_" + str(clock_period) + "_" + str(wire_selection) + "_wire_" + str(metal_layer) + "_" + str(core_utilization) + ".txt" ,"w")

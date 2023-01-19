@@ -111,7 +111,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(2*(level2_size-1)) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(2*(level2_size-1)) + "'\n")
 		wire_counter = wire_counter + 1
-		new_node = "n_2_" + str(level2_size/2)
+		new_node = "n_2_" + str(int(level2_size/2))
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + " n_out " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(2*(level2_size-1)) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(2*(level2_size-1)) + "'\n")
@@ -126,7 +126,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		spice_file.write("Xptran_" + mux_name + "_L2_" + str(tran_counter) + "h n_gnd n_out n_gnd n_gnd ptran Wn=ptran_" + mux_name + "_L2_nmos\n")
 		wire_counter = wire_counter + 1
 		tran_counter = tran_counter + 1
-		new_node = "n_2_" + str(level2_size/2)
+		new_node = "n_2_" + str(int(level2_size/2))
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + " n_out " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(level2_size-1) + "'\n")
@@ -136,7 +136,7 @@ def _generate_ptran_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		current_node = new_node
 	# These are the switches above driver connection
 	for i in range(1, int(level2_size/2)):
-		new_node = "n_2_" + str(i+level2_size/2)
+		new_node = "n_2_" + str(i+int(level2_size/2))
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + current_node + " " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(level2_size-1) + "'\n")
@@ -394,7 +394,7 @@ def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(2*(level2_size-1)) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(2*(level2_size-1)) + "'\n")
 		wire_counter = wire_counter + 1
-		new_node = "n_2_" + str(level2_size/2)
+		new_node = "n_2_" + str(int(level2_size/2))
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + " n_out " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(2*(level2_size-1)) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(2*(level2_size-1)) + "'\n")
@@ -409,7 +409,7 @@ def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		spice_file.write("Xtgate_" + mux_name + "_L2_" + str(tran_counter) + "h n_gnd n_out n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_" + mux_name + "_L2_nmos Wp=tgate_" + mux_name + "_L2_pmos\n")
 		wire_counter = wire_counter + 1
 		tran_counter = tran_counter + 1
-		new_node = "n_2_" + str(level2_size/2)
+		new_node = "n_2_" + str(int(level2_size/2))
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + " n_out " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(level2_size-1) + "'\n")
@@ -419,7 +419,7 @@ def _generate_tgate_2lvl_mux_on(spice_file, mux_name, implemented_mux_size, leve
 		current_node = new_node
 	# These are the switches above driver connection
 	for i in range(1, int(level2_size/2)):
-		new_node = "n_2_" + str(i+level2_size/2)
+		new_node = "n_2_" + str(i+int(level2_size/2))
 		spice_file.write("Xwire_" + mux_name + "_L2_" + str(wire_counter) + " " + current_node + " " + new_node + 
 							" wire Rw='wire_" + mux_name + "_L2_res/" + str(level2_size-1) + "' Cw='wire_" +
 							mux_name + "_L2_cap/" + str(level2_size-1) + "'\n")

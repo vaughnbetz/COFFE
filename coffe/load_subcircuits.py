@@ -327,7 +327,7 @@ def generate_ble_outputs(spice_filename, num_local_out, num_gen_out):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* BLE outputs\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT ble_outputs n_1_" + str((total_outputs + 1)/2+1) + " n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on\n")
+    spice_file.write(".SUBCKT ble_outputs n_1_" + str(int((total_outputs + 1)/2)+1) + " n_local_out n_general_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_output_on n_vdd_general_output_on\n")
     # Create the BLE output bar
     current_node = 2
     for i in range(num_local_out):
