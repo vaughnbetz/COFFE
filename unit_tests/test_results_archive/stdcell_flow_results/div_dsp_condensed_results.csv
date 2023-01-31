@@ -1,0 +1,4 @@
+top_level,period,wiremdl,mlayer,util,dimlen,mode,delay,area,power,timing_met_setup,timing_met_hold,pnr,synth,sta
+FMULT,1.53,WireAreaLowkCon,8,0.85,NA,NA,2.397,45932.4,0.037,False,False,True,False,False
+FMULT,1.53,WireAreaLowkCon,NA,NA,NA,NA,2.429,41556.9603,0.018,False,True,False,True,False
+FMULT,1.53,WireAreaLowkCon,8,0.85,NA,NA,2.409,NA,0.02,False,NA,False,False,True
