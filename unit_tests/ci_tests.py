@@ -50,7 +50,7 @@ def run_custom_flow(in_config_fpath, mode="quick"):
     log_out = os.path.join(unit_test_home,f"{config_name}.log")
     print(f"Running custom flow with input config: {in_config_fpath} ...")
     iters = run_opts["iters"]
-    coffe_cmd = f"python3 {coffe_home}/coffe.py -i {iters} {in_config_fpath} | tee {log_out}"
+    coffe_cmd = f"python3 coffe.py -i {iters} {in_config_fpath} | tee {log_out}"
     run_bash_cmd(coffe_cmd)
     return log_out
 
@@ -64,7 +64,7 @@ def run_stdcell_flow(in_config_fpath):
     log_out = os.path.join(unit_test_home,f"{config_name}.log")
     print(f"Running stdcell flow with input config: {in_config_fpath} ...")
     # Default mode is to run in parallel
-    coffe_cmd = f"python3 {coffe_home}/coffe.py {in_config_fpath} -ho -p | tee {log_out}"
+    coffe_cmd = f"python3 coffe.py {in_config_fpath} -ho -p | tee {log_out}"
     run_bash_cmd(coffe_cmd)
     return log_out
 
