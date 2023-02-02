@@ -1303,16 +1303,23 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,synth
     "set link_library " + flow_settings['link_library'],
     "read_verilog " + pnr_output_path + "/netlist.v",
     "current_design $my_top_level",
-    case_analysis_cmds,
     "link",
-    #read constraints file
+    # "set my_period " + str(clock_period),
+    # "set find_clock [ find port [list $my_clock_pin] ] ",
+    # "if { $find_clock != [list] } { ",
+    # "set clk_name $my_clock_pin",
+    # "create_clock -period $my_period $clk_name",
+    # "}",
+
+    # read constraints file
     "read_sdc -echo " + synth_output_path + "/synthesized.sdc",
-    #Standard Parasitic Exchange Format. File format to save parasitic information extracted by the place and route tool.
-    "read_parasitics -increment " + pnr_output_path + "/spef.spef",
+    case_analysis_cmds,
     report_timing_cmd,
+    #Standard Parasitic Exchange Format. File format to save parasitic information extracted by the place and route tool.
     "set power_enable_analysis TRUE",
     "set power_analysis_mode \"averaged\"",
     switching_activity_cmd,
+    "read_parasitics -increment " + pnr_output_path + "/spef.spef",
     report_power_cmd,
     "quit",
   ]
