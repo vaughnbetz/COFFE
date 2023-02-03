@@ -5,6 +5,8 @@ import time
 import datetime
 
 import re
+import yaml
+
 # Constants used for formatting the subcircuit area/delay/power table. 
 # These denote the widths of various columns - first (FIRS), last (LAST) and the rest (MIDL).
 # We could use better libraries for pretty printing tables, but currently we use a simple method.
@@ -107,7 +109,7 @@ def print_area_and_delay(report_file, fpga_inst):
         str(round(fpga_inst.logic_cluster.ble.lut.trise/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/a".ljust(LAST_COL_WIDTH))
     
     # Get LUT input names so that we can print inputs in sorted order
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
     lut_input_names.sort()
       
     # LUT input drivers
@@ -198,13 +200,13 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  Row Decoder".ljust(FIRS_COL_WIDTH) + str(round(fpga_inst.area_dict["decoder"]/1e6,3)).ljust(MIDL_COL_WIDTH) + str(round(row_decoder_delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + 
         "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))    
 
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage0.power/1e-6,4)).ljust(LAST_COL_WIDTH))
 
     if fpga_inst.RAM.valid_row_dec_size2 == 1:
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size2.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size2.power/1e-6,4)).ljust(LAST_COL_WIDTH))
     if fpga_inst.RAM.valid_row_dec_size3 == 1:
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size3.power/1e-6,4)).ljust(LAST_COL_WIDTH)
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage3.power/1e-6,4)).ljust(LAST_COL_WIDTH)        
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage1_size3.power/1e-6,4)).ljust(LAST_COL_WIDTH))
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.rowdecoder_stage3.power/1e-6,4)).ljust(LAST_COL_WIDTH))        
 
     # Configurable decoder:
     configdelay = fpga_inst.RAM.configurabledecoderi.delay 
@@ -225,12 +227,12 @@ def print_area_and_delay(report_file, fpga_inst):
     print_and_write(report_file, "  CD driver delay ".ljust(FIRS_COL_WIDTH) + "n/a".ljust(MIDL_COL_WIDTH) + 
         str(round(fpga_inst.RAM.configurabledecoderiii.delay/1e-12,4)).ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(MIDL_COL_WIDTH) + "n/m".ljust(LAST_COL_WIDTH))
 
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage0".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderi.power/1e-6,4)).ljust(LAST_COL_WIDTH))
     if fpga_inst.RAM.cvalidobj2 !=0:
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder2ii.power/1e-6,4)).ljust(LAST_COL_WIDTH))
     if fpga_inst.RAM.cvalidobj1 !=0:    
-        print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder3ii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
-    print "  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderiii.power/1e-6,4)).ljust(LAST_COL_WIDTH)
+        print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage1".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoder3ii.power/1e-6,4)).ljust(LAST_COL_WIDTH))
+    print("  Power Breakdown: ".ljust(FIRS_COL_WIDTH) + "stage2".ljust(24)+ str(round(fpga_inst.RAM.configurabledecoderiii.power/1e-6,4)).ljust(LAST_COL_WIDTH))
 
 
     # BRAM output crossbar:
@@ -277,29 +279,29 @@ def print_area_and_delay(report_file, fpga_inst):
 def print_power(report_file, fpga_inst):
     """ Print power per subcircuit """
     
-    print "  SUBCIRCUIT POWER AT 250MHz (uW)"
-    print "  --------------------------"
+    print("  SUBCIRCUIT POWER AT 250MHz (uW)")
+    print("  --------------------------")
 
-    print "  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power/1e-6) 
-    print "  " + fpga_inst.cb_mux.name.ljust(22) + str(fpga_inst.cb_mux.power/1e-6) 
-    print "  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(fpga_inst.logic_cluster.local_mux.power/1e-6) 
-    print "  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6) 
-    print "  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6) 
+    print("  " + fpga_inst.sb_mux.name.ljust(22) + str(fpga_inst.sb_mux.power/1e-6)) 
+    print("  " + fpga_inst.cb_mux.name.ljust(22) + str(fpga_inst.cb_mux.power/1e-6)) 
+    print("  " + fpga_inst.logic_cluster.local_mux.name.ljust(22) + str(fpga_inst.logic_cluster.local_mux.power/1e-6)) 
+    print("  " + fpga_inst.logic_cluster.ble.local_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.local_output.power/1e-6)) 
+    print("  " + fpga_inst.logic_cluster.ble.general_output.name.ljust(22) + str(fpga_inst.logic_cluster.ble.general_output.power/1e-6)) 
 
     # Figure out LUT power
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
     lut_input_names.sort()
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
         path_power = lut_input.power
         driver_power = lut_input.driver.power
         not_driver_power = lut_input.not_driver.power
-        print "  " + ("lut_" + input_name).ljust(22) + str((path_power + driver_power + not_driver_power)/1e-6)
-        print "  " + ("  lut_" + input_name + "_data_path").ljust(22) + str(path_power/1e-6)
-        print "  " + ("  lut_" + input_name + "_driver").ljust(22) + str(driver_power/1e-6)
-        print "  " + ("  lut_" + input_name + "_driver_not").ljust(22) + str(not_driver_power/1e-6)
+        print("  " + ("lut_" + input_name).ljust(22) + str((path_power + driver_power + not_driver_power)/1e-6))
+        print("  " + ("  lut_" + input_name + "_data_path").ljust(22) + str(path_power/1e-6))
+        print("  " + ("  lut_" + input_name + "_driver").ljust(22) + str(driver_power/1e-6))
+        print("  " + ("  lut_" + input_name + "_driver_not").ljust(22) + str(not_driver_power/1e-6))
 
-    print ""
+    print("")
 
     
 def print_block_area(report_file, fpga_inst):
@@ -422,7 +424,7 @@ def print_vpr_delays(report_file, fpga_inst):
     print_and_write(report_file, "  LUT output -> CLB output (logic block output)".ljust(50) + str(fpga_inst.logic_cluster.ble.general_output.delay))
     
     # Figure out LUT delays
-    lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+    lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
     lut_input_names.sort()
     for input_name in lut_input_names:
         lut_input = fpga_inst.logic_cluster.ble.lut.input_drivers[input_name]
@@ -447,6 +449,463 @@ def print_vpr_areas(report_file, fpga_inst):
     print_and_write(report_file, "")
 
     
+def load_params(filename,run_options):
+    run_params = {
+        "param_filters" : {},
+        "synth": {},
+        "pnr" : {},
+        "sta" : {}
+    }
+    # This is the dictionary of parameters we expect to find
+    #No defaults for ptn or run settings
+    hard_params = {
+        'name': "",
+        'num_gen_inputs': -1,
+        'crossbar_population': -1.0,
+        'height': -1,
+        'num_gen_outputs': -1,
+        'num_crossbars': -1,
+        'crossbar_modelling': "",
+        'num_dedicated_outputs': -1,
+        'soft_logic_per_block': -1.0,
+        'area_scale_factor': -1.0,
+        'freq_scale_factor': -1.0,
+        'power_scale_factor': -1.0,
+        'input_usage': -1.0,
+        # Flow Settings:
+        'design_folder': "",
+        'design_language': '',
+        'clock_pin_name': "",
+        'top_level': "",
+        'synth_folder': "",
+        'show_warnings': False,
+        'synthesis_only': False,
+        'read_saif_file': False,
+        'static_probability': -1.0,
+        'toggle_rate': -1,
+        'target_libraries': [],
+        'lef_files': [],
+        'best_case_libs': [],
+        'standard_libs': [],
+        'worst_case_libs': [],
+        'power_ring_width': -1.0,
+        'power_ring_spacing': -1.0,
+        'height_to_width_ratio': -1.0,
+        #sweep params
+        'clock_period': [],
+        'wire_selection' : [],
+        'metal_layers': [],
+        'core_utilization': [],
+        'mode_signal': [],  
+        #
+        'space_around_core': -1,
+        'pr_folder': "",
+        'primetime_libs': [],
+        'primetime_folder': "" ,
+        'delay_cost_exp': 1.0,
+        'area_cost_exp': 1.0,
+        'metal_layer_names': [],
+        'power_ring_metal_layer_names' : [],
+        'map_file': '',
+        'gnd_net': '',
+        'gnd_pin': '',
+        'pwr_net': '',
+        'pwr_pin': '',
+        'tilehi_tielo_cells_between_power_gnd': True,
+        'inv_footprint': '',
+        'buf_footprint': '',
+        'delay_footprint': '',
+        'filler_cell_names': [],
+        'generate_activity_file': False,
+        'core_site_name':'',
+        'process_lib_paths': [],
+        'process_params_file': "",
+        'pnr_tool': "",
+        'process_size': -1,
+        'ptn_settings_file': "",
+        'partition_flag': False,
+        'ungroup_regex': "",
+        'mp_num_cores': -1,
+        'parallel_hardblock_folder': "",
+        'condensed_results_folder': "",
+        'coffe_repo_path': "~/COFFE",
+        'hb_run_params': {},
+        'ptn_params': {}
+    }
+    arch_params = {
+        'W': -1,
+        'L': -1,
+        'Fs': -1,
+        'N': -1,
+        'K': -1,
+        'I': -1,
+        'Fcin': -1.0,
+        'Fcout': -1.0,
+        'Or': -1,
+        'Ofb': -1,
+        'Fclocal': -1.0,
+        'Rsel': "",
+        'Rfb': "",
+        'transistor_type': "",
+        'switch_type': "",
+        'use_tgate': False,
+        'use_finfet': False,
+        'memory_technology': "SRAM",
+        'enable_bram_module': 0,
+        'ram_local_mux_size': 25,
+        'read_to_write_ratio': 1.0,
+        'vdd': -1.0,
+        'vsram': -1.0,
+        'vsram_n': -1.0,
+        'vclmp': 0.653,
+        'vref': 0.627,
+        'vdd_low_power': 0.95,
+        'number_of_banks': 1,
+        'gate_length': -1,
+        'rest_length_factor': -1,
+        'min_tran_width': -1,
+        'min_width_tran_area': -1,
+        'sram_cell_area': -1,
+        'trans_diffusion_length' : -1,
+        'model_path': "",
+        'model_library': "",
+        'metal' : [],
+        'row_decoder_bits': 8,
+        'col_decoder_bits': 1,
+        'conf_decoder_bits' : 5,
+        'sense_dv': 0.3,
+        'worst_read_current': 1e-6,
+        'SRAM_nominal_current': 1.29e-5,
+        'MTJ_Rlow_nominal': 2500,
+        'MTJ_Rhigh_nominal': 6250,
+        'MTJ_Rlow_worstcase': 3060,
+        'MTJ_Rhigh_worstcase': 4840,
+        'use_fluts': False,
+        'independent_inputs': 0,
+        'enable_carry_chain': 0,
+        'carry_chain_type': "ripple",
+        'FAs_per_flut':2,
+        'arch_out_folder': "None",
+    }
+    
+    #top level param types
+    param_type_names = ["fpga_arch_params","asic_hardblock_params"]
+    hb_sub_param_type_names = ["hb_run_params","ptn_params"]#"asic_partition_params"]
+    #get values from yaml file
+    with open(filename, 'r') as file:
+        param_dict = yaml.safe_load(file)
+
+    #check to see if the input settings file is a subset of defualt params
+    for key in arch_params.keys():
+        if(key not in param_dict["fpga_arch_params"].keys()):
+            #assign default value if key not found 
+            param_dict["fpga_arch_params"][key] = arch_params[key]
+
+    if("asic_hardblock_params" in param_dict.keys()):
+        #check to see if the input settings file is a subset of defualt hb params
+        for key in hard_params.keys():
+            for hb_idx, hb_params in enumerate(param_dict["asic_hardblock_params"]["hardblocks"]):
+                if(key not in hb_params.keys()):
+                    #assign default value if key not found 
+                    param_dict["asic_hardblock_params"]["hardblocks"][hb_idx][key] = hard_params[key]
+    #load defaults into unspecified values
+    for k,v in param_dict.items():
+        #if key exists in arch_dict
+        if(k in param_type_names):
+            for k1,v1 in v.items():
+                #parse arch params
+                if(k1 in arch_params):
+                    if(v1 == None):
+                        v[k1] = arch_params[k1]
+                #parse hb params
+                elif(k1 == "hardblocks"):
+                    # for each hardblock in the design
+                    for hb_idx, hb in enumerate(v[k1]):
+                        for k2,v2 in hb.items():
+                            if(k2 in hard_params):
+                                #if the value in yaml dict is empty, assign defualt val from above dict 
+                                if(v2 == None):
+                                    v[k1][hb_idx][k2] = hard_params[k2]
+                elif(k1 in hb_sub_param_type_names):
+                    pass
+                else:
+                    print("ERROR: Found invalid parameter (" + k1 + ") in " + filename)
+                    sys.exit()
+
+    # TODO make this cleaner, should probably just have a data structure containing all expected data types for all params
+    for param,value in zip(list(param_dict["fpga_arch_params"]),list(param_dict["fpga_arch_params"].values())):
+        #architecture parameters
+        if param == 'W':
+            param_dict["fpga_arch_params"]['W'] = int(value)
+        elif param == 'L':
+            param_dict["fpga_arch_params"]['L'] = int(value)
+        elif param == 'Fs':
+            param_dict["fpga_arch_params"]['Fs'] = int(value)
+        elif param == 'N':
+            param_dict["fpga_arch_params"]['N'] = int(value)
+        elif param == 'K':
+            param_dict["fpga_arch_params"]['K'] = int(value)
+        elif param == 'I':
+            param_dict["fpga_arch_params"]['I'] = int(value)
+        elif param == 'Fcin':
+            param_dict["fpga_arch_params"]['Fcin'] = float(value)
+        elif param == 'Fcout':
+            param_dict["fpga_arch_params"]['Fcout'] = float(value) 
+        elif param == 'Or':
+            param_dict["fpga_arch_params"]['Or'] = int(value)
+        elif param == 'Ofb':
+            param_dict["fpga_arch_params"]['Ofb'] = int(value)
+        elif param == 'Fclocal':
+            param_dict["fpga_arch_params"]['Fclocal'] = float(value)
+        elif param == 'Rsel':
+            param_dict["fpga_arch_params"]['Rsel'] = str(value)
+        elif param == 'Rfb':
+            param_dict["fpga_arch_params"]['Rfb'] = str(value)
+        elif param == 'row_decoder_bits':
+            param_dict["fpga_arch_params"]['row_decoder_bits'] = int(value)
+        elif param == 'col_decoder_bits':
+            param_dict["fpga_arch_params"]['col_decoder_bits'] = int(value)
+        elif param == 'number_of_banks':
+            param_dict["fpga_arch_params"]['number_of_banks'] = int(value)
+        elif param == 'conf_decoder_bits':
+            param_dict["fpga_arch_params"]['conf_decoder_bits'] = int(value) 
+        #process technology parameters
+        elif param == 'transistor_type':
+            param_dict["fpga_arch_params"]['transistor_type'] = str(value)
+            if value == 'finfet':
+                param_dict["fpga_arch_params"]['use_finfet'] = True
+        elif param == 'switch_type':  
+            param_dict["fpga_arch_params"]['switch_type'] = str(value)        
+            if value == 'transmission_gate':
+                param_dict["fpga_arch_params"]['use_tgate'] = True
+        elif param == 'memory_technology':
+            param_dict["fpga_arch_params"]['memory_technology'] = str(value)
+        elif param == 'vdd':
+            param_dict["fpga_arch_params"]['vdd'] = float(value)
+        elif param == 'vsram':
+            param_dict["fpga_arch_params"]['vsram'] = float(value)
+        elif param == 'vsram_n':
+            param_dict["fpga_arch_params"]['vsram_n'] = float(value)
+        elif param == 'gate_length':
+            param_dict["fpga_arch_params"]['gate_length'] = int(value)
+        elif param == 'sense_dv':
+            param_dict["fpga_arch_params"]['sense_dv'] = float(value)
+        elif param == 'vdd_low_power':
+            param_dict["fpga_arch_params"]['vdd_low_power'] = float(value)
+        elif param == 'vclmp':
+            param_dict["fpga_arch_params"]['vclmp'] = float(value)
+        elif param == 'read_to_write_ratio':
+            param_dict["fpga_arch_params"]['read_to_write_ratio'] = float(value)
+        elif param == 'enable_bram_module':
+            param_dict["fpga_arch_params"]['enable_bram_module'] = int(value)
+        elif param == 'ram_local_mux_size':
+            param_dict["fpga_arch_params"]['ram_local_mux_size'] = int(value)
+        elif param == 'use_fluts':
+            param_dict["fpga_arch_params"]['use_fluts'] = bool(value)
+        elif param == 'independent_inputs':
+            param_dict["fpga_arch_params"]['independent_inputs'] = int(value)
+        elif param == 'enable_carry_chain':
+            param_dict["fpga_arch_params"]['enable_carry_chain'] = int(value)
+        elif param == 'carry_chain_type':
+            param_dict["fpga_arch_params"]['carry_chain_type'] = value
+        elif param == 'FAs_per_flut':
+            param_dict["fpga_arch_params"]['FAs_per_flut'] = int(value)
+        elif param == 'vref':
+            param_dict["fpga_arch_params"]['ref'] = float(value)
+        elif param == 'worst_read_current':
+            param_dict["fpga_arch_params"]['worst_read_current'] = float(value)
+        elif param == 'SRAM_nominal_current':
+            param_dict["fpga_arch_params"]['SRAM_nominal_current'] = float(value)
+        elif param == 'MTJ_Rlow_nominal':
+            param_dict["fpga_arch_params"]['MTJ_Rlow_nominal'] = float(value)
+        elif param == 'MTJ_Rhigh_nominal':
+            param_dict["fpga_arch_params"]['MTJ_Rhigh_nominal'] = float(value)
+        elif param == 'MTJ_Rlow_worstcase':
+            param_dict["fpga_arch_params"]['MTJ_Rlow_worstcase'] = float(value)
+        elif param == 'MTJ_Rhigh_worstcase':
+            param_dict["fpga_arch_params"]['MTJ_Rhigh_worstcase'] = float(value)          
+        elif param == 'rest_length_factor':
+            param_dict["fpga_arch_params"]['rest_length_factor'] = int(value)
+        elif param == 'min_tran_width':
+            param_dict["fpga_arch_params"]['min_tran_width'] = int(value)
+        elif param == 'min_width_tran_area':
+            param_dict["fpga_arch_params"]['min_width_tran_area'] = int(value)
+        elif param == 'sram_cell_area':
+            param_dict["fpga_arch_params"]['sram_cell_area'] = float(value)
+        elif param == 'trans_diffusion_length':
+            param_dict["fpga_arch_params"]['trans_diffusion_length'] = float(value)
+        elif param == 'model_path':
+            param_dict["fpga_arch_params"]['model_path'] = os.path.abspath(value)
+        elif param == 'metal':
+            tmp_list = []
+            for rc_vals in param_dict["fpga_arch_params"]["metal"]:
+                tmp_list.append(tuple(rc_vals))
+            param_dict["fpga_arch_params"]['metal'] = tmp_list
+        elif param == 'model_library':
+            param_dict["fpga_arch_params"]['model_library'] = str(value)
+        elif param == 'arch_out_folder':
+            param_dict["fpga_arch_params"]['arch_out_folder'] = str(value)
+    
+    # Check architecture parameters to make sure that they are valid
+    check_arch_params(param_dict["fpga_arch_params"], filename)
+
+    if("asic_hardblock_params" in param_dict.keys()):
+        for hb_param in param_dict["asic_hardblock_params"]["hardblocks"]:
+            for param,value in zip(list(hb_param),list(hb_param.values())):
+                ## TODO HARDBLOCK STUFF
+                if param == 'name':
+                    hb_param['name'] = str(value)
+                elif param == 'num_gen_inputs':
+                    hb_param['num_gen_inputs'] = int(value)
+                elif param == 'crossbar_population':
+                    hb_param['crossbar_population'] = float(value)
+                elif param == 'height':
+                    hb_param['height'] = int(value)
+                elif param == 'num_gen_outputs':
+                    hb_param['num_gen_outputs'] = int(value)
+                elif param == 'num_dedicated_outputs':
+                    hb_param['num_dedicated_outputs'] = int(value)
+                elif param == 'soft_logic_per_block':
+                    hb_param['soft_logic_per_block'] = float(value)
+                elif param == 'area_scale_factor':
+                    hb_param['area_scale_factor'] = float(value)
+                elif param == 'freq_scale_factor':
+                    hb_param['freq_scale_factor'] = float(value)
+                elif param == 'power_scale_factor':
+                    hb_param['power_scale_factor'] = float(value)  
+                elif param == 'input_usage':
+                    hb_param['input_usage'] = float(value)  
+                elif param == 'delay_cost_exp':
+                    hb_param['delay_cost_exp'] = float(value)  
+                elif param == 'area_cost_exp':
+                    hb_param['area_cost_exp'] = float(value)              
+                #flow parameters:
+                elif param == 'design_folder':
+                    hb_param['design_folder'] = str(value)
+                elif param == 'design_language':
+                    hb_param['design_language'] = str(value)
+                elif param == 'clock_pin_name':
+                    hb_param['clock_pin_name'] = str(value)
+                #STR CONVERTED LIST
+                elif param == 'clock_period':
+                    hb_param['clock_period'] = [str(v) for v in value]
+                elif param == 'core_utilization':
+                    hb_param['core_utilization'] = [str(v) for v in value]
+                elif param == 'filler_cell_names':
+                    hb_param['filler_cell_names'] = [str(v) for v in value]
+                elif param == 'metal_layer_names':
+                    hb_param['metal_layer_names'] = [str(v) for v in value]
+                elif param == 'metal_layers':
+                    hb_param['metal_layers'] = [str(v) for v in value]
+                elif param == 'wire_selection':
+                    hb_param['wire_selection'] = [str(v) for v in value]
+                ##########################
+                elif param == 'map_file':
+                    hb_param['map_file'] = value.strip()
+                elif param == 'tilehi_tielo_cells_between_power_gnd':
+                    hb_param['tilehi_tielo_cells_between_power_gnd'] = bool(value)
+                elif param == 'generate_activity_file':
+                    hb_param['generate_activity_file'] = bool(value)
+                elif param == 'crossbar_modelling':
+                    hb_param['crossbar_modelling'] = str(value)
+                elif param == 'num_crossbars':
+                    hb_param['num_crossbars'] = int(value)
+                elif param == 'top_level':
+                    hb_param['top_level'] = str(value)
+                elif param == 'synth_folder':
+                    hb_param['synth_folder'] = str(value)
+                elif param == 'show_warnings':
+                    hb_param['show_warnings'] = bool(value)
+                elif param == 'synthesis_only':
+                    hb_param['synthesis_only'] = bool(value)
+                elif param == 'read_saif_file':
+                    hb_param['read_saif_file'] = bool(value)
+                elif param == 'static_probability':
+                    hb_param['static_probability'] = str(value)
+                elif param == 'toggle_rate':
+                    hb_param['toggle_rate'] = str(value)
+                elif param == 'power_ring_width':
+                    hb_param['power_ring_width'] = str(value)
+                elif param == 'power_ring_spacing':
+                    hb_param['power_ring_spacing'] = str(value)
+                elif param == 'height_to_width_ratio':
+                    hb_param['height_to_width_ratio'] = str(value)
+                elif param == 'space_around_core':
+                    hb_param['space_around_core'] = str(value)
+                elif param == 'pr_folder':
+                    hb_param['pr_folder'] = str(value)
+                elif param == 'primetime_folder':
+                    hb_param['primetime_folder'] = str(value)
+                elif param == 'mode_signal':
+                    hb_param['mode_signal'] = (value)
+                elif param == "process_params_file":
+                    hb_param["process_params_file"] = str(value)
+                elif param == "pnr_tool":
+                    hb_param["pnr_tool"] = str(value)
+                elif param == "partition_flag":
+                    hb_param["partition_flag"] = bool(value)
+                elif param == "ptn_settings_file":
+                    hb_param["ptn_settings_file"] = str(value)
+                elif param == "ungroup_regex":
+                    hb_param["ungroup_regex"] = str(value)
+                elif param == "mp_num_cores":
+                    hb_param["mp_num_cores"] = int(value)
+                elif param == "parallel_hardblock_folder":
+                    hb_param["parallel_hardblock_folder"] = os.path.expanduser(str(value))
+                elif param == "run_settings_file":
+                    hb_param["run_settings_file"] = os.path.expanduser(str(value))
+                elif param == "condensed_results_folder":
+                    hb_param["condensed_results_folder"] = os.path.expanduser(str(value))
+                elif param == "coffe_repo_path":
+                    hb_param["coffe_repo_path"] = os.path.expanduser(str(value))
+                #To allow for the legacy way of inputting process specific params I'll keep these in (the only reason for having a seperate file is for understandability)
+                if param == "process_lib_paths":
+                    hb_param["process_lib_paths"] = (value)
+                elif param == "primetime_libs":
+                    hb_param["primetime_libs"] = (value)
+                elif param == 'target_libraries':
+                    hb_param['target_libraries'] = (value)
+                elif param == 'lef_files':
+                    hb_param['lef_files'] = (value)
+                elif param == 'best_case_libs':
+                    hb_param['best_case_libs'] = (value)
+                elif param == 'standard_libs':
+                    hb_param['standard_libs'] = (value)
+                elif param == 'worst_case_libs':
+                    hb_param['worst_case_libs'] = (value)
+                elif param == 'core_site_name':
+                    hb_param['core_site_name'] = str(value)
+                elif param == 'inv_footprint':
+                    hb_param['inv_footprint'] = value.strip()
+                elif param == 'buf_footprint':
+                    hb_param['buf_footprint'] = value.strip()
+                elif param == 'delay_footprint':
+                    hb_param['delay_footprint'] = value.strip()
+                elif param == 'power_ring_metal_layer_names':
+                    hb_param['power_ring_metal_layer_names'] = (value)
+                elif param == 'gnd_net':
+                    hb_param['gnd_net'] = value.strip()
+                elif param == 'gnd_pin':
+                    hb_param['gnd_pin'] = value.strip()
+                elif param == 'pwr_net':
+                    hb_param['pwr_net'] = value.strip()
+                elif param == 'pwr_pin':
+                    hb_param['pwr_pin'] = value.strip()
+                elif param == "process_size":
+                    hb_param["process_size"] = str(value)
+                
+            input_param_options = {
+                "period" : "float",
+                "wiremdl" : "str",
+                "mlayer" : "int",
+                "util" : "float",
+                "dimlen" : "float",
+                "mode" : "int"
+            }
+            hb_param["input_param_options"] = input_param_options
+            check_hard_params(hb_param,run_options)
+    return param_dict    
+
 def load_arch_params(filename):
     """ Parse the architecture description file and load values into dictionary. 
         Returns this dictionary.
@@ -533,8 +992,8 @@ def load_arch_params(filename):
         
         # Split lines at '='
         words = line.split('=')
-        if words[0] not in arch_params.keys():
-            print "ERROR: Found invalid architecture parameter (" + words[0] + ") in " + filename
+        if words[0] not in list(arch_params.keys()):
+            print("ERROR: Found invalid architecture parameter (" + words[0] + ") in " + filename)
             sys.exit()
          
         param = words[0]
@@ -671,9 +1130,9 @@ def load_arch_params(filename):
     #TODO fix the below stuff
     optional_arch_params = ["coffe_design_out_folder"]
     # Check that we read everything
-    for param, value in arch_params.iteritems():
+    for param, value in arch_params.items():
         if ((value == -1 or value == "") and (param not in optional_arch_params) ):
-            print "ERROR: Did not find architecture parameter " + param + " in " + filename
+            print("ERROR: Did not find architecture parameter " + param + " in " + filename)
             sys.exit()
     
     # Check architecture parameters to make sure that they are valid
@@ -695,7 +1154,7 @@ def check_hard_params(hard_params,run_options):
     checking for unset values
     """
     #These are optional parameters which have been determined to be optional for all run options
-    optional_params = ["process_params_file","mode_signal","hb_run_type","condensed_results_folder"]
+    optional_params = ["process_params_file","mode_signal","condensed_results_folder"]
     if(hard_params["partition_flag"] == False):
         optional_params.append("ptn_settings_file")
         #ungrouping regex is required to partition design
@@ -710,10 +1169,10 @@ def check_hard_params(hard_params,run_options):
     
 
     #TODO make this sort of a documentation for each parameter
-    for key,val in hard_params.items():
+    for key,val in list(hard_params.items()):
         #Checks to see if value in parameter dict is unset, if its in the optional params list for this run type then it can be ignored
         if ((val == "" or val == -1 or val == -1.0 or val == []) and key not in optional_params):
-            print("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key))
+            print(("param \"%s\" is unset, please go to your hardblock/process params file and set it" % (key)))
             sys.exit(1)
         elif(key == "pnr_tool" and val != "encounter" and val != "innovus" ):
             print("ERROR: pnr_tool must be set as either \"encounter\" or \"innovus\" ")
@@ -899,12 +1358,12 @@ def load_ptn_params(filename):
         val = line[1]
         #dont continue if key is not in dict
         if(key not in ptn_dict):
-            print("ERROR: Found invalid partition parameter (" + key + ") in " + filename)
+            print(("ERROR: Found invalid partition parameter (" + key + ") in " + filename))
             sys.exit(1)
         tmp_dict[key] = val
         key_cnt += 1 
         #If someone ever needs to do anything after all params have been read into a dict inst do it in below if statement
-        if(key_cnt % len(ptn_dict.keys()) == 0):
+        if(key_cnt % len(list(ptn_dict.keys())) == 0):
             ptn_list.append(tmp_dict)
             #reset tmp dict
             tmp_dict = {}            
@@ -947,7 +1406,6 @@ def load_hard_params(filename,run_options):
         'read_saif_file': False,
         'static_probability': -1.0,
         'toggle_rate': -1,
-        #'link_libraries': '',
         'target_libraries': [],
         'lef_files': [],
         'best_case_libs': [],
@@ -959,7 +1417,6 @@ def load_hard_params(filename,run_options):
         'core_utilization': [],
         'space_around_core': -1,
         'pr_folder': "",
-        #'primetime_lib_path': '',
         'primetime_libs': [],
         'primetime_folder': "" ,
         'delay_cost_exp': 1.0,
@@ -1015,8 +1472,8 @@ def load_hard_params(filename,run_options):
         
         # Split lines at '='
         words = line.split('=')
-        if words[0] not in hard_params.keys():
-            print("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename)
+        if words[0] not in list(hard_params.keys()):
+            print(("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename))
             sys.exit()
          
         param = words[0]
@@ -1102,8 +1559,6 @@ def load_hard_params(filename,run_options):
             hard_params["process_params_file"] = value
         elif param == "pnr_tool":
             hard_params["pnr_tool"] = value
-        elif param == "hb_run_type":
-            hard_params["hb_run_type"] = str(value)
         elif param == "partition_flag":
             hard_params["partition_flag"] = (value == "True")
         elif param == "debug_flag":
@@ -1188,8 +1643,8 @@ def load_hard_params(filename,run_options):
             
             # Split lines at '='
             words = line.split('=')
-            if words[0] not in hard_params.keys():
-                print("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename)
+            if words[0] not in list(hard_params.keys()):
+                print(("ERROR: Found invalid hard block parameter (" + words[0] + ") in " + filename))
                 sys.exit()
             
             param = words[0]
@@ -1346,12 +1801,12 @@ def check_arch_params (arch_params, filename):
 
 
 def print_error(value, argument, filename, msg = ""):
-    print "ERROR: Invalid value (" + value + ") for " + argument + " in " + filename + " " + msg
+    print("ERROR: Invalid value (" + value + ") for " + argument + " in " + filename + " " + msg)
     sys.exit()
 
 
 def print_error_not_compatable(value1, value2):
-    print "ERROR: " + value1 + " and " + value2 + " simulations are not compatible.\n"
+    print("ERROR: " + value1 + " and " + value2 + " simulations are not compatible.\n")
     sys.exit()    
 
 
@@ -1479,19 +1934,19 @@ def extract_initial_tran_size(filename, use_tgate):
 
 def use_initial_tran_size(initial_sizes, fpga_inst, tran_sizing, use_tgate):
 
-    print "Extracting initial transistor sizes from: " + initial_sizes
+    print("Extracting initial transistor sizes from: " + initial_sizes)
     initial_tran_size = extract_initial_tran_size(initial_sizes, use_tgate)
-    print "Setting transistor sizes to extracted values"
+    print("Setting transistor sizes to extracted values")
     tran_sizing.override_transistor_sizes(fpga_inst, initial_tran_size)
     for tran in initial_tran_size :
         fpga_inst.transistor_sizes[tran] = initial_tran_size[tran]
-    print "Re-calculating area..."
+    print("Re-calculating area...")
     fpga_inst.update_area()
-    print "Re-calculating wire lengths..."
+    print("Re-calculating wire lengths...")
     fpga_inst.update_wires()
-    print "Re-calculating resistance and capacitance..."
+    print("Re-calculating resistance and capacitance...")
     fpga_inst.update_wire_rc()
-    print ""
+    print("")
 
 
 def check_for_time():
@@ -1503,10 +1958,10 @@ def check_for_time():
         in the code """
     now = datetime.datetime.now()
     if (now.hour == 2 or now.hour == 3):
-        print "-----------------------------------------------------------------"
-        print "      Entered the check for time function @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second)
-        print "-----------------------------------------------------------------"
-        print ""
+        print("-----------------------------------------------------------------")
+        print("      Entered the check for time function @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second))
+        print("-----------------------------------------------------------------")
+        print("")
        
     while (now.hour == 2 and now.minute >= 30) or (now.hour == 3 and now.minute < 30):
     #while (now.minute >= 20) and (now.minute < 25):
@@ -1518,10 +1973,10 @@ def check_for_time():
 
     now = datetime.datetime.now()
     if (now.hour == 2 or now.hour == 3):        
-        print "-----------------------------------------------------------------"
-        print "      Exited the check for time function  @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second)
-        print "-----------------------------------------------------------------"
-        print ""         
+        print("-----------------------------------------------------------------")
+        print("      Exited the check for time function  @ " + str(now.hour) +":" + str(now.minute) + ":" + str(now.second))
+        print("-----------------------------------------------------------------")
+        print("")         
 
 def print_and_write(file, string):
     """

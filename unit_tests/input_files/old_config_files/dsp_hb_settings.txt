@@ -1,0 +1,150 @@
+#This is a sample settings file for the hard block flow
+
+#############################################
+########## General Design Settings ##########
+#############################################
+
+#The coffe repo path is used to find other python files in coffe in the analyze_results dir
+coffe_repo_path=~/COFFE
+
+#This is where parsed results will be generated 
+condensed_results_folder=~/COFFE/output_files/strtx_III_dsp/condensed_results
+
+partition_flag=False
+
+run_settings_file=~/COFFE/input_files/strtx_III_dsp/hb_run_settings.txt
+
+parallel_hardblock_folder=~/COFFE/output_files/strtx_III_dsp/asic_work
+
+mp_num_cores=10
+
+########### GENERAL INFORMATION #############
+# To sweep asic flow parameters you can create
+# parameter lists by setting the same parameter to another value
+# Ex.
+# period=2.0
+# period=1.66
+# ^ this would sweep period and evaluate asic flow for both values
+
+# The folder in which all the design files are located:
+design_folder=~/COFFE/input_files/strtx_III_dsp/dsp_block_hdl
+
+# The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+design_language=verilog
+# The exponents of delay and area in the cost function.
+# cost = (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
+delay_cost_exp=1.0
+area_cost_exp=1.0
+
+#ASIC flow settings
+#path to absolute paths needed for process parameters (relative to coffe home repo)
+process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
+
+#below param runs only a single set of parameters through the ASIC flow (useful for testing)
+#hb_run_type=solo
+
+########################################
+########## Synthesis Settings ##########
+########################################
+
+# Name of the clock pin in the design
+clock_pin_name=clk
+# Desired clock period in ns
+clock_period=1.51
+#clock_period=1.52
+#clock_period=1.53
+#clock_period=1.66
+#clock_period=1.81
+#clock_period=1.99
+#clock_period=2.0
+#clock_period=2.22
+#clock_period=2.5
+
+# Name of the top-level entity in the design
+top_level=dsp
+
+# The name of the folder in which post-synthesis files and synthesis reports are to be stored
+synth_folder=~/COFFE/output_files/strtx_III_dsp/synth
+
+# Do you want to be informed of warnings during synthesis?
+
+show_warnings=True
+
+# Should the flow terminate after synthesis?
+# A value of "False" will continue into placement and routing
+synthesis_only=False
+
+# Do you want to provide a saif file for power analysis?
+# In case of setting this to "True" a saif.saif file should be provided
+read_saif_file=False
+
+# If you don't want to provide a saif file, specify the switching activity parameters below:
+static_probability=0.5
+toggle_rate=25
+
+# Should COFFE generate an activity file for the design (using modelsim)
+generate_activity_file=False
+
+##############################################
+########## Place and Route Settings ##########
+##############################################
+
+#This can be of value "innovus" or "encounter" depending on version of cadence pnr tool used
+pnr_tool=innovus
+
+#name of the file to use for layer mapping. used for stream out.
+#set it to None if you want the tool to create a generic map file
+map_file=streamOut.map
+
+tilehi_tielo_cells_between_power_gnd=True
+
+#name of the core site in the floorplan. can be obtained from lef files.
+#core_site_name=core
+
+#specify the utilization of the core site. you can specify multiple ones on different lines.
+# description of utilization parameter can be found here:
+# https://community.cadence.com/cadence_technology_forums/f/digital-implementation/48060/what-is-the-meaning-of-cell-utlilization
+
+#core_utilization=0.80
+core_utilization=0.85
+#core_utilization=0.90
+#core_utilization=0.95
+
+# EDI settings (Cadence Encounter or innovus):
+# These settings are the width of power/gnd wires and the spacing between them
+# The space_around_core param is the distance between core and IO (leaves enough space for power rings)
+# Calculations: 
+# 1.8 x 2 (ring for VDD and VSS) + 1.8 x 3 (spacing between IO ring and first ring, the rings and last ring and core) = 9 um (1 um of extra space)
+
+power_ring_width=1.8
+power_ring_spacing=1.8
+height_to_width_ratio=4.0
+
+space_around_core=10
+
+# The folder in which place and route reports and post-routing netlists and spef files will be stored
+pr_folder=~/COFFE/output_files/strtx_III_dsp/pr
+
+##############################################
+########## Prime Time Settings ###############
+##############################################
+
+#mode_signal=mode_0
+#mode_signal=mode_1
+
+primetime_folder=~/COFFE/output_files/strtx_III_dsp/pt
+
+# COFFE parameters:
+name=hard_block
+num_gen_inputs=288
+crossbar_population=0.5
+height=1
+num_gen_outputs=288
+num_dedicated_outputs=0
+soft_logic_per_block=0.1
+area_scale_factor=0.12
+freq_scale_factor=1.35
+power_scale_factor=0.3
+input_usage=0.8
+num_crossbars=1
+crossbar_modelling=optimistic

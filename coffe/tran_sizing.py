@@ -9,7 +9,7 @@
 import os
 import math
 import time
-import spice
+from . import spice
 from itertools import product
 import sys
 
@@ -35,7 +35,7 @@ def expand_ranges(sizing_ranges):
 	sizing_ranges_copy = sizing_ranges.copy()
 	
 	# Expand the ranges into full list of values    
-	for key, values in sizing_ranges_copy.items():
+	for key, values in list(sizing_ranges_copy.items()):
 		# Initialization
 		start_value = values[0]
 		end_value = values[1]
@@ -110,7 +110,7 @@ def find_best_config(spice_results, area_exp, delay_exp):
 def export_spice_configs(results_filename, spice_param_names, spice_configs, lvl_rest_names, lvl_rest_configs):
 	""" Export all transistor sizing combinations to a file """
 	
-	print "Exporting all configurations to: " + results_filename
+	print("Exporting all configurations to: " + results_filename)
 
 	# Open file for writing
 	results_file = open(results_filename, 'a')
@@ -146,7 +146,7 @@ def export_transistor_sizes(filename, transistor_sizes):
 
 	tran_size_file = open(filename, 'w')
 	
-	for tran_name, tran_size in transistor_sizes.iteritems():
+	for tran_name, tran_size in transistor_sizes.items():
 		tran_size_file.write(tran_name + "   " + str(tran_size) + "\n")
 	
 	tran_size_file.close()
@@ -200,7 +200,7 @@ def export_erf_results(results_filename, element_names, sizing_combos, best_resu
 	for name in element_names:
 		header_str += name + ","
 	header_str += "Cost,Area,EvalDelay,tfall,trise,erf_error,"
-	erf_ratios_names = best_results[0][6].keys()
+	erf_ratios_names = list(best_results[0][6].keys())
 	for name in erf_ratios_names:
 		header_str += name + ","
 	
@@ -328,7 +328,7 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
 		# LUT input drivers
 
-		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
 			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 			path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
 		# Local BLE output
@@ -418,7 +418,7 @@ def get_current_delay(fpga_inst, is_ram_component):
 	path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
 	# LUT input drivers
 	#print path_delay
-	for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+	for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
 		path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 		path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
 	# Local BLE output
@@ -497,8 +497,8 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 
 	# final delay should not be negative, something went wrong :(
 	if delay < 0 :
-			print "ERROR: final delat is negative"
-			print "***Negative delay: " + str(delay) + " in " + subcircuit.name + " ***"
+			print("ERROR: final delat is negative")
+			print("***Negative delay: " + str(delay) + " in " + subcircuit.name + " ***")
 			exit(2)
 	subcircuit.delay = delay
 	subcircuit.trise = trise
@@ -535,7 +535,7 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 		# LUT
 		path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
 		# LUT input drivers
-		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+		for lut_input_name, lut_input in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
 			path_delay += lut_input.driver.delay*lut_input.driver.delay_weight
 			path_delay += lut_input.not_driver.delay*lut_input.not_driver.delay_weight
 		# Local BLE output
@@ -545,7 +545,7 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 
 		# final delay should not be negative, something went wrong :(
 		if path_delay < 0 :
-			print "***Negative path delay: " + str(path_delay) + " in " + subcircuit.name + " ***"
+			print("***Negative path delay: " + str(path_delay) + " in " + subcircuit.name + " ***")
 			exit(2)
 		
 		return path_delay
@@ -612,7 +612,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 	# the pull up stronger). If at any time, we see that increasing the PMOS is increasing 
 	# trise, we should stop increasing the PMOS size. We might be self-loading the inverter.
 	if ERF_MONITOR_VERBOSE:
-		print "Looking for " + target_tran_name + " size upper bound"
+		print("Looking for " + target_tran_name + " size upper bound")
 	upper_bound_not_found = True
 	self_loading = False
 	bulk_multiplication_factor = 1
@@ -643,8 +643,8 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# length for the level restorers larger could solve this problem.
 		# Note that it's also possible that something else is causing the failure...
 		if tfall_str == "failed" or trise_str == "failed":
-			print "ERROR: HSPICE measurement failed."
-			print "Consider increasing level-restorers gate length by increasing the 'rest_length_factor' parameter in the input file."
+			print("ERROR: HSPICE measurement failed.")
+			print("Consider increasing level-restorers gate length by increasing the 'rest_length_factor' parameter in the input file.")
 			exit(1)
 
 		tfall = float(tfall_str)
@@ -655,7 +655,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# at the input. This can cause COFFE to measure a 'negative' delay.
 		# In this case, we stop ERF attempt.
 		if tfall < 0 or trise < 0 :
-			print "Negative delay detected during ERF. Output transition may be faster than input transition. Stopping upper bound search."
+			print("Negative delay detected during ERF. Output transition may be faster than input transition. Stopping upper bound search.")
 			upper_bound_not_found = False
 			valid_delays = False
 
@@ -667,13 +667,13 @@ def erf_inverter_balance_trise_tfall(sp_path,
 			else:
 				sizing_bounds_str = ("NMOS=" + str(target_tran_size) + 
 									 "  PMOS=" + str(inv_size))
-			print (sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
-				   " diff=" + str(tfall-trise))
+			print((sizing_bounds_str + ": tfall=" + tfall_str + " trise=" + trise_str + 
+				   " diff=" + str(tfall-trise)))
 
 		# We accept negative delays on the first inverter in a driver.
 		if "_1_" not in target_tran_name and "_0_" not in target_tran_name and "_2_" not in target_tran_name:
 			if tfall < 0 or trise < 0 :
-				print "ERROR: Unexpected negative delay."
+				print("ERROR: Unexpected negative delay.")
 				if not fpga_inst.specs.use_finfet:
 					exit(1)
 				else:
@@ -690,30 +690,30 @@ def erf_inverter_balance_trise_tfall(sp_path,
 			if tfall > trise:
 				upper_bound_not_found = False
 				if ERF_MONITOR_VERBOSE:
-					print "Upper bound found, PMOS=" + str(target_tran_size)
+					print("Upper bound found, PMOS=" + str(target_tran_size))
 			else:
 				# Check if trise is increasing or decreasing by comparing to previous trise
 				if trise >= previous_trise or target_tran_size/inv_size > 4:
 					self_loading = True
 					if ERF_MONITOR_VERBOSE:
-						print "Increasing PMOS is no longer decreasing trise"
-						print ("or the ratio is too large, using PMOS=" + 
-							   str(target_tran_size))
-						print ""
+						print("Increasing PMOS is no longer decreasing trise")
+						print(("or the ratio is too large, using PMOS=" + 
+							   str(target_tran_size)))
+						print("")
 				previous_trise = trise    
 		else:
 			if trise > tfall:
 				upper_bound_not_found = False
 				if ERF_MONITOR_VERBOSE:
-					print "Upper bound found, NMOS=" + str(target_tran_size)
+					print("Upper bound found, NMOS=" + str(target_tran_size))
 			else:
 				# Check if tfall is increasing or decreasing by comparing to previous tfall
 				if tfall >= previous_tfall or target_tran_size/inv_size > 4:
 					self_loading = True
 					if ERF_MONITOR_VERBOSE:
-						print "Increasing NMOS is no longer decreasing tfall "
-						print ("or the ratio is too large, using NMOS=" + 
-							   str(target_tran_size))
+						print("Increasing NMOS is no longer decreasing tfall ")
+						print(("or the ratio is too large, using NMOS=" + 
+							   str(target_tran_size)))
 				previous_tfall = tfall   
 
 		# For bulk, this will increment the target transistor size by another 'inv_size'
@@ -759,8 +759,8 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# want to do. All parameters will keep the same value as the one in parameter_dict
 		# except for the target transistor that we want to sweep.
 		sweep_parameter_dict = {}
-		for i in xrange(len(nm_size_list)):
-			for name in parameter_dict.keys():
+		for i in range(len(nm_size_list)):
+			for name in list(parameter_dict.keys()):
 				# Get the value from the existing dictionary and only change it if it's our
 				# target transistor.
 				value = parameter_dict[name][0]
@@ -776,12 +776,12 @@ def erf_inverter_balance_trise_tfall(sp_path,
 
 		# Run HSPICE sweep
 		if ERF_MONITOR_VERBOSE:
-			print "Running HSPICE sweep on: " + sp_path + ""
+			print("Running HSPICE sweep on: " + sp_path + "")
 
 		spice_meas = spice_interface.run(sp_path, sweep_parameter_dict)
 		
 		# Find the new interval where the tfall trise equality occurs.
-		for i in xrange(len(nm_size_list)):
+		for i in range(len(nm_size_list)):
 			tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
 			trise_str = spice_meas["meas_" + inv_name + "_trise"][i]
 			tfall = float(tfall_str)
@@ -810,20 +810,20 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# if the lower bound is larger than the upper bound, the lower bound becomes the upper bound
 		# and vice versa. The net effect is that in the 1nm sweep, we'll just sweep more sizes.
 		if nm_size_lower_bound > nm_size_upper_bound:
-			print "***WARNING: ERF boundaries were swapped.***"
+			print("***WARNING: ERF boundaries were swapped.***")
 			temp_size = nm_size_upper_bound
 			nm_size_upper_bound = nm_size_lower_bound
 			nm_size_lower_bound = temp_size
 
 		if ERF_MONITOR_VERBOSE:
 			if "_pmos" in target_tran_name:
-				print ("ERF PMOS size in range: [" + 
+				print(("ERF PMOS size in range: [" + 
 					   str(int(nm_size_lower_bound)) + ", " + 
-					   str(int(nm_size_upper_bound)) + "]")
+					   str(int(nm_size_upper_bound)) + "]"))
 			else:
-				print ("ERF NMOS size in range: [" + 
+				print(("ERF NMOS size in range: [" + 
 					   str(int(nm_size_lower_bound)) + ", " + 
-					   str(int(nm_size_upper_bound)) + "]")
+					   str(int(nm_size_upper_bound)) + "]"))
 		
 		# We know that ERF is in between nm_size_lower_bound and nm_size_upper_bound
 		# Now we'll sweep this interval with a 1 nm step.
@@ -837,8 +837,8 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		
 		# Make a new sweep parameter dict
 		sweep_parameter_dict = {}
-		for i in xrange(len(nm_size_list)):
-			for name in parameter_dict.keys():
+		for i in range(len(nm_size_list)):
+			for name in list(parameter_dict.keys()):
 				# Get the value from the existing dictionary and only change it if it's our
 				# target transistor.
 				value = parameter_dict[name][0]
@@ -854,7 +854,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 
 		# Run HSPICE sweep
 		if ERF_MONITOR_VERBOSE:
-			print "Running HSPICE sweep on: " + sp_path + ""
+			print("Running HSPICE sweep on: " + sp_path + "")
 		spice_meas = spice_interface.run(sp_path, sweep_parameter_dict)
 
 		# This time around, we want to select the PMOS size that makes the difference
@@ -862,7 +862,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		# was in the interval we just swept)
 		current_best_tfall_trise_balance = 1
 		best_index = 0
-		for i in xrange(len(nm_size_list)):
+		for i in range(len(nm_size_list)):
 			tfall_str = spice_meas["meas_" + inv_name + "_tfall"][i]
 			trise_str = spice_meas["meas_" + inv_name + "_trise"][i]
 			# For some reason I occasionally see a failure due to "internal timestep being too small" The following shall avoid the program
@@ -882,7 +882,7 @@ def erf_inverter_balance_trise_tfall(sp_path,
 		target_tran_size = nm_size_list[best_index]
 
 		if ERF_MONITOR_VERBOSE:
-			print "ERF PMOS size is " + str(target_tran_size) + "\n"
+			print("ERF PMOS size is " + str(target_tran_size) + "\n")
 			
 	# End of the "if not self_loading"
 
@@ -919,7 +919,7 @@ def erf_inverter(sp_path,
 	"""        
 	
 	if ERF_MONITOR_VERBOSE:
-		print "ERF MONITOR: " + inv_name 
+		print("ERF MONITOR: " + inv_name) 
 	 
 	pmos_name = inv_name + "_pmos"
 	nmos_name = inv_name + "_nmos"
@@ -962,8 +962,8 @@ def erf_inverter(sp_path,
 	# length for the level restorers larger could solve this problem.
 	# Note that it's also possible that something else is causing the failure...
 	if inv_tfall_str == "failed" or inv_trise_str == "failed":
-		print "ERROR: HSPICE measurement failed."
-		print "Consider increasing level-restorers gate length by increasing the 'rest_length_factor' parameter in the input file."
+		print("ERROR: HSPICE measurement failed.")
+		print("Consider increasing level-restorers gate length by increasing the 'rest_length_factor' parameter in the input file.")
 		exit(1)
 
 	inv_tfall = float(inv_tfall_str)
@@ -1033,15 +1033,15 @@ def erf(sp_path,
 	# The parameter dict contains the sizes of all transistors and RC of all wires.
 	parameter_dict = {}
 	if not fpga_inst.specs.use_finfet :
-		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+		for tran_name, tran_size in fpga_inst.transistor_sizes.items():
 			parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
-		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.items():
 			parameter_dict[wire_name + "_res"] = [rc_data[0]]
 			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 	else :
-		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+		for tran_name, tran_size in fpga_inst.transistor_sizes.items():
 			parameter_dict[tran_name] = [tran_size]
-		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.items():
 			parameter_dict[wire_name + "_res"] = [rc_data[0]]
 			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 
@@ -1053,7 +1053,7 @@ def erf(sp_path,
 		erf_tolerance_met = True
 
 		# ERF each inverter in the circuit
-		for i in xrange(len(element_names)):
+		for i in range(len(element_names)):
 			circuit_element = element_names[i]
 			element_size = element_sizes[i]
 	
@@ -1075,7 +1075,7 @@ def erf(sp_path,
 		spice_meas = spice_interface.run(sp_path, parameter_dict)
 	
 		if ERF_MONITOR_VERBOSE:
-			print "ERF SUMMARY (iteration " + str(erf_iteration) + "):"
+			print("ERF SUMMARY (iteration " + str(erf_iteration) + "):")
 		
 		# Check the trise/tfall error of all inverters and if at least one of them 
 		# doesn't meet the ERF tolerance, we'll set the erf_tolerance_met flag to false
@@ -1101,27 +1101,27 @@ def erf(sp_path,
 				erf_tolerance_met = False
 	
 			if ERF_MONITOR_VERBOSE:
-				print (circuit_element + " (N=" + str(nmos_nm_size) + " P=" + 
+				print((circuit_element + " (N=" + str(nmos_nm_size) + " P=" + 
 					   str(pmos_nm_size) + ", tfall=" + str(tfall) + ", trise=" + 
-					   str(trise) + ", erf_err=" + str(100*round(erf_error,3)) + "%)")
+					   str(trise) + ", erf_err=" + str(100*round(erf_error,3)) + "%)"))
 		
 		if ERF_MONITOR_VERBOSE:
 			if not erf_tolerance_met:
-				print "One or more inverter(s) failed to meet ERF tolerance"
+				print("One or more inverter(s) failed to meet ERF tolerance")
 			else:
-				print "All inverters met ERF tolerance"
+				print("All inverters met ERF tolerance")
    
 		# Stop ERFing even if tolerance not met if max number of ERF iterations performed.
 		if erf_iteration >= ERF_MAX_ITERATIONS:
 			if ERF_MONITOR_VERBOSE:
-				print "Stopping ERF because max iterations reached"
-				print
+				print("Stopping ERF because max iterations reached")
+				print()
 			break
 
 		erf_iteration += 1
 
 		if ERF_MONITOR_VERBOSE:
-			print ""
+			print("")
 
 	# Get the ERF ratios
 	erf_ratios = {}
@@ -1179,15 +1179,15 @@ def run_combo(fpga_inst, sp_path, element_names, combo, erf_ratios, spice_interf
 	# Make parameter dict
 	parameter_dict = {}
 	if not fpga_inst.specs.use_finfet :
-		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+		for tran_name, tran_size in fpga_inst.transistor_sizes.items():
 			parameter_dict[tran_name] = [1e-9*tran_size*fpga_inst.specs.min_tran_width]
-		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.items():
 			parameter_dict[wire_name + "_res"] = [rc_data[0]]
 			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 	else :
-		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+		for tran_name, tran_size in fpga_inst.transistor_sizes.items():
 			parameter_dict[tran_name] = [tran_size]
-		for wire_name, rc_data in fpga_inst.wire_rc_dict.iteritems():
+		for wire_name, rc_data in fpga_inst.wire_rc_dict.items():
 			parameter_dict[wire_name + "_res"] = [rc_data[0]]
 			parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 
@@ -1235,9 +1235,9 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	# Find the combo that is near the middle of all ranges
 	middle_combo = get_middle_value_config(element_names, sizing_ranges)
 		
-	print "Determining initial inverter P/N ratios..."
+	print("Determining initial inverter P/N ratios...")
 	if ERF_MONITOR_VERBOSE:
-		print ""
+		print("")
 
 	# Find ERF ratios for middle combo
 	erf_ratios = erf_combo(fpga_inst, 
@@ -1248,7 +1248,7 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	
 	# For each transistor sizing combination, we want to calculate area, wire sizes, 
 	# and wire R and C
-	print "Calculating area and wire data for all transistor sizing combinations..."
+	print("Calculating area and wire data for all transistor sizing combinations...")
 	
 	area_list = []
 	wire_rc_list = []
@@ -1272,22 +1272,22 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	# We have to make a parameter dict for HSPICE
 	current_tran_sizes = {}
 	if not fpga_inst.specs.use_finfet :
-		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+		for tran_name, tran_size in fpga_inst.transistor_sizes.items():
 			current_tran_sizes[tran_name] = 1e-9*tran_size*fpga_inst.specs.min_tran_width
 	else :
-		for tran_name, tran_size in fpga_inst.transistor_sizes.iteritems():
+		for tran_name, tran_size in fpga_inst.transistor_sizes.items():
 			current_tran_sizes[tran_name] = tran_size
 
 	# Initialize the parameter dict to all empty lists
 	parameter_dict = {}
-	for tran_name in current_tran_sizes.keys():
+	for tran_name in list(current_tran_sizes.keys()):
 		parameter_dict[tran_name] = []
-	for wire_name in wire_rc_list[0].keys():
+	for wire_name in list(wire_rc_list[0].keys()):
 		parameter_dict[wire_name + "_res"] = []
 		parameter_dict[wire_name + "_cap"] = []
 
-	for i in xrange(len(sizing_combos)):
-		for tran_name, tran_size in current_tran_sizes.iteritems():
+	for i in range(len(sizing_combos)):
+		for tran_name, tran_size in current_tran_sizes.items():
 			# We need this temp value to compare agains 'element_names'
 			tmp_tran_name = tran_name.replace("_nmos", "")
 			tmp_tran_name = tmp_tran_name.replace("_pmos", "")
@@ -1332,19 +1332,19 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 				parameter_dict[tran_name].append(tran_size)
 	
 		# Now add the wire information for this wire
-		for wire_name, rc_data in wire_rc_list[i].iteritems():
+		for wire_name, rc_data in wire_rc_list[i].items():
 			parameter_dict[wire_name + "_res"].append(rc_data[0])
 			parameter_dict[wire_name + "_cap"].append(rc_data[1]*1e-15)
    
 	# Run HSPICE data sweep
-	print ("Running HSPICE for " + str(len(sizing_combos)) + 
-		   " transistor sizing combinations...")
+	print(("Running HSPICE for " + str(len(sizing_combos)) + 
+		   " transistor sizing combinations..."))
 	spice_meas = spice_interface.run(sizable_circuit.top_spice_path, parameter_dict)
 
 	# Now we need to create a list of tfall_trise to be compatible with old code
 	tfall_trise_list = []
 	meas_logic_low_voltage = []
-	for i in xrange(len(sizing_combos)):
+	for i in range(len(sizing_combos)):
 		tfall_str = spice_meas["meas_total_tfall"][i]
 		trise_str = spice_meas["meas_total_trise"][i]
 		if spice_meas["meas_logic_low_voltage"][i] == "failed" :
@@ -1379,8 +1379,8 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	
 	# Calculate cost for each combo (area-delay product)
 	# Results list holds a tuple, (cost, combo_index, area, delay)
-	print "Calculating cost for each transistor sizing combinations..."
-	print ""
+	print("Calculating cost for each transistor sizing combinations...")
+	print("")
 	cost_list = []
 	for i in range(len(eval_delay_list)):
 		area = area_list[i]
@@ -1392,18 +1392,18 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	cost_list.sort()
 	
 	# Print top 10 results
-	print "TOP 10 BEST COST RESULTS"
-	print "------------------------"
+	print("TOP 10 BEST COST RESULTS")
+	print("------------------------")
 	
 	for i in range(min(10, len(cost_list))):
 		combo_index = cost_list[i][1]
-		print ("Combo #" + str(combo_index).ljust(6) + 
+		print(("Combo #" + str(combo_index).ljust(6) + 
 			   "cost=" + str(round(cost_list[i][0],6)).ljust(9) + 
 			   "area=" + str(round(area_list[combo_index]/1000000,3)).ljust(8) + 
 			   "delay=" + str(round(eval_delay_list[combo_index],13)).ljust(10) + 
 			   "tfall=" + str(round(tfall_trise_list[combo_index][0],13)).ljust(10) + 
-			   "trise=" + str(round(tfall_trise_list[combo_index][1],13)).ljust(10))
-	print ""
+			   "trise=" + str(round(tfall_trise_list[combo_index][1],13)).ljust(10)))
+	print("")
 	
 	# Write results to file
 	# TODO: Turning this off for now
@@ -1426,8 +1426,8 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	best_results = []
 	for i in range(re_erf_num):
 		# Re-ERF i-th best combo
-		print ("Re-equalizing rise and fall times on combo #" + str(cost_list[i][1]) + 
-			   " (ranked #" + str(i+1) + ")\n")
+		print(("Re-equalizing rise and fall times on combo #" + str(cost_list[i][1]) + 
+			   " (ranked #" + str(i+1) + ")\n"))
 		erf_ratios = erf_combo(fpga_inst, 
 							   sizable_circuit.top_spice_path, 
 							   element_names, 
@@ -1455,16 +1455,16 @@ def search_ranges(sizing_ranges, fpga_inst, sizable_circuit, opt_type, re_erf, a
 	# Sort the newly ERF results
 	best_results.sort()
 	
-	print "BEST COST RESULTS AFTER RE-BALANCING"
-	print "------------------------------------"
+	print("BEST COST RESULTS AFTER RE-BALANCING")
+	print("------------------------------------")
 	for result in best_results:
-		print ("Combo #" + str(result[1]).ljust(6) + 
+		print(("Combo #" + str(result[1]).ljust(6) + 
 			   "cost=" + str(round(result[0],6)).ljust(9) + 
 			   "area=" + str(round(result[2]/1000000,3)).ljust(8) + 
 			   "delay=" + str(round(result[3],13)).ljust(10) + 
 			   "tfall=" + str(round(result[4],13)).ljust(10) + 
-			   "trise=" + str(round(result[5],13)).ljust(10))
-	print ""
+			   "trise=" + str(round(result[5],13)).ljust(10)))
+	print("")
 
 	# Write post-erf results to file
 	# TODO: Turn this off for now
@@ -1538,11 +1538,11 @@ def format_transistor_sizes_to_basic_subciruits(transistor_sizes):
 		Also, inverters and transmission gates are given a single size. """
 	  
 	format_sizes = {}  
-	for tran_name, size in transistor_sizes.iteritems():
+	for tran_name, size in transistor_sizes.items():
 		stripped_name = tran_name.replace("_nmos", "")
 		stripped_name = stripped_name.replace("_pmos", "")
 		if "inv_" in stripped_name or "tgate_" in stripped_name:
-			if stripped_name in format_sizes.keys():
+			if stripped_name in list(format_sizes.keys()):
 				if size < format_sizes[stripped_name]:
 					format_sizes[stripped_name] = size
 			else:
@@ -1556,12 +1556,12 @@ def format_transistor_sizes_to_basic_subciruits(transistor_sizes):
 def _print_sizing_ranges(subcircuit_name, sizing_ranges_list):
 	""" Print the sizing ranges for this subcircuit. """
 
-	print "Transistor size ranges for " + subcircuit_name + ":"
+	print("Transistor size ranges for " + subcircuit_name + ":")
 
 	# Calculate column width for each name
 	name_len = []
 	sizing_strings = {}
-	for name in sizing_ranges_list[0].keys():
+	for name in list(sizing_ranges_list[0].keys()):
 		name_len.append(len(name))
 		sizing_strings[name] = ""
 	
@@ -1570,23 +1570,23 @@ def _print_sizing_ranges(subcircuit_name, sizing_ranges_list):
 	
 	# Make sizing strings
 	for sizing_ranges in sizing_ranges_list:
-		for name, size_range in sizing_ranges.iteritems():
+		for name, size_range in sizing_ranges.items():
 			sizing_strings[name] = sizing_strings[name] + ("[" + str(size_range[0]) + " -> " + str(size_range[1]) + "]").ljust(11)
 	
 	# Print sizing ranges for each subcircuit/transistor
-	for name, size_string in sizing_strings.iteritems():
-		print "".join(name.ljust(col_width)) + ": " + size_string
+	for name, size_string in sizing_strings.items():
+		print("".join(name.ljust(col_width)) + ": " + size_string)
 		
-	print ""
+	print("")
 
 	
 def print_sizing_results(subcircuit_name, sizing_results_list):
 	""" """
 	
-	print "Sizing results for " + subcircuit_name + ":"
+	print("Sizing results for " + subcircuit_name + ":")
 	
 	# Calculate column width for each name
-	name_list = sizing_results_list[0].keys()
+	name_list = list(sizing_results_list[0].keys())
 	name_list.sort()
 	name_len = []
 	sizing_strings = {}
@@ -1604,10 +1604,10 @@ def print_sizing_results(subcircuit_name, sizing_results_list):
 			sizing_strings[name] = sizing_strings[name] + (str(round(size,1))).ljust(4)
 	
 	# Print sizing results for each subcircuit/transistor
-	for name, size_string in sizing_strings.iteritems():
-		print "".join(name.ljust(col_width)) + ": " + size_string
+	for name, size_string in sizing_strings.items():
+		print("".join(name.ljust(col_width)) + ": " + size_string)
 		
-	print ""
+	print("")
 
 	
 def _divide_problem_into_sets(transistor_names):
@@ -1625,12 +1625,12 @@ def _divide_problem_into_sets(transistor_names):
 		if "rest_" not in tran_name:
 				count = count + 1
 	
-	print "Found " + str(count) + " elements to size"
+	print("Found " + str(count) + " elements to size")
 		
 	# Create the transistor groups
 	tran_names_set_list = []
 	if count > 6:
-		print "Too many elements to size at once..."
+		print("Too many elements to size at once...")
 		# Let's divide this into sets of 5, the last set might have less than 5 elements.       
 		tran_counter = 0
 		tran_names_set = []
@@ -1649,14 +1649,14 @@ def _divide_problem_into_sets(transistor_names):
 		tran_names_set_list.append(tran_names_set)
 		
 		# Print out the sets
-		print "Creating the following groups:\n"
+		print("Creating the following groups:\n")
 		for i in range(len(tran_names_set_list)):
 			set = tran_names_set_list[i]
-			print "GROUP " + str(i+1) 
+			print("GROUP " + str(i+1)) 
 			for tran_name in set:
 				if "rest_" not in tran_name:
-						print tran_name
-			print ""
+						print(tran_name)
+			print("")
 	
 	else:
 		# We only have one item in the set list
@@ -1665,8 +1665,8 @@ def _divide_problem_into_sets(transistor_names):
 			set = tran_names_set_list[i]
 			for tran_name in set:
 				if "rest_" not in tran_name:
-						print tran_name
-			print ""
+						print(tran_name)
+			print("")
 	 
 	return tran_names_set_list
 			
@@ -1759,11 +1759,11 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 	#          two ranges.
 
 	
-	print "Validating transistor sizes"
+	print("Validating transistor sizes")
 	
 	# The first thing we are going to do is count how many elements we need to size. 
 	count = 0
-	for tran_name in sizing_results.keys():
+	for tran_name in list(sizing_results.keys()):
 		if "rest_" not in tran_name:
 			count = count + 1
 	
@@ -1783,7 +1783,7 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 	
 	# Check each element for boundaries condition
 	valid = True
-	for name, size in sizing_results.iteritems():
+	for name, size in sizing_results.items():
 		# Skip rest_ because we fix these at minimum size.
 		if "rest_" in name:
 			continue
@@ -1797,7 +1797,7 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 			continue
 		# Check if equal to upper bound
 		if size == sizing_ranges[name][1]:
-			print name + " is on upper bound"
+			print(name + " is on upper bound")
 			valid = False
 			# Update the ranges
 			max = size + sizes_per_element - 1
@@ -1811,7 +1811,7 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 		elif size == sizing_ranges[name][0]:
 			# If lower bound = 1, can't make it any smaller. This is not a violation.
 			if sizing_ranges[name][0] != 1:
-				print name + " is on lower bound"
+				print(name + " is on lower bound")
 				valid = False
 				# Update the ranges
 				max = size + 3
@@ -1823,9 +1823,9 @@ def update_sizing_ranges(sizing_ranges, sizing_results):
 				sizing_ranges[name] = (min, max, incr)
 				
 	if not valid:
-		print "Sizing results not valid, computing new sizing ranges\n"
+		print("Sizing results not valid, computing new sizing ranges\n")
 	else:
-		print "Sizing results are valid\n"
+		print("Sizing results are valid\n")
    
 	return valid
 	   
@@ -1845,10 +1845,10 @@ def size_subcircuit_transistors(fpga_inst,
 		Size transistors for one subcircuit.
 	"""
 	
-	print "|------------------------------------------------------------------------------|"
-	print "|    Transistor sizing on subcircuit: " + subcircuit.name.ljust(41) + "|"
-	print "|------------------------------------------------------------------------------|"
-	print ""
+	print("|------------------------------------------------------------------------------|")
+	print("|    Transistor sizing on subcircuit: " + subcircuit.name.ljust(41) + "|")
+	print("|------------------------------------------------------------------------------|")
+	print("")
 	
 	# Get a list of element names in this subcircuit (ptran, inv, etc.). 
 	# We expect this list to be sorted in the order in which things should be sized.
@@ -1875,7 +1875,7 @@ def size_subcircuit_transistors(fpga_inst,
 	# Once that is done, we can work on individual sets.
 	if len(sizing_ranges_set_list) > 1:    
 		element_names = sorted(sizing_ranges_complete.keys())
-		print "Determining initial inverter P/N ratios for all transistor groups..."
+		print("Determining initial inverter P/N ratios for all transistor groups...")
 		# Find the combo that is near the middle of all ranges
 		middle_combo = get_middle_value_config(element_names, sizing_ranges_complete)
 		# ERF mid-range transistor sizing combination
@@ -1955,18 +1955,18 @@ def size_subcircuit_transistors(fpga_inst,
 def print_results(opt_type, sizing_results_list, area_results_list, delay_results_list):
 	""" Print sizing results to terminal """
 	
-	print "FPGA TRANSISTOR SIZING RESULTS"
-	print "------------------------------"
+	print("FPGA TRANSISTOR SIZING RESULTS")
+	print("------------------------------")
 
 	subcircuit_names = sorted(sizing_results_list[0].keys())
 	
 	for subcircuit_name in subcircuit_names:
-		print subcircuit_name + ":"
+		print(subcircuit_name + ":")
 		
 		# Let's make the element names column such that everything lines up
 		# We'll also initialize the strings that will contain the sizing results
 		sizing_strings = {}
-		element_names = sizing_results_list[0][subcircuit_name].keys()
+		element_names = list(sizing_results_list[0][subcircuit_name].keys())
 		element_name_lengths = []
 		for name in element_names:
 			element_name_lengths.append(len(name))
@@ -1983,13 +1983,13 @@ def print_results(opt_type, sizing_results_list, area_results_list, delay_result
 				sizing_strings[name] = sizing_strings[name] + str(size).ljust(4)
 		 
 		# Now print the results
-		for name, size_string in sizing_strings.iteritems():
-			print "".join(name.ljust(col_width)) + ": " + size_string
+		for name, size_string in sizing_strings.items():
+			print("".join(name.ljust(col_width)) + ": " + size_string)
 		
-		print ""  
+		print("")  
 		
 		if opt_type == "local":
-			print "Area\t\tDelay\t\tArea-Delay Product"
+			print("Area\t\tDelay\t\tArea-Delay Product")
 			area_delay_strings = []
 			for i in range(len(area_results_list)):
 				area_results = area_results_list[i]
@@ -2001,12 +2001,12 @@ def print_results(opt_type, sizing_results_list, area_results_list, delay_result
 			
 			# Print results
 			for area_delay_str in area_delay_strings:
-				print area_delay_str
-			print "\n"
+				print(area_delay_str)
+			print("\n")
 			
-	print ""        
-	print "TOTALS:"
-	print "Area\t\tDelay\t\tCost"
+	print("")        
+	print("TOTALS:")
+	print("Area\t\tDelay\t\tCost")
 	totals_strings = []
 	for i in range(len(area_results_list)):
 		area_results = area_results_list[i]
@@ -2016,8 +2016,8 @@ def print_results(opt_type, sizing_results_list, area_results_list, delay_result
 		total_cost = total_area*total_delay
 		totals_strings.append(str(round(total_area/1000000,3)) + "\t" + str(round(total_delay,14)) + "\t" + str(round(total_cost,5)))
 	for total_str in totals_strings:
-		print total_str
-	print ""
+		print(total_str)
+	print("")
 
 
 def export_sizing_results(results_filename, sizing_results_list, area_results_list, delay_results_list):
@@ -2034,7 +2034,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 		# Let's make the element names column such that everything lines up
 		# We'll also initialize the strings that will contain the sizing results
 		sizing_strings = {}
-		element_names = sizing_results_list[0][subcircuit_name].keys()
+		element_names = list(sizing_results_list[0][subcircuit_name].keys())
 		element_name_lengths = []
 		for name in element_names:
 			element_name_lengths.append(len(name))
@@ -2051,7 +2051,7 @@ def export_sizing_results(results_filename, sizing_results_list, area_results_li
 				sizing_strings[name] = sizing_strings[name] + str(size).ljust(4)
 		 
 		# Now write the results
-		for name, size_string in sizing_strings.iteritems():
+		for name, size_string in sizing_strings.items():
 			results_file.write("".join(name.ljust(col_width)) + ": " + size_string + "\n")
 		results_file.write("\n")
 		
@@ -2092,12 +2092,12 @@ def check_if_done(sizing_results_list, area_results_list, delay_results_list, ar
 		Returns true if done, false if not done.
 	"""
 	
-	print "Evaluating termination conditions..."
+	print("Evaluating termination conditions...")
 	
 	# If the list has only one set of results, we've only done one iteration, 
 	# we can't possibly know if the sizes are stable or not.
 	if len(sizing_results_list) <= 1:
-		print "Cannot terminate based on cost: at least one more FPGA sizing iteration required"
+		print("Cannot terminate based on cost: at least one more FPGA sizing iteration required")
 		return False, 0
 	 
 	# Let's look at the cost of each iteration.
@@ -2193,7 +2193,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	# Initialize FPGA subcircuit delays
 	fpga_inst.update_delays(spice_interface)
 	
-	print "Starting transistor sizing...\n"
+	print("Starting transistor sizing...\n")
 	
 	# These lists store transistor sizing, area and delay results for each FPGA sizing
 	# iteration. Each entry in the list represents an FPGA sizing iteration.
@@ -2212,11 +2212,11 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	while not is_done:
 	
 		if iteration > max_iterations:
-			print ("Algorithm is terminating: maximum number of iterations has been " +
-				   "reached (" + str(max_iterations) + ")\n")
+			print(("Algorithm is terminating: maximum number of iterations has been " +
+				   "reached (" + str(max_iterations) + ")\n"))
 			break
 	
-		print "FPGA TRANSISTOR SIZING ITERATION #" + str(iteration) + "\n"
+		print("FPGA TRANSISTOR SIZING ITERATION #" + str(iteration) + "\n")
 
 		sizing_results_dict = {}
 		sizing_results_detailed_dict = {}
@@ -2228,7 +2228,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		# cluster, finally emerging back into the general routing when we reach the cluster 
 		# outputs. This code is all basically the same, just repeated for each subcircuit.
 
-		print "determining a floorplan for this sizing iteration"
+		print("determining a floorplan for this sizing iteration")
 		
 		
 		fpga_inst.update_area()
@@ -2246,9 +2246,13 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		fpga_inst.update_delays(spice_interface)
 		
 		
-		print "Sizing will begin now."
+		print("Sizing will begin now.")
+		# Useful for debugging
+		# tmp_area = get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0)
+		# tmp_delay = get_current_delay(fpga_inst, 0)
+		# print(tmp_area,tmp_delay)
 		current_cost = cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)
-		print "Current Cost: " + str(current_cost)
+		print("Current Cost: " + str(current_cost))
 		time_before_sizing = time.time()
 
 		# For quick mode:
@@ -2331,8 +2335,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 		time_before_sizing = time.time()
 
@@ -2364,8 +2368,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 		time_before_sizing = time.time()
 
@@ -2398,8 +2402,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 		time_before_sizing = time.time()
 
@@ -2434,8 +2438,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 		time_before_sizing = time.time()
 
@@ -2468,15 +2472,15 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 			
 		############################################
 		## Size LUT input drivers
 		############################################
-		for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+		for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
 			# Driver
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
@@ -2516,8 +2520,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict["input_drivers"] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 		time_before_sizing = time.time()
 
@@ -2548,8 +2552,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 		time_before_sizing = time.time()
 
@@ -2580,8 +2584,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 				quick_mode_dict[name] = 0
 
-			print "Duration: " + str(time_after_sizing - time_before_sizing)
-			print "Current Cost: " + str(current_cost)
+			print("Duration: " + str(time_after_sizing - time_before_sizing))
+			print("Current Cost: " + str(current_cost))
 
 			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2616,8 +2620,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2651,8 +2655,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2686,8 +2690,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2722,8 +2726,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 						quick_mode_dict[name] = 0
 
-					print "Duration: " + str(time_after_sizing - time_before_sizing)
-					print "Current Cost: " + str(current_cost)
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
 
 					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2754,8 +2758,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 						quick_mode_dict[name] = 0
 
-					print "Duration: " + str(time_after_sizing - time_before_sizing)
-					print "Current Cost: " + str(current_cost)
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
 
 					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2789,8 +2793,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
@@ -2828,8 +2832,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -2861,8 +2865,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -2913,8 +2917,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -2995,8 +2999,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict["rowdecoder"] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -3045,8 +3049,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -3126,8 +3130,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict["confdec"] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -3158,8 +3162,8 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
 					quick_mode_dict[name] = 0
 
-				print "Duration: " + str(time_after_sizing - time_before_sizing)
-				print "Current Cost: " + str(current_cost)
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
@@ -3167,7 +3171,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 			## Done sizing, update results lists
 			############################################
 
-		print "FPGA transistor sizing iteration complete!\n"
+		print("FPGA transistor sizing iteration complete!\n")
 		
 		sizing_results_list.append(sizing_results_dict.copy())
 		sizing_results_detailed_list.append(sizing_results_detailed_dict.copy())
@@ -3198,7 +3202,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		# from my  understanding the quick mode means that if the improvement in this 
 		# iteration is less than the given value stop resizing this subcircuit. This 
 		# means the means that probably the current results are the best so far.
-		if 1 not in quick_mode_dict.values():
+		if 1 not in list(quick_mode_dict.values()):
 			is_done = True
 			final_result_index = iteration - 1
 
@@ -3223,7 +3227,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 	# Make a dictionary that contains all transistor sizes (instead of a dictionary of dictionaries for each subcircuit)
 	final_transistor_sizes_detailed_full = {}
-	for subcircuit_name, subcircuit_sizes in final_transistor_sizes_detailed.iteritems():
+	for subcircuit_name, subcircuit_sizes in final_transistor_sizes_detailed.items():
 		final_transistor_sizes_detailed_full.update(subcircuit_sizes)
 	
 	# Update FPGA transistor sizes
@@ -3235,7 +3239,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	# Update wire resistance and capacitance
 	fpga_inst.update_wire_rc()
 		   
-	print "FPGA transistor sizing complete!\n"
+	print("FPGA transistor sizing complete!\n")
 	
 	final_report_file = open("sizing_results_final.txt", 'w')
 	print_final_transistor_size(fpga_inst, final_report_file)
@@ -3266,7 +3270,7 @@ def override_transistor_sizes(fpga_inst, initial_sizes) :
 			fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes[trans] = initial_sizes[trans]
 
 	# LUT input drivers
-	for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.iteritems():
+	for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
 
 		for trans in input_driver.driver.initial_transistor_sizes :
 			if trans in input_driver.driver.initial_transistor_sizes and trans in initial_sizes:

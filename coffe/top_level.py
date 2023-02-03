@@ -1936,7 +1936,7 @@ def generate_wordline_driver_top_lp(name, sramcount, nandsize, smallrow, repeate
     #Wordline driver:
     the_file.write("Xwordline n_1_1 n_1_2 vdd_wordline gnd wordline_driver\n")
     #RAM load:
-    for i in range(2, sramcount +2):
+    for i in range(2, int(sramcount +2)):
         the_file.write("Xmemcell"+str(i)+" n_1_"+str(i)+" gnd gnd gnd gnd gnd vdd_lp gnd memorycell\n")
         if repeater == 0:
             the_file.write("Xwirel"+str(i)+" n_1_"+str(i)+" n_1_"+str(i+1)+" wire Rw=wire_wordline_driver_res/"+str(sramcount)+" Cw=wire_wordline_driver_cap/"+str(sramcount)+"\n")

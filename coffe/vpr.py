@@ -11,7 +11,7 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	logic_block_output = fpga_inst.logic_cluster.ble.general_output.delay
 
 	# get lut delays
-	lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+	lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
 	lut_input_names.sort()
 	lut_delays = {}
 	for input_name in lut_input_names:
@@ -595,7 +595,7 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 	logic_block_output = fpga_inst.logic_cluster.ble.general_output.delay
 
 	# get lut delays
-	lut_input_names = fpga_inst.logic_cluster.ble.lut.input_drivers.keys()
+	lut_input_names = list(fpga_inst.logic_cluster.ble.lut.input_drivers.keys())
 	lut_input_names.sort()
 	lut_delays = {}
 	for input_name in lut_input_names:
@@ -603,8 +603,8 @@ def print_vpr_file_flut_hard(vpr_file, fpga_inst):
 		driver_delay = max(lut_input.driver.delay, lut_input.not_driver.delay)
 		path_delay = lut_input.delay
 		lut_delays[input_name] = driver_delay+path_delay
-        if fpga_inst.specs.use_fluts:
-            lut_delays[input_name] += fpga_inst.logic_cluster.ble.fmux.delay
+		if fpga_inst.specs.use_fluts:
+			lut_delays[input_name] += fpga_inst.logic_cluster.ble.fmux.delay
 	# get archetecture parameters
 	Rfb = fpga_inst.specs.Rfb
 	Fcin = fpga_inst.specs.Fcin

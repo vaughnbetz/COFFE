@@ -1,0 +1,25 @@
+############################################ INFO ############################################
+#This file contains run settings for the parallel hardblock flow
+############################################ INFO ############################################
+
+
+################## RUN SETTINGS #################
+## I basically just used the format of a python dict to read these in
+
+
+synth begin
+    "run_flag" : "True"
+end
+pnr begin
+    "run_flag" : "True"
+    "override_outputs" : "False"
+    param_filters begin
+        "period" : ["1.52","1.99"], 
+        "wiremdl" : ["WireAreaLowkAgr"],
+        "mlayer" : ["8","5"],
+        "util" : ["0.85","0.90"],
+    end
+end
+sta begin
+    "run_flag" : "True"
+end

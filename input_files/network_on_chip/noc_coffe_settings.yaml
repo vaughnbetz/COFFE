@@ -1,0 +1,469 @@
+#################################################################################################################
+#############################  THIS IS THE ONE SETTINGS FILE TO DO EVERYTHING IN  ###############################
+#################################################################################################################
+
+# EXAMPLE COFFE INPUT FILE (BULK TRANSISTORS)
+#
+# Note: COFFE interprets any line beginning with a '#' as a comment in it's input files.
+#
+# COFFE input parameters can be divided into 2 groups:
+# 1- Parameters describing the FPGA architecture
+# 2- Process technology-related parameters
+# 
+# [1] C. Chiasson and V.Betz. "COFFE: Fully-Automated Transistor Sizing for FPGAs",
+#      IEEE Int. Conf. on Field-Programmable Technology (FPT), 2013
+
+#################################################################################################################
+#############################            ARCHITECTURE PARAMETERS            #####################################
+#################################################################################################################
+
+
+fpga_arch_params:
+  #The directory in which output files will be stored. 
+  #If not specified, the directory containing this file is used as output dir.
+  arch_out_folder : ~/COFFE/output_files/network_on_chip/arch_out_dir
+
+  # The following parameters are the classic VPR architecture parameters
+  N : 10
+  K : 6
+  W : 320
+  L : 4
+  I : 40
+  Fs : 3
+  Fcin : 0.2
+  Fcout : 0.025
+
+
+  # The following architecture parameters are new and help COFFE describe
+  # a more flexible BLE. See [1] for more details.
+
+  # Number of BLE outputs to general routing 
+  Or : 2
+
+  # Number of BLE outputs to local routing
+  Ofb : 1
+
+  # Population of local routing MUXes 
+  Fclocal : 0.5
+
+  # Register select:
+  # Defines whether the FF can accept it's input directly from a BLE input or not.
+  # To turn register-select off, Rsel : z
+  # To turn register select on, Rsel : <ble_input_name>
+  # where <ble_input_name>  :  the name of the BLE input from which the FF can
+  # accept its input (e.g. a, b, c, etc...).
+  Rsel : c
+
+  # Register feedback muxes:
+  # Defines which LUT inputs support register feedback.
+  # Set Rfb to a string of LUT input names.
+  # For example: 
+  # Rfb : c tells COFFE to place a register feedback mux on LUT input C.
+  # Rfb : cd tells COFFE to place a register feedback mux on both LUT inputs C and D.
+  # Rfb : z tells COFFE that no LUT input should have register feedback muxes.
+  Rfb : c
+
+  # Do we want to use fracturable Luts?
+  use_fluts : False
+  # can be as large as K-1
+  
+  #These parameters were commented out in other settings files
+  independent_inputs:  null
+  enable_carry_chain:  null
+  carry_chain_type:  null
+  FAs_per_flut:  null
+  
+  #######################################
+  ##### Memory Block Parameters
+  #######################################
+
+  #These parameters were commented out in other settings files
+  vclmp: null
+  vref: null
+  SRAM_nominal_current : null
+  ram_local_mux_size: null
+
+
+  # Do we want Block RAM simulation at all?
+  enable_bram_module  :  0
+
+  #Memory block voltage (low power transistors)
+  vdd_low_power  :  0.95
+
+
+  # Memory technology type can be 'SRAM' or 'MTJ'.
+  memory_technology  :  SRAM
+
+  # The following determine the number of address bits used in each of the decoders
+  # These bits are used to determine the aspect ratio of the memory module
+  # Please note: if you use a two-bank BRAM, one of the bits below will be decoded by the bank selection address
+  # To make it controllable, I decided that this bit will always be taken from the row decoder.
+
+  # Row decoder
+  row_decoder_bits  :  8
+  # Column decoder
+  col_decoder_bits  :  2
+  # Width configurable decoder
+  conf_decoder_bits  :  5
+  # Number of RAM banks
+  number_of_banks  :  2
+
+
+  # voltage difference for the sense amp in volts
+  sense_dv  :  0.03
+
+  # Weakest SRAM cell current in Amps
+  worst_read_current  :  0.0000015
+
+  #MTJ resisitance values for 4 combinations of nominal/worst case for low/high states
+  MTJ_Rlow_nominal  :  2500
+  MTJ_Rhigh_nominal  :  6250
+  MTJ_Rlow_worstcase  :  3060
+  MTJ_Rhigh_worstcase  :  4840
+
+
+  # BRAM read to write ratio for power measurements:
+  read_to_write_ratio  :  1.0
+
+  #######################################
+  ##### Process Technology Parameters
+  #######################################
+
+  # Transistor type can be 'bulk' or 'finfet'. 
+  # Make sure your spice model file matches the transistor type you choose.
+  transistor_type : bulk
+
+  # The switch type can be 'pass_transistor' or 'transmission_gate'.
+  switch_type : pass_transistor
+  #switch_type : transmission_gate
+
+  # Supply voltage
+  vdd : 0.8
+
+  # SRAM Vdd
+  vsram : 1.0
+
+  # SRAM Vss
+  vsram_n : 0.0
+
+  # Gate length (nm)
+  gate_length : 22
+
+  # This parameter controls the gate length of PMOS level-restorers. For example, setting this paramater 
+  # to 4 sets the gate length to 4x the value of 'gate_legnth'. Increasing the gate length weakens the 
+  # PMOS level-restorer, which is sometimes necessary to ensure proper switching.
+  rest_length_factor  :  1
+
+  # Minimum transistor diffusion width (nm).
+  min_tran_width : 45
+
+  # Length of diffusion for a single-finger transistor (nm).
+  # COFFE uses this when it calculates source/drain parasitic capacitances.
+  trans_diffusion_length  :  52.0
+
+  # Minimum-width transistor area (nm^2)
+  min_width_tran_area  :  33864
+
+  # SRAM area (in number of minimum width transistor areas)
+  sram_cell_area  :  4.0
+
+  # Path to SPICE device models file and library to use
+  model_path : spice_models/ptm_22nm_bulk_hp.l
+  model_library : 22NM_BULK_HP
+
+  #######################################
+  ##### Metal data
+  ##### R in ohms/nm
+  ##### C in fF/nm
+  ##### format: metal : R,C
+  ##### ex: metal : 0.054825,0.000175
+  #######################################
+
+  # Each 'metal' statement defines a new metal layer. 
+  # COFFE uses two metal layers by default. The first metal layer is where COFFE 
+  # implements all wires except for the general routing wires. They are implemented
+  # in the second metal layer. 
+
+
+  # All wires except the general routing wires are implemented in this layer.
+  metal : 
+   - [0.054825,0.000175]
+   - [0.007862,0.000215]
+   - [0.029240,0.000139]
+   - [0.227273,0.000000]
+
+  # # General routing wires will be implemented in this layer 
+  # metal : [0.007862,0.000215]
+
+  # # Memory array wires will be implemented in this layer
+  # metal : [0.029240,0.000139]
+
+  # # This layer is used in MTJ wordline (if BRAM technology is MTJ)
+  # metal : [0.227273,0.000000]
+
+  # If you wanted to, you could define more metal layers by adding more 'metal'
+  # statements but, by default, COFFE would not use them because it only uses 2 layers.
+  # The functionality of being able to add any number of metal layers is here to allow
+  # you to investigate the use of more than 2 metal layers if you wanted to. However,
+  # making use of more metal layers would require changes to the COFFE source code.
+
+
+  # if hybrid blocks are enabled, list configurations here
+  #hb_files  :  [input_files/network_on_chip/noc_hb_settings.txt]
+  #hb_files  :  input_files/network_on_chip/vcr_top_hb_settings.txt
+  #hb_files  :  input_files/network_on_chip/noc_hb_settings_7nm.txt
+
+asic_hardblock_params:
+  hardblocks:
+    #This is a sample settings file for the hard block flow
+
+    ###############################################################
+    ###################### PLOTTING SETTINGS ######################
+    ###############################################################
+    #The coffe repo path is used to find other python files in coffe in the analyze_results dir
+    - coffe_repo_path : ~/COFFE
+      #This is where parsed results will be generated 
+      condensed_results_folder : ~/COFFE/output_files/network_on_chip/condensed_results
+
+      ###############################################################
+      ###################### PARALLEL SETTINGS ######################
+      ###############################################################
+
+      #This is the folder which will contain the parallel asic flow directory structure
+      parallel_hardblock_folder : ~/COFFE/output_files/network_on_chip/asic_work
+
+      #The maximum number of cores to be assigned to the parallel flow
+      mp_num_cores : 16
+
+      ###############################################################
+      ###################### PTN SETTINGS ###########################
+      ###############################################################
+
+      #This is a regex which will need to match all modules which the user would like to create partitions for
+      #The command which is run in the synthesis script will cause all matching modules to remain grouped s.t partitions can be made
+      ungroup_regex : .*ff.*|.*vcr.*
+
+      #runs the partition flow on the design
+      partition_flag : True
+
+      #############################################
+      ########## General Design Settings ##########
+      #############################################
+
+      #node size of process in nm
+      process_size : 65
+
+      #Absolute paths to directories containing power_timing_noise information for the desired process
+      process_lib_paths : 
+        - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b
+        - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c
+
+      # The folder in which all the design files are located:
+      design_folder : ~/COFFE/input_files/network_on_chip/router/src
+
+      # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+      design_language : sverilog
+
+      # The exponents of delay and area in the cost function.
+      # cost  :  (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
+      delay_cost_exp : 1.0
+      area_cost_exp : 1.0
+
+      #Hardblock run type (comb vs solo) comb uses a geometric combination of all input params and solo uses the first inputted value of each field
+      #hb_run_type : "solo"
+
+      ########################################
+      ########## Synthesis Settings ##########
+      ########################################
+
+      # Name of the clock pin in the design
+      clock_pin_name : clk
+
+      # Desired clock period in ns
+      clock_period : [1.53]
+
+      # Wire loading model to be used
+      wire_selection : [WireAreaLowkCon]
+
+      # Name of the top-level entity in the design
+      top_level : router_wrap
+
+      # The name of the folder in which post-synthesis files and synthesis reports are to be stored
+      synth_folder : ~/COFFE/output_files/network_on_chip/synth
+
+      # Do you want to be informed of warnings during synthesis?
+      show_warnings : True
+
+      # Should the flow terminate after synthesis?
+      # A value of "False" will continue into placement and routing
+      synthesis_only : False
+
+      # Do you want to provide a saif file for power analysis?
+      # In case of setting this to "True" a saif.saif file should be provided
+      read_saif_file : False
+
+      # If you don't want to provide a saif file, specify the switching activity parameters below:
+      static_probability : 0.5
+      toggle_rate : 25
+
+      # Should COFFE generate an activity file for the design (using modelsim)
+      generate_activity_file : False
+      
+      # Location of the library files.
+      # if you have more than one library, please provide them similiar to the example below.
+      target_libraries :
+      - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db
+      - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db
+
+      ##############################################
+      ########## Place and Route Settings ##########
+      ##############################################
+
+      pnr_tool : innovus
+
+      # Libraries required in EDI:
+      metal_layers : [10]
+
+      #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
+      metal_layer_names : ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9","AP"]
+
+      #names of metal layers to use for each side of the power ring
+      #order: top, bottom, left, right
+      power_ring_metal_layer_names : ["M1", "M1", "M2", "M2"]
+
+      #name of the file to use for layer mapping. used for stream out.
+      #set it to None if you want the tool to create a generic map file
+      map_file : streamOut.map
+
+      #specify names of ground and power pins and nets in the library
+      gnd_net : VSS
+      gnd_pin : VSS
+      pwr_net : VDD
+      pwr_pin : VDD
+      tilehi_tielo_cells_between_power_gnd : True
+
+
+      #specify footprint names for inverters, buffers, delays.
+      #this is optional. you can get these values from the lib file.
+      #you can also specify None, if you can't find them in the lib file.
+      inv_footprint : INVD0
+      buf_footprint : BUFFD1
+      delay_footprint : DEL0
+
+      #list of filler cell names. use a python list format.
+      #the names can be obtained from .lib files.
+      filler_cell_names : ["FILL1", "FILL16", "FILL1_LL", "FILL2", "FILL32", "FILL64", "FILL8", "FILL_NW_FA_LL", "FILL_NW_HH", "FILL_NW_LL"]
+
+      #name of the core site in the floorplan. can be obtained from lef files.
+      core_site_name : core
+
+      #specify the utilization of the core site. you can specify multiple ones on different lines.
+      core_utilization : ["0.70"]
+
+      lef_files : 
+        - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef
+        - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef
+        - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/tpzn65gpgv2_9lm.lef
+
+      best_case_libs : 
+        - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplusbc.lib
+        - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2bc.lib
+
+      standard_libs : 
+        - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gplustc.lib
+        - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2tc.lib
+
+      worst_case_libs : 
+        - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib
+        - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib
+
+
+
+      # EDI settings:
+      power_ring_width : 1.8
+      power_ring_spacing : 1.8
+      height_to_width_ratio : 1.0
+
+      space_around_core : 10
+
+
+      # The folder in which place and route reports and post-routing netlists and spef files will be stored
+      pr_folder : ~/COFFE/output_files/network_on_chip/pr
+
+
+      ##############################################
+      ########## Prime Time Settings ###############
+      ##############################################
+
+      mode_signal : null
+
+      #Timing Power Libraries used for PT timing/power analysis
+      primetime_libs : 
+        - tcbn65gpluswc.db
+
+      primetime_folder : ~/COFFE/output_files/network_on_chip/pt
+
+      # COFFE parameters:
+      # These params specify how the asic hardblock is connected and floorplanned into FPGA
+      # Will provide values to be used in hardblock mux transistor sizing
+      name : hard_block
+      num_gen_inputs : 288
+      crossbar_population : 0.5
+      height : 1
+      num_gen_outputs : 288
+      num_dedicated_outputs : 0
+      soft_logic_per_block : 0.1
+      area_scale_factor : 0.12
+      freq_scale_factor : 1.35
+      power_scale_factor : 0.3
+      input_usage : 0.8
+      num_crossbars : 1
+      crossbar_modelling : optimistic
+
+      ############################################ INFO ############################################
+      #Contains run settings for the parallel hardblock flow
+      ############################################ INFO ############################################
+      hb_run_params:
+        param_filters: 
+          period : ["1.53"]
+          wiremdl : ["WireAreaLowkCon"]
+          mlayer : ["10"]
+          util : ["0.70"]
+        synth :
+          run_flag : True
+        pnr:
+          run_flag : True
+          override_outputs : False
+        sta:
+          run_flag : True
+      ############################################ INFO ############################################
+      #Contains settings for floorplanning and partitioning in pnr flow
+      ############################################ INFO ############################################
+      ptn_params:
+        ################## FLOORPLANNING SETTINGS #################
+        #scaled array used as higher level param in ptn_settings dict
+        #use below format for lists related to key on left
+        ################## THESE CAN BE USED FOR GEN AND RUN SETTINGS #########################
+        top_settings:
+          scaling_array : [1]
+          fp_init_dims : [948.4,947.0]
+          fp_pin_spacing : 5
+        #Specifies individual partitions to be created
+        partitions:
+          - inst_name : gen_port_regs[1].channel_in_ff
+            mod_name : c_dff_1_7
+            fp_coords : [43.0, 920.0, 68.0, 953.0]
+          - inst_name: gen_port_regs[1].channel_out_ff
+            mod_name: c_dff_1_6
+            fp_coords: [73.0, 920.0, 98.0, 953.0]
+          - inst_name: genblk2.vcr
+            mod_name: vcr_top_1
+            fp_coords: [100.0, 100.0, 440.0, 440.0]
+          - inst_name: gen_port_regs[2].channel_in_ff
+            mod_name: c_dff_1_5
+            fp_coords: [927.0, 41.0, 956.0, 68.0]
+          - inst_name: gen_port_regs[2].channel_out_ff
+            mod_name: c_dff_1_4
+            fp_coords:  [927.0, 73.0, 956.0, 100.0]
+
+

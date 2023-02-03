@@ -44,21 +44,21 @@ import sys
 import math
 
 # Subcircuit Modules
-import basic_subcircuits
-import mux_subcircuits
-import lut_subcircuits
-import ff_subcircuits
-import load_subcircuits
-import memory_subcircuits
-import utils
-import hardblock_functions
-import tran_sizing
+from . import basic_subcircuits
+from . import mux_subcircuits
+from . import lut_subcircuits
+from . import ff_subcircuits
+from . import load_subcircuits
+from . import memory_subcircuits
+from . import utils
+from . import hardblock_functions
+from . import tran_sizing
 
 # Top level file generation module
-import top_level
+from . import top_level
 
 # HSPICE handling module
-import spice
+from . import spice
 
 # Track-access locality constants
 OUTPUT_TRACK_ACCESS_SPAN = 0.25
@@ -152,7 +152,6 @@ class _Specs:
         self.model_path             = arch_params_dict['model_path']
         self.model_library          = arch_params_dict['model_library']
         self.rest_length_factor     = arch_params_dict['rest_length_factor']
-        self.hb_files               = arch_params_dict['hb_files']
         self.use_tgate              = arch_params_dict['use_tgate']
         self.use_finfet             = arch_params_dict['use_finfet']
 
@@ -255,7 +254,7 @@ class _SwitchBlockMUX(_SizableCircuit):
         Calculates implementation specific details and write the SPICE subcircuit. 
         """
         
-        print "Generating switch block mux"
+        print("Generating switch block mux")
         
         # Calculate level sizes and number of SRAMs per mux
         self.level2_size = int(math.sqrt(self.required_size))
@@ -298,7 +297,7 @@ class _SwitchBlockMUX(_SizableCircuit):
     def generate_top(self):
         """ Generate top level SPICE file """
         
-        print "Generating top-level switch block mux"
+        print("Generating top-level switch block mux")
         self.top_spice_path = top_level.generate_switch_block_top(self.name)
    
    
@@ -395,7 +394,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
         
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating connection block mux"
+        print("Generating connection block mux")
         
         # Calculate level sizes and number of SRAMs per mux
         self.level2_size = int(math.sqrt(self.required_size))
@@ -431,7 +430,7 @@ class _ConnectionBlockMUX(_SizableCircuit):
 
 
     def generate_top(self):
-        print "Generating top-level connection block mux"
+        print("Generating top-level connection block mux")
         self.top_spice_path = top_level.generate_connection_block_top(self.name)
         
    
@@ -535,7 +534,7 @@ class _LocalMUX(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating local mux"
+        print("Generating local mux")
         
         # Calculate level sizes and number of SRAMs per mux
         self.level2_size = int(math.sqrt(self.required_size))
@@ -569,7 +568,7 @@ class _LocalMUX(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level local mux"
+        print("Generating top-level local mux")
         self.top_spice_path = top_level.generate_local_mux_top(self.name)
         
    
@@ -875,7 +874,7 @@ class _LUTInput(_CompoundCircuit):
     def generate(self, subcircuit_filename, min_tran_width):
         """ Generate both driver and not-driver SPICE netlists. """
         
-        print "Generating lut " + self.name + "-input driver (" + self.type + ")"
+        print("Generating lut " + self.name + "-input driver (" + self.type + ")")
 
         # Generate the driver
         init_tran_sizes = self.driver.generate(subcircuit_filename, min_tran_width)
@@ -888,7 +887,7 @@ class _LUTInput(_CompoundCircuit):
     def generate_top(self):
         """ Generate top-level SPICE file for driver and not-driver. """
         
-        print "Generating top-level lut " + self.name + "-input"
+        print("Generating top-level lut " + self.name + "-input")
         
         # Generate the driver top
         self.driver.generate_top()
@@ -946,7 +945,7 @@ class _LUTInputDriverLoad:
         
     def generate(self, subcircuit_filename, K):
         
-        print "Generating LUT " + self.name + "-input driver load"
+        print("Generating LUT " + self.name + "-input driver load")
         
         if not self.use_tgate :
             # Call generation function based on input
@@ -979,7 +978,7 @@ class _LUTInputDriverLoad:
         
         
     def print_details(self):
-        print "LUT input driver load details."
+        print("LUT input driver load details.")
 
 
 
@@ -1072,7 +1071,7 @@ class _LUT(_SizableCircuit):
 
 
     def generate_top(self):
-        print "Generating top-level lut"
+        print("Generating top-level lut")
         tempK = self.K
         if self.use_fluts:
             tempK = self.K - 1
@@ -1085,7 +1084,7 @@ class _LUT(_SizableCircuit):
             self.top_spice_path = top_level.generate_lut4_top(self.name, self.use_tgate)
             
         # Generate top-level driver files
-        for input_driver_name, input_driver in self.input_drivers.iteritems():
+        for input_driver_name, input_driver in self.input_drivers.items():
             input_driver.generate_top()
    
    
@@ -1196,7 +1195,7 @@ class _LUT(_SizableCircuit):
         
         # Calculate LUT driver areas
         total_lut_area = 0.0
-        for driver_name, input_driver in self.input_drivers.iteritems():
+        for driver_name, input_driver in self.input_drivers.items():
             driver_area = input_driver.update_area(area_dict, width_dict)
             total_lut_area = total_lut_area + driver_area
        
@@ -1365,11 +1364,11 @@ class _LUT(_SizableCircuit):
                 wire_layers["wire_lut_out_buffer"] = 0
           
         # Update input driver wires
-        for driver_name, input_driver in self.input_drivers.iteritems():
+        for driver_name, input_driver in self.input_drivers.items():
             input_driver.update_wires(width_dict, wire_lengths, wire_layers) 
             
         # Update input driver load wires
-        for driver_load_name, input_driver_load in self.input_driver_loads.iteritems():
+        for driver_load_name, input_driver_load in self.input_driver_loads.items():
             input_driver_load.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
     
         
@@ -1383,14 +1382,14 @@ class _LUT(_SizableCircuit):
         utils.print_and_write(report_file, "  Isolation inverters between SRAM and LUT inputs")
         utils.print_and_write(report_file, "")
         utils.print_and_write(report_file, "  LUT INPUT DRIVER DETAILS:")
-        for driver_name, input_driver in self.input_drivers.iteritems():
+        for driver_name, input_driver in self.input_drivers.items():
             input_driver.print_details(report_file)
         utils.print_and_write(report_file,"")
         
     
     def _generate_6lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
-        print "Generating 6-LUT"
+        print("Generating 6-LUT")
 
         # COFFE doesn't support 7-input LUTs check_arch_params in utils.py will handle this
         # we currently don't support 7-input LUTs that are fracturable, that would require more code changes but can be done with reasonable effort.
@@ -1471,7 +1470,7 @@ class _LUT(_SizableCircuit):
         
     def _generate_5lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
-        print "Generating 5-LUT"
+        print("Generating 5-LUT")
         
         # Call the generation function
         if not use_tgate :
@@ -1546,7 +1545,7 @@ class _LUT(_SizableCircuit):
   
     def _generate_4lut(self, subcircuit_filename, min_tran_width, use_tgate, use_finfet, use_fluts):
         """ This function created the lut subcircuit and all the drivers and driver not subcircuits """
-        print "Generating 4-LUT"
+        print("Generating 4-LUT")
         
         # Call the generation function
         if not use_tgate :
@@ -1651,7 +1650,7 @@ class _CarryChainMux(_SizableCircuit):
 
     def generate_top(self):       
 
-        print "Generating top-level " + self.name
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_cc_mux_top(self.name, self.use_tgate)
 
     def update_area(self, area_dict, width_dict):
@@ -1811,7 +1810,7 @@ class _CarryChain(_SizableCircuit):
         wire_layers["wire_" + self.name + "_5"] = 0
 
     def print_details(self):
-        print " Carry Chain DETAILS:"
+        print(" Carry Chain DETAILS:")
 
           
 class _CarryChainSkipAnd(_SizableCircuit):
@@ -1869,7 +1868,7 @@ class _CarryChainSkipAnd(_SizableCircuit):
 
     def update_area(self, area_dict, width_dict):
         """ Calculate Carry Chain area and update dictionaries. """
-        area_1 = (area_dict["inv_nand"+str(self.nand1_size)+"_xcarry_chain_and_1"] + area_dict["inv_xcarry_chain_and_2"])* int(math.ceil(float(self.skip_size/self.nand1_size)))
+        area_1 = (area_dict["inv_nand"+str(self.nand1_size)+"_xcarry_chain_and_1"] + area_dict["inv_xcarry_chain_and_2"])* int(math.ceil(float(int(self.skip_size/self.nand1_size))))
         area_2 = area_dict["inv_nand"+str(self.nand2_size)+"_xcarry_chain_and_3"] + area_dict["inv_xcarry_chain_and_4"]
         area = area_1 + area_2
         area_with_sram = area
@@ -1888,7 +1887,7 @@ class _CarryChainSkipAnd(_SizableCircuit):
         wire_layers["wire_" + self.name + "_2"] = 0
 
     def print_details(self):
-        print " Carry Chain DETAILS:"
+        print(" Carry Chain DETAILS:")
 
 class _CarryChainInterCluster(_SizableCircuit):
     """ Wire dirvers of carry chain path between clusters"""
@@ -1973,7 +1972,7 @@ class _CarryChainSkipMux(_SizableCircuit):
 
     def generate_top(self):       
 
-        print "Generating top-level " + self.name
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_skip_mux_top(self.name, self.use_tgate)
 
     def update_area(self, area_dict, width_dict):
@@ -2048,14 +2047,14 @@ class _FlipFlop:
         
         # Generate FF with optional register select
         if self.register_select == 'z':
-            print "Generating FF"
+            print("Generating FF")
             if not self.use_tgate :
                 self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_d_ff(subcircuit_filename, self.use_finfet)
             else :
                 self.transistor_names, self.wire_names = ff_subcircuits.generate_tgate_d_ff(subcircuit_filename, self.use_finfet)
 
         else:
-            print "Generating FF with register select on BLE input " + self.register_select
+            print("Generating FF with register select on BLE input " + self.register_select)
             if not self.use_tgate :
                 self.transistor_names, self.wire_names = ff_subcircuits.generate_ptran_2_input_select_d_ff(subcircuit_filename, self.use_finfet)
             else :
@@ -2195,11 +2194,11 @@ class _FlipFlop:
         
         
     def print_details(self):
-        print "  FF DETAILS:"
+        print("  FF DETAILS:")
         if self.register_select == 'z':
-            print "  Register select: None"
+            print("  Register select: None")
         else:
-            print "  Register select: BLE input " + self.register_select
+            print("  Register select: BLE input " + self.register_select)
 
         
 class _LocalBLEOutput(_SizableCircuit):
@@ -2214,7 +2213,7 @@ class _LocalBLEOutput(_SizableCircuit):
         
         
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating local BLE output"
+        print("Generating local BLE output")
         if not self.use_tgate :
             self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
             # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
@@ -2238,7 +2237,7 @@ class _LocalBLEOutput(_SizableCircuit):
 
 
     def generate_top(self):
-        print "Generating top-level " + self.name
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_local_ble_output_top(self.name, self.use_tgate)
         
         
@@ -2278,7 +2277,7 @@ class _LocalBLEOutput(_SizableCircuit):
         
         
     def print_details(self):
-        print "Local BLE output details."
+        print("Local BLE output details.")
 
       
 class _GeneralBLEOutput(_SizableCircuit):
@@ -2291,7 +2290,7 @@ class _GeneralBLEOutput(_SizableCircuit):
         
         
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating general BLE output"
+        print("Generating general BLE output")
         if not self.use_tgate :
             self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
             # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
@@ -2315,7 +2314,7 @@ class _GeneralBLEOutput(_SizableCircuit):
 
 
     def generate_top(self):
-        print "Generating top-level " + self.name
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_general_ble_output_top(self.name, self.use_tgate)
         
      
@@ -2355,7 +2354,7 @@ class _GeneralBLEOutput(_SizableCircuit):
         
    
     def print_details(self):
-        print "General BLE output details."
+        print("General BLE output details.")
 
         
 class _LUTOutputLoad:
@@ -2371,7 +2370,7 @@ class _LUTOutputLoad:
         
         
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating LUT output load"
+        print("Generating LUT output load")
         self.wire_names = load_subcircuits.generate_lut_output_load(subcircuit_filename, self.num_local_outputs, self.num_general_outputs)
         
      
@@ -2406,7 +2405,7 @@ class _flut_mux(_CompoundCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating flut added mux"   
+        print("Generating flut added mux")   
 
         if not self.use_tgate :
             self.transistor_names, self.wire_names = mux_subcircuits.generate_ptran_2_to_1_mux(subcircuit_filename, self.name)
@@ -2432,7 +2431,7 @@ class _flut_mux(_CompoundCircuit):
 
     def generate_top(self):       
 
-        print "Generating top-level " + self.name
+        print("Generating top-level " + self.name)
         self.top_spice_path = top_level.generate_flut_mux_top(self.name, self.use_tgate, self.enable_carry_chain)
 
     def update_area(self, area_dict, width_dict):
@@ -2511,7 +2510,7 @@ class _BLE(_CompoundCircuit):
         
         
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating BLE"
+        print("Generating BLE")
         
         # Generate LUT and FF
         init_tran_sizes = {}
@@ -2749,9 +2748,10 @@ class _LocalRoutingWireLoad:
     
 
     def generate(self, subcircuit_filename, specs, local_mux):
-        print "Generating local routing wire load"
+        print("Generating local routing wire load")
         # Compute load (number of on/partial/off per wire)
         self._compute_load(specs, local_mux)
+        #print(self.off_inputs_per_wire)
         # Generate SPICE deck
         self.wire_names = load_subcircuits.local_routing_load_generate(subcircuit_filename, self.on_inputs_per_wire, self.partial_inputs_per_wire, self.off_inputs_per_wire)
     
@@ -2768,8 +2768,8 @@ class _LocalRoutingWireLoad:
     
         
     def print_details(self):
-        print "LOCAL ROUTING WIRE LOAD DETAILS"
-        print ""
+        print("LOCAL ROUTING WIRE LOAD DETAILS")
+        print("")
         
         
     def _compute_load(self, specs, local_mux):
@@ -2820,7 +2820,7 @@ class _LogicCluster(_CompoundCircuit):
 
         
     def generate(self, subcircuits_filename, min_tran_width, specs):
-        print "Generating logic cluster"
+        print("Generating logic cluster")
         init_tran_sizes = {}
         init_tran_sizes.update(self.ble.generate(subcircuits_filename, min_tran_width))
         init_tran_sizes.update(self.local_mux.generate(subcircuits_filename, min_tran_width))
@@ -2891,7 +2891,7 @@ class _RoutingWireLoad:
     def generate(self, subcircuit_filename, specs, sb_mux, cb_mux):
         """ Generate the SPICE circuit for general routing wire load
             Need specs object, switch block object and connection block object """
-        print "Generating routing wire load"
+        print("Generating routing wire load")
         # Calculate wire load based on architecture parameters
         self._compute_load(specs, sb_mux, cb_mux, self.channel_usage_assumption, self.cluster_input_usage_assumption)
         # Generate SPICE deck
@@ -2994,7 +2994,7 @@ class _RoutingWireLoad:
         # Calculate connection block load per tile
         # We assume that cluster inputs are divided evenly between horizontal and vertical routing channels
         # We can get the total number of CB inputs connected to the channel segment by multiplying cluster inputs by cb_mux_size, then divide by W to get cb_inputs/wire
-        cb_load_per_tile = int(round((I/2*cb_mux_size)/W))
+        cb_load_per_tile = int(round((I/2*cb_mux_size)//W))
         # Now we got to find out how many are on, how many are partially on and how many are off
         # For each tile, we have half of the cluster inputs connecting to a routing channel and only a fraction of these inputs are actually used
         # It is logical to assume that used cluster inputs will be connected to used routing wires, so we have I/2*input_usage inputs per tile,
@@ -3127,7 +3127,7 @@ class _pgateoutputcrossbar(_SizableCircuit):
         self.def_use_tgate = 0
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating BRAM output crossbar"
+        print("Generating BRAM output crossbar")
         
 
         # Call MUX generation function
@@ -3150,7 +3150,7 @@ class _pgateoutputcrossbar(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level path for BRAM crossbar evaluation"
+        print("Generating top-level path for BRAM crossbar evaluation")
         self.top_spice_path = top_level.generate_pgateoutputcrossbar_top(self.name, self.maxwidth, self.def_use_tgate)
 
 
@@ -3163,11 +3163,11 @@ class _pgateoutputcrossbar(_SizableCircuit):
         ptran_count = self.maxwidth
 
         while current_count >1:
-            ptran_count += current_count/2
-            current_count /=2
+            ptran_count += current_count//2
+            current_count //=2
 
         ptran_count *=2
-        ptran_count += self.maxwidth / 2
+        ptran_count += self.maxwidth // 2
 
         area = (area_dict["inv_" + self.name + "_1"] + area_dict["inv_" + self.name + "_2"] + area_dict["inv_" + self.name + "_3"] * 2) * self.maxwidth + area_dict["ptran_" + self.name + "_4"]  * ptran_count
         #I'll use half of the area to obtain the width. This makes the process of defining wires easier for this crossbar
@@ -3206,7 +3206,7 @@ class _configurabledecoderiii(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating  stage of the configurable decoder " + self.name
+        print("Generating stage of the configurable decoder " + self.name)
         
 
         # Call generation function
@@ -3215,7 +3215,7 @@ class _configurabledecoderiii(_SizableCircuit):
         else:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_configurabledecoderiii_lp(subcircuit_filename, self.name, self.required_size)
 
-            print self.transistor_names
+            #print(self.transistor_names)
         # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
         self.initial_transistor_sizes["inv_nand"+str(self.required_size)+"_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_nand"+str(self.required_size)+"_" + self.name + "_1_pmos"] = 1
@@ -3226,7 +3226,7 @@ class _configurabledecoderiii(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for final stage of the configurable decoder"
+        print("Generating top-level evaluation path for final stage of the configurable decoder")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_configurabledecoderiii_top(self.name, self.fanin1,self.fanin2, self.required_size, self.tgatecount)
         else:
@@ -3275,7 +3275,7 @@ class _configurabledecoder3ii(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating second part of the configurable decoder" + self.name
+        print("Generating second part of the configurable decoder" + self.name)
         
 
         # Call generation function
@@ -3293,7 +3293,7 @@ class _configurabledecoder3ii(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evalation path for second part of the configurable decoder"
+        print("Generating top-level evalation path for second part of the configurable decoder")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_configurabledecoder2ii_top(self.name, self.fan_out, 3)
         else:
@@ -3332,7 +3332,7 @@ class _configurabledecoder2ii(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating the second part of the configurable decoder" + self.name
+        print("Generating the second part of the configurable decoder" + self.name)
         
 
         # Call generation function
@@ -3341,7 +3341,7 @@ class _configurabledecoder2ii(_SizableCircuit):
         else:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_configurabledecoder2ii_lp(subcircuit_filename, self.name)
 
-            print self.transistor_names
+            #print(self.transistor_names)
         # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
         self.initial_transistor_sizes["inv_nand2_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_nand2_" + self.name + "_1_pmos"] = 1
@@ -3353,7 +3353,7 @@ class _configurabledecoder2ii(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for second part of the configurable decoder"
+        print("Generating top-level evaluation path for second part of the configurable decoder")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_configurabledecoder2ii_top(self.name, self.fan_out, 2)
         else:
@@ -3392,7 +3392,7 @@ class _configurabledecoderinvmux(_SizableCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating first stage of the configurable decoder" 
+        print("Generating first stage of the configurable decoder") 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_configurabledecoderi(subcircuit_filename, self.name)
         else:
@@ -3405,7 +3405,7 @@ class _configurabledecoderinvmux(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for the stage of the configurable decoder" 
+        print("Generating top-level evaluation path for the stage of the configurable decoder") 
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_configurabledecoderi_top(self.name,  self.numberofgates2, self.numberofgates3, self.ConfiDecodersize)
         else:
@@ -3444,7 +3444,7 @@ class _rowdecoder0(_SizableCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating row decoder initial stage" 
+        print("Generating row decoder initial stage") 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_rowdecoderstage0(subcircuit_filename, self.name)
         else:
@@ -3455,7 +3455,7 @@ class _rowdecoder0(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating row decoder initial stage" 
+        print("Generating row decoder initial stage") 
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_rowdecoderstage0_top(self.name, self.numberofgates2, self.numberofgates3, self.decodersize, self.label2, self.label3)
         else:
@@ -3495,7 +3495,7 @@ class _rowdecoder1(_SizableCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating row decoder first stage" 
+        print("Generating row decoder first stage") 
 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_rowdecoderstage1(subcircuit_filename, self.name, self.nandtype)
@@ -3511,7 +3511,7 @@ class _rowdecoder1(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for row decoder first stage" 
+        print("Generating top-level evaluation path for row decoder first stage") 
         pass
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_rowdecoderstage1_top(self.name, self.fanout, self.nandtype)
@@ -3548,11 +3548,11 @@ class _wordlinedriver(_SizableCircuit):
         self.is_rowdecoder_2stage = is_rowdecoder_2stage
         self.wl_repeater = 0
         if self.rowsram > 128:
-            self.rowsram /= 2
+            self.rowsram //= 2
             self.wl_repeater = 1
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating the wordline driver" + self.name
+        print("Generating the wordline driver" + self.name)
 
         # Call generation function
         if use_lp_transistor == 0:
@@ -3560,7 +3560,7 @@ class _wordlinedriver(_SizableCircuit):
         else:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_wordline_driver_lp(subcircuit_filename, self.name, self.number_of_banks + 1, self.wl_repeater)
 
-            print self.transistor_names
+            #print(self.transistor_names)
         # Initialize transistor sizes (to something more reasonable than all min size, but not necessarily a good choice, depends on architecture params)
 
         if self.number_of_banks == 1:
@@ -3583,7 +3583,7 @@ class _wordlinedriver(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for the wordline driver"
+        print("Generating top-level evaluation path for the wordline driver")
         pass 
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_wordline_driver_top(self.name, self.rowsram, self.number_of_banks + 1, self.is_rowdecoder_2stage, self.wl_repeater)
@@ -3643,7 +3643,7 @@ class _rowdecoderstage3(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating last stage of the row decoder" + self.name
+        print("Generating last stage of the row decoder" + self.name)
 
         # Call generation function
         if use_lp_transistor == 0:
@@ -3675,7 +3675,7 @@ class _rowdecoderstage3(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for last stage of row decoder"
+        print("Generating top-level evaluation path for last stage of row decoder")
         pass 
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_rowdecoderstage3_top(self.name, self.fanin1, self.fanin2, self.rowsram, self.gatesize - 1, self.fanout)
@@ -3711,7 +3711,7 @@ class _powermtjread(_SizableCircuit):
         self.name = "mtj_read_power"
         self.SRAM_per_column = SRAM_per_column
     def generate_top(self):
-        print "Generating top level module to measure MTJ read power"
+        print("Generating top level module to measure MTJ read power")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_mtj_read_power_top(self.name, self.SRAM_per_column)
         else:
@@ -3725,7 +3725,7 @@ class _powermtjwrite(_SizableCircuit):
         self.name = "mtj_write_power"
         self.SRAM_per_column = SRAM_per_column
     def generate_top(self):
-        print "Generating top level module to measure MTJ write power"
+        print("Generating top level module to measure MTJ write power")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_mtj_write_power_top(self.name, self.SRAM_per_column)
         else:
@@ -3741,7 +3741,7 @@ class _powersramwritehh(_SizableCircuit):
         self.column_multiplexity = column_multiplexity
 
     def generate_top(self):
-        print "Generating top level module to measure SRAM write power"
+        print("Generating top level module to measure SRAM write power")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_sram_writehh_power_top(self.name, self.SRAM_per_column, self.column_multiplexity - 1)
         else:
@@ -3757,7 +3757,7 @@ class _powersramwritep(_SizableCircuit):
         self.column_multiplexity = column_multiplexity
 
     def generate_top(self):
-        print "Generating top level module to measure SRAM write power"
+        print("Generating top level module to measure SRAM write power")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_sram_writep_power_top(self.name, self.SRAM_per_column, self.column_multiplexity - 1)
         else:
@@ -3773,7 +3773,7 @@ class _powersramwritelh(_SizableCircuit):
         self.column_multiplexity = column_multiplexity
 
     def generate_top(self):
-        print "Generating top level module to measure SRAM write power"
+        print("Generating top level module to measure SRAM write power")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_sram_writelh_power_top(self.name, self.SRAM_per_column, self.column_multiplexity - 1)
         else:
@@ -3789,7 +3789,7 @@ class _powersramread(_SizableCircuit):
         self.column_multiplexity = column_multiplexity
 
     def generate_top(self):
-        print "Generating top level module to measure SRAM read power"
+        print("Generating top level module to measure SRAM read power")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_sram_read_power_top(self.name, self.SRAM_per_column, self.column_multiplexity - 1)
         else:
@@ -3806,7 +3806,7 @@ class _columndecoder(_SizableCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating column decoder " 
+        print("Generating column decoder ") 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_columndecoder(subcircuit_filename, self.name, self.col_decoder_bitssize)
         else:
@@ -3821,7 +3821,7 @@ class _columndecoder(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation path for column decoder"
+        print("Generating top-level evaluation path for column decoder")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_columndecoder_top(self.name,  self.numberoftgates, self.col_decoder_bitssize)
         else:
@@ -3856,7 +3856,7 @@ class _writedriver(_SizableCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating write driver" 
+        print("Generating write driver") 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_writedriver(subcircuit_filename, self.name)
         else:
@@ -3874,7 +3874,7 @@ class _writedriver(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level evaluation for write driver"
+        print("Generating top-level evaluation for write driver")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_writedriver_top(self.name, self.numberofsramsincol)
         else:
@@ -3906,7 +3906,7 @@ class _samp(_SizableCircuit):
         self.difference = difference
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating sense amplifier circuit" 
+        print("Generating sense amplifier circuit") 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_samp(subcircuit_filename, self.name)
         else:
@@ -3921,7 +3921,7 @@ class _samp(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating sense amplifier circuit"
+        print("Generating sense amplifier circuit")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_samp_top_part1(self.name, self.numberofsramsincol, self.difference)
         else:
@@ -3953,7 +3953,7 @@ class _samp_part2(_SizableCircuit):
 
 
     def generate_top(self):
-        print "Generating top-level evaluation path for the second stage of sense amplifier"
+        print("Generating top-level evaluation path for the second stage of sense amplifier")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_samp_top_part2(self.name, self.numberofsramsincol, self.difference)
         else:
@@ -3971,7 +3971,7 @@ class _prechargeandeq(_SizableCircuit):
 
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating precharge and equalization circuit" 
+        print("Generating precharge and equalization circuit") 
         if use_lp_transistor == 0:
             self.transistor_names, self.wire_names = memory_subcircuits.generate_precharge(subcircuit_filename, self.name)
         else:
@@ -3983,7 +3983,7 @@ class _prechargeandeq(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating precharge and equalization circuit"
+        print("Generating precharge and equalization circuit")
         if use_lp_transistor == 0:
             self.top_spice_path = top_level.generate_precharge_top(self.name, self.numberofsrams)
         else:
@@ -4014,7 +4014,7 @@ class _levelshifter(_SizableCircuit):
         self.name = "level_shifter"
 
     def generate(self, subcircuit_filename):
-        print "Generating the level shifter" 
+        print("Generating the level shifter") 
 
         self.transistor_names = []
         self.transistor_names.append(memory_subcircuits.generate_level_shifter(subcircuit_filename, self.name))
@@ -4043,7 +4043,7 @@ class _mtjsamp(_SizableCircuit):
         self.colsize = colsize
 
     def generate_top(self):
-        print "generating MTJ sense amp operation"
+        print("generating MTJ sense amp operation")
 
         self.top_spice_path = top_level.generate_mtj_sa_top(self.name, self.colsize)
 
@@ -4056,7 +4056,7 @@ class _mtjblcharging(_SizableCircuit):
         self.colsize = colsize
 
     def generate_top(self):
-        print "generating top level circuit for MTJ charging process"
+        print("generating top level circuit for MTJ charging process")
 
         self.top_spice_path = top_level.generate_mtj_charge(self.name, self.colsize)
 
@@ -4079,7 +4079,7 @@ class _mtjbldischarging(_SizableCircuit):
 
 
     def generate_top(self):
-        print "generating top level circuit for MTJ discharging process"
+        print("generating top level circuit for MTJ discharging process")
 
         self.top_spice_path = top_level.generate_mtj_discharge(self.name, self.colsize)
 
@@ -4090,7 +4090,7 @@ class _mtjbasiccircuits(_SizableCircuit):
         self.name = "mtj_subcircuits"
 
     def generate(self, subcircuit_filename):
-        print "Generating MTJ subcircuits" 
+        print("Generating MTJ subcircuits") 
 
         self.transistor_names = []
         self.transistor_names.append(memory_subcircuits.generate_mtj_sa_lp(subcircuit_filename, self.name))
@@ -4159,7 +4159,7 @@ class _memorycell(_SizableCircuit):
         self.memory_technology = memory_technology
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating BRAM memorycell" 
+        print("Generating BRAM memorycell") 
 
         if self.memory_technology == "SRAM":
             if use_lp_transistor == 0:
@@ -4230,7 +4230,7 @@ class _RAMLocalMUX(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating RAM local mux"
+        print("Generating RAM local mux")
         
         # Calculate level sizes and number of SRAMs per mux
         self.level2_size = int(math.sqrt(self.required_size))
@@ -4266,7 +4266,7 @@ class _RAMLocalMUX(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level RAM local mux"
+        print("Generating top-level RAM local mux")
 
         self.top_spice_path = top_level.generate_RAM_local_mux_top(self.name)
 
@@ -4338,7 +4338,7 @@ class _RAMLocalRoutingWireLoad:
         # Name of this wire
         self.name = "local_routing_wire_load"
         # This is calculated for the widest mode (worst case scenario. Other modes have less usage)
-        self.RAM_input_usage_assumption = float((2 + 2*(row_decoder_bits + col_decoder_bits) + 2** (conf_decoder_bits))/(2 + 2*(row_decoder_bits + col_decoder_bits+ conf_decoder_bits) + 2** (conf_decoder_bits)))
+        self.RAM_input_usage_assumption = float((2 + 2*(row_decoder_bits + col_decoder_bits) + 2** (conf_decoder_bits))//(2 + 2*(row_decoder_bits + col_decoder_bits+ conf_decoder_bits) + 2** (conf_decoder_bits)))
         # Total number of local mux inputs per wire
         self.mux_inputs_per_wire = -1
         # Number of on inputs connected to each wire 
@@ -4355,7 +4355,7 @@ class _RAMLocalRoutingWireLoad:
 
 
     def generate(self, subcircuit_filename, specs, RAM_local_mux):
-        print "Generating local routing wire load"
+        print("Generating local routing wire load")
         # Compute load (number of on/partial/off per wire)
         self._compute_load(specs, RAM_local_mux)
         # Generate SPICE deck
@@ -4677,13 +4677,13 @@ class _RAM(_CompoundCircuit):
             self.cfanin2 = 2**(self.cpredecoder1+self.cpredecoder2+self.cpredecoder3 - 2)
             self.cvalidobj2 = 1
 
-        self.configurabledecoderi = _configurabledecoderinvmux(use_tgate, self.stage1output2/2, self.stage1output3/2, self.conf_decoder_bits)
+        self.configurabledecoderi = _configurabledecoderinvmux(use_tgate, int(self.stage1output2//2), int(self.stage1output3//2), self.conf_decoder_bits)
         self.configurabledecoderiii = _configurabledecoderiii(use_tgate, self.cfanouttypeconf , self.cfanin1 , self.cfanin2, 2**self.conf_decoder_bits)
 
         self.pgateoutputcrossbar = _pgateoutputcrossbar(2**self.conf_decoder_bits)
         
     def generate(self, subcircuits_filename, min_tran_width, specs):
-        print "Generating RAM block"
+        print("Generating RAM block")
         init_tran_sizes = {}
         init_tran_sizes.update(self.RAM_local_mux.generate(subcircuits_filename, min_tran_width))
 
@@ -4923,7 +4923,7 @@ class _HBLocalMUX(_SizableCircuit):
     
     
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating HB local mux"
+        print("Generating HB local mux")
         
         # Calculate level sizes and number of SRAMs per mux
         self.level2_size = int(math.sqrt(self.required_size))
@@ -4961,7 +4961,7 @@ class _HBLocalMUX(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level HB local mux"
+        print("Generating top-level HB local mux")
         self.top_spice_path = top_level.generate_HB_local_mux_top(self.name, self.hb_parameters['name'])
 
     def update_area(self, area_dict, width_dict):
@@ -5041,7 +5041,7 @@ class _HBLocalRoutingWireLoad:
 
 
     def generate(self, subcircuit_filename, specs, HB_local_mux):
-        print "Generating local routing wire load"
+        print("Generating local routing wire load")
         # Compute load (number of on/partial/off per wire)
         self._compute_load(specs, HB_local_mux)
         # Generate SPICE deck
@@ -5100,7 +5100,7 @@ class _dedicated_routing_driver(_SizableCircuit):
         
         self.num_buffers = num_buffers
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating hard block " + self.name +" dedicated routing driver"
+        print("Generating hard block " + self.name +" dedicated routing driver")
 
         self.transistor_names, self.wire_names = mux_subcircuits.generate_dedicated_driver(subcircuit_filename, self.name, self.num_buffers, self.top_name)
             
@@ -5112,7 +5112,7 @@ class _dedicated_routing_driver(_SizableCircuit):
         return self.initial_transistor_sizes
 
     def generate_top(self):
-        print "Generating top-level submodules"
+        print("Generating top-level submodules")
 
         self.top_spice_path = top_level.generate_dedicated_driver_top(self.name, self.top_name, self.num_buffers)
 
@@ -5140,16 +5140,9 @@ class _dedicated_routing_driver(_SizableCircuit):
 class _hard_block(_CompoundCircuit):
     """ hard block class"""
 
-    def __init__(self, filename, use_tgate, run_options):
+    def __init__(self,hb_params, use_tgate, run_options):
         #Call the hard block parameter parser
-        self.parameters = utils.load_hard_params(filename,run_options)
-        if(self.parameters["partition_flag"]):
-            ptn_params = utils.load_ptn_params(self.parameters["ptn_settings_file"])
-            #put ptn_params into hardblock params 
-            self.parameters["ptn_params"] = ptn_params
-        if(os.path.isfile(self.parameters["run_settings_file"])):
-            run_params = utils.load_run_params(self.parameters["run_settings_file"])
-            self.parameters["run_params"] = run_params
+        self.parameters = hb_params
 
         # Subcircuit name
         self.name = self.parameters['name']
@@ -5163,7 +5156,7 @@ class _hard_block(_CompoundCircuit):
         self.flow_results = (-1.0,-1.0,-1.0)
 
     def generate(self, subcircuit_filename, min_tran_width):
-        print "Generating hard block " + self.name
+        print("Generating hard block " + self.name)
 
         # generate subblocks
         init_tran_sizes = {}
@@ -5280,11 +5273,10 @@ class _hard_block(_CompoundCircuit):
 class FPGA:
     """ This class describes an FPGA. """
         
-    def __init__(self, arch_params_dict, run_options, spice_interface):
-          
+    def __init__(self, coffe_params, run_options, spice_interface):
+        
         # Initialize the specs
-        self.specs = _Specs(arch_params_dict, run_options.quick_mode)
-
+        self.specs = _Specs(coffe_params["fpga_arch_params"], run_options.quick_mode)
 
         ######################################
         ### INITIALIZE SPICE LIBRARY NAMES ###
@@ -5311,7 +5303,7 @@ class FPGA:
         clb_to_r_sb_mux_size = No*self.specs.Fcout*self.specs.L/2
         sb_mux_size_required = int(r_to_r_sb_mux_size + clb_to_r_sb_mux_size)
         # Calculate number of switch block muxes per tile
-        num_sb_mux_per_tile = 2*self.specs.W/self.specs.L
+        num_sb_mux_per_tile = 2*self.specs.W//self.specs.L
         # Initialize the switch block
         self.sb_mux = _SwitchBlockMUX(sb_mux_size_required, num_sb_mux_per_tile, self.specs.use_tgate)
 
@@ -5390,11 +5382,10 @@ class FPGA:
         ################################
 
         self.hardblocklist = []
-        self.hard_block_files = self.specs.hb_files
-        #self.hard_block_files = {}
-        for name in self.hard_block_files:
-            hard_block = _hard_block(name, self.specs.use_tgate,run_options)
-            self.hardblocklist.append(hard_block)
+        if("asic_hardblock_params" in coffe_params.keys()):
+            for hb_params in coffe_params["asic_hardblock_params"]["hardblocks"]:
+                hard_block = _hard_block(hb_params, self.specs.use_tgate, run_options)
+                self.hardblocklist.append(hard_block)
 
 
         ##########################################################
@@ -5467,7 +5458,30 @@ class FPGA:
         # This is the height of the logic block, once an initial floorplanning solution has been determined, it will be assigned a non-zero value.
         self.lb_height =  0.0
 
+    def debug_print(self,member_str):
+        """ This function prints various FPGA class members in a static order s.t they can be easily compared with one another"""
+        #wire lengths
+        title_buffer = "#"*35
+        if(member_str == "wire_lengths"):
+            print("%s WIRE LENGTHS %s" % (title_buffer,title_buffer))
+            if(not bool(self.wire_lengths)):
+                #if empty dict print that
+                print("EMPTY PARAM")
+            else:
+                for k,v in self.wire_lengths.items():
+                    print("%s---------------%f" % (k,v))
+            print("%s WIRE LENGTHS %s" % (title_buffer,title_buffer))
+        elif(member_str == "width_dict"):
+            print("%s WIDTH DICTS %s" % (title_buffer,title_buffer))
+            if(not bool(self.width_dict)):
+                #if empty dict print that
+                print("EMPTY PARAM")
+            else:
+                for k,v in self.width_dict.items():
+                    print("%s---------------%f" % (k,v))
+            print("%s WIDTH DICTS %s" % (title_buffer,title_buffer))
 
+        
 
     def generate(self, is_size_transistors):
         """ This function generates all SPICE netlists and library files. """
@@ -5565,15 +5579,15 @@ class FPGA:
             hardblock.generate_top()
 
         # Calculate area, and wire data.
-        print "Calculating area..."
+        print("Calculating area...")
         # Update area values
         self.update_area()
-        print "Calculating wire lengths..."
+        print("Calculating wire lengths...")
         self.update_wires()
-        print "Calculating wire resistance and capacitance..."
+        print("Calculating wire resistance and capacitance...")
         self.update_wire_rc()
     
-        print ""
+        print("")
         
 
     def update_area(self):
@@ -5588,7 +5602,8 @@ class FPGA:
         # Now, we have to update area_dict and width_dict with the new transistor area values
         # for the basic subcircuits which are inverteres, ptran, tgate, restorers and transistors
         self._update_area_and_width_dicts()
-        
+        #I found that printing width_dict here and comparing against golden results was helpful
+        #self.debug_print("width_dict")
 
         # Calculate area of SRAM
         self.area_dict["sram"] = self.specs.sram_cell_area * self.specs.min_width_tran_area
@@ -5680,7 +5695,7 @@ class FPGA:
 
             cc_area_total = 0.0
             skip_size = 5
-            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)/skip_size))
+            self.carry_skip_periphery_count = int(math.floor((self.specs.N * self.specs.FAs_per_flut)//skip_size))
             if self.specs.enable_carry_chain == 1:
                 if self.carry_skip_periphery_count == 0 or self.specs.carry_chain_type == "ripple":
                     cc_area_total =  self.specs.N* (self.area_dict["carry_chain"] * self.specs.FAs_per_flut + (self.specs.FAs_per_flut) * self.area_dict["carry_chain_mux"])
@@ -5825,6 +5840,8 @@ class FPGA:
         
         if self.lb_height != 0.0:  
             self.compute_distance()
+
+        #self.debug_print("width_dict")
 
     def compute_distance(self):
         """ This function computes distances for different stripes for the floorplanner:
@@ -6013,7 +6030,7 @@ class FPGA:
         max_iteration = 10
         # tweak the current height to find a better one, possibly:
         while is_done == False and current_iteration < max_iteration:
-            print "searching for a height for the logic tile " + str(self.lb_height)
+            print("searching for a height for the logic tile " + str(self.lb_height))
             old_height = self.lb_height
             current_best_index = 0
             self.update_area()
@@ -6036,7 +6053,7 @@ class FPGA:
             if current_best_index == 0:
                 is_done = True
 
-        print "found the best tile height: " + str(self.lb_height)
+        print("found the best tile height: " + str(self.lb_height))
 
         
 
@@ -6109,13 +6126,15 @@ class FPGA:
 
         for hardblock in self.hardblocklist:
             hardblock.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)  
-            hardblock.mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)     
+            hardblock.mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)   
+
+        #self.debug_print("wire_lengths")  
 
     def update_wire_rc(self):
         """ This function updates self.wire_rc_dict based on the FPGA's self.wire_lengths and self.wire_layers."""
             
         # Calculate R and C for each wire
-        for wire, length in self.wire_lengths.iteritems():
+        for wire, length in self.wire_lengths.items():
             # Get wire layer
             layer = self.wire_layers[wire]
             # Get R and C per unit length for wire layer
@@ -6135,19 +6154,19 @@ class FPGA:
         This function returns "False" if any of the HSPICE simulations failed.
         """
         
-        print "*** UPDATING DELAYS ***"
+        print("*** UPDATING DELAYS ***")
         crit_path_delay = 0
         valid_delay = True
 
         # Create parameter dict of all current transistor sizes and wire rc
         parameter_dict = {}
-        for tran_name, tran_size in self.transistor_sizes.iteritems():
+        for tran_name, tran_size in self.transistor_sizes.items():
             if not self.specs.use_finfet:
                 parameter_dict[tran_name] = [1e-9*tran_size*self.specs.min_tran_width]
             else :
                 parameter_dict[tran_name] = [tran_size]
 
-        for wire_name, rc_data in self.wire_rc_dict.iteritems():
+        for wire_name, rc_data in self.wire_rc_dict.items():
             parameter_dict[wire_name + "_res"] = [rc_data[0]]
             parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 
@@ -6159,7 +6178,7 @@ class FPGA:
         # second and set our valid_delay flag to False.
 
         # Switch Block MUX 
-        print "  Updating delay for " + self.sb_mux.name
+        print("  Updating delay for " + self.sb_mux.name)
         spice_meas = spice_interface.run(self.sb_mux.top_spice_path, parameter_dict)
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6178,7 +6197,7 @@ class FPGA:
         self.sb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Connection Block MUX
-        print "  Updating delay for " + self.cb_mux.name
+        print("  Updating delay for " + self.cb_mux.name)
         spice_meas = spice_interface.run(self.cb_mux.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6197,7 +6216,7 @@ class FPGA:
         self.cb_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local MUX
-        print "  Updating delay for " + self.logic_cluster.local_mux.name
+        print("  Updating delay for " + self.logic_cluster.local_mux.name)
         spice_meas = spice_interface.run(self.logic_cluster.local_mux.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6218,7 +6237,7 @@ class FPGA:
         self.logic_cluster.local_mux.power = float(spice_meas["meas_avg_power"][0])
         
         # Local BLE output
-        print "  Updating delay for " + self.logic_cluster.ble.local_output.name 
+        print("  Updating delay for " + self.logic_cluster.ble.local_output.name) 
         spice_meas = spice_interface.run(self.logic_cluster.ble.local_output.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6239,7 +6258,7 @@ class FPGA:
         self.logic_cluster.ble.local_output.power = float(spice_meas["meas_avg_power"][0])
         
         # General BLE output
-        print "  Updating delay for " + self.logic_cluster.ble.general_output.name
+        print("  Updating delay for " + self.logic_cluster.ble.general_output.name)
         spice_meas = spice_interface.run(self.logic_cluster.ble.general_output.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6264,7 +6283,7 @@ class FPGA:
         #print self.specs.use_fluts 
         # fracturable lut mux
         if self.specs.use_fluts:
-            print "  Updating delay for " + self.logic_cluster.ble.fmux.name
+            print("  Updating delay for " + self.logic_cluster.ble.fmux.name)
             spice_meas = spice_interface.run(self.logic_cluster.ble.fmux.top_spice_path, 
                                              parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6284,7 +6303,7 @@ class FPGA:
  
 
         # LUT delay
-        print "  Updating delay for " + self.logic_cluster.ble.lut.name
+        print("  Updating delay for " + self.logic_cluster.ble.lut.name)
         spice_meas = spice_interface.run(self.logic_cluster.ble.lut.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6305,10 +6324,10 @@ class FPGA:
         
         # Get delay for all paths through the LUT.
         # We get delay for each path through the LUT as well as for the LUT input drivers.
-        for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.iteritems():
+        for lut_input_name, lut_input in self.logic_cluster.ble.lut.input_drivers.items():
             driver = lut_input.driver
             not_driver = lut_input.not_driver
-            print "  Updating delay for " + driver.name.replace("_driver", "")
+            print("  Updating delay for " + driver.name.replace("_driver", ""))
             driver_and_lut_sp_path = driver.top_spice_path.replace(".sp", "_with_lut.sp")
 
             if (lut_input_name == "f" and self.specs.use_fluts and self.specs.K == 6) or (lut_input_name == "e" and self.specs.use_fluts and self.specs.K == 5):
@@ -6339,13 +6358,13 @@ class FPGA:
             lut_input.power = float(spice_meas["meas_avg_power"][0])
 
             if lut_input.delay < 0 :
-                print "*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***"
+                print("*** Lut input delay is negative : " + str(lut_input.delay) + "in path: " + driver_and_lut_sp_path +  "***")
                 exit(2)
 
             self.delay_dict[lut_input.name] = lut_input.delay
             
             # Now, we want to get the delay and power for the driver
-            print "  Updating delay for " + driver.name 
+            print("  Updating delay for " + driver.name) 
             spice_meas = spice_interface.run(driver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6363,11 +6382,11 @@ class FPGA:
             self.delay_dict[driver.name] = driver.delay
 
             if driver.delay < 0 :
-                print "*** Lut driver delay is negative : " + str(lut_input.delay) + " ***"
+                print("*** Lut driver delay is negative : " + str(lut_input.delay) + " ***")
                 exit(2)
 
             # ... and the not_driver
-            print "  Updating delay for " + not_driver.name
+            print("  Updating delay for " + not_driver.name)
             spice_meas = spice_interface.run(not_driver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6384,7 +6403,7 @@ class FPGA:
             not_driver.power = float(spice_meas["meas_avg_power"][0])
             self.delay_dict[not_driver.name] = not_driver.delay
             if not_driver.delay < 0 :
-                print "*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***"
+                print("*** Lut not driver delay is negative : " + str(lut_input.delay) + " ***")
                 exit(2)
             
             lut_delay = lut_input.delay + max(driver.delay, not_driver.delay)
@@ -6392,7 +6411,7 @@ class FPGA:
                 lut_delay += self.logic_cluster.ble.fmux.delay
 
             if lut_delay < 0 :
-                print "*** Lut delay is negative : " + str(lut_input.delay) + " ***"
+                print("*** Lut delay is negative : " + str(lut_input.delay) + " ***")
                 exit(2)
             #print lut_delay
             crit_path_delay += lut_delay*lut_input.delay_weight
@@ -6406,7 +6425,7 @@ class FPGA:
         # Carry Chain
         
         if self.specs.enable_carry_chain == 1:
-            print "  Updating delay for " + self.carrychain.name
+            print("  Updating delay for " + self.carrychain.name)
             spice_meas = spice_interface.run(self.carrychain.top_spice_path, 
                                              parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6545,33 +6564,31 @@ class FPGA:
             hardblock.mux.delay = max(tfall, trise)
 
             self.delay_dict[hardblock.mux.name] = hardblock.mux.delay
-            hardblock.mux.power = float(spice_meas["meas_avg_power"][0])            
-
+            hardblock.mux.power = float(spice_meas["meas_avg_power"][0])
             if hardblock.parameters['num_dedicated_outputs'] > 0:
-				spice_meas = spice_interface.run(hardblock.dedicated.top_spice_path, 
-												parameter_dict) 
-				if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
-					valid_delay = False
-					tfall = 1
-					trise = 1
-				else :  
-					tfall = float(spice_meas["meas_total_tfall"][0])
-					trise = float(spice_meas["meas_total_trise"][0])
-				if tfall < 0 or trise < 0 :
-					valid_delay = False
-				hardblock.dedicated.tfall = tfall
-				hardblock.dedicated.trise = trise
-				hardblock.dedicated.delay = max(tfall, trise)
+                spice_meas = spice_interface.run(hardblock.dedicated.top_spice_path, parameter_dict) 
+                if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
+                    valid_delay = False
+                    tfall = 1
+                    trise = 1
+                else :  
+                    tfall = float(spice_meas["meas_total_tfall"][0])
+                    trise = float(spice_meas["meas_total_trise"][0])
+                if tfall < 0 or trise < 0 :
+                    valid_delay = False
+                hardblock.dedicated.tfall = tfall
+                hardblock.dedicated.trise = trise
+                hardblock.dedicated.delay = max(tfall, trise)
 
-				self.delay_dict[hardblock.dedicated.name] = hardblock.dedicated.delay
-				hardblock.dedicated.power = float(spice_meas["meas_avg_power"][0])      
+                self.delay_dict[hardblock.dedicated.name] = hardblock.dedicated.delay
+                hardblock.dedicated.power = float(spice_meas["meas_avg_power"][0])      
 
 
         # If there is no need for memory simulation, end here.
         if self.specs.enable_bram_block == 0:
             return valid_delay
         # Local RAM MUX
-        print "  Updating delay for " + self.RAM.RAM_local_mux.name
+        print("  Updating delay for " + self.RAM.RAM_local_mux.name)
         spice_meas = spice_interface.run(self.RAM.RAM_local_mux.top_spice_path, 
                                          parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
@@ -6590,7 +6607,7 @@ class FPGA:
         self.RAM.RAM_local_mux.power = float(spice_meas["meas_avg_power"][0])
 
         #RAM decoder units
-        print "  Updating delay for " + self.RAM.rowdecoder_stage0.name
+        print("  Updating delay for " + self.RAM.rowdecoder_stage0.name)
         spice_meas = spice_interface.run(self.RAM.rowdecoder_stage0.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6610,7 +6627,7 @@ class FPGA:
 
 
         if self.RAM.valid_row_dec_size2 == 1:
-            print "  Updating delay for " + self.RAM.rowdecoder_stage1_size2.name
+            print("  Updating delay for " + self.RAM.rowdecoder_stage1_size2.name)
             spice_meas = spice_interface.run(self.RAM.rowdecoder_stage1_size2.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6629,7 +6646,7 @@ class FPGA:
             self.RAM.rowdecoder_stage1_size2.power = float(spice_meas["meas_avg_power"][0])
 
         if self.RAM.valid_row_dec_size3 == 1:
-            print "  Updating delay for " + self.RAM.rowdecoder_stage1_size3.name
+            print("  Updating delay for " + self.RAM.rowdecoder_stage1_size3.name)
             spice_meas = spice_interface.run(self.RAM.rowdecoder_stage1_size3.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6648,7 +6665,7 @@ class FPGA:
             self.RAM.rowdecoder_stage1_size3.power = float(spice_meas["meas_avg_power"][0])
 
 
-        print "  Updating delay for " + self.RAM.rowdecoder_stage3.name
+        print("  Updating delay for " + self.RAM.rowdecoder_stage3.name)
         spice_meas = spice_interface.run(self.RAM.rowdecoder_stage3.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6667,7 +6684,7 @@ class FPGA:
 
 
         if self.RAM.memory_technology == "SRAM":
-            print "  Updating delay for " + self.RAM.precharge.name
+            print("  Updating delay for " + self.RAM.precharge.name)
             spice_meas = spice_interface.run(self.RAM.precharge.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6685,7 +6702,7 @@ class FPGA:
             self.delay_dict[self.RAM.precharge.name] = self.RAM.precharge.delay
             self.RAM.precharge.power = float(spice_meas["meas_avg_power"][0])
 
-            print "  Updating delay for " + self.RAM.samp_part2.name
+            print("  Updating delay for " + self.RAM.samp_part2.name)
             spice_meas = spice_interface.run(self.RAM.samp_part2.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6703,7 +6720,7 @@ class FPGA:
             self.delay_dict[self.RAM.samp_part2.name] = self.RAM.samp_part2.delay
             self.RAM.samp_part2.power = float(spice_meas["meas_avg_power"][0])
 
-            print "  Updating delay for " + self.RAM.samp.name
+            print("  Updating delay for " + self.RAM.samp.name)
             spice_meas = spice_interface.run(self.RAM.samp.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6723,7 +6740,7 @@ class FPGA:
             self.delay_dict[self.RAM.samp.name] = self.RAM.samp.delay
             self.RAM.samp.power = float(spice_meas["meas_avg_power"][0])
 
-            print "  Updating delay for " + self.RAM.writedriver.name
+            print("  Updating delay for " + self.RAM.writedriver.name)
             spice_meas = spice_interface.run(self.RAM.writedriver.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6742,7 +6759,7 @@ class FPGA:
             self.RAM.writedriver.power = float(spice_meas["meas_avg_power"][0])
 
         else:
-            print "  Updating delay for " + self.RAM.bldischarging.name
+            print("  Updating delay for " + self.RAM.bldischarging.name)
             spice_meas = spice_interface.run(self.RAM.bldischarging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6760,7 +6777,7 @@ class FPGA:
             self.delay_dict[self.RAM.bldischarging.name] = self.RAM.bldischarging.delay
             self.RAM.bldischarging.power = float(spice_meas["meas_avg_power"][0])
 
-            print "  Updating delay for " + self.RAM.blcharging.name
+            print("  Updating delay for " + self.RAM.blcharging.name)
             spice_meas = spice_interface.run(self.RAM.blcharging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6782,7 +6799,7 @@ class FPGA:
 
             self.RAM._update_process_data()
 
-            print "  Updating delay for " + self.RAM.blcharging.name
+            print("  Updating delay for " + self.RAM.blcharging.name)
             spice_meas = spice_interface.run(self.RAM.blcharging.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6803,7 +6820,7 @@ class FPGA:
 
             self.RAM._update_process_data()
 
-            print "  Updating delay for " + self.RAM.mtjsamp.name
+            print("  Updating delay for " + self.RAM.mtjsamp.name)
             spice_meas = spice_interface.run(self.RAM.mtjsamp.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6822,7 +6839,7 @@ class FPGA:
             self.RAM.mtjsamp.power = float(spice_meas["meas_avg_power"][0])
 
     
-        print "  Updating delay for " + self.RAM.columndecoder.name
+        print("  Updating delay for " + self.RAM.columndecoder.name)
         spice_meas = spice_interface.run(self.RAM.columndecoder.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6841,7 +6858,7 @@ class FPGA:
         self.RAM.columndecoder.power = float(spice_meas["meas_avg_power"][0])
 
 
-        print "  Updating delay for " + self.RAM.configurabledecoderi.name
+        print("  Updating delay for " + self.RAM.configurabledecoderi.name)
         spice_meas = spice_interface.run(self.RAM.configurabledecoderi.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6861,7 +6878,7 @@ class FPGA:
 
 
         if self.RAM.cvalidobj1 ==1:
-            print "  Updating delay for " + self.RAM.configurabledecoder3ii.name
+            print("  Updating delay for " + self.RAM.configurabledecoder3ii.name)
             spice_meas = spice_interface.run(self.RAM.configurabledecoder3ii.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6881,7 +6898,7 @@ class FPGA:
 
 
         if self.RAM.cvalidobj2 ==1:
-            print "  Updating delay for " + self.RAM.configurabledecoder2ii.name
+            print("  Updating delay for " + self.RAM.configurabledecoder2ii.name)
             spice_meas = spice_interface.run(self.RAM.configurabledecoder2ii.top_spice_path, parameter_dict) 
             if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
                 valid_delay = False
@@ -6899,7 +6916,7 @@ class FPGA:
             self.delay_dict[self.RAM.configurabledecoder2ii.name] = self.RAM.configurabledecoder2ii.delay
             self.RAM.configurabledecoder2ii.power = float(spice_meas["meas_avg_power"][0])
 
-        print "  Updating delay for " + self.RAM.configurabledecoderiii.name
+        print("  Updating delay for " + self.RAM.configurabledecoderiii.name)
         spice_meas = spice_interface.run(self.RAM.configurabledecoderiii.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6918,7 +6935,7 @@ class FPGA:
         self.RAM.configurabledecoderiii.power = float(spice_meas["meas_avg_power"][0])
   
 
-        print "  Updating delay for " + self.RAM.pgateoutputcrossbar.name
+        print("  Updating delay for " + self.RAM.pgateoutputcrossbar.name)
         spice_meas = spice_interface.run(self.RAM.pgateoutputcrossbar.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6937,7 +6954,7 @@ class FPGA:
         self.RAM.pgateoutputcrossbar.power = float(spice_meas["meas_avg_power"][0])
         self.delay_dict["rep_crit_path"] = crit_path_delay    
 
-        print "  Updating delay for " + self.RAM.wordlinedriver.name
+        print("  Updating delay for " + self.RAM.wordlinedriver.name)
         spice_meas = spice_interface.run(self.RAM.wordlinedriver.top_spice_path, parameter_dict) 
         if spice_meas["meas_total_tfall"][0] == "failed" or spice_meas["meas_total_trise"][0] == "failed" :
             valid_delay = False
@@ -6969,13 +6986,13 @@ class FPGA:
         # Create parameter dict of all current transistor sizes and wire rc
 
         parameter_dict = {}
-        for tran_name, tran_size in self.transistor_sizes.iteritems():
+        for tran_name, tran_size in self.transistor_sizes.items():
             if not self.specs.use_finfet:
                 parameter_dict[tran_name] = [1e-9*tran_size*self.specs.min_tran_width]
             else :
                 parameter_dict[tran_name] = [tran_size]
 
-        for wire_name, rc_data in self.wire_rc_dict.iteritems():
+        for wire_name, rc_data in self.wire_rc_dict.items():
             parameter_dict[wire_name + "_res"] = [rc_data[0]]
             parameter_dict[wire_name + "_cap"] = [rc_data[1]*1e-15]
 
@@ -7067,7 +7084,7 @@ class FPGA:
         self.RAM._update_process_data()
 
         if self.RAM.memory_technology == "SRAM":
-            print "Measuring SRAM power " + self.RAM.power_sram_read.name
+            print("Measuring SRAM power " + self.RAM.power_sram_read.name)
             spice_meas = spice_interface.run(self.RAM.power_sram_read.top_spice_path, parameter_dict) 
             self.RAM.power_sram_read.power_selected = float(spice_meas["meas_avg_power_selected"][0])
             self.RAM.power_sram_read.power_unselected = float(spice_meas["meas_avg_power_unselected"][0])
@@ -7096,7 +7113,7 @@ class FPGA:
             #print "Energy " + str((self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected) * self.RAM.frequency)
             #print "Energy Writelh " + str(self.RAM.power_sram_writelh.power_selected_writelh * self.RAM.frequency)
             #print "Energy Writehh " + str(self.RAM.power_sram_writehh.power_selected_writehh * self.RAM.frequency)
-            print "Energy Writep " + str(self.RAM.power_sram_writep.power_selected_writep * self.RAM.frequency)
+            print("Energy Writep " + str(self.RAM.power_sram_writep.power_selected_writep * self.RAM.frequency))
 
             read_energy = (self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected) * self.RAM.frequency
             write_energy = ((self.RAM.power_sram_writelh.power_selected_writelh + self.RAM.power_sram_writehh.power_selected_writehh)/2 + self.RAM.power_sram_read.power_unselected) * self.RAM.frequency
@@ -7104,7 +7121,7 @@ class FPGA:
             self.RAM.core_energy = (self.RAM.read_to_write_ratio * read_energy + write_energy) /(1 + self.RAM.read_to_write_ratio)
 
         else:
-            print "Measuring MTJ power "
+            print("Measuring MTJ power ")
             spice_meas = spice_interface.run(self.RAM.power_mtj_write.top_spice_path, parameter_dict) 
             self.RAM.power_mtj_write.powerpl = float(spice_meas["meas_avg_power_selected"][0])
             self.RAM.power_mtj_write.powernl = float(spice_meas["meas_avg_power_selectedn"][0])
@@ -7161,31 +7178,31 @@ class FPGA:
         # We want energy per bit per OP:
         self.RAM.peripheral_energy_write /= 2** self.RAM.conf_decoder_bits
 
-        print "Core read and write energy: " +str(read_energy) + " and " +str(write_energy)
-        print "Core energy per bit: " + str(self.RAM.core_energy)
-        print "Peripheral energy per bit: " + str((self.RAM.peripheral_energy_read * self.RAM.read_to_write_ratio + self.RAM.peripheral_energy_write)/ (1 + self.RAM.read_to_write_ratio))
+        print("Core read and write energy: " +str(read_energy) + " and " +str(write_energy))
+        print("Core energy per bit: " + str(self.RAM.core_energy))
+        print("Peripheral energy per bit: " + str((self.RAM.peripheral_energy_read * self.RAM.read_to_write_ratio + self.RAM.peripheral_energy_write)/ (1 + self.RAM.read_to_write_ratio)))
 
     def print_specs(self):
 
-        print "|------------------------------------------------------------------------------|"
-        print "|   FPGA Architecture Specs                                                    |"
-        print "|------------------------------------------------------------------------------|"
-        print ""
-        print "  Number of BLEs per cluster (N): " + str(self.specs.N)
-        print "  LUT size (K): " + str(self.specs.K)
-        print "  Channel width (W): " + str(self.specs.W)
-        print "  Wire segment length (L): " + str(self.specs.L)
-        print "  Number cluster inputs (I): " + str(self.specs.I)
-        print "  Number of BLE outputs to general routing: " + str(self.specs.num_ble_general_outputs)
-        print "  Number of BLE outputs to local routing: " + str(self.specs.num_ble_local_outputs)
-        print "  Number of cluster outputs: " + str(self.specs.num_cluster_outputs)
-        print "  Switch block flexibility (Fs): " + str(self.specs.Fs)
-        print "  Cluster input flexibility (Fcin): " + str(self.specs.Fcin)
-        print "  Cluster output flexibility (Fcout): " + str(self.specs.Fcout)
-        print "  Local MUX population (Fclocal): " + str(self.specs.Fclocal)
-        print ""
-        print "|------------------------------------------------------------------------------|"
-        print ""
+        print("|------------------------------------------------------------------------------|")
+        print("|   FPGA Architecture Specs                                                    |")
+        print("|------------------------------------------------------------------------------|")
+        print("")
+        print("  Number of BLEs per cluster (N): " + str(self.specs.N))
+        print("  LUT size (K): " + str(self.specs.K))
+        print("  Channel width (W): " + str(self.specs.W))
+        print("  Wire segment length (L): " + str(self.specs.L))
+        print("  Number cluster inputs (I): " + str(self.specs.I))
+        print("  Number of BLE outputs to general routing: " + str(self.specs.num_ble_general_outputs))
+        print("  Number of BLE outputs to local routing: " + str(self.specs.num_ble_local_outputs))
+        print("  Number of cluster outputs: " + str(self.specs.num_cluster_outputs))
+        print("  Switch block flexibility (Fs): " + str(self.specs.Fs))
+        print("  Cluster input flexibility (Fcin): " + str(self.specs.Fcin))
+        print("  Cluster output flexibility (Fcout): " + str(self.specs.Fcout))
+        print("  Local MUX population (Fclocal): " + str(self.specs.Fclocal))
+        print("")
+        print("|------------------------------------------------------------------------------|")
+        print("")
         
         
     def print_details(self, report_file):
@@ -7255,7 +7272,7 @@ class FPGA:
     def _generate_basic_subcircuits(self):
         """ Generates the basic subcircuits SPICE file (pass-transistor, inverter, etc.) """
         
-        print "Generating basic subcircuits"
+        print("Generating basic subcircuits")
         
         # Open basic subcircuits file and write heading
         basic_sc_file = open(self.basic_subcircuits_filename, 'w')
@@ -7294,7 +7311,7 @@ class FPGA:
     def _generate_process_data(self):
         """ Write the process data library file. It contains voltage levels, gate length and device models. """
         
-        print "Generating process data file"
+        print("Generating process data file")
 
         
         process_data_file = open(self.process_data_filename, 'w')
@@ -7348,7 +7365,7 @@ class FPGA:
     def _generate_includes(self):
         """ Generate the includes file. Top-level SPICE decks should only include this file. """
     
-        print "Generating includes file"
+        print("Generating includes file")
     
         includes_file = open(self.includes_filename, 'w')
         includes_file.write("*** INCLUDE ALL LIBRARIES\n\n")
@@ -7437,7 +7454,7 @@ class FPGA:
         tran_area_list = []
         
         # For each transistor, calculate area
-        for tran_name, tran_size in self.transistor_sizes.iteritems():
+        for tran_name, tran_size in self.transistor_sizes.items():
                 # Get transistor drive strength (drive strength is = xMin width)
                 tran_drive = tran_size
                 # Get tran area in min transistor widths
@@ -7449,8 +7466,8 @@ class FPGA:
                 # Add this as a tuple to the tran_area_list
                 # TODO: tran_size and tran_drive are the same thing?!
                 tran_area_list.append((tran_name, tran_size, tran_drive, tran_area, 
-                                                tran_area_nm, tran_width))
-                                                
+                                                tran_area_nm, tran_width))    
+                                                                                   
         # Assign list to FPGA object
         self.transistor_area_list = tran_area_list
         

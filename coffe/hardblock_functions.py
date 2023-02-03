@@ -47,7 +47,7 @@ def get_params_from_str(param_dict,param_str):
   out_dict = {}
   params = param_str.split("_")
   for idx, p in enumerate(params):
-    if(p in param_dict.keys()):
+    if(p in list(param_dict.keys())):
       out_dict[p] = params[idx+1]
   return out_dict
     
@@ -55,14 +55,17 @@ def compare_run_filt_params_to_str(flow_settings,param_str):
   """
   This function compares the inputted string with run_params filters for the coresponding flow stage
   """
-  param_dict = get_params_from_str(flow_settings["input_param_options"],param_str)
-  #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
-  filt_match = 1
-  for cur_key,cur_val in param_dict.items():
-    if cur_key in flow_settings["run_params"]["pnr"]["param_filters"].keys():
-      if all(cur_val != val for val in flow_settings["run_params"]["pnr"]["param_filters"][cur_key]):
-        filt_match = 0
-        break
+  if( "param_filters" in flow_settings["hb_run_params"].keys()):
+    param_dict = get_params_from_str(flow_settings["input_param_options"],param_str)
+    #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
+    filt_match = 1
+    for cur_key,cur_val in list(param_dict.items()):
+      if cur_key in list(flow_settings["hb_run_params"]["param_filters"].keys()):
+        if all(cur_val != val for val in flow_settings["hb_run_params"]["param_filters"][cur_key]):
+          filt_match = 0
+          break
+  else:
+    filt_match = 1
   #if returns 1, then the string is a valid combination of params, else 0
   return filt_match
 
@@ -130,7 +133,7 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["target_library"] = "\"" + " ".join(processed_flow_settings['target_libraries']) + "\""
   processed_flow_settings["link_library"] = "\"" + "* $target_library" + "\""
   #formatting all paths to files to expand them to user space
-  for flow_key, flow_val in processed_flow_settings.items():
+  for flow_key, flow_val in list(processed_flow_settings.items()):
     if("folder" in flow_key):
       processed_flow_settings[flow_key] = os.path.expanduser(flow_val)
 
@@ -142,10 +145,10 @@ def flow_settings_pre_process(processed_flow_settings,cur_env):
   processed_flow_settings["primetime_libs"] = "\"" + " ".join(processed_flow_settings['primetime_libs']) + "\""
 
   if(processed_flow_settings["partition_flag"]):
-    processed_flow_settings["ptn_params"]["scaling_array"] = [float(scale) for scale in processed_flow_settings["ptn_params"]["scaling_array"]]
-    processed_flow_settings["ptn_params"]["fp_init_dims"] = [float(dim) for dim in processed_flow_settings["ptn_params"]["fp_init_dims"]]
+    processed_flow_settings["ptn_params"]["top_settings"]["scaling_array"] = [float(scale) for scale in processed_flow_settings["ptn_params"]["top_settings"]["scaling_array"]]
+    processed_flow_settings["ptn_params"]["top_settings"]["fp_init_dims"] = [float(dim) for dim in processed_flow_settings["ptn_params"]["top_settings"]["fp_init_dims"]]
 
-    for ptn_dict in processed_flow_settings["ptn_params"]["ptn_list"]:
+    for ptn_dict in processed_flow_settings["ptn_params"]["partitions"]:
       ptn_dict["fp_coords"] = [float(coord) for coord in ptn_dict["fp_coords"]]
 
     processed_flow_settings["parallel_hardblock_folder"] = os.path.expanduser(processed_flow_settings["parallel_hardblock_folder"])
@@ -384,7 +387,7 @@ def write_edit_port_script_pre_ptn(flow_settings):
 
   #offset from start of line in which pins are being placed (Ex. if they are being placed on edge 1 cw the offset would be from NW corner towards NE)
   #grab fp coordinates for the router module
-  rtr_fp_coords = [e["fp_coords"] for e in flow_settings["ptn_params"]["ptn_list"] if e["mod_name"] == rtr_mod_name][0]
+  rtr_fp_coords = [e["fp_coords"] for e in flow_settings["ptn_params"]["partitions"] if e["mod_name"] == rtr_mod_name][0]
   #extract height and width
   rtr_dims = [abs(float(rtr_fp_coords[0]) - float(rtr_fp_coords[2])),abs(float(rtr_fp_coords[1]) - float(rtr_fp_coords[3]))] # w,h
   #below values were tuned manually for reasonable pin placement w.r.t router dimensions
@@ -427,15 +430,15 @@ def write_edit_port_script_pre_ptn(flow_settings):
     "set my_gen_pins {\"clk\" \"reset\" \"router_address[0]\" \"router_address[1]\" \"router_address[2]\" \"router_address[3]\" \"router_address[4]\" \"router_address[5]\" \"flow_ctrl_out_ip_q[0]\" \"flow_ctrl_out_ip_q[1]\" \"flow_ctrl_out_ip_q[2]\" \"flow_ctrl_out_ip_q[3]\" \"flow_ctrl_out_ip_q[4]\" \"flow_ctrl_out_ip_q[5]\" \"flow_ctrl_out_ip_q[6]\" \"flow_ctrl_out_ip_q[7]\" \"flow_ctrl_out_ip_q[8]\" \"flow_ctrl_out_ip_q[9]\" \"flow_ctrl_in_op_d[0]\" \"flow_ctrl_in_op_d[1]\" \"flow_ctrl_in_op_d[2]\" \"flow_ctrl_in_op_d[3]\" \"flow_ctrl_in_op_d[4]\" \"flow_ctrl_in_op_d[5]\" \"flow_ctrl_in_op_d[6]\" \"flow_ctrl_in_op_d[7]\" \"flow_ctrl_in_op_d[8]\" \"flow_ctrl_in_op_d[9]\" \"error\"}",
     #swapped edge 0 and edge 4 channel in/out locations to allow for it to work
     #assign pin locations
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing " + flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_out_offset) + " -pin $my_0_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_in_offset) + " -pin $my_1_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_in_offset) + " -pin $my_2_ch_in_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(noc_comm_edge_offsets[1]) + " -pin $my_3_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing " + str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_out_offset) + " -pin $my_0_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_in_offset) + " -pin $my_1_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_in_offset) + " -pin $my_2_ch_in_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(noc_comm_edge_offsets[1]) + " -pin $my_3_ch_in_ports",
     "",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_in_offset) + " -pin $my_0_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_out_offset) + " -pin $my_1_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(ch_out_offset) + " -pin $my_2_ch_out_ports",
-    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ flow_settings["ptn_params"]["fp_pin_spacing"] + " -offsetStart " + str(noc_comm_edge_offsets[0]) + " -pin $my_3_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 0 -layer 3 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_in_offset) + " -pin $my_0_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection clockwise -edge 1 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_out_offset) + " -pin $my_1_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 2 -layer 3 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(ch_out_offset) + " -pin $my_2_ch_out_ports",
+    "editPin -pinWidth 0.1 -pinDepth 0.52 -fixOverlap 1 -global_location -unit TRACK -spreadDirection counterclockwise -edge 3 -layer 4 -spreadType start -spacing "+ str(flow_settings["ptn_params"]["top_settings"]["fp_pin_spacing"]) + " -offsetStart " + str(noc_comm_edge_offsets[0]) + " -pin $my_3_ch_out_ports",
     "",
 
     "legalizePin"
@@ -529,7 +532,7 @@ def write_innovus_ptn_script(flow_settings,init_script_fname,fp_save_file,offset
   extended to support unique params.
   """
   
-  ptn_info_list = flow_settings["ptn_params"]["ptn_list"]
+  ptn_info_list = flow_settings["ptn_params"]["partitions"]
   #
   report_path = os.path.join("..","reports")
   output_path = os.path.join("..","outputs")
@@ -1255,7 +1258,7 @@ def write_pt_power_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_ou
   file.write("quit\n")
   file.close()
 
-def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_output_path,rel_outputs=False):
+def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,synth_output_path,pnr_output_path,rel_outputs=False):
   """
   writes the tcl script for timing analysis using Synopsys Design Compiler, tested under 2017 version
   This should look for setup/hold violations using the worst case (hold) and best case (setup) libs
@@ -1274,9 +1277,11 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
     report_power_cmd = "report_power > " + os.path.join(report_path,"power.rpt")
 
 
+
   # if mode_enabled and x <2**len(flow_settings['mode_signal']):
     # for y in range (0, len(flow_settings['mode_signal'])):
       # file.write("set_case_analysis " + str((x >> y) & 1) + " " +  flow_settings['mode_signal'][y] + " \n")
+  
   if mode_enabled and x < 2**len(flow_settings['mode_signal']):
     case_analysis_cmds = [" ".join(["set_case_analysis",str((x >> y) & 1),flow_settings['mode_signal'][y]]) for y in range(0,len(flow_settings["mode_signal"]))]
   else:
@@ -1297,20 +1302,24 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
     "set target_library " + flow_settings['primetime_libs'],
     "set link_library " + flow_settings['link_library'],
     "read_verilog " + pnr_output_path + "/netlist.v",
-    case_analysis_cmds,
+    "current_design $my_top_level",
     "link",
-    "set my_period " + str(clock_period),
-    "set find_clock [ find port [list $my_clock_pin] ] ",
-    "if { $find_clock != [list] } { ",
-    "set clk_name $my_clock_pin",
-    "create_clock -period $my_period $clk_name",
-    "}",
-    #Standard Parasitic Exchange Format. File format to save parasitic information extracted by the place and route tool.
-    "read_parasitics -increment " + pnr_output_path + "/spef.spef",
+    # "set my_period " + str(clock_period),
+    # "set find_clock [ find port [list $my_clock_pin] ] ",
+    # "if { $find_clock != [list] } { ",
+    # "set clk_name $my_clock_pin",
+    # "create_clock -period $my_period $clk_name",
+    # "}",
+
+    # read constraints file
+    "read_sdc -echo " + synth_output_path + "/synthesized.sdc",
+    case_analysis_cmds,
     report_timing_cmd,
+    #Standard Parasitic Exchange Format. File format to save parasitic information extracted by the place and route tool.
     "set power_enable_analysis TRUE",
     "set power_analysis_mode \"averaged\"",
     switching_activity_cmd,
+    "read_parasitics -increment " + pnr_output_path + "/spef.spef",
     report_power_cmd,
     "quit",
   ]
@@ -1325,7 +1334,7 @@ def write_pt_timing_script(flow_settings,fname,mode_enabled,clock_period,x,pnr_o
 
 ########################################## GENERIC SCRIPTS ############################################
 ########################################## STA RUN FUNCS ############################################
-def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pnr_output_path):
+def run_power_timing(flow_settings,mode_enabled,clock_period,x,synth_output_path,pnr_report_str,pnr_output_path):
   """
   This runs STA using PrimeTime and the pnr generated .spef and netlist file to get a more accurate result for delay
   """
@@ -1334,7 +1343,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
   #This is done because multimodal setting basically sets a mux to the value of 0 or 1 and each mode represents 1 mux ie to evaluate them all we have 2^num_modes states to test 
   if not mode_enabled:
     x = 2**len(flow_settings['mode_signal'])
-  pt_timing_fpath,timing_report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,x,pnr_output_path)
+  pt_timing_fpath,timing_report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,x,synth_output_path,pnr_output_path)
   # run prime time, by getting abs path from writing the script, we can run the command in different directory where the script exists
   run_pt_timing_cmd = "dc_shell-t -f " + pt_timing_fpath + " | tee pt_timing.log"
   run_cmd(run_pt_timing_cmd)
@@ -1351,10 +1360,10 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
     total_delay =  float(data_arrival_time[0])
   file.close()
   
-  write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,x,pnr_output_path)
+  #write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,x,pnr_output_path)
   # run prime time
-  pt_pwr_cmd = "dc_shell-t -f primetime_power.tcl | tee pt_pwr.log"
-  run_cmd(pt_pwr_cmd)
+  #pt_pwr_cmd = "dc_shell-t -f primetime_power.tcl | tee pt_pwr.log"
+  #run_cmd(pt_pwr_cmd)
   
   #copy reports and logs to a unique dir in pt dir
   pt_report_str = pnr_report_str + "_" + "mode_" + str(x)
@@ -1384,7 +1393,7 @@ def run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pn
 
 ########################################## STATIC TIMING ANALYSIS ############################################
 
-########################################## PARALLLEL FLOW ##########################################
+########################################## PARALLEL FLOW ##########################################
 def write_param_flow_stage_bash_script(flow_settings,param_path):
   """
   Writes a bash wrapper around the tcl script that needs to be run for this particular flow stage
@@ -1412,10 +1421,10 @@ def write_param_flow_stage_bash_script(flow_settings,param_path):
     else:
       script_rel_path = os.path.join("..","scripts", "pt_timing.tcl") #TODO fix the filename dependancy issues
       timing_cmd = get_sta_cmd(script_rel_path)
-      # flow_cmd = timing_cmd
-      script_rel_path = os.path.join("..","scripts", "primetime_power.tcl") #TODO fix the filename dependancy issues
-      power_cmd = get_sta_cmd(script_rel_path)
-      flow_cmd = "\n".join([timing_cmd,power_cmd])
+      flow_cmd = timing_cmd
+      #script_rel_path = os.path.join("..","scripts", "primetime_power.tcl") #TODO fix the filename dependancy issues
+      #power_cmd = get_sta_cmd(script_rel_path)
+      #flow_cmd = "\n".join([timing_cmd,power_cmd])
   if(flow_cmd == ""):
     return
   file_lines = [
@@ -1552,11 +1561,11 @@ def hardblock_script_gen(flow_settings):
 
               #initializing floorplan settings
               scaled_dims_list = []
-              for scale in flow_settings["ptn_params"]["scaling_array"]:
-                ptn_info_list = flow_settings["ptn_params"]["ptn_list"]
+              for scale in flow_settings["ptn_params"]["top_settings"]["scaling_array"]:
+                ptn_info_list = flow_settings["ptn_params"]["partitions"]
                 ptn_block_list = [ptn["mod_name"] for ptn in ptn_info_list]
                 #overall floorplan 
-                new_dim_pair = [dim*scale for dim in flow_settings["ptn_params"]["fp_init_dims"]]
+                new_dim_pair = [dim*scale for dim in flow_settings["ptn_params"]["top_settings"]["fp_init_dims"]]
                 scaled_dims_list.append(new_dim_pair)
               
               for dim_pair in scaled_dims_list:
@@ -1602,11 +1611,11 @@ def hardblock_script_gen(flow_settings):
                 for dim_str,ptn_dir in zip(dim_strs,ptn_dirs):
                   timing_fname = "dimlen_" + dim_str + "_" + "pt_timing.tcl"
                   power_fname = "dimlen_" + dim_str + "_" + "primetime_power.tcl"
-                  fpath ,report_path = write_pt_timing_script(flow_settings,timing_fname,mode_enabled,clock_period,mode,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
-                  write_pt_power_script(flow_settings,power_fname,mode_enabled,clock_period,mode,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
+                  fpath ,report_path = write_pt_timing_script(flow_settings,timing_fname,mode_enabled,clock_period,mode,syn_output_path,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
+                  #write_pt_power_script(flow_settings,power_fname,mode_enabled,clock_period,mode,os.path.join(pnr_output_path,ptn_dir),rel_outputs=True)
               else:
-                fpath,report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
-                write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
+                fpath,report_path = write_pt_timing_script(flow_settings,"pt_timing.tcl",mode_enabled,clock_period,mode,syn_output_path,pnr_output_path,rel_outputs=True)
+                #write_pt_power_script(flow_settings,"primetime_power.tcl",mode_enabled,clock_period,mode,pnr_output_path,rel_outputs=True)
   
   write_parallel_scripts(flow_settings,top_abs_path)
   os.chdir(pre_func_dir)
@@ -1640,17 +1649,14 @@ def hardblock_parallel_flow(flow_settings):
   os.chdir(flow_settings["parallel_hardblock_folder"])
   
   flow_stages = ["synth","pnr","sta"] 
-  #preprocessing
-  for stage in flow_stages:
-    flow_settings["run_params"][stage]["run_flag"] = (flow_settings["run_params"][stage]["run_flag"] == "True")
   ########################### PARALLEL SYNTHESIS SECTION ###########################
-  if flow_settings["run_params"]["synth"]["run_flag"]:
+  if flow_settings["hb_run_params"]["synth"]["run_flag"]:
     print("Running synthesis scripts in parallel...")
     synth_parallel_work_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"synth","synth_parallel_work")
     run_pll_flow_stage(synth_parallel_work_path)
   ########################### PARALLEL SYNTHESIS SECTION ###########################
   ########################### PARALLEL PNR SECTION #################################
-  if flow_settings["run_params"]["pnr"]["run_flag"]:
+  if flow_settings["hb_run_params"]["pnr"]["run_flag"]:
     print("Running pnr scripts in parallel...")
     #below path should point to pnr directory in pll flow folder
     pnr_parallel_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"pnr")
@@ -1660,11 +1666,10 @@ def hardblock_parallel_flow(flow_settings):
       # gen_fp(dim) -> gen_ptns(dim) -> [gen_blocks(dim)]  -> pnr(top_lvl) -> assemble(all_parts_of_design) 
       #if override outputs is set 
       #pre_processing for filtering ptn commands by specified settings
-      flow_settings["run_params"]["pnr"]["override_outputs"] = (flow_settings["run_params"]["pnr"]["override_outputs"] == "True")
       #floorplan x dimension (this is used in the filename of generated scripts/outputs/reports)
-      fp_dim = float(flow_settings["ptn_params"]["fp_init_dims"][0])
+      fp_dim = float(flow_settings["ptn_params"]["top_settings"]["fp_init_dims"][0])
       #get factors which we are scaling the initial dimension value with
-      scaling_array = [float(fac) for fac in flow_settings["ptn_params"]["scaling_array"]]
+      scaling_array = [float(fac) for fac in flow_settings["ptn_params"]["top_settings"]["scaling_array"]]
       #multiplies initial dimension to find the filenames of all dims we wish to run
       scaled_dims = [fp_dim*fac for fac in scaling_array]
       os.chdir(pnr_parallel_path)
@@ -1681,9 +1686,9 @@ def hardblock_parallel_flow(flow_settings):
         #get a dict of the current directories parameter settings
         param_dict = get_params_from_str(flow_settings["input_param_options"],param_dir)
         #we will parse the current directory param dict and check to see if it contains params outside of our run settings, if so skip the directory
-        for cur_key,cur_val in param_dict.items():
-          if cur_key in flow_settings["run_params"]["pnr"]["param_filters"].keys():
-            if all(cur_val != val for val in flow_settings["run_params"]["pnr"]["param_filters"][cur_key]):
+        for cur_key,cur_val in list(param_dict.items()):
+          if cur_key in list(flow_settings["hb_run_params"]["param_filters"].keys()):
+            if all(cur_val != val for val in flow_settings["hb_run_params"]["param_filters"][cur_key]):
               continue_flag = True
               break
 
@@ -1725,11 +1730,11 @@ def hardblock_parallel_flow(flow_settings):
             # continue
 
           #if override outputs is selected the script will not check for intermediate files in the ptn flow and will start from the beginning
-          if(not flow_settings["run_params"]["pnr"]["override_outputs"]):
+          if(not flow_settings["hb_run_params"]["pnr"]["override_outputs"]):
             #if theres already an assembled design saved for the fp flow skip it
             saved_design = os.path.join(output_dir,os.path.splitext(inn_command_series[1])[0]+"_assembled.dat")
             if(os.path.exists(saved_design)):
-              print("found %s, Skipping..." % (saved_design))
+              print(("found %s, Skipping..." % (saved_design)))
               # print(os.getcwd())
               continue
 
@@ -1751,12 +1756,12 @@ def hardblock_parallel_flow(flow_settings):
             #if there is a top level implementation, we can delete all commands leading up to assembly script
             if(os.path.isfile(saved_tl_imp)):
               print("found top level imp, running only assembly")
-              print(os.getcwd())
+              print((os.getcwd()))
               del cmds[0:3]
             #if there is a ptn directory, we can delete all commands leading up to block level flow
             elif(os.path.isdir(ptn_dir)):
               print("found ptn dir, running only blocks + toplvl + assembly")
-              print(os.getcwd())
+              print((os.getcwd()))
               del cmds[0:2]
             cmd_series_list.append(cmds)
           else:
@@ -1785,7 +1790,7 @@ def hardblock_parallel_flow(flow_settings):
       run_pll_flow_stage(pnr_parallel_work_path)
   ########################### PARALLEL PNR SECTION #################################
   ########################### PARALLEL STA SECTION #################################
-  if(flow_settings["run_params"]["sta"]["run_flag"]):
+  if(flow_settings["hb_run_params"]["sta"]["run_flag"]):
     print("Running sta scripts in parallel...")
     sta_parallel_work_path = os.path.join(flow_settings["parallel_hardblock_folder"],flow_settings["top_level"],"sta","sta_parallel_work")
     run_pll_flow_stage(sta_parallel_work_path)
@@ -1832,7 +1837,7 @@ def find_lowest_cost_in_result_dict(flow_settings,result_dict):
 
   lowest_cost_dicts = {}
   
-  for flow_type, flow_dict in result_dict.items():
+  for flow_type, flow_dict in list(result_dict.items()):
     param_str = ""
     lowest_cost_dict = {}
     lowest_cost_dicts[flow_type] = {}
@@ -1841,7 +1846,7 @@ def find_lowest_cost_in_result_dict(flow_settings,result_dict):
     lowest_cost_delay = 0.0
     lowest_cost_power = 0.0
     if(flow_type == "synth" or flow_type == "pnr"):
-      for run_params, param_result_dict in flow_dict.items():
+      for run_params, param_result_dict in list(flow_dict.items()):
         total_delay = param_result_dict["delay"]
         total_power = param_result_dict["power"]
         total_area = param_result_dict["area"]
@@ -2044,7 +2049,7 @@ def parse_report(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,l
     #grabbing link dimensions from the fname
     dict_ent_params = dict_entry.split("_")
     for idx,e in enumerate(dict_ent_params):
-      if(e in param_dtype_dict.keys()):
+      if(e in list(param_dtype_dict.keys())):
         out_dict[flow_dir][dict_entry][e] = decode_dict_dtypes(param_dtype_dict,e,dict_ent_params[idx+1]) 
 
 def parse_parallel_outputs(flow_settings):
@@ -2139,9 +2144,9 @@ def parse_parallel_outputs(flow_settings):
                 parse_report(flow_settings,report_file,flow_dir,parameterized_dir,out_dict,log_fd,param_dtype_dict)
   
   #remove the old str format files (they are old runs which dont have relevant results)
-  for flow_key,flow_dict in out_dict.items():
+  for flow_key,flow_dict in list(out_dict.items()):
     # print("############################# %s :" %(flow_key))
-    for param_key, val_out_dict in flow_dict.items():
+    for param_key, val_out_dict in list(flow_dict.items()):
       # print("########### %s :" %(param_key))
       if( (("_ptn_" not in param_key or "mlayers" in param_key) and flow_key == "pnr" and flow_settings["partition_flag"] == True) or ()):
         # print("deleted %s" % (param_key))
@@ -2161,13 +2166,13 @@ def write_pll_results_csv(param_dtype_dict, out_dict, csv_fpath):
   fd = open(csv_fpath,"w")
   w = csv.writer(fd)
   #This is a csv of all flow types combined and seperated by a column name
-  w.writerow(param_dtype_dict.keys() + out_dict.keys())
-  for flow_type,flow_dict in out_dict.items():
-    flow_type_vals = [True if possible_flow == flow_type else False for possible_flow in out_dict.keys()]
-    for param_key,param_dict in flow_dict.items():
+  w.writerow(list(param_dtype_dict.keys()) + list(out_dict.keys()))
+  for flow_type,flow_dict in list(out_dict.items()):
+    flow_type_vals = [True if possible_flow == flow_type else False for possible_flow in list(out_dict.keys())]
+    for param_key,param_dict in list(flow_dict.items()):
       csv_row = []
-      for ref_result_key in param_dtype_dict.keys():
-        if(ref_result_key in param_dict.keys()):
+      for ref_result_key in list(param_dtype_dict.keys()):
+        if(ref_result_key in list(param_dict.keys())):
           val = param_dict[ref_result_key]
         else:
           val = "NA"
@@ -2190,7 +2195,7 @@ def run_plot_script(flow_settings,report_csv_fname):
   exit_flag = 0
   for p in req_paths:
     if(not os.path.exists(p)):
-      print("Plotting function could not find file or directory: %s" % (p))
+      print(("Plotting function could not find file or directory: %s" % (p)))
       exit_flag = 1
   
   if(exit_flag):
@@ -2241,7 +2246,7 @@ def hardblock_flow(flow_settings):
             run_sim()
           #loops over every combination of user inputted modes to set the set_case_analysis value (determines value of mode mux)
           for x in range(0, 2**len(flow_settings['mode_signal']) + 1):
-            library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,pnr_report_str,pnr_output_path)
+            library_setup_time, data_arrival_time, total_delay, total_dynamic_power = run_power_timing(flow_settings,mode_enabled,clock_period,x,syn_output_path,pnr_report_str,pnr_output_path)
             # write the final report file:
             if mode_enabled and x <2**len(flow_settings['mode_signal']):
               file = open("report_mode" + str(x) + "_" + str(flow_settings['top_level']) + "_" + str(clock_period) + "_" + str(wire_selection) + "_wire_" + str(metal_layer) + "_" + str(core_utilization) + ".txt" ,"w")

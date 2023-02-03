@@ -46,8 +46,6 @@ import coffe.vpr
 import datetime
 import math
 
-
-
 print ("\nCOFFE 2.0\n")
 print ("Man is a tool-using animal.")
 print ("Without tools he is nothing, with tools he is all.")
@@ -75,14 +73,15 @@ parser.add_argument('-q', '--quick_mode', type=float, default=-1.0, help="minimu
 args = parser.parse_args()
 
 # Load the input architecture description file
-arch_params_dict = utils.load_arch_params(args.arch_description)
+coffe_params = utils.load_params(args.arch_description,args)
+
 # Make the top-level spice folder if it doesn't already exist
 # if it's already there delete its content
-arch_folder = utils.create_output_dir(args.arch_description, arch_params_dict['arch_out_folder'])
+arch_folder = utils.create_output_dir(args.arch_description, coffe_params["fpga_arch_params"]['arch_out_folder'])
 if(args.hardblock_only):
   # Change to the architecture directory
-  for hardblock_fname in arch_params_dict["hb_files"]:
-    hard_block = fpga._hard_block(hardblock_fname,False,args)
+  for hardblock_params in coffe_params["asic_hardblock_params"]["hardblocks"]:
+    hard_block = fpga._hard_block(hardblock_params,False,args)
     os.chdir(arch_folder)
     if(args.gen_hb_scripts):
       hard_block.generate_hb_scripts()
@@ -92,7 +91,6 @@ if(args.hardblock_only):
       hard_block.generate_parallel_results()
     else:
       hard_block.generate_top()
-  
 else:
   is_size_transistors = not args.no_sizing
 
@@ -101,7 +99,7 @@ else:
   utils.print_run_options(args, report_file_path)
 
   # Print architecture and process details to terminal and report file
-  utils.print_architecture_params(arch_params_dict, report_file_path)
+  utils.print_architecture_params(coffe_params["fpga_arch_params"], report_file_path)
 
   # Default_dir is the dir you ran COFFE from. COFFE will be switching directories 
   # while running HSPICE, this variable is so that we can get back to our starting point
@@ -114,7 +112,7 @@ else:
   total_start_time = time.time()
 
   # Create an FPGA instance
-  fpga_inst = fpga.FPGA(arch_params_dict, args, spice_interface)
+  fpga_inst = fpga.FPGA(coffe_params, args, spice_interface)
                       
   ###############################################################
   ## GENERATE FILES
@@ -123,7 +121,6 @@ else:
   # Change to the architecture directory
   os.chdir(arch_folder)  
 
-  print(os.getcwd())
   # Generate FPGA and associated SPICE files
   fpga_inst.generate(is_size_transistors) 
 
@@ -133,7 +130,7 @@ else:
   # Extract initial transistor sizes from file and overwrite the 
   # default initial sizes if this option was used.
   if args.initial_sizes != "default" :
-    utils.use_initial_tran_size(args.initial_sizes, fpga_inst, tran_sizing, arch_params_dict['use_tgate'])
+    utils.use_initial_tran_size(args.initial_sizes, fpga_inst, tran_sizing, coffe_params["fpga_arch_params"]['use_tgate'])
 
   # Print FPGA implementation details
   report_file = open(report_file_path, 'a')
@@ -174,7 +171,7 @@ else:
     fpga_inst.update_delays(spice_interface)
 
   # Obtain Memory core power
-  if arch_params_dict['enable_bram_module'] == 1:
+  if coffe_params["fpga_arch_params"]['enable_bram_module'] == 1:
     fpga_inst.update_power(spice_interface)
 
   # Go back to the base directory
@@ -184,4 +181,4 @@ else:
   utils.print_summary(arch_folder, fpga_inst, total_start_time)
 
   # Print vpr architecure file
-  coffe.vpr.print_vpr_file(fpga_inst, arch_folder, arch_params_dict['enable_bram_module'])
+  coffe.vpr.print_vpr_file(fpga_inst, arch_folder, coffe_params["fpga_arch_params"]['enable_bram_module'])
