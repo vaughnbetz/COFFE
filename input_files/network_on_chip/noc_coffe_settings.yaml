@@ -116,9 +116,9 @@ fpga_arch_params:
   worst_read_current  :  0.0000015
 
   #MTJ resisitance values for 4 combinations of nominal/worst case for low/high states
-  MTJ_Rlow_nominal  :  2500.0
-  MTJ_Rhigh_nominal  :  6250.0
-  MTJ_Rlow_worstcase  :  3060.0
+  MTJ_Rlow_nominal  :  2500
+  MTJ_Rhigh_nominal  :  6250
+  MTJ_Rlow_worstcase  :  3060
   MTJ_Rhigh_worstcase  :  4840
 
 
@@ -246,16 +246,6 @@ asic_hardblock_params:
       #runs the partition flow on the design
       partition_flag : True
 
-      #settings file to be parsed to take in partition settings
-      ptn_settings_file : ~/COFFE/input_files/network_on_chip/ptn_settings_file.txt
-
-      ###############################################################
-      ###################### RUN SETTINGS ###########################
-      ###############################################################
-
-      #This file contains information used to run a subset of the currently generated scripts and to specify which asic stages to run
-      run_settings_file : ~/COFFE/input_files/network_on_chip/hb_run_settings_file.txt
-
       #############################################
       ########## General Design Settings ##########
       #############################################
@@ -290,10 +280,10 @@ asic_hardblock_params:
       clock_pin_name : clk
 
       # Desired clock period in ns
-      clock_period : [0.98,0.99]
+      clock_period : [1.53]
 
       # Wire loading model to be used
-      wire_selection : [WireAreaLowkCon,WireAreaLowkAgr]
+      wire_selection : [WireAreaLowkCon]
 
       # Name of the top-level entity in the design
       top_level : router_wrap
@@ -409,7 +399,6 @@ asic_hardblock_params:
 
       #Timing Power Libraries used for PT timing/power analysis
       primetime_libs : 
-        - tpzn65gpgv2wc.db
         - tcbn65gpluswc.db
 
       primetime_folder : ~/COFFE/output_files/network_on_chip/pt
@@ -436,7 +425,7 @@ asic_hardblock_params:
       ############################################ INFO ############################################
       hb_run_params:
         param_filters: 
-          period : ["0.99"]
+          period : ["1.53"]
           wiremdl : ["WireAreaLowkCon"]
           mlayer : ["10"]
           util : ["0.70"]

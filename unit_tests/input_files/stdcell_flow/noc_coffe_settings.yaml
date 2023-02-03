@@ -168,7 +168,7 @@ fpga_arch_params:
   sram_cell_area  :  4.0
 
   # Path to SPICE device models file and library to use
-  model_path : ~/COFFE/spice_models/ptm_22nm_bulk_hp.l
+  model_path : spice_models/ptm_22nm_bulk_hp.l
   model_library : 22NM_BULK_HP
 
   #######################################
@@ -228,7 +228,7 @@ asic_hardblock_params:
       ungroup_regex : .*ff.*|.*vcr.*
 
       #runs the partition flow on the design
-      partition_flag : False
+      partition_flag : True
 
       #############################################
       ########## General Design Settings ##########
@@ -380,7 +380,6 @@ asic_hardblock_params:
 
       #Timing Power Libraries used for PT timing/power analysis
       primetime_libs : 
-        - tpzn65gpgv2wc.db
         - tcbn65gpluswc.db
 
       primetime_folder : ~/COFFE/unit_tests/output_files/network_on_chip/pt

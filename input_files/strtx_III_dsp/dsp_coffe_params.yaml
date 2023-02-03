@@ -12,16 +12,20 @@
 #######################################
 ##### General parameters
 #######################################
-
-#The directory in which output files will be stored. 
-#If not specified, the directory containing this file is used as output dir.
-
-#######################################
-##### Architecture Parameters
-#######################################
 fpga_arch_params:
+  #Abs path to COFFE repo
+  #coffe_repo_path : /fs1/eecg/vaughn/morestep/COFFE
 
-  arch_out_folder : ~/COFFE/unit_tests/output_files/strtx_III_dsp/arch_out_dir
+  #The directory in which all outputs are generated, makes it easier to make sense of data
+  #coffe_design_name : strtx_III_dsp
+
+  #The directory in which output files will be stored. 
+  #If not specified, the directory containing this file is used as output dir.
+  arch_out_folder : ~/COFFE/output_files/strtx_III_dsp/arch_out_dir
+
+  #######################################
+  ##### Architecture Parameters
+  #######################################
 
   # The following parameters are the classic VPR architecture parameters
   N : 10
@@ -127,7 +131,6 @@ fpga_arch_params:
 
   # The switch type can be 'pass_transistor' or 'transmission_gate'.
   switch_type : pass_transistor
-  #switch_type : transmission_gate
 
   # Supply voltage
   vdd : 0.8
@@ -179,13 +182,13 @@ fpga_arch_params:
 
   metal : 
   # All wires except the general routing wires are implemented in this layer.
-   - [0.054825,0.000175]
+    - [0.054825,0.000175]
   # # General routing wires will be implemented in this layer 
-   - [0.007862,0.000215]
+    - [0.007862,0.000215]
   # # Memory array wires will be implemented in this layer
-   - [0.029240,0.000139]
+    - [0.029240,0.000139]
   # # This layer is used in MTJ wordline (if BRAM technology is MTJ)
-   - [0.227273,0.000000]
+    - [0.227273,0.000000]
 
   # If you wanted to, you could define more metal layers by adding more 'metal'
   # statements but, by default, COFFE would not use them because it only uses 2 layers.
@@ -194,50 +197,42 @@ fpga_arch_params:
   # making use of more metal layers would require changes to the COFFE source code.
 
 
-  # if hybrid blocks are enabled, list configurations here
-  #hb_files  :  input_files/strtx_III_dsp/dsp_hb_settings.txt
-
-
-#This is a sample settings file for the hard block flow
-
-#############################################
-########## General Design Settings ##########
-#############################################
 asic_hardblock_params:
   hardblocks:
+    #This is a sample settings file for the hard block flow
+
+    ###############################################################
+    ###################### PLOTTING SETTINGS ######################
+    ###############################################################
     #The coffe repo path is used to find other python files in coffe in the analyze_results dir
     - coffe_repo_path : ~/COFFE
       #This is where parsed results will be generated 
-      condensed_results_folder : ~/COFFE/unit_tests/output_files/strtx_III_dsp/condensed_results
+      condensed_results_folder : ~/COFFE/output_files/strtx_III_dsp/condensed_results
 
+      ###############################################################
+      ###################### PARALLEL SETTINGS ######################
+      ###############################################################
+
+      #This is the folder which will contain the parallel asic flow directory structure
+      parallel_hardblock_folder : ~/COFFE/output_files/strtx_III_dsp/asic_work
+
+      #The maximum number of cores to be assigned to the parallel flow
+      mp_num_cores : 16
+
+      ###############################################################
+      ###################### PTN SETTINGS ###########################
+      ###############################################################
+
+      #runs the partition flow on the design
       partition_flag : False
 
-      parallel_hardblock_folder : ~/COFFE/unit_tests/output_files/strtx_III_dsp/asic_work
+      ###############################################################
+      ###################### RUN SETTINGS ###########################
+      ###############################################################
 
-      mp_num_cores : 10
-
-      ########### GENERAL INFORMATION #############
-      # To sweep asic flow parameters you can create
-      # parameter lists by setting the same parameter to another value
-      # Ex.
-      # period : 2.0
-      # period : 1.66
-      # ^ this would sweep period and evaluate asic flow for both values
-
-      # The folder in which all the design files are located:
-      design_folder : ~/COFFE/input_files/strtx_III_dsp/dsp_block_hdl
-
-      # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
-      design_language : verilog
-      # The exponents of delay and area in the cost function.
-      # cost  :  (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
-      delay_cost_exp : 1.0
-      area_cost_exp : 1.0
-
-      #ASIC flow settings
-      
-      # Wire loading model to be used
-      wire_selection : [WireAreaLowkCon]
+      #############################################
+      ########## General Design Settings ##########
+      #############################################
 
       #node size of process in nm
       process_size : 65
@@ -247,16 +242,71 @@ asic_hardblock_params:
         - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b
         - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c
 
+      # The folder in which all the design files are located:
+      design_folder : ~/COFFE/input_files/strtx_III_dsp/dsp_block_hdl
+
+      # The design language. Should be either 'verilog', 'vhdl' or 'sverilog'
+      design_language : verilog
+
+      # The exponents of delay and area in the cost function.
+      # cost  :  (delay ^ delay_cost_exp) * (area ^ area_cost_exp)
+      delay_cost_exp : 1.0
+      area_cost_exp : 1.0
+
+      #Hardblock run type (comb vs solo) comb uses a geometric combination of all input params and solo uses the first inputted value of each field
+      #hb_run_type : "solo"
+
+      ########################################
+      ########## Synthesis Settings ##########
+      ########################################
+
+      # Name of the clock pin in the design
+      clock_pin_name : clk
+
+      # Desired clock period in ns
+      clock_period : [1.53]
+
+      # Wire loading model to be used
+      wire_selection : [WireAreaLowkCon]
+
+      # Name of the top-level entity in the design
+      top_level : dsp
+
+      # The name of the folder in which post-synthesis files and synthesis reports are to be stored
+      synth_folder : ~/COFFE/output_files/strtx_III_dsp/synth
+
+      # Do you want to be informed of warnings during synthesis?
+      show_warnings : True
+
+      # Should the flow terminate after synthesis?
+      # A value of "False" will continue into placement and routing
+      synthesis_only : False
+
+      # Do you want to provide a saif file for power analysis?
+      # In case of setting this to "True" a saif.saif file should be provided
+      read_saif_file : False
+
+      # If you don't want to provide a saif file, specify the switching activity parameters below:
+      static_probability : 0.5
+      toggle_rate : 25
+
+      # Should COFFE generate an activity file for the design (using modelsim)
+      generate_activity_file : False
+      
       # Location of the library files.
       # if you have more than one library, please provide them similiar to the example below.
       target_libraries :
       - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.db
       - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.db
 
+      ##############################################
+      ########## Place and Route Settings ##########
+      ##############################################
+
       pnr_tool : innovus
 
-      #Libraries required in EDI:
-      metal_layers : [8]
+      # Libraries required in EDI:
+      metal_layers : [10]
 
       #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
       metal_layer_names : ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9","AP"]
@@ -291,6 +341,9 @@ asic_hardblock_params:
       #name of the core site in the floorplan. can be obtained from lef files.
       core_site_name : core
 
+      #specify the utilization of the core site. you can specify multiple ones on different lines.
+      core_utilization : ["0.70"]
+
       lef_files : 
         - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef
         - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Back_End/lef/tpzn65gpgv2_140c/mt_2/9lm/lef/antenna_9lm.lef
@@ -308,80 +361,19 @@ asic_hardblock_params:
         - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcbn65gplus_140b/tcbn65gpluswc.lib
         - /CMC/kits/tsmc_65nm_libs/tpzn65gpgv2/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpzn65gpgv2_140c/tpzn65gpgv2wc.lib
 
-      #Timing Power Libraries used for PT timing/power analysis
-      primetime_libs : 
-        - tcbn65gpluswc.db
 
-      ########################################
-      ########## Synthesis Settings ##########
-      ########################################
 
-      # Name of the clock pin in the design
-      clock_pin_name : clk
-      # Desired clock period in ns
-      clock_period : [1.53]
-
-      # Name of the top-level entity in the design
-      top_level : dsp
-
-      # The name of the folder in which post-synthesis files and synthesis reports are to be stored
-      synth_folder : ~/COFFE/unit_tests/output_files/strtx_III_dsp/synth
-
-      # Do you want to be informed of warnings during synthesis?
-
-      show_warnings : True
-
-      # Should the flow terminate after synthesis?
-      # A value of "False" will continue into placement and routing
-      synthesis_only : False
-
-      # Do you want to provide a saif file for power analysis?
-      # In case of setting this to "True" a saif.saif file should be provided
-      read_saif_file : False
-
-      # If you don't want to provide a saif file, specify the switching activity parameters below:
-      static_probability : 0.5
-      toggle_rate : 25
-
-      # Should COFFE generate an activity file for the design (using modelsim)
-      generate_activity_file : False
-
-      ##############################################
-      ########## Place and Route Settings ##########
-      ##############################################
-
-      #This can be of value "innovus" or "encounter" depending on version of cadence pnr tool used
-      pnr_tool : innovus
-
-      #name of the file to use for layer mapping. used for stream out.
-      #set it to None if you want the tool to create a generic map file
-      map_file : streamOut.map
-
-      tilehi_tielo_cells_between_power_gnd : True
-
-      #name of the core site in the floorplan. can be obtained from lef files.
-      #core_site_name : core
-
-      #specify the utilization of the core site. you can specify multiple ones on different lines.
-      # description of utilization parameter can be found here:
-      # https://community.cadence.com/cadence_technology_forums/f/digital-implementation/48060/what-is-the-meaning-of-cell-utlilization
-
-      core_utilization : ["0.85"]
-
-      # EDI settings (Cadence Encounter or innovus):
-      # These settings are the width of power/gnd wires and the spacing between them
-      # The space_around_core param is the distance between core and IO (leaves enough space for power rings)
-      # Calculations: 
-      # 1.8 x 2 (ring for VDD and VSS) + 1.8 x 3 (spacing between IO ring and first ring, the rings and last ring and core)  :  9 um (1 um of extra space)
-
+      # EDI settings:
       power_ring_width : 1.8
       power_ring_spacing : 1.8
       height_to_width_ratio : 4.0
 
       space_around_core : 10
 
+
       # The folder in which place and route reports and post-routing netlists and spef files will be stored
-      pr_folder : ~/COFFE/unit_tests/output_files/strtx_III_dsp/pr
+      pr_folder : ~/COFFE/output_files/strtx_III_dsp/pr
+
 
       ##############################################
       ########## Prime Time Settings ###############
@@ -389,9 +381,15 @@ asic_hardblock_params:
 
       mode_signal : [mode_0, mode_1]
 
-      primetime_folder : ~/COFFE/unit_tests/output_files/strtx_III_dsp/pt
+      #Timing Power Libraries used for PT timing/power analysis
+      primetime_libs : 
+        - tcbn65gpluswc.db
+
+      primetime_folder : ~/COFFE/output_files/strtx_III_dsp/pt
 
       # COFFE parameters:
+      # These params specify how the asic hardblock is connected and floorplanned into FPGA
+      # Will provide values to be used in hardblock mux transistor sizing
       name : hard_block
       num_gen_inputs : 288
       crossbar_population : 0.5
@@ -413,8 +411,8 @@ asic_hardblock_params:
         param_filters: 
           period : ["1.53"]
           wiremdl : ["WireAreaLowkCon"]
-          mlayer : ["8"]
-          util : ["0.85"]
+          mlayer : ["10"]
+          util : ["0.70"]
         synth :
           run_flag : True
         pnr:
@@ -422,3 +420,23 @@ asic_hardblock_params:
           override_outputs : False
         sta:
           run_flag : True
+      ############################################ INFO ############################################
+      #Contains settings for floorplanning and partitioning in pnr flow
+      ############################################ INFO ############################################
+      #ptn_params:
+        ################## FLOORPLANNING SETTINGS #################
+        #scaled array used as higher level param in ptn_settings dict
+        #use below format for lists related to key on left
+        ################## THESE CAN BE USED FOR GEN AND RUN SETTINGS #########################
+        #top_settings:
+        #  scaling_array : [1]
+        #  fp_init_dims : [948.4,947.0]
+        #  fp_pin_spacing : 5
+        #Specifies individual partitions to be created
+        #partitions:
+        #  - inst_name : gen_port_regs[1].channel_in_ff
+        #    mod_name : c_dff_1_7
+        #    fp_coords : [43.0, 920.0, 68.0, 953.0]
+
+
+

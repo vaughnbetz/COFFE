@@ -24,7 +24,10 @@ fpga_arch_params:
   Fcin : 0.2
   Fcout : 0.025
 
-  arch_out_folder : ~/COFFE/output_files/finfet_7nm_trans/arch_out_dir
+  arch_out_folder : ~/COFFE/output_files/finfet_7nm_trans_0.9_area_2165/arch_out_dir
+  #~/COFFE/output_files/finfet_7nm_0.9_boost/arch_out_dir
+  #~/COFFE/output_files/finfet_7nm_trans/arch_out_dir 
+  # ~/COFFE/output_files/finfet_7nm_0.9_boost/arch_out_dir
 
   # The following architecture parameters are new and help COFFE describe
   # a more flexible BLE. See [1] for more details.
@@ -69,7 +72,8 @@ fpga_arch_params:
   # Supply voltage
   vdd : 0.7
 
-  # SRAM Vdd
+  # This voltage is actually the boost voltage for the pass transistors
+  # Will typically have to be around 0.2 V higher than vdd to compensate for lost voltage
   vsram : 0.9
 
   # SRAM Vss
@@ -82,7 +86,7 @@ fpga_arch_params:
   # This parameter controls the gate length of PMOS level-restorers. For example, setting this paramater 
   # to 4 sets the gate length to 4x the value of 'gate_legnth'. Increasing the gate length weakens the 
   # PMOS level-restorer, which is sometimes necessary to ensure proper switching.
-  rest_length_factor  :  4
+  rest_length_factor  :  5
 
   # For FinFETs, minimum transistor refers to the contact width of a single-fin transistor (nm). 
   # COFFE uses this when it calculates source/drain parasitic capacitances.
@@ -96,7 +100,7 @@ fpga_arch_params:
   # Minimum-width transistor area (nm^2)
   # Look in design rules, make me 1 fin, shortest gate, contact on both sides, no diffusion sharing, 1 space between next transistor
   # Layout a single transistor pass DRC, look for sample layout
-  min_width_tran_area  :  8635
+  min_width_tran_area  :  2165
 
   # SRAM area (in number of minimum width transistor areas)
   sram_cell_area  :  4
