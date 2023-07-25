@@ -67,12 +67,12 @@ def test_flow(ref_file, test_dir, err_margin):
 			observed = float(rise_and_fall_time_dictionary[i][0])
 			diff_pct = round(abs(expected - observed) / expected,4)
 			if (abs(expected - observed)/ expected) > margin:
-				print "**FAIL in: " + str(i) + ". " \
+				print ("**FAIL in: " + str(i) + ". " \
 					+ "Expected = " + str(expected) + ", Observed = " + str(observed) + ". " \
-					+ "Percentage difference from reference: " + str(diff_pct*100) + '%' 
+					+ "Percentage difference from reference: " + str(diff_pct*100) + '%') 
 			else:
 				# print and let the user know that this component passed the test
-				print "Passed test: "+ str(i) 
+				print ("Passed test: "+ str(i))
 
 # Function to print a new reference file to screen. test_dir is the directory in which COFFE put its output. All SPICE output files
 # test_dir will be parsed, rise and fall delays are extracted, and printed to the screen (pipe to a file to store) in the format
@@ -114,5 +114,5 @@ def generate_reference(test_dir):
 					rise_and_fall_time_dictionary[target_file_names[index]+"trise"] = re.findall("\d+\.\d+", line)
 			
 	for item in rise_and_fall_time_dictionary:
-		print item + ".." + rise_and_fall_time_dictionary[item][0]
+		print(item + ".." + rise_and_fall_time_dictionary[item][0])
 	

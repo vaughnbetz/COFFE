@@ -32,7 +32,7 @@ worst_case_libs="/CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Front_End
 metal_layers=8
 #metal_layers=7
 #metal_layers=6
-metal_layers=5
+#metal_layers=5
 
 #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
 metal_layer_names=["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "AP"]
@@ -43,7 +43,7 @@ power_ring_metal_layer_names=["M1", "M1", "M2", "M2"]
 
 #specify wire load model (options found in library)
 
-#wire_selection=WireAreaLowkCon
+wire_selection=WireAreaLowkCon
 wire_selection=WireAreaLowkAgr
 #wire_selection=WireAreaForZero
 

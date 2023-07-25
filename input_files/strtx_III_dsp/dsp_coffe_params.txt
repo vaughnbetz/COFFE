@@ -23,6 +23,10 @@
 #If not specified, the directory containing this file is used as output dir.
 arch_out_folder=~/COFFE/output_files/strtx_III_dsp/arch_out_dir
 
+############ DONT FORGET THIS STEPHEN!! TODO FIXME ERROR ############
+# setting the below parameter to coffe_design_out_folder but dont want to make this mandatory param
+#coffe_design_out_folder=~/COFFE/output_files/strtx_III_dsp
+
 #######################################
 ##### Architecture Parameters
 #######################################

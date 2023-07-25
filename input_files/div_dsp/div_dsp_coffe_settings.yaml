@@ -231,7 +231,7 @@ asic_hardblock_params:
       #ASIC flow settings
       
       # Wire loading model to be used
-      wire_selection : [WireAreaLowkCon]
+      wire_selection : [WireAreaZeroLoad,WireAreaLowkCon]
 
       #node size of process in nm
       process_size : 65
@@ -249,18 +249,19 @@ asic_hardblock_params:
 
       pnr_tool : innovus
 
-      #Libraries required in EDI:
-      metal_layers : [8]
+      # Libraries required in EDI:
+      metal_layers : [8,10]
 
-      #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
+      # names of metal layers starting from the bottom-most layer on the left. use a python list format. 
       metal_layer_names : ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9","AP"]
 
-      #names of metal layers to use for each side of the power ring
-      #order: top, bottom, left, right
+      # names of metal layers to use for each side of the power ring
+      # order: top, bottom, left, right
+      # This has been changed from ["M1", "M1", "M2", "M2"]
       power_ring_metal_layer_names : ["M9", "M9", "AP", "AP"]
 
-      #name of the file to use for layer mapping. used for stream out.
-      #set it to None if you want the tool to create a generic map file
+      # name of the file to use for layer mapping. used for stream out.
+      # set it to None if you want the tool to create a generic map file
       map_file : streamOut.map
 
       #specify names of ground and power pins and nets in the library
@@ -304,7 +305,6 @@ asic_hardblock_params:
 
       #Timing Power Libraries used for PT timing/power analysis
       primetime_libs : 
-        - tpzn65gpgv2wc.db
         - tcbn65gpluswc.db
 
       ########################################
@@ -314,7 +314,7 @@ asic_hardblock_params:
       # Name of the clock pin in the design
       clock_pin_name : clk
       # Desired clock period in ns
-      clock_period : [1.53]
+      clock_period : [1.0, 1.25]
 
       # Name of the top-level entity in the design
       top_level : FMULT
@@ -361,7 +361,7 @@ asic_hardblock_params:
       # description of utilization parameter can be found here:
       # https://community.cadence.com/cadence_technology_forums/f/digital-implementation/48060/what-is-the-meaning-of-cell-utlilization
 
-      core_utilization : ["0.85"]
+      core_utilization : ["0.70", "0.80", "0.90"]
 
       # EDI settings (Cadence Encounter or innovus):
       # These settings are the width of power/gnd wires and the spacing between them
@@ -404,12 +404,13 @@ asic_hardblock_params:
       ############################################ INFO ############################################
       #Contains run settings for the parallel hardblock flow
       ############################################ INFO ############################################
+      # Testing to make sure the empty list of run_params will run all generated scripts...
       hb_run_params:
         param_filters: 
-          period : ["1.53"]
-          wiremdl : ["WireAreaLowkCon"]
-          mlayer : ["8"]
-          util : ["0.85"]
+          period : ["1.0", "1.25"]
+          wiremdl : ["WireAreaZeroLoad","WireAreaLowkCon"]
+          mlayer : ["8","10"]
+          util : ["0.70", "0.80", "0.90"]
         synth :
           run_flag : True
         pnr:

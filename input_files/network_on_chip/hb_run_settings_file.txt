@@ -6,6 +6,7 @@
 ################## RUN SETTINGS #################
 ## I basically just used the format of a python dict to read these in
 
+#the param filters are strings as they are matching fnames...
 
 synth begin
     "run_flag" : "False"
@@ -14,8 +15,8 @@ pnr begin
     "run_flag" : "True"
     "override_outputs" : "False"
     param_filters begin
-        "period" : ["0.6"], 
-        "wiremdl" : ["WireAreaLowkAgr"],
+        "period" : ["1.22"]
+        "wiremdl" : ["WireAreaLowkCon"],
         "mlayer" : ["10"],
         "util" : ["0.70"],
     end
@@ -23,3 +24,19 @@ end
 sta begin
     "run_flag" : "False"
 end
+
+#["1.11","1.22","1.33","1.44"]
+#["0.5","0.75","1","1.53","2.0"], 
+#param_filters begin
+#    "period" : ["0.6"], 
+#    "wiremdl" : ["WireAreaLowkAgr"],
+#    "mlayer" : ["10"],
+#    "util" : ["0.70"],
+#end
+
+#param_filters begin
+#        "period" : ["0.5","0.75","1","1.53","2.0","1.11","1.22","1.33","1.44"]
+#        "wiremdl" : ["WireAreaLowkAgr","WireAreaLowkCon"],
+#        "mlayer" : ["10"],
+#        "util" : ["0.70"],
+#end

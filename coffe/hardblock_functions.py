@@ -1460,6 +1460,8 @@ def write_parallel_scripts(flow_settings,top_level_path):
   os.chdir(top_level_path)
   #CWD Ex. asic_work/router_wrap
   for flow_stage_dir in os.listdir(top_level_path):
+    # Value which determines number of scripts executed in each stage
+    num_flow_execs = 0
     parallel_work_dir = flow_stage_dir + "_parallel_work"
     os.chdir(flow_stage_dir)
     flow_path = os.getcwd()
@@ -1473,6 +1475,8 @@ def write_parallel_scripts(flow_settings,top_level_path):
     for dir in os.listdir(flow_path):
       if(compare_run_filt_params_to_str(flow_settings,dir) and "period" in dir):  #TODO DEPENDANCY
         write_param_flow_stage_bash_script(flow_settings,os.path.join(flow_path,dir))
+        num_flow_execs += 1
+    print(f'Num scripts written for Stage {flow_stage_dir}: {num_flow_execs}')
     os.chdir("..")
     write_top_lvl_parallel_bash_script("scripts")
     os.chdir(top_level_path)
@@ -2271,3 +2275,8 @@ def hardblock_flow(flow_settings):
   return (float(lowest_cost_area), float(lowest_cost_delay), float(lowest_cost_power))
 
 ########################################## SERIAL FLOW ##########################################
+
+########################################## FIND MAX CLOCK FLOW ##########################################
+# def find_max_clock_freq()
+
+########################################## FIND MAX CLOCK FLOW ##########################################

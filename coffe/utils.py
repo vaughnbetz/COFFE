@@ -1154,9 +1154,8 @@ def check_hard_params(hard_params,run_options):
     checking for unset values
     """
     #These are optional parameters which have been determined to be optional for all run options
-    optional_params = ["process_params_file","mode_signal","condensed_results_folder"]
+    optional_params = ["process_params_file","mode_signal","condensed_results_folder","ptn_settings_file"]
     if(hard_params["partition_flag"] == False):
-        optional_params.append("ptn_settings_file")
         #ungrouping regex is required to partition design
         optional_params.append("ungroup_regex")     
     if(not run_options.parallel_hb_flow and not run_options.parse_pll_hb_flow and not run_options.gen_hb_scripts):

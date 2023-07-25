@@ -35,9 +35,10 @@ end
 #use below format for lists related to key on left
 ################## THESE CAN BE USED FOR GEN AND RUN SETTINGS #########################
 top_settings begin
-    "scaling_array" : [1,4,7]
+    "scaling_array" : [1]
     "fp_init_dims" : [948.4,947.0]
     "fp_pin_spacing" : "5"
 end
 #[1,2,3,4,5,8,10]
+#"fp_coords": [100.0, 100.0, 470.0, 470.0]
   

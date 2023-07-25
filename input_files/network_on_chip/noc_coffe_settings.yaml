@@ -216,7 +216,7 @@ fpga_arch_params:
 asic_hardblock_params:
   hardblocks:
     #This is a sample settings file for the hard block flow
-
+    
     ###############################################################
     ###################### PLOTTING SETTINGS ######################
     ###############################################################
@@ -280,7 +280,7 @@ asic_hardblock_params:
       clock_pin_name : clk
 
       # Desired clock period in ns
-      clock_period : [1.53]
+      clock_period : [0.75, 1.0, 1.53]
 
       # Wire loading model to be used
       wire_selection : [WireAreaLowkCon]
@@ -425,7 +425,7 @@ asic_hardblock_params:
       ############################################ INFO ############################################
       hb_run_params:
         param_filters: 
-          period : ["1.53"]
+          period : ["0.75","1.0","1.53"]
           wiremdl : ["WireAreaLowkCon"]
           mlayer : ["10"]
           util : ["0.70"]
@@ -445,8 +445,9 @@ asic_hardblock_params:
         #use below format for lists related to key on left
         ################## THESE CAN BE USED FOR GEN AND RUN SETTINGS #########################
         top_settings:
-          scaling_array : [1]
-          fp_init_dims : [948.4,947.0]
+          scaling_array : [1,5,10]
+          #fp_init_dims : [948.4,947.0]
+          fp_init_dims : [1100,1100]
           fp_pin_spacing : 5
         #Specifies individual partitions to be created
         partitions:

@@ -202,3 +202,5 @@ metal=0.227273,0.000000
 
 # if hybrid blocks are enabled, list configurations here
 hb_files = input_files/network_on_chip/noc_hb_settings.txt
+#hb_files = input_files/network_on_chip/vcr_top_hb_settings.txt
+#hb_files = input_files/network_on_chip/noc_hb_settings_7nm.txt

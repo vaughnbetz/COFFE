@@ -253,9 +253,6 @@ asic_hardblock_params:
       delay_cost_exp : 1.0
       area_cost_exp : 1.0
 
-      #Hardblock run type (comb vs solo) comb uses a geometric combination of all input params and solo uses the first inputted value of each field
-      #hb_run_type : "solo"
-
       ########################################
       ########## Synthesis Settings ##########
       ########################################
@@ -264,7 +261,7 @@ asic_hardblock_params:
       clock_pin_name : clk
 
       # Desired clock period in ns
-      clock_period : [1.53]
+      clock_period : [1.0, 1.25, 1.66]
 
       # Wire loading model to be used
       wire_selection : [WireAreaLowkCon]
@@ -306,7 +303,7 @@ asic_hardblock_params:
       pnr_tool : innovus
 
       # Libraries required in EDI:
-      metal_layers : [10]
+      metal_layers : [9]
 
       #names of metal layers starting from the bottom-most layer on the left. use a python list format. 
       metal_layer_names : ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9","AP"]
@@ -342,7 +339,7 @@ asic_hardblock_params:
       core_site_name : core
 
       #specify the utilization of the core site. you can specify multiple ones on different lines.
-      core_utilization : ["0.70"]
+      core_utilization : ["0.60"]
 
       lef_files : 
         - /CMC/kits/tsmc_65nm_libs/tcbn65gplus/TSMCHOME/digital/Back_End/lef/tcbn65gplus_200a/lef/tcbn65gplus_9lmT2.lef
@@ -409,10 +406,10 @@ asic_hardblock_params:
       ############################################ INFO ############################################
       hb_run_params:
         param_filters: 
-          period : ["1.53"]
+          period : ["1.0","1.25","1.66"]
           wiremdl : ["WireAreaLowkCon"]
-          mlayer : ["10"]
-          util : ["0.70"]
+          mlayer : ["9"]
+          util : ["0.60"]
         synth :
           run_flag : True
         pnr:

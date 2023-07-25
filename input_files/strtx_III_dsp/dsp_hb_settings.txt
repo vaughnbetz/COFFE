@@ -4,6 +4,20 @@
 ########## General Design Settings ##########
 #############################################
 
+#The coffe repo path is used to find other python files in coffe in the analyze_results dir
+coffe_repo_path=~/COFFE
+
+#This is where parsed results will be generated 
+condensed_results_folder=~/COFFE/output_files/strtx_III_dsp/condensed_results
+
+partition_flag=False
+
+run_settings_file=~/COFFE/input_files/strtx_III_dsp/hb_run_settings.txt
+
+parallel_hardblock_folder=~/COFFE/output_files/strtx_III_dsp/asic_work
+
+mp_num_cores=10
+
 ########### GENERAL INFORMATION #############
 # To sweep asic flow parameters you can create
 # parameter lists by setting the same parameter to another value
@@ -26,6 +40,8 @@ area_cost_exp=1.0
 #path to absolute paths needed for process parameters (relative to coffe home repo)
 process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
 
+#below param runs only a single set of parameters through the ASIC flow (useful for testing)
+#hb_run_type=solo
 
 ########################################
 ########## Synthesis Settings ##########
@@ -34,11 +50,14 @@ process_params_file=input_files/strtx_III_dsp/process_specific_params.txt
 # Name of the clock pin in the design
 clock_pin_name=clk
 # Desired clock period in ns
+clock_period=1.51
+#clock_period=1.52
 #clock_period=1.53
-clock_period=1.66
-clock_period=1.81
+#clock_period=1.66
+#clock_period=1.81
+#clock_period=1.99
 #clock_period=2.0
-clock_period=2.22
+#clock_period=2.22
 #clock_period=2.5
 
 # Name of the top-level entity in the design
@@ -88,8 +107,8 @@ tilehi_tielo_cells_between_power_gnd=True
 
 #core_utilization=0.80
 core_utilization=0.85
-core_utilization=0.90
-core_utilization=0.95
+#core_utilization=0.90
+#core_utilization=0.95
 
 # EDI settings (Cadence Encounter or innovus):
 # These settings are the width of power/gnd wires and the spacing between them

@@ -5603,7 +5603,10 @@ class FPGA:
         # for the basic subcircuits which are inverteres, ptran, tgate, restorers and transistors
         self._update_area_and_width_dicts()
         #I found that printing width_dict here and comparing against golden results was helpful
-        #self.debug_print("width_dict")
+
+        # print("####################### BEGINNING OF UPDATE AREA #######################")
+        # self.debug_print("width_dict")
+        # print("####################### BEGINNING OF UPDATE AREA #######################")
 
         # Calculate area of SRAM
         self.area_dict["sram"] = self.specs.sram_cell_area * self.specs.min_width_tran_area
@@ -5839,7 +5842,9 @@ class FPGA:
         if self.lb_height != 0.0:  
             self.compute_distance()
 
-        #self.debug_print("width_dict")
+        # print("####################### END OF UPDATE AREA #######################")
+        # self.debug_print("width_dict")
+        # print("####################### END OF UPDATE AREA #######################")
 
     def compute_distance(self):
         """ This function computes distances for different stripes for the floorplanner:
@@ -6043,6 +6048,9 @@ class FPGA:
                 self.update_wire_rc()
                 self.update_delays(self.spice_interface)
                 new_cost = tran_sizing.cost_function(tran_sizing.get_eval_area(self, "global", self.sb_mux, 0, 0), tran_sizing.get_current_delay(self, 0), self.area_opt_weight, self.delay_opt_weight)
+                ############## BREAK POINT ##############
+                if i >= 0 :
+                    print("break")
                 if new_cost < old_cost:
                     old_cost = new_cost
                     current_best_index = i
@@ -6126,7 +6134,7 @@ class FPGA:
             hardblock.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)  
             hardblock.mux.update_wires(self.width_dict, self.wire_lengths, self.wire_layers)   
 
-        #self.debug_print("wire_lengths")  
+        # self.debug_print("wire_lengths")  
 
     def update_wire_rc(self):
         """ This function updates self.wire_rc_dict based on the FPGA's self.wire_lengths and self.wire_layers."""
