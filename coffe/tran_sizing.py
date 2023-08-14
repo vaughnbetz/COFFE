@@ -1688,7 +1688,7 @@ def _find_initial_sizing_ranges(transistor_names, transistor_sizes):
 	if set_length >= 6:
 		sizes_per_element = 4
 	elif set_length == 5:
-		sizes_per_element = 5
+		sizes_per_element = 6
 	else:
 		sizes_per_element = 8
 		
@@ -2185,6 +2185,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 	max_iterations   = run_options.max_iterations 
 	area_opt_weight  = run_options.area_opt_weight 
 	delay_opt_weight = run_options.delay_opt_weight
+	size_hb_interfaces = run_options.size_hb_interfaces
    
 	# Create results folder if it doesn't exist
 	if not os.path.exists("sizing_results"):
@@ -2238,7 +2239,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 		fpga_inst.update_wires()
 		fpga_inst.update_wire_rc()
-		fpga_inst.determine_height()
+		#fpga_inst.determine_height()
 		fpga_inst.update_area()
 		fpga_inst.compute_distance()
 		fpga_inst.update_wires()
@@ -2304,161 +2305,127 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 
 
 
-		
-		############################################
-		## Size switch block mux transistors
-		############################################
-		name = fpga_inst.sb_mux.name
-		# If this is the first iteration, use the 'initial_transistor_sizes' as the 
-		# starting sizes. If it's not the first iteration, we use the transistor sizes 
-		# of the previous iteration as the starting sizes.
-		if iteration == 1:
-			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(
-											fpga_inst.sb_mux.initial_transistor_sizes)
-		else:
-			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+		if size_hb_interfaces == 0.0:
+			############################################
+			## Size switch block mux transistors
+			############################################
+			name = fpga_inst.sb_mux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the 
+			# starting sizes. If it's not the first iteration, we use the transistor sizes 
+			# of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(
+												fpga_inst.sb_mux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 
-		# Size the transistors of this subcircuit
-		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-		else:
-			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.sb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
 
-			# update quick mode status and display duration
-		if quick_mode_dict[name] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict[name] = 0
+				# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
 
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
-		time_before_sizing = time.time()
+			time_before_sizing = time.time()
 
-		############################################
-		## Size connection block mux transistors
-		############################################
-		name = fpga_inst.cb_mux.name
-		# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-		# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-		if iteration == 1:
-			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.cb_mux.initial_transistor_sizes)
-		else:
-			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-		# Size the transistors of this subcircuit
-		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-		else:
-			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
-  
-			# update quick mode status and display duration
-		if quick_mode_dict[name] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict[name] = 0
-
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
-
-		time_before_sizing = time.time()
-
-
-		############################################
-		## Size local routing mux transistors
-		############################################
-		name = fpga_inst.logic_cluster.local_mux.name
-		# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-		# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-		if iteration == 1:
-			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.local_mux.initial_transistor_sizes)
-		else:
-			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-		
-		# Size the transistors of this subcircuit
-		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-		else:
-			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]        
-
-			# update quick mode status and display duration
-		if quick_mode_dict[name] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict[name] = 0
-
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
-
-		time_before_sizing = time.time()
-
-
-		############################################
-		## Size LUT
-		############################################
-		# We actually size the LUT before the LUT drivers even if this means going out of the normal signal propagation order because
-		# LUT driver sizing depends on LUT transistor sizes, and also, LUT rise-fall balancing doesn't depend on LUT drivers.
-		name = fpga_inst.logic_cluster.ble.lut.name
-		# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-		# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-		if iteration == 1:
-			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes)
-		else:
-			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-		
-		# Size the transistors of this subcircuit
-		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.lut, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-		else:
-			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]      
-
-			# update quick mode status and display duration
-		if quick_mode_dict[name] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict[name] = 0
-
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
-
-		time_before_sizing = time.time()
-
-		############################################
-		## Size FLUT internal mux
-		############################################
-		if fpga_inst.specs.use_fluts:
-			name = fpga_inst.logic_cluster.ble.fmux.name
+			############################################
+			## Size connection block mux transistors
+			############################################
+			name = fpga_inst.cb_mux.name
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 			if iteration == 1:
 				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes)
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.cb_mux.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.cb_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]
+		
+				# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size local routing mux transistors
+			############################################
+			name = fpga_inst.logic_cluster.local_mux.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.local_mux.initial_transistor_sizes)
 			else:
 				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.fmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]        
+
+				# update quick mode status and display duration
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
+
+			time_before_sizing = time.time()
+
+
+			############################################
+			## Size LUT
+			############################################
+			# We actually size the LUT before the LUT drivers even if this means going out of the normal signal propagation order because
+			# LUT driver sizing depends on LUT transistor sizes, and also, LUT rise-fall balancing doesn't depend on LUT drivers.
+			name = fpga_inst.logic_cluster.ble.lut.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.lut.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.lut, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]      
@@ -2476,311 +2443,136 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
-			
-		############################################
-		## Size LUT input drivers
-		############################################
-		for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
-			# Driver
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict["input_drivers"] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(input_driver.driver.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict["input_drivers"] == 1:
-				sizing_results_dict[input_driver.driver.name], sizing_results_detailed_dict[input_driver.driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-			else:
-				sizing_results_dict[input_driver.driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
-				sizing_results_detailed_dict[input_driver.driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.driver.name]   
-
-			# Not driver
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(input_driver.not_driver.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict["input_drivers"] == 1:
-				sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-			else:
-				sizing_results_dict[input_driver.not_driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
-				sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name]      
-
-		if quick_mode_dict["input_drivers"] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict["input_drivers"] = 0
-
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
-
-		time_before_sizing = time.time()
-
-		############################################        
-		## Size local ble output transistors
-		############################################
-		name = fpga_inst.logic_cluster.ble.local_output.name
-		# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-		# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-		if iteration == 1:
-			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes)
-		else:
-			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-		
-		# Size the transistors of this subcircuit
-		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.local_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-		else:
-			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-	  
-		if quick_mode_dict[name] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict[name] = 0
-
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
-
-		time_before_sizing = time.time()
-
-		############################################
-		## Size general ble output transistors
-		############################################
-		name = fpga_inst.logic_cluster.ble.general_output.name
-		# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-		# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-		if iteration == 1:
-			quick_mode_dict[name] = 1
-			starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes)
-		else:
-			starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-		
-		# Size the transistors of this subcircuit
-		if quick_mode_dict[name] == 1:
-			sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
-		else:
-			sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-			sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-		if quick_mode_dict[name] == 1:
-			time_after_sizing = time.time()
-			
-			past_cost = current_cost
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-			if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-				quick_mode_dict[name] = 0
-
-			print("Duration: " + str(time_after_sizing - time_before_sizing))
-			print("Current Cost: " + str(current_cost))
-
-			current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-
-		time_before_sizing = time.time()
-
-		
-		if fpga_inst.specs.enable_carry_chain == 1:
-			############################################
-			## Size Carry Chain
-			############################################
-			name = fpga_inst.carrychain.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychain.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychain, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-				
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
-
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-
-			time_before_sizing = time.time()
-
 
 			############################################
-			## Size Carry Chain Sum Path
+			## Size FLUT internal mux
 			############################################
-			name = fpga_inst.carrychainperf.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainperf.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainperf, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-				
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
-
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-
-			time_before_sizing = time.time()
-
-
-			############################################
-			## Size Carry Inter Cluster Path
-			############################################
-			name = fpga_inst.carrychaininter.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychaininter.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychaininter, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-				
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
-
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-
-			time_before_sizing = time.time()
-
-
-			############################################
-			## Size Carry Chain (SKIP) components
-			############################################
-			if fpga_inst.specs.carry_chain_type == "skip":
-				name = fpga_inst.carrychainand.name
+			if fpga_inst.specs.use_fluts:
+				name = fpga_inst.logic_cluster.ble.fmux.name
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
 					quick_mode_dict[name] = 1
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainand.initial_transistor_sizes)
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.fmux.initial_transistor_sizes)
 				else:
 					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict[name] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainand, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.fmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]      
 
+					# update quick mode status and display duration
 				if quick_mode_dict[name] == 1:
 					time_after_sizing = time.time()
 					
 					past_cost = current_cost
-					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost <fpga_inst.specs.quick_mode_threshold:
 						quick_mode_dict[name] = 0
 
 					print("Duration: " + str(time_after_sizing - time_before_sizing))
 					print("Current Cost: " + str(current_cost))
 
-					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-
 				time_before_sizing = time.time()
-
-			if fpga_inst.specs.carry_chain_type == "skip":
-				name = fpga_inst.carrychainskipmux.name
+				
+			############################################
+			## Size LUT input drivers
+			############################################
+			for input_driver_name, input_driver in fpga_inst.logic_cluster.ble.lut.input_drivers.items():
+				# Driver
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
-					quick_mode_dict[name] = 1
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainskipmux.initial_transistor_sizes)
+					quick_mode_dict["input_drivers"] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(input_driver.driver.initial_transistor_sizes)
 				else:
-					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
 				
 				# Size the transistors of this subcircuit
-				if quick_mode_dict[name] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainskipmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+				if quick_mode_dict["input_drivers"] == 1:
+					sizing_results_dict[input_driver.driver.name], sizing_results_detailed_dict[input_driver.driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 				else:
-					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+					sizing_results_dict[input_driver.driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.driver.name]
+					sizing_results_detailed_dict[input_driver.driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.driver.name]   
 
-				if quick_mode_dict[name] == 1:
-					time_after_sizing = time.time()
-					
-					past_cost = current_cost
-					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
-					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-						quick_mode_dict[name] = 0
+				# Not driver
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(input_driver.not_driver.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict["input_drivers"] == 1:
+					sizing_results_dict[input_driver.not_driver.name], sizing_results_detailed_dict[input_driver.not_driver.name] = size_subcircuit_transistors(fpga_inst, input_driver.not_driver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+				else:
+					sizing_results_dict[input_driver.not_driver.name]= sizing_results_list[len(sizing_results_list)-1][input_driver.not_driver.name]
+					sizing_results_detailed_dict[input_driver.not_driver.name] = sizing_results_detailed_list[len(sizing_results_list)-1][input_driver.not_driver.name]      
 
-					print("Duration: " + str(time_after_sizing - time_before_sizing))
-					print("Current Cost: " + str(current_cost))
+			if quick_mode_dict["input_drivers"] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict["input_drivers"] = 0
 
-					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
 
-				time_before_sizing = time.time()
+			time_before_sizing = time.time()
 
-
+			############################################        
+			## Size local ble output transistors
 			############################################
-			## Size Carry Chain Additional Mux
-			############################################
-			name = fpga_inst.carrychainmux.name
+			name = fpga_inst.logic_cluster.ble.local_output.name
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 			if iteration == 1:
 				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainmux.initial_transistor_sizes)
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.local_output.initial_transistor_sizes)
 			else:
 				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 			
 			# Size the transistors of this subcircuit
 			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.local_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+			else:
+				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+			
+			if quick_mode_dict[name] == 1:
+				time_after_sizing = time.time()
+				
+				past_cost = current_cost
+				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+					quick_mode_dict[name] = 0
+
+				print("Duration: " + str(time_after_sizing - time_before_sizing))
+				print("Current Cost: " + str(current_cost))
+
+			time_before_sizing = time.time()
+
+			############################################
+			## Size general ble output transistors
+			############################################
+			name = fpga_inst.logic_cluster.ble.general_output.name
+			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+			if iteration == 1:
+				quick_mode_dict[name] = 1
+				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.logic_cluster.ble.general_output.initial_transistor_sizes)
+			else:
+				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+			
+			# Size the transistors of this subcircuit
+			if quick_mode_dict[name] == 1:
+				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.logic_cluster.ble.general_output, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
 			else:
 				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
@@ -2796,376 +2588,585 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 				print("Duration: " + str(time_after_sizing - time_before_sizing))
 				print("Current Cost: " + str(current_cost))
 
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-
-			time_before_sizing = time.time()
-
-
-
-
-		if fpga_inst.specs.enable_bram_block == 1:
-			############################################
-			## Size RAM output crossbar
-			############################################hsa
-
-			name = fpga_inst.RAM.pgateoutputcrossbar.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.pgateoutputcrossbar.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.pgateoutputcrossbar, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-			
-				past_cost = current_cost
 				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
 
 			time_before_sizing = time.time()
 
-			############################################
-			## Size RAM wordline driver
-			############################################
-
-			name = fpga_inst.RAM.wordlinedriver.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.wordlinedriver.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-				
-			# Size the transistors of this subcircuit
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.wordlinedriver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
 			
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
-
-			time_before_sizing = time.time()
-
-			#######################################################
-			## Size SRAM bitline precharge or MTJ bitline discharge
-			#######################################################
-			
-			if fpga_inst.RAM.memory_technology =="SRAM":
-
-				name = fpga_inst.RAM.precharge.name
+			if fpga_inst.specs.enable_carry_chain == 1:
+				############################################
+				## Size Carry Chain
+				############################################
+				name = fpga_inst.carrychain.name
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
 					quick_mode_dict[name] = 1
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.precharge.initial_transistor_sizes)
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychain.initial_transistor_sizes)
 				else:
 					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict[name] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.precharge, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychain, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-			else:
 
-				name = fpga_inst.RAM.bldischarging.name
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+					
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+				time_before_sizing = time.time()
+
+
+				############################################
+				## Size Carry Chain Sum Path
+				############################################
+				name = fpga_inst.carrychainperf.name
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
 					quick_mode_dict[name] = 1
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.bldischarging.initial_transistor_sizes)
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainperf.initial_transistor_sizes)
 				else:
 					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict[name] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.bldischarging, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainperf, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
 
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-			
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+					
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
 
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
 
-			time_before_sizing = time.time()
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
 
-			#######################################################
-			## Size Row decoder, starting from the last stage backwards
-			#######################################################
+				time_before_sizing = time.time()
 
-			name = fpga_inst.RAM.rowdecoder_stage3.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict["rowdecoder"] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage3.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-				
-			# Size the transistors of this subcircuit
-			if quick_mode_dict["rowdecoder"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
 
-			if fpga_inst.RAM.valid_row_dec_size3 == 1:
-				name = fpga_inst.RAM.rowdecoder_stage1_size3.name
+				############################################
+				## Size Carry Inter Cluster Path
+				############################################
+				name = fpga_inst.carrychaininter.name
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage1_size3.initial_transistor_sizes)
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychaininter.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychaininter, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+					
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+				time_before_sizing = time.time()
+
+
+				############################################
+				## Size Carry Chain (SKIP) components
+				############################################
+				if fpga_inst.specs.carry_chain_type == "skip":
+					name = fpga_inst.carrychainand.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						quick_mode_dict[name] = 1
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainand.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+					# Size the transistors of this subcircuit
+					if quick_mode_dict[name] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainand, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+					if quick_mode_dict[name] == 1:
+						time_after_sizing = time.time()
+						
+						past_cost = current_cost
+						current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+						if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+							quick_mode_dict[name] = 0
+
+						print("Duration: " + str(time_after_sizing - time_before_sizing))
+						print("Current Cost: " + str(current_cost))
+
+						current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+					time_before_sizing = time.time()
+
+				if fpga_inst.specs.carry_chain_type == "skip":
+					name = fpga_inst.carrychainskipmux.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						quick_mode_dict[name] = 1
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainskipmux.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+					# Size the transistors of this subcircuit
+					if quick_mode_dict[name] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainskipmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 1)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+					if quick_mode_dict[name] == 1:
+						time_after_sizing = time.time()
+						
+						past_cost = current_cost
+						current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+						if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+							quick_mode_dict[name] = 0
+
+						print("Duration: " + str(time_after_sizing - time_before_sizing))
+						print("Current Cost: " + str(current_cost))
+
+						current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 1), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+					time_before_sizing = time.time()
+
+
+				############################################
+				## Size Carry Chain Additional Mux
+				############################################
+				name = fpga_inst.carrychainmux.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.carrychainmux.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.carrychainmux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 0, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+					
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 0), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 0, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+
+				time_before_sizing = time.time()
+
+
+
+
+			if fpga_inst.specs.enable_bram_block == 1:
+				############################################
+				## Size RAM output crossbar
+				############################################hsa
+
+				name = fpga_inst.RAM.pgateoutputcrossbar.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.pgateoutputcrossbar.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.pgateoutputcrossbar, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+				time_before_sizing = time.time()
+
+				############################################
+				## Size RAM wordline driver
+				############################################
+
+				name = fpga_inst.RAM.wordlinedriver.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.wordlinedriver.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+				# Size the transistors of this subcircuit
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.wordlinedriver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+				time_before_sizing = time.time()
+
+				#######################################################
+				## Size SRAM bitline precharge or MTJ bitline discharge
+				#######################################################
+				
+				if fpga_inst.RAM.memory_technology =="SRAM":
+
+					name = fpga_inst.RAM.precharge.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						quick_mode_dict[name] = 1
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.precharge.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+					# Size the transistors of this subcircuit
+					if quick_mode_dict[name] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.precharge, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+				else:
+
+					name = fpga_inst.RAM.bldischarging.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						quick_mode_dict[name] = 1
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.bldischarging.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+					# Size the transistors of this subcircuit
+					if quick_mode_dict[name] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.bldischarging, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+				time_before_sizing = time.time()
+
+				#######################################################
+				## Size Row decoder, starting from the last stage backwards
+				#######################################################
+
+				name = fpga_inst.RAM.rowdecoder_stage3.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict["rowdecoder"] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage3.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+				# Size the transistors of this subcircuit
+				if quick_mode_dict["rowdecoder"] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if fpga_inst.RAM.valid_row_dec_size3 == 1:
+					name = fpga_inst.RAM.rowdecoder_stage1_size3.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage1_size3.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+					# Size the transistors of this subcircuit
+					if quick_mode_dict["rowdecoder"] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				if fpga_inst.RAM.valid_row_dec_size2 == 1:
+					name = fpga_inst.RAM.rowdecoder_stage1_size2.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage1_size2.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+					
+					# Size the transistors of this subcircuit
+					if quick_mode_dict["rowdecoder"] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
+
+				name = fpga_inst.RAM.rowdecoder_stage0.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage0.initial_transistor_sizes)
 				else:
 					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict["rowdecoder"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size3, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage0, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
 
-			if fpga_inst.RAM.valid_row_dec_size2 == 1:
-				name = fpga_inst.RAM.rowdecoder_stage1_size2.name
+
+
+				if quick_mode_dict["rowdecoder"] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict["rowdecoder"] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+				time_before_sizing = time.time()
+
+				#######################################################
+				## Size Writedriver
+				#######################################################
+
+				# Write driver is no longer automatically sized since fixed values are provided by kosuke.
+				# it can however be sized with minor changes. (check the other files where write driver is defined)
+				#name = fpga_inst.RAM.writedriver.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				#if iteration == 1:
+					#starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.writedriver.initial_transistor_sizes)
+				#else:
+					#starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				#sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.writedriver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
+
+				############################################
+				## Size memory local mux
+				############################################
+
+				name = fpga_inst.RAM.RAM_local_mux.name
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage1_size2.initial_transistor_sizes)
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.RAM_local_mux.initial_transistor_sizes)
 				else:
 					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
 				
 				# Size the transistors of this subcircuit
-				if quick_mode_dict["rowdecoder"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage1_size2, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-				else:
-					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-			name = fpga_inst.RAM.rowdecoder_stage0.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.rowdecoder_stage0.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict["rowdecoder"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.rowdecoder_stage0, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name]   
-
-
-
-			if quick_mode_dict["rowdecoder"] == 1:
-				time_after_sizing = time.time()
-			
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict["rowdecoder"] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
-
-			time_before_sizing = time.time()
-
-			#######################################################
-			## Size Writedriver
-			#######################################################
-
-			# Write driver is no longer automatically sized since fixed values are provided by kosuke.
-			# it can however be sized with minor changes. (check the other files where write driver is defined)
-			#name = fpga_inst.RAM.writedriver.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			#if iteration == 1:
-				#starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.writedriver.initial_transistor_sizes)
-			#else:
-				#starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			#sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.writedriver, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface)
-
-			############################################
-			## Size memory local mux
-			############################################
-
-			name = fpga_inst.RAM.RAM_local_mux.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.RAM_local_mux.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.RAM_local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
-
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-			
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
-
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
-
-			time_before_sizing = time.time()
-
-			############################################
-			## Size configurable decoder elements backwards
-			############################################
-			
-			name = fpga_inst.RAM.configurabledecoderiii.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict["confdec"] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoderiii.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict["confdec"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderiii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
-
-
-			if fpga_inst.RAM.cvalidobj1 ==1:
-				name = fpga_inst.RAM.configurabledecoder3ii.name
-				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-				if iteration == 1:
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoder3ii.initial_transistor_sizes)
-				else:
-					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-				# Size the transistors of this subcircuit
-				if quick_mode_dict["confdec"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder3ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.RAM_local_mux, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
 
-			if fpga_inst.RAM.cvalidobj2 ==1:
-				name = fpga_inst.RAM.configurabledecoder2ii.name
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+				time_before_sizing = time.time()
+
+				############################################
+				## Size configurable decoder elements backwards
+				############################################
+				
+				name = fpga_inst.RAM.configurabledecoderiii.name
 				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
 				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
 				if iteration == 1:
-					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoder2ii.initial_transistor_sizes)
+					quick_mode_dict["confdec"] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoderiii.initial_transistor_sizes)
 				else:
 					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
+				
 				# Size the transistors of this subcircuit
 				if quick_mode_dict["confdec"] == 1:
-					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder2ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderiii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
 				else:
 					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
 					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
 
-			name = fpga_inst.RAM.configurabledecoderi.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoderi.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			# Size the transistors of this subcircuit
-			if quick_mode_dict["confdec"] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderi, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
 
-			if quick_mode_dict["confdec"] == 1:
-				time_after_sizing = time.time()
-			
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict["confdec"] = 0
+				if fpga_inst.RAM.cvalidobj1 ==1:
+					name = fpga_inst.RAM.configurabledecoder3ii.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoder3ii.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+					# Size the transistors of this subcircuit
+					if quick_mode_dict["confdec"] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder3ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
 
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
+				if fpga_inst.RAM.cvalidobj2 ==1:
+					name = fpga_inst.RAM.configurabledecoder2ii.name
+					# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+					# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+					if iteration == 1:
+						starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoder2ii.initial_transistor_sizes)
+					else:
+						starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+					# Size the transistors of this subcircuit
+					if quick_mode_dict["confdec"] == 1:
+						sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoder2ii, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+					else:
+						sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+						sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
 
-			time_before_sizing = time.time()
+				name = fpga_inst.RAM.configurabledecoderi.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.configurabledecoderi.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				# Size the transistors of this subcircuit
+				if quick_mode_dict["confdec"] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.configurabledecoderi, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
 
-			############################################
-			## Size column decoder
-			############################################
-			
-			name = fpga_inst.RAM.columndecoder.name
-			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
-			# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
-			if iteration == 1:
-				quick_mode_dict[name] = 1
-				starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.columndecoder.initial_transistor_sizes)
-			else:
-				starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
-			
-			if quick_mode_dict[name] == 1:
-				sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.columndecoder, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
-			else:
-				sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
-				sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
+				if quick_mode_dict["confdec"] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict["confdec"] = 0
 
-			if quick_mode_dict[name] == 1:
-				time_after_sizing = time.time()
-			
-				past_cost = current_cost
-				current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
-				if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
-					quick_mode_dict[name] = 0
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
 
-				print("Duration: " + str(time_after_sizing - time_before_sizing))
-				print("Current Cost: " + str(current_cost))
+				time_before_sizing = time.time()
 
-			time_before_sizing = time.time()
+				############################################
+				## Size column decoder
+				############################################
+				
+				name = fpga_inst.RAM.columndecoder.name
+				# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 
+				# If it's not the first iteration, we use the transistor sizes of the previous iteration as the starting sizes.
+				if iteration == 1:
+					quick_mode_dict[name] = 1
+					starting_transistor_sizes = format_transistor_sizes_to_basic_subciruits(fpga_inst.RAM.columndecoder.initial_transistor_sizes)
+				else:
+					starting_transistor_sizes = sizing_results_list[len(sizing_results_list)-1][name]
+				
+				if quick_mode_dict[name] == 1:
+					sizing_results_dict[name], sizing_results_detailed_dict[name] = size_subcircuit_transistors(fpga_inst, fpga_inst.RAM.columndecoder, opt_type, re_erf, area_opt_weight, delay_opt_weight, iteration, starting_transistor_sizes, spice_interface, 1, 0)
+				else:
+					sizing_results_dict[name]= sizing_results_list[len(sizing_results_list)-1][name]
+					sizing_results_detailed_dict[name] = sizing_results_detailed_list[len(sizing_results_list)-1][name] 
+
+				if quick_mode_dict[name] == 1:
+					time_after_sizing = time.time()
+				
+					past_cost = current_cost
+					current_cost =  cost_function(get_eval_area(fpga_inst, "global", fpga_inst.sb_mux, 1, 0), get_current_delay(fpga_inst, 1), area_opt_weight, delay_opt_weight)   
+					if (past_cost - current_cost)/past_cost < fpga_inst.specs.quick_mode_threshold:
+						quick_mode_dict[name] = 0
+
+					print("Duration: " + str(time_after_sizing - time_before_sizing))
+					print("Current Cost: " + str(current_cost))
+
+				time_before_sizing = time.time()
 
 			############################################
 			## Done sizing, update results lists

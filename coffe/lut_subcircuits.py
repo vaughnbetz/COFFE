@@ -587,7 +587,7 @@ def generate_tgate_lut5(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("* 5-LUT subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
 	# We use a 6-LUT interface even if this is a 5-LUT. We just won't connect anything to "n_f".
-	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
+	spice_file.write(".SUBCKT lut n_in n_out n_a n_a_n n_b n_b_n n_c n_c_n n_d n_d_n n_e n_e_n n_f n_f_n n_vdd n_gnd\n")
 	Wn = min_tran_width
 	Wp = 1.667*min_tran_width
 	if not use_finfet :
@@ -600,15 +600,15 @@ def generate_tgate_lut5(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
 	
 	spice_file.write("* First chain\n")
-	spice_file.write("Xtgate_lut_L1 n_2_2 n_3_1 n_a n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
+	spice_file.write("Xtgate_lut_L1 n_2_2 n_3_1 n_a n_a_n n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
 	spice_file.write("Xwire_lut_L1 n_3_1 n_3_2 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
 	spice_file.write("Xwire_lut_L1h n_3_2 n_3_3 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
 	spice_file.write("Xtgate_lut_L1h n_gnd n_3_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
-	spice_file.write("Xtgate_lut_L2 n_3_2 n_4_1 n_b n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L2_nmos Wp=tgate_lut_L2_pmos\n")
+	spice_file.write("Xtgate_lut_L2 n_3_2 n_4_1 n_b n_b_n n_vdd n_gnd tgate Wn=tgate_lut_L2_nmos Wp=tgate_lut_L2_pmos\n")
 	spice_file.write("Xwire_lut_L2 n_4_1 n_4_2 wire Rw='wire_lut_L2_res/2' Cw='wire_lut_L2_cap/2'\n")
 	spice_file.write("Xwire_lut_L2h n_4_2 n_4_3 wire Rw='wire_lut_L2_res/2' Cw='wire_lut_L2_cap/2'\n")
 	spice_file.write("Xtgate_lut_L2h n_gnd n_4_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L2_nmos Wp=tgate_lut_L2_pmos\n")
-	spice_file.write("Xtgate_lut_L3 n_4_2 n_5_1 n_c n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L3_nmos Wp=tgate_lut_L3_pmos\n")
+	spice_file.write("Xtgate_lut_L3 n_4_2 n_5_1 n_c n_c_n n_vdd n_gnd tgate Wn=tgate_lut_L3_nmos Wp=tgate_lut_L3_pmos\n")
 	spice_file.write("Xwire_lut_L3 n_5_1 n_5_2 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
 	spice_file.write("Xwire_lut_L3h n_5_2 n_5_3 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
 	spice_file.write("Xtgate_lut_L3h n_gnd n_5_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L3_nmos Wp=tgate_lut_L3_pmos\n\n")
@@ -621,11 +621,11 @@ def generate_tgate_lut5(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("Xwire_lut_int_buffer_out n_7_1 n_7_2 wire Rw=wire_lut_int_buffer_out_res Cw=wire_lut_int_buffer_out_cap\n\n")
 	
 	spice_file.write("* Second chain\n")
-	spice_file.write("Xtgate_lut_L4 n_7_2 n_8_1 n_d n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L4_nmos Wp=tgate_lut_L4_pmos\n")
+	spice_file.write("Xtgate_lut_L4 n_7_2 n_8_1 n_d n_d_n n_vdd n_gnd tgate Wn=tgate_lut_L4_nmos Wp=tgate_lut_L4_pmos\n")
 	spice_file.write("Xwire_lut_L4 n_8_1 n_8_2 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
 	spice_file.write("Xwire_lut_L4h n_8_2 n_8_3 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
 	spice_file.write("Xtgate_lut_L4h n_gnd n_8_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L4_nmos Wp=tgate_lut_L4_pmos\n")
-	spice_file.write("Xtgate_lut_L5 n_8_2 n_9_1 n_e n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L5_nmos Wp=tgate_lut_L5_pmos\n")
+	spice_file.write("Xtgate_lut_L5 n_8_2 n_9_1 n_e n_e_n n_vdd n_gnd tgate Wn=tgate_lut_L5_nmos Wp=tgate_lut_L5_pmos\n")
 	spice_file.write("Xwire_lut_L5 n_9_1 n_9_2 wire Rw='wire_lut_L5_res/2' Cw='wire_lut_L5_cap/2'\n")
 	spice_file.write("Xwire_lut_L5h n_9_2 n_9_3 wire Rw='wire_lut_L5_res/2' Cw='wire_lut_L5_cap/2'\n")
 	spice_file.write("Xtgate_lut_L5h n_gnd n_9_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L5_nmos Wp=tgate_lut_L5_pmos\n")
@@ -690,7 +690,7 @@ def generate_tgate_lut4(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("* 4-LUT subcircuit \n")
 	spice_file.write("******************************************************************************************\n")
 	# We use a 6-LUT interface even if this is a 4-LUT. We just won't connect anything to "n_e" and "n_f".
-	spice_file.write(".SUBCKT lut n_in n_out n_a n_b n_c n_d n_e n_f n_vdd n_gnd\n")
+	spice_file.write(".SUBCKT lut n_in n_out n_a n_a_n n_b n_b_n n_c n_c_n n_d n_d_n n_e n_e_n n_f n_f_n n_vdd n_gnd\n")
 	Wn = min_tran_width
 	Wp = 1.667*min_tran_width
 	if not use_finfet :
@@ -703,11 +703,11 @@ def generate_tgate_lut4(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("Xwire_lut_sram_driver_out n_2_1 n_2_2 wire Rw=wire_lut_sram_driver_out_res Cw=wire_lut_sram_driver_out_cap\n\n")
 	
 	spice_file.write("* First chain\n")
-	spice_file.write("Xtgate_lut_L1 n_2_2 n_3_1 n_a n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
+	spice_file.write("Xtgate_lut_L1 n_2_2 n_3_1 n_a n_a_n n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
 	spice_file.write("Xwire_lut_L1 n_3_1 n_3_2 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
 	spice_file.write("Xwire_lut_L1h n_3_2 n_3_3 wire Rw='wire_lut_L1_res/2' Cw='wire_lut_L1_cap/2'\n")
 	spice_file.write("Xtgate_lut_L1h n_gnd n_3_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L1_nmos Wp=tgate_lut_L1_pmos\n")
-	spice_file.write("Xtgate_lut_L2 n_3_2 n_4_1 n_b n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L2_nmos Wp=tgate_lut_L2_pmos\n")
+	spice_file.write("Xtgate_lut_L2 n_3_2 n_4_1 n_b n_b_n n_vdd n_gnd tgate Wn=tgate_lut_L2_nmos Wp=tgate_lut_L2_pmos\n")
 	spice_file.write("Xwire_lut_L2 n_4_1 n_4_2 wire Rw='wire_lut_L2_res/2' Cw='wire_lut_L2_cap/2'\n")
 	spice_file.write("Xwire_lut_L2h n_4_2 n_4_3 wire Rw='wire_lut_L2_res/2' Cw='wire_lut_L2_cap/2'\n")
 	spice_file.write("Xtgate_lut_L2h n_gnd n_4_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L2_nmos Wp=tgate_lut_L2_pmos\n\n")
@@ -720,11 +720,11 @@ def generate_tgate_lut4(spice_filename, min_tran_width, use_finfet):
 	spice_file.write("Xwire_lut_int_buffer_out n_6_1 n_6_2 wire Rw=wire_lut_int_buffer_out_res Cw=wire_lut_int_buffer_out_cap\n\n")
 	
 	spice_file.write("* Second chain\n")
-	spice_file.write("Xtgate_lut_L3 n_6_2 n_7_1 n_c n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L3_nmos Wp=tgate_lut_L3_pmos\n")
+	spice_file.write("Xtgate_lut_L3 n_6_2 n_7_1 n_c n_c_n n_vdd n_gnd tgate Wn=tgate_lut_L3_nmos Wp=tgate_lut_L3_pmos\n")
 	spice_file.write("Xwire_lut_L3 n_7_1 n_7_2 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
 	spice_file.write("Xwire_lut_L3h n_7_2 n_7_3 wire Rw='wire_lut_L3_res/2' Cw='wire_lut_L3_cap/2'\n")
 	spice_file.write("Xtgate_lut_L3h n_gnd n_7_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L3_nmos Wp=tgate_lut_L3_pmos\n")
-	spice_file.write("Xtgate_lut_L4 n_7_2 n_8_1 n_d n_gnd n_vdd n_gnd tgate Wn=tgate_lut_L4_nmos Wp=tgate_lut_L4_pmos\n")
+	spice_file.write("Xtgate_lut_L4 n_7_2 n_8_1 n_d n_d_n n_vdd n_gnd tgate Wn=tgate_lut_L4_nmos Wp=tgate_lut_L4_pmos\n")
 	spice_file.write("Xwire_lut_L4 n_8_1 n_8_2 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
 	spice_file.write("Xwire_lut_L4h n_8_2 n_8_3 wire Rw='wire_lut_L4_res/2' Cw='wire_lut_L4_cap/2'\n")
 	spice_file.write("Xtgate_lut_L4h n_gnd n_8_3 n_gnd n_vdd n_vdd n_gnd tgate Wn=tgate_lut_L4_nmos Wp=tgate_lut_L4_pmos\n\n")
@@ -921,7 +921,7 @@ def generate_tgate_lut_driver_load(spice_filename, lut_input_name, K, use_fluts)
 	for tgate in range(num_tgate_load):
 		tgate += 1
 		spice_file.write("Xwire_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_" + str(tgate) + " n_" + str(tgate+1) + " wire Rw='wire_lut_" + lut_input_name + "_driver_load_res/" + str(num_tgate_load) + "' Cw='wire_lut_" + lut_input_name + "_driver_load_cap/" + str(num_tgate_load) + "'\n")
-		if use_fluts and num_ptran_load == 1:
+		if use_fluts and num_tgate_load == 1:
 			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_flut_mux_nmos Wp=tgate_flut_mux_pmos\n") 
 		else:
 			spice_file.write("Xtgate_lut_" + lut_input_name + "_driver_load_" + str(tgate) + " n_gnd n_vdd n_gnd n_" + str(tgate+1) + " n_vdd n_gnd tgate Wn=tgate_lut_" + tgate_level + "_nmos Wp=tgate_lut_" + tgate_level + "_pmos\n") 

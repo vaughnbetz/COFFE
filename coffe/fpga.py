@@ -140,20 +140,22 @@ class _Specs:
 
 
         # Technology specs
-        self.vdd                    = arch_params_dict['vdd']
-        self.vsram                  = arch_params_dict['vsram']
-        self.vsram_n                = arch_params_dict['vsram_n']
-        self.gate_length            = arch_params_dict['gate_length']
-        self.min_tran_width         = arch_params_dict['min_tran_width']
-        self.min_width_tran_area    = arch_params_dict['min_width_tran_area']
-        self.sram_cell_area         = arch_params_dict['sram_cell_area']
-        self.trans_diffusion_length = arch_params_dict['trans_diffusion_length']
-        self.metal_stack            = arch_params_dict['metal']
-        self.model_path             = arch_params_dict['model_path']
-        self.model_library          = arch_params_dict['model_library']
-        self.rest_length_factor     = arch_params_dict['rest_length_factor']
-        self.use_tgate              = arch_params_dict['use_tgate']
-        self.use_finfet             = arch_params_dict['use_finfet']
+        self.vdd                      = arch_params_dict['vdd']
+        self.vsram                    = arch_params_dict['vsram']
+        self.vsram_n                  = arch_params_dict['vsram_n']
+        self.gate_length              = arch_params_dict['gate_length']
+        self.min_tran_width           = arch_params_dict['min_tran_width']
+        self.min_width_tran_area      = arch_params_dict['min_width_tran_area']
+        self.sram_cell_area           = arch_params_dict['sram_cell_area']
+        self.trans_diffusion_length   = arch_params_dict['trans_diffusion_length']
+        self.metal_stack              = arch_params_dict['metal']
+        self.model_path               = arch_params_dict['model_path']
+        self.model_library            = arch_params_dict['model_library']
+        self.rest_length_factor       = arch_params_dict['rest_length_factor']
+        self.use_tgate                = arch_params_dict['use_tgate']
+        self.use_finfet               = arch_params_dict['use_finfet']
+        self.gen_routing_metal_pitch  = arch_params_dict['gen_routing_metal_pitch']
+        self.gen_routing_metal_layers = arch_params_dict['gen_routing_metal_layers']
 
         
         
@@ -2923,21 +2925,21 @@ class _RoutingWireLoad:
                 wire_lengths["wire_sb_load_on"] = wire_lengths["wire_gen_routing"]/(2*self.wire_length)
                 wire_lengths["wire_sb_load_partial"] = wire_lengths["wire_gen_routing"]/(2*self.wire_length)
                 wire_lengths["wire_sb_load_off"] = wire_lengths["wire_gen_routing"]/(2*self.wire_length)			
+        
         # These are the pieces of wire that are required to connect routing wires to 
         # connection block multiplexer inputs. They span some fraction of a tile that is 
         # given my the input track-access span (track-access locality). 
-
         wire_lengths["wire_cb_load_on"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
         wire_lengths["wire_cb_load_partial"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
         wire_lengths["wire_cb_load_off"] = width_dict["tile"]*INPUT_TRACK_ACCESS_SPAN
         if height != 0 and num_cb_stripes == 1:
-            wire_lengths["wire_cb_load_on"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * 2
-            wire_lengths["wire_cb_load_partial"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * 2
-            wire_lengths["wire_cb_load_off"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * 2
+            wire_lengths["wire_cb_load_on"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * INPUT_TRACK_ACCESS_SPAN
+            wire_lengths["wire_cb_load_partial"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * INPUT_TRACK_ACCESS_SPAN
+            wire_lengths["wire_cb_load_off"] = (wire_lengths["wire_gen_routing"]/self.wire_length) * INPUT_TRACK_ACCESS_SPAN
         elif height != 0 :
-            wire_lengths["wire_cb_load_on"] = (wire_lengths["wire_gen_routing"]/self.wire_length)
-            wire_lengths["wire_cb_load_partial"] = (wire_lengths["wire_gen_routing"]/self.wire_length)
-            wire_lengths["wire_cb_load_off"] = (wire_lengths["wire_gen_routing"]/self.wire_length)
+            wire_lengths["wire_cb_load_on"] = (wire_lengths["wire_gen_routing"]/(2*self.wire_length)) * INPUT_TRACK_ACCESS_SPAN
+            wire_lengths["wire_cb_load_partial"] = (wire_lengths["wire_gen_routing"]/(2*self.wire_length)) * INPUT_TRACK_ACCESS_SPAN
+            wire_lengths["wire_cb_load_off"] = (wire_lengths["wire_gen_routing"]/(2*self.wire_length)) * INPUT_TRACK_ACCESS_SPAN
 			
        # Update wire layers
         wire_layers["wire_gen_routing"] = 1 
@@ -5168,7 +5170,7 @@ class _hard_block(_CompoundCircuit):
 
         return init_tran_sizes
 
-    def generate_top(self):
+    def generate_top(self, size_hb_interfaces):
 
         print("Generating top-level submodules")
 
@@ -5177,14 +5179,20 @@ class _hard_block(_CompoundCircuit):
             self.dedicated.generate_top()
 
         # hard block flow
-        self.flow_results = hardblock_functions.hardblock_flow(self.parameters)
-        #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
-        self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
+        if size_hb_interfaces == 0.0:
+            self.flow_results = hardblock_functions.hardblock_flow(self.parameters)
+            #the area returned by the hardblock flow is in um^2. In area_dict, all areas are in nm^2 
+            self.area = self.flow_results[0] * self.parameters['area_scale_factor'] * (1e+6) 
 
-        self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+            self.mux.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
 		
-        if self.parameters['num_dedicated_outputs'] > 0:
-            self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+            if self.parameters['num_dedicated_outputs'] > 0:
+                self.dedicated.lowerbounddelay = self.flow_results[1] * (1.0/self.parameters['freq_scale_factor']) * 1e-9
+        else:
+            self.area = 0.0
+            self.mux.lowerbounddelay = size_hb_interfaces  * 1e-9
+            if self.parameters['num_dedicated_outputs'] > 0:
+                self.dedicated.lowerbounddelay = size_hb_interfaces  * 1e-9
 
     def generate_hb_scripts(self):
         print("Generating hardblock tcl scripts for Synthesis, Place and Route, and Static Timing Analysis")
@@ -5483,7 +5491,7 @@ class FPGA:
 
         
 
-    def generate(self, is_size_transistors):
+    def generate(self, is_size_transistors, size_hb_interfaces):
         """ This function generates all SPICE netlists and library files. """
     
         # Here's a file-stack that shows how COFFE organizes its SPICE files.
@@ -5576,7 +5584,7 @@ class FPGA:
             self.RAM.generate_top()
 
         for hardblock in self.hardblocklist:
-            hardblock.generate_top()
+            hardblock.generate_top(size_hb_interfaces)
 
         # Calculate area, and wire data.
         print("Calculating area...")
@@ -7238,12 +7246,16 @@ class FPGA:
         if "inv_" in tran_name or "tgate_" in tran_name:
             if not self.specs.use_finfet :
                 area = 0.518 + 0.127*tran_size + 0.428*math.sqrt(tran_size)
+            elif (self.specs.min_tran_width == 7):
+                area = 0.3694 + 0.0978*tran_size + 0.5368*math.sqrt(tran_size)
             else :
                 area = 0.034 + 0.414*tran_size + 0.735*math.sqrt(tran_size)
 
         else:
             if not self.specs.use_finfet :
                 area = 0.447 + 0.128*tran_size + 0.391*math.sqrt(tran_size)
+            elif (self.specs.min_tran_width == 7):
+                area = 0.3694 + 0.0978*tran_size + 0.5368*math.sqrt(tran_size)
             else :
                 area = -0.013 + 0.414*tran_size + 0.665*math.sqrt(tran_size)
     

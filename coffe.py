@@ -61,6 +61,7 @@ parser.add_argument('-m', '--re_erf', type=int, default=1, help="choose how many
 parser.add_argument('-a', '--area_opt_weight', type=int, default=1, help="area optimization weight")
 parser.add_argument('-d', '--delay_opt_weight', type=int, default=1, help="delay optimization weight")
 parser.add_argument('-i', '--max_iterations', type=int, default=6, help="max FPGA sizing iterations")
+parser.add_argument('-hi', '--size_hb_interfaces', type=float, help="perform transistor sizing only for hard block interfaces", default=0.0)
 #arguments for ASIC flow 
 parser.add_argument('-ho',"--hardblock_only",help="run only a single hardblock through the asic flow", action='store_true',default=False)
 parser.add_argument('-g',"--gen_hb_scripts",help="generates all hardblock scripts which can be run by a user",action='store_true',default=False)
@@ -93,6 +94,7 @@ if(args.hardblock_only):
       hard_block.generate_top()
 else:
   is_size_transistors = not args.no_sizing
+  size_hb_interfaces = args.size_hb_interfaces
 
   # Print the options to both terminal and report file
   report_file_path = os.path.join(arch_folder, "report.txt") 
@@ -122,7 +124,7 @@ else:
   os.chdir(arch_folder)  
 
   # Generate FPGA and associated SPICE files
-  fpga_inst.generate(is_size_transistors) 
+  fpga_inst.generate(is_size_transistors, size_hb_interfaces) 
 
   # Go back to the base directory
   os.chdir(default_dir)

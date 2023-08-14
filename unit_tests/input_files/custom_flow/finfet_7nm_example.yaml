@@ -24,7 +24,7 @@ fpga_arch_params:
   Fcin : 0.2
   Fcout : 0.025
 
-  arch_out_folder : ~/COFFE/output_files/finfet_7nm_trans/arch_out_dir
+  arch_out_folder : ~/fpt/COFFE/output_files/finfet_d2_m8_L4_new_7nm_pt_rest_len_10_flut_cc_gnlwires_less_cb_span_100mvboost_sram6/arch_out_dir
 
   # The following architecture parameters are new and help COFFE describe
   # a more flexible BLE. See [1] for more details.
@@ -33,7 +33,7 @@ fpga_arch_params:
   Or : 2
 
   # Number of BLE outputs to local routing
-  Ofb : 1
+  Ofb : 2
 
   # Population of local routing MUXes 
   Fclocal : 0.5
@@ -55,6 +55,16 @@ fpga_arch_params:
   # Rfb : z tells COFFE that no LUT input should have register feedback muxes.
   Rfb : c
 
+  # Do we want to use fracturable Luts?
+  use_fluts : True
+  # can be as large as K-1
+  independent_inputs  :  0
+
+  enable_carry_chain  :  1
+  #the carry chain type could be "skip" or "ripple"
+  carry_chain_type  :  skip
+  FAs_per_flut  :  2
+
   #######################################
   ##### Process Technology Parameters
   #######################################
@@ -64,42 +74,41 @@ fpga_arch_params:
   transistor_type : finfet
 
   # The switch type can be 'pass_transistor' or 'transmission_gate'.
-  switch_type : transmission_gate
+  switch_type : pass_transistor
 
   # Supply voltage
   vdd : 0.7
 
   # SRAM Vdd
-  vsram : 0.9
+  vsram : 0.8
 
   # SRAM Vss
   vsram_n : 0.0
 
   # Gate length (nm)
-  # ASAP7 in virtuoso only allowed 20nm length
   gate_length : 20
 
   # This parameter controls the gate length of PMOS level-restorers. For example, setting this paramater 
   # to 4 sets the gate length to 4x the value of 'gate_legnth'. Increasing the gate length weakens the 
   # PMOS level-restorer, which is sometimes necessary to ensure proper switching.
-  rest_length_factor  :  4
+  rest_length_factor  :  10
 
   # For FinFETs, minimum transistor refers to the contact width of a single-fin transistor (nm). 
   # COFFE uses this when it calculates source/drain parasitic capacitances.
-  # ASAP7 has 27nm minimum 
-  min_tran_width  :  27
+  # ASAP7 has 7nm minimum 
+  min_tran_width  :  7
 
   # Length of diffusion for a single-finger transistor (nm).
   # COFFE uses this when it calculates source/drain parasitic capacitances.
-  trans_diffusion_length  :  27
+  trans_diffusion_length  :  25
 
   # Minimum-width transistor area (nm^2)
   # Look in design rules, make me 1 fin, shortest gate, contact on both sides, no diffusion sharing, 1 space between next transistor
   # Layout a single transistor pass DRC, look for sample layout
-  min_width_tran_area  :  2165
+  min_width_tran_area  :  13122
 
   # SRAM area (in number of minimum width transistor areas)
-  sram_cell_area  :  4
+  sram_cell_area  :  6
 
   # Path to SPICE device models file and library to use
   model_path : spice_models/7nm_TT_160803.l
@@ -121,12 +130,17 @@ fpga_arch_params:
   # Mx and My for F7 node in https://dl.acm.org/doi/pdf/10.1145/3431920.3439300
 
   metal : 
-  # Mx
   # All wires except the general routing wires are implemented in this layer.
-   - [0.1287,0.00022]
-  # My
+  # Mx
+  # - [0.1287,0.00022]
+  # ASAP 7 M1-M3
+  - [0.1312, 0.00023]
+  
   # General routing wires will be implemented in this layer 
-   - [0.0216,0.00024]
+  # My
+  # - [0.0216,0.00024]
+  # ASAP 7 Avg of M4-M5 & M6-M7 (Intermediate layers)
+  - [0.0153, 0.00023]
 
   # If you wanted to, you could define more metal layers by adding more 'metal'
   # statements but, by default, COFFE would not use them because it only uses 2 layers.
@@ -134,3 +148,5 @@ fpga_arch_params:
   # you to investigate the use of more than 2 metal layers if you wanted to. However,
   # making use of more metal layers would require changes to the COFFE source code.
 
+  gen_routing_metal_pitch : 80
+  gen_routing_metal_layers : 1

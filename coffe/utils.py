@@ -316,6 +316,35 @@ def print_block_area(report_file, fpga_inst):
         sb = fpga_inst.area_dict["sb_total"]/1000000
         sanity_check = lut+ff+ble_output+local_mux+cb+sb
 
+
+        empty_area = 0.0
+        metal_pitch = fpga_inst.specs.gen_routing_metal_pitch
+        metal_layers = fpga_inst.specs.gen_routing_metal_layers
+        print_and_write(report_file, "  General routing metal pitch  = " + str(metal_pitch) + " nm")
+        print_and_write(report_file, "  General routing metal layers  = " + str(metal_layers))
+        if (metal_pitch > 0) and (metal_layers > 0):
+            num_tracks = int(fpga_inst.specs.W/metal_layers) + 1
+            metal_dim = num_tracks * metal_pitch
+            tile_width = fpga_inst.width_dict["tile"]
+            tile_height = fpga_inst.lb_height
+            print_and_write(report_file, "  Tile width  = " + str(round(tile_width,3)) + " nm")
+            print_and_write(report_file, "  Tile height = " + str(round(tile_height,3)) + " nm")
+            print_and_write(report_file, "  Width/Height needed by general routing metal = " + str(metal_dim) + " nm")
+            if (tile_width < metal_dim) or (tile_height < metal_dim):
+                print_and_write(report_file, "  Tile area is LIMITED by metal!")
+                print_and_write(report_file, "  Tile area (Active) = " + str(round(tile,3)) + " um^2")
+                tile_width = max(tile_width, metal_dim)
+                tile_height = max(tile_height, metal_dim)
+                empty_area = (tile_width * tile_height / 1000000) - tile
+                tile = tile_width * tile_height / 1000000
+                print_and_write(report_file, "  Tile area (Metal) = " + str(round(tile,3)) + " um^2")
+                fpga_inst.area_dict["tile"] = tile_width * tile_height
+            else:
+                print_and_write(report_file, "  Tile area is NOT limited by metal!")
+        print_and_write(report_file, "  ")
+
+
+
         if fpga_inst.specs.enable_bram_block == 1:
             ram = fpga_inst.area_dict["ram"]/1000000
             decod = fpga_inst.area_dict["decoder_total"]/1000000
@@ -366,6 +395,7 @@ def print_block_area(report_file, fpga_inst):
         print_and_write(report_file, "  Local mux".ljust(20) + str(round(local_mux,3)).ljust(20) + str(round(local_mux/tile*100,3)) + "%")
         print_and_write(report_file, "  Connection block".ljust(20) + str(round(cb,3)).ljust(20) + str(round(cb/tile*100,3)) + "%")
         print_and_write(report_file, "  Switch block".ljust(20) + str(round(sb,3)).ljust(20) + str(round(sb/tile*100,3)) + "%")
+        print_and_write(report_file, "  Non-active".ljust(20) + str(round(empty_area,3)).ljust(20) + str(round(empty_area/tile*100,3)) + "%")
         print_and_write(report_file, "")
         if fpga_inst.specs.enable_bram_block == 1:
             print_and_write(report_file, "  RAM AREA CONTRIBUTIONS")
@@ -586,6 +616,8 @@ def load_params(filename,run_options):
         'carry_chain_type': "ripple",
         'FAs_per_flut':2,
         'arch_out_folder': "None",
+        'gen_routing_metal_pitch': 0.0,
+        'gen_routing_metal_layers': 0,
     }
     
     #top level param types
@@ -745,6 +777,10 @@ def load_params(filename,run_options):
             param_dict["fpga_arch_params"]['model_library'] = str(value)
         elif param == 'arch_out_folder':
             param_dict["fpga_arch_params"]['arch_out_folder'] = str(value)
+        elif param == 'gen_routing_metal_pitch':
+            param_dict["fpga_arch_params"]['gen_routing_metal_pitch'] = float(value)
+        elif param == 'gen_routing_metal_layers':
+            param_dict["fpga_arch_params"]['gen_routing_metal_layers'] = int(value)
     
     # Check architecture parameters to make sure that they are valid
     check_arch_params(param_dict["fpga_arch_params"], filename)
@@ -969,6 +1005,8 @@ def load_arch_params(filename):
         'FAs_per_flut':2,
         'hb_files' : [],
         'arch_out_folder': "None",
+        'gen_routing_metal_pitch': 0.0,
+        'gen_routing_metal_layers': 0,
         # 'coffe_design_out_folder' : "",
         # 'coffe_repo_path' : "~/COFFE"
     }
@@ -1120,6 +1158,10 @@ def load_arch_params(filename):
             arch_params['hb_files'].append(value)
         elif param == 'arch_out_folder':
             arch_params['arch_out_folder'] = value
+        elif param == 'gen_routing_metal_pitch':
+            arch_params['gen_routing_metal_pitch'] = float(value)
+        elif param == 'gen_routing_metal_layers':
+            arch_params['gen_routing_metal_layers'] = int(value)
         # elif param == 'coffe_design_out_folder':
             # arch_params['coffe_design_out_folder'] = os.path.expanduser(str(value))
         # elif param == 'coffe_repo_path':
@@ -1793,8 +1835,8 @@ def check_arch_params (arch_params, filename):
         print_error (str(arch_params['trans_diffusion_length']), "trans_diffusion_length", filename)  
     if arch_params['enable_bram_module'] == 1 and arch_params['use_finfet'] == True:
         print_error_not_compatable("finfet", "BRAM")           
-    if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
-        print_error_not_compatable("finfet", "flut")      
+    # if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
+    #    print_error_not_compatable("finfet", "flut")      
     # if arch_params['coffe_repo_path'].split("/")[-1] != "COFFE" or os.path.isdir(arch_params['coffe_repo_path']):
     #     print_error (arch_params['coffe_repo_path'],"coffe_repo_path",filename)
 
@@ -2019,7 +2061,6 @@ def create_output_dir(arch_file_name, arch_out_folder):
                 shutil.rmtree(arch_folder + "/" + content)
 
     return arch_folder  
-
 
 def print_summary(arch_folder, fpga_inst, start_time):
 
