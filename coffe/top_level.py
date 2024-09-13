@@ -982,7 +982,7 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the SRAM-based memory
+    # ram_frequency is the operating *period* of the SRAM-based memory
     # precharge_max is the maximum of precharge delay, rowdecoder delay and configurable decoder delay
     # wl_eva is the sum of worldline delay and evaluation time + precharge_max
     # sa_xbar_ff is the sum of sense amp, output crossbar and flip flop delays + wl_eva
@@ -1004,6 +1004,7 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
+    # Simulate for 4 times the ram clock period; the pulse statements below repeat the waveform 4x
     the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
