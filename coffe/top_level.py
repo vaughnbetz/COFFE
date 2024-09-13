@@ -258,6 +258,7 @@ def generate_sram_read_power_top(name, sram_per_column, unselected_column_count)
     the_file.write("** Measurement\n")
     the_file.write("********************************************************************************\n\n")
 
+    # The measurement lasted for four times, so when calculating the average power consumption, it needs to be divided by four times the period.
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
     the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM=0ns TO='4 * ram_period'\n")
     the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v'\n\n")
@@ -1020,6 +1021,7 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
     the_file.write("** Measurement\n")
     the_file.write("********************************************************************************\n\n")
 
+    # The measurement lasted for four times, so when calculating the average power consumption, it needs to be divided by four times the period.
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
     the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM=0ns TO='4 * ram_period'\n")
     the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v_lp'\n\n")
