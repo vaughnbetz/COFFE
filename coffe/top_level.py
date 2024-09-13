@@ -1005,6 +1005,8 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
+
+    # Simulate for 4 times the ram clock period; the pulse statements below repeat the waveform 4x
     the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
