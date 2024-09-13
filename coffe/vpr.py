@@ -49,7 +49,7 @@ def print_vpr_file_memory(vpr_file, fpga_inst):
 	memory_max_width =  2 ** fpga_inst.RAM.conf_decoder_bits
 	memory_address_bits = fpga_inst.specs.row_decoder_bits + fpga_inst.specs.col_decoder_bits + fpga_inst.specs.conf_decoder_bits
 	memory_max_depth = 2 ** (fpga_inst.specs.row_decoder_bits + fpga_inst.specs.col_decoder_bits + fpga_inst.specs.conf_decoder_bits)
-	memory_clktoq = fpga_inst.RAM.frequency
+	memory_clktoq = fpga_inst.RAM.period
 	memory_setup_time = fpga_inst.RAM.RAM_local_mux.delay + 52.3e-12
 	memory_input_mux_size = 25
 	# Todo: I can add output mux size and create a crossbar at the output. Not sure if it will actually help. 

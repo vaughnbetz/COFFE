@@ -218,7 +218,7 @@ def generate_sram_read_power_top(name, sram_per_column, unselected_column_count)
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the SRAM-based memory
+    # ram_period is the operating period of the SRAM-based memory
     # precharge_max is the maximum of precharge delay, rowdecoder delay and configurable decoder delay
     # wl_eva is the sum of worldline delay and evaluation time + precharge_max
     # sa_xbar_ff is the sum of sense amp, output crossbar and flip flop delays + wl_eva
@@ -242,12 +242,12 @@ def generate_sram_read_power_top(name, sram_per_column, unselected_column_count)
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vprecharge2 n_precharge2 gnd PULSE (supply_v 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vwl n_wl_eva gnd PULSE (supply_v 0 0 50p 50p 'wl_eva' 'ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vprecharge2 n_precharge2 gnd PULSE (supply_v 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vwl n_wl_eva gnd PULSE (supply_v 0 0 50p 50p 'wl_eva' 'ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -259,10 +259,10 @@ def generate_sram_read_power_top(name, sram_per_column, unselected_column_count)
     the_file.write("********************************************************************************\n\n")
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM=0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_frequency)) * supply_v'\n\n")
-    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM=0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_frequency)) * supply_v'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM=0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM=0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_period)) * supply_v'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")
@@ -342,7 +342,7 @@ def generate_sram_writelh_power_top_lp(name, sram_per_column, unselected_column_
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the SRAM-based memory
+    # ram_period is the operating period of the SRAM-based memory
     # precharge_max is the maximum of precharge delay, rowdecoder delay and configurable decoder delay
     # wl_eva is the sum of worldline delay and evaluation time + precharge_max
     # sa_xbar_ff is the sum of sense amp, output crossbar and flip flop delays + wl_eva
@@ -364,11 +364,11 @@ def generate_sram_writelh_power_top_lp(name, sram_per_column, unselected_column_
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vdatain n_data_in gnd PULSE (supply_v_lp 0 0 0 0 'ram_frequency' ' 2 * ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vdatain n_data_in gnd PULSE (supply_v_lp 0 0 0 0 'ram_period' ' 2 * ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -380,10 +380,10 @@ def generate_sram_writelh_power_top_lp(name, sram_per_column, unselected_column_
     the_file.write("********************************************************************************\n\n")
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_frequency)) * supply_v_lp'\n\n")
-    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_period)) * supply_v_lp'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")
@@ -461,7 +461,7 @@ def generate_mtj_read_power_top_lp(name, mtj_per_column):
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the MTJ-based memory
+    # ram_period is the operating period of the MTJ-based memory
     # precharge_max is the maximum of bitline discharge delay, rowdecoder delay and configurable decoder delay
     # sa_se1 is the signal that control the first sense enable signal in MTJ-based sense amp
     # sa_se2 is the signal that control the second sense enable signal in MTJ-based sense amp
@@ -485,13 +485,13 @@ def generate_mtj_read_power_top_lp(name, mtj_per_column):
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vprechargeb n_precharge_b gnd PULSE (0 supply_v_lp 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vse1 n_se1 gnd PULSE (supply_v_lp 0 0 50p 50p 'sa_se1' 'ram_frequency')\n")
-    the_file.write("Vse2 n_se2 gnd PULSE (supply_v_lp 0 0 50p 50p 'sa_se2' 'ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vprechargeb n_precharge_b gnd PULSE (0 supply_v_lp 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vse1 n_se1 gnd PULSE (supply_v_lp 0 0 50p 50p 'sa_se1' 'ram_period')\n")
+    the_file.write("Vse2 n_se2 gnd PULSE (supply_v_lp 0 0 50p 50p 'sa_se2' 'ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure powersna of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -505,11 +505,11 @@ def generate_mtj_read_power_top_lp(name, mtj_per_column):
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
 
-    the_file.write(".MEASURE TRAN meas_current_readl INTEGRAL I(V_readl) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_readl PARAM = '-(meas_current_readl/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_readl INTEGRAL I(V_readl) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_readl PARAM = '-(meas_current_readl/(4 * ram_period)) * supply_v_lp'\n\n")
 
-    the_file.write(".MEASURE TRAN meas_current_readh INTEGRAL I(V_readh) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_readh PARAM = '-(meas_current_readh/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_readh INTEGRAL I(V_readh) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_readh PARAM = '-(meas_current_readh/(4 * ram_period)) * supply_v_lp'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")
@@ -618,7 +618,7 @@ def generate_mtj_write_power_top_lp(name, mtj_per_column):
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the MTJ-based memory
+    # ram_period is the operating period of the MTJ-based memory
     # precharge_max is the maximum of bitline discharge delay, rowdecoder delay and configurable decoder delay
 
     # duplicate the precharge?
@@ -641,12 +641,12 @@ def generate_mtj_write_power_top_lp(name, mtj_per_column):
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vprechargeb n_precharge_b gnd PULSE (0 supply_v_lp 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vdatain n_data_in gnd PULSE (supply_v_lp 0 0 0 0 'ram_frequency' ' 2 * ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vprechargeb n_precharge_b gnd PULSE (0 supply_v_lp 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vdatain n_data_in gnd PULSE (supply_v_lp 0 0 0 0 'ram_period' ' 2 * ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure powersna of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -661,17 +661,17 @@ def generate_mtj_write_power_top_lp(name, mtj_per_column):
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
 
-    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v_lp'\n\n")
 
-    the_file.write(".MEASURE TRAN meas_current_selectedn INTEGRAL I(V_negl) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selectedn PARAM = '-(meas_current_selectedn/(4 * ram_frequency)) * 0.27'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selectedn INTEGRAL I(V_negl) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selectedn PARAM = '-(meas_current_selectedn/(4 * ram_period)) * 0.27'\n\n")
 
-    the_file.write(".MEASURE TRAN meas_current_selectedh INTEGRAL I(V_selectedh) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selectedh PARAM = '-(meas_current_selectedh/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selectedh INTEGRAL I(V_selectedh) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selectedh PARAM = '-(meas_current_selectedh/(4 * ram_period)) * supply_v_lp'\n\n")
 
-    the_file.write(".MEASURE TRAN meas_current_selectedhn INTEGRAL I(V_negh) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selectedhn PARAM = '-(meas_current_selectedhn/(4 * ram_frequency)) * 0.27'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selectedhn INTEGRAL I(V_negh) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selectedhn PARAM = '-(meas_current_selectedhn/(4 * ram_period)) * 0.27'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")
@@ -746,7 +746,7 @@ def generate_sram_writehh_power_top_lp(name, sram_per_column, unselected_column_
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the SRAM-based memory
+    # ram_period is the operating period of the SRAM-based memory
     # precharge_max is the maximum of precharge delay, rowdecoder delay and configurable decoder delay
     # wl_eva is the sum of worldline delay and evaluation time + precharge_max
     # sa_xbar_ff is the sum of sense amp, output crossbar and flip flop delays + wl_eva
@@ -768,10 +768,10 @@ def generate_sram_writehh_power_top_lp(name, sram_per_column, unselected_column_
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -783,10 +783,10 @@ def generate_sram_writehh_power_top_lp(name, sram_per_column, unselected_column_
     the_file.write("********************************************************************************\n\n")
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_frequency)) * supply_v_lp'\n\n")
-    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_period)) * supply_v_lp'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")
@@ -863,7 +863,7 @@ def generate_sram_writep_power_top_lp(name, sram_per_column, unselected_column_c
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the SRAM-based memory
+    # ram_period is the operating period of the SRAM-based memory
     # precharge_max is the maximum of precharge delay, rowdecoder delay and configurable decoder delay
     # wl_eva is the sum of worldline delay and evaluation time + precharge_max
     # sa_xbar_ff is the sum of sense amp, output crossbar and flip flop delays + wl_eva
@@ -885,11 +885,11 @@ def generate_sram_writep_power_top_lp(name, sram_per_column, unselected_column_c
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vdatain n_data_in gnd PULSE (supply_v_lp 0 0 0 0 'ram_frequency' ' 2 * ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vdatain n_data_in gnd PULSE (supply_v_lp 0 0 0 0 'ram_period' ' 2 * ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -901,10 +901,10 @@ def generate_sram_writep_power_top_lp(name, sram_per_column, unselected_column_c
     the_file.write("********************************************************************************\n\n")
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_frequency)) * supply_v_lp'\n\n")
-    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM= 0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM= 0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_period)) * supply_v_lp'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")
@@ -982,7 +982,7 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
 
     # Create and open file
     # The following are important parameter definitions
-    # ram_frequency is the operating frequency of the SRAM-based memory
+    # ram_period is the operating period of the SRAM-based memory
     # precharge_max is the maximum of precharge delay, rowdecoder delay and configurable decoder delay
     # wl_eva is the sum of worldline delay and evaluation time + precharge_max
     # sa_xbar_ff is the sum of sense amp, output crossbar and flip flop delays + wl_eva
@@ -1004,12 +1004,12 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
     the_file.write("********************************************************************************\n")
     the_file.write("** Setup and input\n")
     the_file.write("********************************************************************************\n\n")
-    the_file.write(".TRAN 1p '4 * ram_frequency' SWEEP DATA=sweep_data\n")
+    the_file.write(".TRAN 1p '4 * ram_period' SWEEP DATA=sweep_data\n")
     the_file.write(".OPTIONS BRIEF=1\n\n")
     the_file.write("* Input signal\n")
-    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vprecharge2 n_precharge2 gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_frequency')\n")
-    the_file.write("Vwl n_wl_eva gnd PULSE (supply_v_lp 0 0 50p 50p 'wl_eva' 'ram_frequency')\n")
+    the_file.write("Vprecharge n_precharge gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vprecharge2 n_precharge2 gnd PULSE (supply_v_lp 0 0 50p 50p 'precharge_max' 'ram_period')\n")
+    the_file.write("Vwl n_wl_eva gnd PULSE (supply_v_lp 0 0 50p 50p 'wl_eva' 'ram_period')\n")
 
     the_file.write("* Power rail for the circuit under test.\n")
     the_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
@@ -1021,10 +1021,10 @@ def generate_sram_read_power_top_lp(name, sram_per_column, unselected_column_cou
     the_file.write("********************************************************************************\n\n")
 
     the_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
-    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM=0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_frequency)) * supply_v_lp'\n\n")
-    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM=0ns TO='4 * ram_frequency'\n")
-    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_frequency)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_selected INTEGRAL I(V_selected) FROM=0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_selected PARAM = '-(meas_current_selected/(4 * ram_period)) * supply_v_lp'\n\n")
+    the_file.write(".MEASURE TRAN meas_current_unselected INTEGRAL I(V_unselected) FROM=0ns TO='4 * ram_period'\n")
+    the_file.write(".MEASURE TRAN meas_avg_power_unselected PARAM = '-(meas_current_unselected/(4 * ram_period)) * supply_v_lp'\n\n")
 
     the_file.write("********************************************************************************\n")
     the_file.write("** Circuit\n")

@@ -4424,7 +4424,7 @@ class _RAM(_CompoundCircuit):
         self.T1 = 0.0
         self.T2 = 0.0
         self.T3 = 0.0
-        self.frequency = 0.0
+        self.period = 0.0
 
         # Energy components
         self.read_to_write_ratio = read_to_write_ratio
@@ -4761,11 +4761,11 @@ class _RAM(_CompoundCircuit):
 
         process_data_file.write("* Misc parameters\n")
 
-        process_data_file.write(".PARAM ram_frequency = " + str(self.frequency) + "\n")
+        process_data_file.write(".PARAM ram_period = " + str(self.period) + "\n")
         process_data_file.write(".PARAM precharge_max = " + str(self.T1) + "\n")
         if self.cspecs.memory_technology == "SRAM":
             process_data_file.write(".PARAM wl_eva = " + str(self.T1 + self.T2) + "\n")
-            process_data_file.write(".PARAM sa_xbar_ff = " + str(self.frequency) + "\n")
+            process_data_file.write(".PARAM sa_xbar_ff = " + str(self.period) + "\n")
         elif self.cspecs.memory_technology == "MTJ":
             process_data_file.write(".PARAM target_bl = " + str(self.target_bl) + "\n")
             process_data_file.write(".PARAM time_bl = " + str(self.blcharging.delay) + "\n")
@@ -7055,8 +7055,8 @@ class FPGA:
         if self.RAM.memory_technology == "SRAM":
             self.RAM.T1 = max(self.RAM.estimated_rowdecoder_delay, configurable_decoder_delay, self.RAM.precharge.delay)
             self.RAM.T2 = self.RAM.wordlinedriver.delay + self.RAM.samp.delay + self.RAM.samp_part2.delay  
-            self.RAM.frequency = max(self.RAM.T1 + self.RAM.T2 , configurable_decoder_delay + configurable_decoder_drive)
-            self.RAM.frequency += self.RAM.pgateoutputcrossbar.delay + 2e-11
+            self.RAM.period = max(self.RAM.T1 + self.RAM.T2 , configurable_decoder_delay + configurable_decoder_drive)
+            self.RAM.period += self.RAM.pgateoutputcrossbar.delay + 2e-11
 
         # -----------------------------------------------
         # For MTJ
@@ -7087,7 +7087,7 @@ class FPGA:
             self.RAM.T1 = max(self.RAM.estimated_rowdecoder_delay, configurable_decoder_delay, self.RAM.bldischarging.delay)
             self.RAM.T2 = self.RAM.T1 +  max(self.RAM.wordlinedriver.delay , configurable_decoder_drive) + self.RAM.blcharging.delay
             self.RAM.T3 = self.RAM.T2 + self.RAM.mtjsamp.delay
-            self.RAM.frequency = self.RAM.T2 - self.RAM.blcharging.delay + 3e-9
+            self.RAM.period = self.RAM.T2 - self.RAM.blcharging.delay + 3e-9
 
         self.RAM._update_process_data()
 
@@ -7109,7 +7109,7 @@ class FPGA:
             # can be used to help with debugging:
             #print "T1: " +str(self.RAM.T1)
             #print "T2: " + str(self.RAM.T2)
-            #print "freq " + str(self.RAM.frequency)
+            #print "freq " + str(self.RAM.period)
             #print "selected " + str(self.RAM.power_sram_read.power_selected)
             #print "unselected " + str(self.RAM.power_sram_read.power_unselected)
 
@@ -7118,13 +7118,13 @@ class FPGA:
             #print "selected_writep " + str(self.RAM.power_sram_writep.power_selected_writep)
 
             #print "power per bit read SRAM: " + str(self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected)
-            #print "Energy " + str((self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected) * self.RAM.frequency)
-            #print "Energy Writelh " + str(self.RAM.power_sram_writelh.power_selected_writelh * self.RAM.frequency)
-            #print "Energy Writehh " + str(self.RAM.power_sram_writehh.power_selected_writehh * self.RAM.frequency)
-            print("Energy Writep " + str(self.RAM.power_sram_writep.power_selected_writep * self.RAM.frequency))
+            #print "Energy " + str((self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected) * self.RAM.period)
+            #print "Energy Writelh " + str(self.RAM.power_sram_writelh.power_selected_writelh * self.RAM.period)
+            #print "Energy Writehh " + str(self.RAM.power_sram_writehh.power_selected_writehh * self.RAM.period)
+            print("Energy Writep " + str(self.RAM.power_sram_writep.power_selected_writep * self.RAM.period))
 
-            read_energy = (self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected) * self.RAM.frequency
-            write_energy = ((self.RAM.power_sram_writelh.power_selected_writelh + self.RAM.power_sram_writehh.power_selected_writehh)/2 + self.RAM.power_sram_read.power_unselected) * self.RAM.frequency
+            read_energy = (self.RAM.power_sram_read.power_selected + self.RAM.power_sram_read.power_unselected) * self.RAM.period
+            write_energy = ((self.RAM.power_sram_writelh.power_selected_writelh + self.RAM.power_sram_writehh.power_selected_writehh)/2 + self.RAM.power_sram_read.power_unselected) * self.RAM.period
 
             self.RAM.core_energy = (self.RAM.read_to_write_ratio * read_energy + write_energy) /(1 + self.RAM.read_to_write_ratio)
 
@@ -7137,23 +7137,23 @@ class FPGA:
             self.RAM.power_mtj_write.powernh = float(spice_meas["meas_avg_power_selectedhn"][0])
 
             # can be used to help with debugging:
-            #print "Energy Negative Low " + str(self.RAM.power_mtj_write.powernl * self.RAM.frequency)
-            #print "Energy Positive Low " + str(self.RAM.power_mtj_write.powerpl * self.RAM.frequency)
-            #print "Energy Negative High " + str(self.RAM.power_mtj_write.powernh * self.RAM.frequency)
-            #print "Energy Positive High " + str(self.RAM.power_mtj_write.powerph * self.RAM.frequency)
-            #print "Energy " + str(((self.RAM.power_mtj_write.powerph - self.RAM.power_mtj_write.powernh + self.RAM.power_mtj_write.powerpl - self.RAM.power_mtj_write.powernl) * self.RAM.frequency)/4)
+            #print "Energy Negative Low " + str(self.RAM.power_mtj_write.powernl * self.RAM.period)
+            #print "Energy Positive Low " + str(self.RAM.power_mtj_write.powerpl * self.RAM.period)
+            #print "Energy Negative High " + str(self.RAM.power_mtj_write.powernh * self.RAM.period)
+            #print "Energy Positive High " + str(self.RAM.power_mtj_write.powerph * self.RAM.period)
+            #print "Energy " + str(((self.RAM.power_mtj_write.powerph - self.RAM.power_mtj_write.powernh + self.RAM.power_mtj_write.powerpl - self.RAM.power_mtj_write.powernl) * self.RAM.period)/4)
 
             spice_meas = spice_interface.run(self.RAM.power_mtj_read.top_spice_path, parameter_dict) 
             self.RAM.power_mtj_read.powerl = float(spice_meas["meas_avg_power_readl"][0])
             self.RAM.power_mtj_read.powerh = float(spice_meas["meas_avg_power_readh"][0])
 
             # can be used to help with debugging:
-            #print "Energy Low Read " + str(self.RAM.power_mtj_read.powerl * self.RAM.frequency)
-            #print "Energy High Read " + str(self.RAM.power_mtj_read.powerh * self.RAM.frequency)
-            #print "Energy Read " + str(((self.RAM.power_mtj_read.powerl + self.RAM.power_mtj_read.powerh) * self.RAM.frequency))
+            #print "Energy Low Read " + str(self.RAM.power_mtj_read.powerl * self.RAM.period)
+            #print "Energy High Read " + str(self.RAM.power_mtj_read.powerh * self.RAM.period)
+            #print "Energy Read " + str(((self.RAM.power_mtj_read.powerl + self.RAM.power_mtj_read.powerh) * self.RAM.period))
 
-            read_energy = ((self.RAM.power_mtj_read.powerl + self.RAM.power_mtj_read.powerh) * self.RAM.frequency)
-            write_energy = ((self.RAM.power_mtj_write.powerph - self.RAM.power_mtj_write.powernh + self.RAM.power_mtj_write.powerpl - self.RAM.power_mtj_write.powernl) * self.RAM.frequency)/4
+            read_energy = ((self.RAM.power_mtj_read.powerl + self.RAM.power_mtj_read.powerh) * self.RAM.period)
+            write_energy = ((self.RAM.power_mtj_write.powerph - self.RAM.power_mtj_write.powernh + self.RAM.power_mtj_write.powerpl - self.RAM.power_mtj_write.powernl) * self.RAM.period)/4
             self.RAM.core_energy = (self.RAM.read_to_write_ratio * read_energy + write_energy) /(1 + self.RAM.read_to_write_ratio)
 
 
@@ -7173,16 +7173,16 @@ class FPGA:
         peripheral_energy += self.RAM.configurabledecoderiii.power * (1 + 2**self.RAM.conf_decoder_bits)/2
 
         # Convert to energy
-        peripheral_energy = peripheral_energy * self.RAM.frequency
+        peripheral_energy = peripheral_energy * self.RAM.period
 
         # Add read-specific components
-        self.RAM.peripheral_energy_read = peripheral_energy + self.RAM.pgateoutputcrossbar.power * (1 + 2**self.RAM.conf_decoder_bits)/2 * self.RAM.frequency
+        self.RAM.peripheral_energy_read = peripheral_energy + self.RAM.pgateoutputcrossbar.power * (1 + 2**self.RAM.conf_decoder_bits)/2 * self.RAM.period
         # We need energy PER BIT. Hence:
         self.RAM.peripheral_energy_read /= 2** self.RAM.conf_decoder_bits
         # Add write-specific components (input FF to WD)
-        self.RAM.peripheral_energy_write = peripheral_energy + (2** self.RAM.conf_decoder_bits * self.RAM.configurabledecoderiii.power /2) * self.RAM.frequency
+        self.RAM.peripheral_energy_write = peripheral_energy + (2** self.RAM.conf_decoder_bits * self.RAM.configurabledecoderiii.power /2) * self.RAM.period
         # Add write-specific components (Write enable wires)
-        self.RAM.peripheral_energy_write += ((1 + 2** self.RAM.conf_decoder_bits) * self.RAM.configurabledecoderiii.power) * self.RAM.frequency
+        self.RAM.peripheral_energy_write += ((1 + 2** self.RAM.conf_decoder_bits) * self.RAM.configurabledecoderiii.power) * self.RAM.period
         # We want energy per bit per OP:
         self.RAM.peripheral_energy_write /= 2** self.RAM.conf_decoder_bits
 
