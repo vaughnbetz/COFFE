@@ -331,7 +331,9 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		# Adding two adders per ALM to the critical path
 		elif fpga_inst.specs.updates == 4:
 			path_delay +=  (fpga_inst.specs.N * fpga_inst.specs.FAs_per_flut - 2) * fpga_inst.carrychain.delay
-
+		#JUNIUS - add delay for AD Local Mux and FLUT CC Mux in LUT Skip (mode 10) to critical path
+		elif fpga_inst.specs.updates == 10:
+			path_delay += fpga_inst.logic_cluster.adder_direct_local_mux.delay + fpga_inst.logic_cluster.ble.flut_cc_mux.delay
 		return path_delay
 
 		
@@ -349,7 +351,7 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		# Connection block
 		path_delay += fpga_inst.cb_mux.delay*fpga_inst.cb_mux.delay_weight
 		# Local mux
-		path_delay += fpga_inst.logic_cluster.local_mux.delay*fpga_inst.logic_cluster.local_mux.delay_weight
+		path_delay += fpga_inst.logic_cluster.local_mux.delay*fpga_inst.logic_cluster.local_mux.delay_weight		
 		# LUT
 		path_delay += fpga_inst.logic_cluster.ble.lut.delay*fpga_inst.logic_cluster.ble.lut.delay_weight
 		# LUT input drivers
@@ -378,7 +380,7 @@ def get_eval_delay(fpga_inst, opt_type, subcircuit, tfall, trise, low_voltage, i
 		if fpga_inst.updates == 4:
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 		
-		if fpga_inst.updates in (1, 2, 4):
+		if fpga_inst.updates in (1, 2, 4, 10):
 			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
@@ -523,7 +525,7 @@ def get_current_delay(fpga_inst, is_ram_component = 0):
 		path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 		
         
-	if fpga_inst.updates in (1, 2, 4):
+	if fpga_inst.updates in (1, 2, 4, 10):
 		path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 		path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
@@ -714,7 +716,7 @@ def get_final_delay(fpga_inst, opt_type, subcircuit, tfall, trise, is_ram_compon
 			path_delay += fpga_inst.logic_cluster.ble.fmux_l3.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 			
 			
-		if fpga_inst.updates in (1, 2, 4):
+		if fpga_inst.updates in (1, 2, 4, 10):
 			path_delay += fpga_inst.logic_cluster.ble.ff2.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 			path_delay += fpga_inst.logic_cluster.ble.ff3.input_mux.delay * fpga_inst.logic_cluster.ble.lut.delay_weight
 
@@ -2768,7 +2770,7 @@ def size_fpga_transistors(fpga_inst, run_options, spice_interface):
 		## Size FF2 Input Select Mux
 		############################################
 		# TODO: make this for all updates
-		if fpga_inst.specs.updates in (1, 2, 4):
+		if fpga_inst.specs.updates in (1, 2, 4, 10):
 			mux = fpga_inst.logic_cluster.ble.ff2.input_mux
 			name = mux.name
 			# If this is the first iteration, use the 'initial_transistor_sizes' as the starting sizes. 

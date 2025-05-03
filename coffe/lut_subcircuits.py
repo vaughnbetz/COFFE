@@ -547,7 +547,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 	input_level = ord(lut_input_name) - 96  # "a" --> 1, "b" --> 2, and so on
 
 	# do the right level mapping for the new architecture
-	if updates in (1, 2, 3):
+	if updates in (1, 2, 3, 10):
 		if lut_input_name == 'c':
 			input_level = 3
 			K = 5
@@ -615,7 +615,7 @@ def generate_ptran_lut_driver_load(spice_filename, lut_input_name, K, use_fluts,
 			spice_file.write("Xptran_lut_" + lut_input_name + "_driver_load_" + str(ptran) + " n_gnd n_gnd n_" + str(ptran+1) + " n_gnd ptran Wn=ptran_lut_" + ptran_level + "_nmos\n\n") 
 
 	# the duplicate fmux_l1 loading in case of updates 1, 2, and 3 and fmux l2 in case of updates 4
-	if updates in (1, 2, 3) and lut_input_name == 'f':
+	if updates in (1, 2, 3, 10) and lut_input_name == 'f':
 		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l1_nmos\n\n")
 	elif updates == 4 and lut_input_name == 'f':
 		spice_file.write("Xptran_lut_h_driver_load_2 n_gnd n_gnd n_2 n_gnd ptran Wn=ptran_fmux_l2_nmos\n\n")

@@ -156,9 +156,11 @@ def generate_local_mux_top(mux_name):
     # Change to directory    
     os.chdir(mux_name)
     
+    routing_name = 'local_routing'
+
     connection_block_filename = mux_name + ".sp"
     local_mux_file = open(connection_block_filename, 'w')
-    local_mux_file.write(".TITLE Local routing multiplexer\n\n") 
+    local_mux_file.write(".TITLE Local routing multiplexer '" + mux_name + "'\n\n") 
     
     local_mux_file.write("********************************************************************************\n")
     local_mux_file.write("** Include libraries, parameters and other\n")
@@ -183,14 +185,14 @@ def generate_local_mux_top(mux_name):
     local_mux_file.write("** Measurement\n")
     local_mux_file.write("********************************************************************************\n\n")
     local_mux_file.write("* inv_local_mux_1 delay\n")
-    local_mux_file.write(".MEASURE TRAN meas_inv_local_mux_1_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+    local_mux_file.write(".MEASURE TRAN meas_inv_local_mux_1_tfall TRIG V(X" + routing_name + "_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
     local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' FALL=1\n")
-    local_mux_file.write(".MEASURE TRAN meas_inv_local_mux_1_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+    local_mux_file.write(".MEASURE TRAN meas_inv_local_mux_1_trise TRIG V(X" + routing_name + "_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
     local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' RISE=1\n\n")
     local_mux_file.write("* Total delays\n")
-    local_mux_file.write(".MEASURE TRAN meas_total_tfall TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
+    local_mux_file.write(".MEASURE TRAN meas_total_tfall TRIG V(X" + routing_name + "_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' RISE=1\n")
     local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' FALL=1\n")
-    local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(Xlocal_routing_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
+    local_mux_file.write(".MEASURE TRAN meas_total_trise TRIG V(X" + routing_name + "_wire_load_1.Xlocal_mux_on_1.n_in) VAL='supply_v/2' FALL=1\n")
     local_mux_file.write("+    TARG V(n_1_4) VAL='supply_v/2' RISE=1\n\n")
 
     local_mux_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V(n_1_1) AT=3n\n\n")
@@ -204,7 +206,7 @@ def generate_local_mux_top(mux_name):
     local_mux_file.write("********************************************************************************\n\n")
     local_mux_file.write("Xsb_mux_on_1 n_in n_1_1 vsram vsram_n vdd gnd sb_mux_on\n")
     local_mux_file.write("Xrouting_wire_load_1 n_1_1 n_1_2 n_1_3 vsram vsram_n vdd gnd vdd vdd routing_wire_load\n")
-    local_mux_file.write("Xlocal_routing_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux local_routing_wire_load\n")
+    local_mux_file.write("X" + routing_name + "_wire_load_1 n_1_3 n_1_4 vsram vsram_n vdd gnd vdd_local_mux " + routing_name + "_wire_load\n")
     local_mux_file.write("Xlut_A_driver_1 n_1_4 n_hang1 vsram vsram_n n_hang2 n_hang3 vdd gnd lut_A_driver\n\n")
     local_mux_file.write(".END")
     local_mux_file.close()
@@ -4262,8 +4264,11 @@ def generate_lut4_top(lut_name, use_tgate, updates):
     lut_file.write("********************************************************************************\n\n")
 
     lut_file.write("Xlut n_in n_out " + lut_input_nodes + "vdd gnd lut\n\n")
+    #JUNIUS - add mode 10
+    if updates == 10:
+        lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 ncout nsumout vdd gnd vdd vdd vdd vdd vdd flut_output_load\n\n")
     # BUG: this should be if updates or use_fluts since this is he right loading for the lut output in case of fluts
-    if updates:
+    elif updates:
         lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
     else:
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
@@ -4356,8 +4361,11 @@ def generate_lut3_top(lut_name, use_tgate, updates):
     lut_file.write("********************************************************************************\n\n")
 
     lut_file.write("Xlut n_in n_out " + lut_input_nodes + "vdd gnd lut\n\n")
+    #JUNIUS - add mode 10
+    if updates == 10:
+        lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 ncout nsumout vdd gnd vdd vdd vdd vdd vdd flut_output_load\n\n")
     # BUG: this should be if updates or use_fluts since this is he right loading for the lut output in case of fluts
-    if updates:
+    elif updates:
         lut_file.write("Xflut_output_load n_out vdd nout2 vdd nout3 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
     else:
         lut_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
@@ -4615,7 +4623,7 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
         elif lut_letter == 'b':
             n = "3"
 
-    if updates in (1, 2, 3):
+    if updates in (1, 2, 3, 10):
         if lut_letter == 'e':
             n_g_f1 = "n_3_1"
             n_out = "n_out1"
@@ -4726,10 +4734,15 @@ def generate_lut_and_driver_top(input_driver_name, input_driver_type, use_tgate,
             # top_file.write("Xflut_output_load n_out vdd n_out1 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
         else:
             spice_file.write("Xlut_output_load n_out n_local_out n_general_out vsram vsram_n vdd gnd vdd vdd lut_output_load\n\n")
-    elif updates in (1, 2, 3):
+    elif updates in (1, 2, 3, 10):
         #if lut_letter != 'd':
         #    spice_file.write("Xlut_"+lut_letter+"_driver_load n_3_1 vdd gnd lut_"+lut_letter+"_driver_load\n")
-        spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
+        spice_file.write("Xflut_output_load n_out "+n_g_f1+" n_out1 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd")
+        #JUNIUS - add FLUT output load pins
+        if updates == 10:
+            spice_file.write(" vdd vdd")
+        spice_file.write(" flut_output_load\n\n")
+
         if lut_letter == 'e' or lut_letter == 'f':
             spice_file.write(utils.create_wire("n_out1", "n_1_5", "fmux_l1", "fmux_l2"))
             spice_file.write("Xfmux_l2 n_1_5 n_out3 "+n_g_f2+" gnd vdd gnd fmux_l2\n\n")
@@ -5016,18 +5029,26 @@ def generate_general_ble_output_top(name, use_tgate, use_fluts, updates = False,
     #    top_file.write("Xflut_output_load n_0_1 vdd n_1_1 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
     #else:
     
-    if updates in (1, 2, 3):
+    if updates in (1, 2, 3, 10):
         if input_size == 2:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
             # delay calculations start from n_1_1 to include all the wires before global ble 2:1
-            top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_1_1 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write("Xflut_output_load n_0_1 vdd nout2 vdd n_1_1 ncout nsumout vdd gnd vdd vdd vdd")
+            #JUNIUS - add FLUT output load pins
+            if updates == 10:
+                top_file.write(" vdd vdd")
+            top_file.write(" flut_output_load\n\n")
             top_file.write(utils.create_wire("n_1_1", "n_1_2", "fmux_l1_duplicate", "ff"))
             top_file.write("Xff n_1_2 n_hang2 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff\n\n")
             top_file.write(utils.create_wire("n_1_2", "n_1_3", "ffin", "gbo2"))
             top_file.write("Xgeneral_ble_output n_1_3 n_general_out vsram vsram_n vdd_general_output gnd general_ble_output\n\n")
         elif input_size == 3:
             top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-            top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
+            top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd")
+            #JUNIUS - add FLUT output load pins
+            if updates == 10:
+                top_file.write(" vdd vdd")
+            top_file.write(" flut_output_load\n\n")
             top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1", "fmux_l2"))
             top_file.write("Xfmux_l2 n_0_3 n_1_1 vdd gnd vdd gnd fmux_l2\n\n")
             top_file.write("Xfmux_l2_load n_1_1 n_general_out n_out_ff vsram vsram_n vdd gnd vdd_general_output fmux_l2_load\n\n")
@@ -5132,11 +5153,15 @@ def generate_ff_top(name, use_tgate, updates, input_size = 2):
     #    top_file.write("Xflut_output_load n_0_1 vdd n_1_1 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
     #else:
     
-    if updates in (1, 2, 3):
+    if updates in (1, 2, 3, 10):
         # Bottom input select register either 3:1 or 4:1
-        #if (updates in (1, 2) and input_size == 3) or (updates == 3 and input_size == 4):
+        #if (updates in (1, 2, 10) and input_size == 3) or (updates == 3 and input_size == 4):
         top_file.write("Xlut n_in n_0_1 "+lut_input_nodes+"vdd gnd lut\n\n")
-        top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd flut_output_load\n\n")
+        top_file.write("Xflut_output_load n_0_1 vdd n_0_2 vdd n_out2 ncout nsumout vdd gnd vdd vdd vdd")
+        #JUNIUS - add FLUT output load pins
+        if updates == 10:
+            top_file.write(" vdd vdd")
+        top_file.write(" flut_output_load\n\n")
         top_file.write(utils.create_wire("n_0_2", "n_0_3", "fmux_l1", "fmux_l2"))
         top_file.write("Xfmux_l2 n_0_3 n_1_1 vdd gnd vdd gnd fmux_l2\n\n")
         top_file.write("Xfmux_l2_load n_1_1 n_hang_2 n_1_3 vsram vsram_n vdd gnd vdd fmux_l2_load\n\n")
@@ -5211,8 +5236,90 @@ def generate_ff_top(name, use_tgate, updates, input_size = 2):
     os.chdir("../")
     
     return (name + "/" + name + ".sp")
-    
 
+#JUNIUS - add FLUT CC Mux top for mode 10 (LUT skip)
+def generate_flut_cc_mux_top(name, use_tgate):
+    lut_input_nodes = ""
+    if use_tgate: 
+        lut_input_nodes += "vdd gnd "*6
+    else:
+        lut_input_nodes += "vdd "*6
+    
+    input_node = "n_mux_in"
+    output = "n_mux_out"
+
+
+    # Create directories
+    if not os.path.exists(name):
+        os.makedirs(name)  
+    # Change to directory    
+    os.chdir(name)  
+    
+    filename = name + ".sp"
+    top_file = open(filename, 'w')
+    top_file.write(".TITLE FLUT CC Mux\n\n") 
+    
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Include libraries, parameters and other\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write(".LIB \"../includes.l\" INCLUDES\n\n")
+    
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Setup and input\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write(".TRAN 1p 4n SWEEP DATA=sweep_data\n")
+    top_file.write(".OPTIONS BRIEF=1\n\n")
+    top_file.write("* uncomment this to acitvate waveform viewing using the sx program\n")
+    top_file.write("*.OPTIONS POST=2\n\n")
+
+    top_file.write("* Input signal\n")
+    top_file.write("VIN n_in gnd PULSE (0 supply_v 0 0 0 2n 4n)\n\n")
+    top_file.write("* Power rail for the circuit under test.\n")
+    top_file.write("* This allows us to measure power of a circuit under test without measuring the power of wave shaping and load circuitry.\n")
+    top_file.write("V_FLUT_CC vdd_f gnd supply_v\n\n")
+
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Measurement\n")
+    top_file.write("********************************************************************************\n\n")
+    top_file.write("* inv_"+name+"_1 delay\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_tfall TRIG V("+input_node+") VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V(X"+name+".n_2_1) VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_1_trise TRIG V("+input_node+") VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V(X"+name+".n_2_1) VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("* inv_"+name+"_2 delays\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_tfall TRIG V("+input_node+") VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_inv_"+name+"_2_trise TRIG V("+input_node+") VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n\n")
+    top_file.write("* Total delays\n")
+    top_file.write(".MEASURE TRAN meas_total_tfall TRIG V("+input_node+") VAL='supply_v/2' FALL=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' FALL=1\n")
+    top_file.write(".MEASURE TRAN meas_total_trise TRIG V("+input_node+") VAL='supply_v/2' RISE=1\n")
+    top_file.write("+    TARG V("+output+") VAL='supply_v/2' RISE=1\n")
+    top_file.write(".MEASURE TRAN meas_logic_low_voltage FIND V("+output+") AT=3n\n\n")
+
+    top_file.write("* Measure the power required to propagate a rise and a fall transition through the subcircuit at 250MHz.\n")
+    top_file.write(".MEASURE TRAN meas_current INTEGRAL I(V_FLUT_CC) FROM=0ns TO=4ns\n")
+    top_file.write(".MEASURE TRAN meas_avg_power PARAM = '-((meas_current)/4n)*supply_v'\n\n")
+
+    top_file.write("********************************************************************************\n")
+    top_file.write("** Circuit\n")
+    top_file.write("********************************************************************************\n\n")
+
+    # LUT driver
+    top_file.write("Xlut n_in " + input_node + " " + lut_input_nodes + "vdd gnd lut\n")
+    # MUX
+    top_file.write("Xthemux " + input_node + " " + output + " vdd gnd vdd_f gnd flut_cc_mux\n")
+    # output load
+    top_file.write("Xflutccmux_load " + output + " ncout nsumout vdd gnd vdd flut_cc_mux_load\n\n")
+
+    top_file.write(".END")
+    top_file.close()
+
+    # Come out of top-level directory
+    os.chdir("../")
+    
+    return (name + "/" + name + ".sp")
 
 def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level, updates):
     """ This function creates the netlist for the flut mux. This spice file should measure the delay of an flut mux, or 
@@ -5340,11 +5447,15 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level, updates):
             top_file.write("Xgeneral_ble_output_load n_general_out n_hang1 vsram vsram_n vdd gnd general_ble_output_load\n")
     else:
         # TODO: each subcircuit should already have an input wire connected to it to avoid confusion
-        top_file.write("Xflut_output_load n_1_1 vdd n_1_3 vdd n_f1d_out ncout nsumout vdd gnd "+vdd_f1+" vdd vdd flut_output_load\n\n")
+        top_file.write("Xflut_output_load n_1_1 vdd n_1_3 vdd n_f1d_out ncout nsumout vdd gnd "+vdd_f1+" vdd vdd")
+        #JUNIUS - add parameters for CC MUX load (mode 10 LUT skip)
+        if updates == 10:
+            top_file.write(" vdd vdd")
+        top_file.write(" flut_output_load\n\n")
 
         # TODO: make the fmux_l1_load generic to include both cases
         # add loading at the output of fmux_l1
-        if updates in (1, 2, 3):
+        if updates in (1, 2, 3, 10):
             # fmux_l2 loading
             top_file.write("* Level 2 flut mux\n")
             top_file.write(utils.create_wire("n_1_3", "n_1_4", "fmux_l1", "fmux_l2"))
@@ -5356,7 +5467,7 @@ def generate_flut_mux_top(name, use_tgate, enable_carry_chain, level, updates):
 
         # if simulating fmux_l2 add its output load
         if level == 2:
-            if updates in (1, 2, 3):
+            if updates in (1, 2, 3, 10):
                 top_file.write("* Loading at the output of fmux_l2 consisting of a ff with a 3:1 input select mux and a 3:1 general ble output mux\n")
                 top_file.write("Xfmux_l2_load n_1_5 n_gbo3_out n_ff3_out vdd gnd vdd gnd vdd fmux_l2_load\n\n")
         
@@ -5404,6 +5515,11 @@ def generate_cc_in_out_top(name, use_tgate, updates, id):
         n_sout = "n_sout2"
         n_cout = "n_cout2"
         n = "2"
+    elif updates == 10:
+        #JUNIUS - start measurement from behind FLUT CC Mux (mode 10, LUT Skip)
+        n_1_1 = "Xflut_output_load.n_mcc_out"
+        n_sout = "Xflut_output_load.nsumout"
+        n_cout = "Xflut_output_load.ncout"
 
     fn = "3"
 
@@ -5456,10 +5572,14 @@ def generate_cc_in_out_top(name, use_tgate, updates, id):
 
     top_file.write("Xlut n_in n_1_1 "+lut_input_nodes+"vdd gnd lut\n")
 
-    top_file.write("Xflut_output_load n_1_1 vdd n_1_3 vdd n_f1d_out n_cout n_sout vdd gnd vdd vdd vdd flut_output_load\n\n")
+    top_file.write("Xflut_output_load n_1_1 vdd n_1_3 vdd n_f1d_out n_cout n_sout vdd gnd vdd vdd vdd")
+    #JUNIUS - add FLUT output load pins
+    if updates == 10:
+        top_file.write(" vdd vdd")
+    top_file.write(" flut_output_load\n\n")
 
     # load at the output of the first full adder
-    if updates in (1, 4):
+    if updates in (1, 4, 10):
         top_file.write(utils.create_wire("n_sout", "n_1_4", "cc_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
         top_file.write("Xff3 n_1_4 n_1_5 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")
@@ -5779,7 +5899,7 @@ def generate_carry_chain_ripple_top(name, updates, id):
     top_file.write("Xinv n_1_3 n_out vdd_test gnd carry_chain_perf"+n+"\n\n")
     
     top_file.write("* Loading at the sum out port of the carry chain full adder\n")
-    if updates in (1, 4):
+    if updates in (1, 4, 10):
         top_file.write(utils.create_wire("n_out", "n_1_4", "cc_sout", "reg3_sel"))
         top_file.write("\n* Reg3 in Stratix 10 architecture with a 3:1 mux at its input\n")
         top_file.write("Xff3 n_1_4 n_1_5 n_mux_out vsram vsram_n vdd gnd gnd vdd gnd vdd vdd gnd ff3\n\n")

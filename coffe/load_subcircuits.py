@@ -107,64 +107,74 @@ def general_routing_load_generate(spice_filename, wire_length, tile_sb_on, tile_
     
     return wire_names_list
     
-    
-def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
+# JUNIUS - add adder direct local mux simulated inputs to local routing wire load
+def local_routing_load_generate(spice_filename, num_on_local, num_partial_local, num_off_local, name="local_routing_wire_load", nums_adder_direct=None):
     """ """
-    
-    # The first thing we want to figure out is the interval between each on load and each partially on load
-    # Number of partially on muxes between each on mux
-    interval_partial = int(num_partial/num_on)
-    # Number of off muxes between each partially on mux
-    interval_off = int(num_off/num_partial)
-
     # Open SPICE file for appending
     spice_file = open(spice_filename, 'a')
     
     spice_file.write("******************************************************************************************\n")
-    spice_file.write("* Local routing wire load\n")
+    spice_file.write("* Local routing wire load for '" + name + "' \n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT local_routing_wire_load n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on\n")
+    spice_file.write(".SUBCKT " + name + " n_in n_out n_gate n_gate_n n_vdd n_gnd n_vdd_local_mux_on\n")
     
-    num_total = num_on + num_partial + num_off
-    interval_counter_partial = 0
-    interval_counter_off = 0
-    on_counter = 0
-    partial_counter = 0
-    off_counter = 0
-    
-    # Initialize nodes
-    current_node = "n_in"
-    next_node = "n_1"
-    
-    # Write SPICE file while keeping correct intervals between partial and on muxes
-    for i in range(num_total):
-        if interval_counter_partial == interval_partial and on_counter < num_on:
-                # Add an on mux
-                interval_counter_partial = 0
-                on_counter = on_counter + 1
-                if on_counter == num_on:
-                    spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
-                    spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd_local_mux_on n_gnd local_mux_on\n")
-                else:
-                    spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
-                    spice_file.write("Xlocal_mux_on_" + str(on_counter) + " " + next_node + " n_hang_" + str(on_counter) + " n_gate n_gate_n n_vdd n_gnd local_mux_on\n")    
-        else:
-            if interval_counter_off == interval_off and partial_counter < num_partial:
-                # Add a partially on mux
-                interval_counter_off = 0
-                interval_counter_partial = interval_counter_partial + 1
-                partial_counter = partial_counter + 1
-                spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
-                spice_file.write("Xlocal_mux_partial_" + str(partial_counter) + " " + next_node + " n_gate n_gate_n n_vdd n_gnd local_mux_partial\n")
+    def write_intervals(mux_name, num_on, num_partial, num_off, start_i):
+        # The first thing we want to figure out is the interval between each on load and each partially on load
+        # Number of partially on muxes between each on mux
+        interval_partial = int(num_partial/num_on)
+        # Number of off muxes between each partially on mux
+        interval_off = int(num_off/num_partial)
+
+        num_total = num_on + num_partial + num_off
+        interval_counter_partial = 0
+        interval_counter_off = 0
+        on_counter = 0
+        partial_counter = 0
+        off_counter = 0
+        
+        # Initialize nodes
+        current_node = "n_in"
+        next_node = "n_" + str(start_i + 1)
+        
+        # Write SPICE file while keeping correct intervals between partial and on muxes
+        for i in range(start_i, start_i + num_total):
+            if interval_counter_partial == interval_partial and on_counter < num_on:
+                    # Add an on mux
+                    interval_counter_partial = 0
+                    on_counter = on_counter + 1
+                    if on_counter == num_on:
+                        spice_file.write("Xwire_" + name + "_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_" + name + "_res/" + str(num_total) + "' Cw='wire_" + name + "_cap/" + str(num_total) + "'\n")
+                        spice_file.write("X" + mux_name + "_on_" + str(on_counter) + " " + next_node + " n_out n_gate n_gate_n n_vdd_local_mux_on n_gnd " + mux_name + "_on\n")
+                    else:
+                        spice_file.write("Xwire_" + name + "_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_" + name + "_res/" + str(num_total) + "' Cw='wire_" + name + "_cap/" + str(num_total) + "'\n")
+                        spice_file.write("X" + mux_name + "_on_" + str(on_counter) + " " + next_node + " n_hang_" + str(on_counter) + " n_gate n_gate_n n_vdd n_gnd " + mux_name + "_on\n")    
             else:
-                # Add an off mux
-                interval_counter_off = interval_counter_off + 1
-                off_counter = off_counter + 1
-                spice_file.write("Xwire_local_routing_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_local_routing_res/" + str(num_total) + "' Cw='wire_local_routing_cap/" + str(num_total) + "'\n")
-                spice_file.write("Xlocal_mux_off_" + str(off_counter) + " " + next_node + " n_gate n_gate_n n_vdd n_gnd local_mux_off\n")
-        # Update current and next nodes        
-        current_node = next_node
-        next_node = "n_" + str(i+2)
+                if interval_counter_off == interval_off and partial_counter < num_partial:
+                    # Add a partially on mux
+                    interval_counter_off = 0
+                    interval_counter_partial = interval_counter_partial + 1
+                    partial_counter = partial_counter + 1
+                    spice_file.write("Xwire_" + name + "_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_" + name + "_res/" + str(num_total) + "' Cw='wire_" + name + "_cap/" + str(num_total) + "'\n")
+                    spice_file.write("X" + mux_name + "_partial_" + str(partial_counter) + " " + next_node + " n_gate n_gate_n n_vdd n_gnd " + mux_name + "_partial\n")
+                else:
+                    # Add an off mux
+                    interval_counter_off = interval_counter_off + 1
+                    off_counter = off_counter + 1
+                    spice_file.write("Xwire_" + name + "_" + str(i+1) + " " + current_node + " " + next_node + " wire Rw='wire_" + name + "_res/" + str(num_total) + "' Cw='wire_" + name + "_cap/" + str(num_total) + "'\n")
+                    spice_file.write("X" + mux_name + "_off_" + str(off_counter) + " " + next_node + " n_gate n_gate_n n_vdd n_gnd " + mux_name + "_off\n")
+            # Update current and next nodes        
+            current_node = next_node
+            next_node = "n_" + str(i+2)
+        
+        return i+1
+
+    next_i = write_intervals('local_mux', num_on_local, num_partial_local, num_off_local, 0)
+    
+    # JUNIUS - add load for adder direct local mux (update mode 10)
+    if not nums_adder_direct is None:
+        ad_on, ad_partial, ad_off = nums_adder_direct
+        write_intervals('adder_direct_local_mux', ad_on, ad_partial, ad_off, next_i)
+
     spice_file.write(".ENDS\n\n\n")
 
     spice_file.close()
@@ -172,7 +182,7 @@ def local_routing_load_generate(spice_filename, num_on, num_partial, num_off):
     
     # Create a list of all wires used in this subcircuit
     wire_names_list = []
-    wire_names_list.append("wire_local_routing")
+    wire_names_list.append("wire_" + name + "")
     
     return wire_names_list
 
@@ -405,19 +415,29 @@ def generate_flut_output_load(spice_filename, enable_carry_chain, updates):
     spice_file.write("******************************************************************************************\n")
     spice_file.write("* FLUT output load (Loading at the LUT output when using FLUTs)\n")
     spice_file.write("******************************************************************************************\n")
-    spice_file.write(".SUBCKT flut_output_load n_in n_g_1 n_out1 n_g_2 n_out2 ncout nsumout n_vdd n_gnd n_vdd_m1 n_vdd_cc n_vdd_m2\n")
+    spice_file.write(".SUBCKT flut_output_load n_in n_g_1 n_out1 n_g_2 n_out2 ncout nsumout n_vdd n_gnd n_vdd_m1 n_vdd_cc n_vdd_m2")
+    #JUNIUS - additional inputs for CC MUX in mode 10 (LUT Skip)
+    if updates == 10:
+        spice_file.write(" n_g_mcc n_vdd_mcc")
+    spice_file.write("\n")
 
     spice_file.write(utils.create_wire("n_in", "n_1_2", "lut", fmux))  
     spice_file.write("X" + fmux + " n_1_2 n_out1 n_g_1 n_gnd n_vdd_m1 n_gnd "+ fmux + "\n\n")
 
     if enable_carry_chain:
-        spice_file.write(utils.create_wire("n_in", "n_2_2", "lut", "carry_chain"))
-        # TODO: figure out what are the suitable inputs for this
-        spice_file.write("Xcarrychain n_2_2 n_gnd n_vdd ncout n_nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n")
-        spice_file.write("Xinv n_nsumout nsumout n_vdd n_gnd carry_chain_perf\n\n")
+        #JUNIUS - connect to CC MUX instead for LUT Skip (mode 10)
+        if updates == 10:
+            spice_file.write(utils.create_wire("n_in", "n_mcc", "lut", "flut_cc_mux"))
+            spice_file.write("Xflutccmux n_mcc n_mcc_out n_g_mcc n_gnd n_vdd_mcc n_gnd flut_cc_mux\n")
+            spice_file.write("Xflutccmux_load n_mcc_out ncout nsumout n_vdd n_gnd n_vdd_cc flut_cc_mux_load\n\n")
+        else:
+            spice_file.write(utils.create_wire("n_in", "n_2_2", "lut", "carry_chain"))
+            # TODO: figure out what are the suitable inputs for this
+            spice_file.write("Xcarrychain n_2_2 n_gnd n_vdd ncout n_nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n")
+            spice_file.write("Xinv n_nsumout nsumout n_vdd n_gnd carry_chain_perf\n\n")
 
     # duplicate 5-LUT output flut mux
-    if updates in (1, 2, 3):
+    if updates in (1, 2, 3, 10):
         spice_file.write(utils.create_wire("n_in", "n_3_2", "lut", "fmux_l1_duplicate"))
         spice_file.write("Xfmux_l1_duplicate n_3_2 n_out2 n_g_2 n_gnd n_vdd_m2 n_gnd fmux_l1\n\n")  
 
@@ -432,13 +452,41 @@ def generate_flut_output_load(spice_filename, enable_carry_chain, updates):
     wire_names_list.append(utils.wire_name("lut", fmux))
 
     if enable_carry_chain:
-        wire_names_list.append(utils.wire_name("lut", "carry_chain"))
-    if updates in (1, 2, 3):
+        #JUNIUS - change wire to CC MUX if mode 10 (LUT skip)
+        wire_names_list.append(utils.wire_name("lut", "flut_cc_mux" if updates == 10 else "carry_chain"))
+    if updates in (1, 2, 3, 10):
         wire_names_list.append(utils.wire_name("lut", "fmux_l1_duplicate"))
 
     
     return wire_names_list
 
+#JUNIUS - Add CC MUX load for LUT skip (mode 10)
+def generate_flut_cc_mux_output_load(spice_filename):
+    """ Create the FLUT CC MUX output load in LUT Skip (mode 10) """    
+
+    # Open SPICE file for appending
+    spice_file = open(spice_filename, 'a')
+
+    spice_file.write("******************************************************************************************\n")
+    spice_file.write("* CC MUX output load\n")
+    spice_file.write("******************************************************************************************\n")
+    spice_file.write(".SUBCKT flut_cc_mux_load n_in ncout nsumout n_vdd n_gnd n_vdd_cc\n\n")
+
+    spice_file.write("* Connect the output of CC MUX to carry chain\n")
+    spice_file.write(utils.create_wire("n_in", "n_1_1", "flut_cc_mux", "carry_chain"))
+    spice_file.write("Xcarrychain n_1_1 n_gnd n_vdd ncout n_nsumout n_p_1 n_vdd_cc n_gnd FA_carry_chain\n")
+    spice_file.write("Xinv n_nsumout nsumout n_vdd n_gnd carry_chain_perf\n\n")
+
+    spice_file.write(".ENDS\n\n\n")
+
+    spice_file.close()
+
+    # Create a list of all wires used in this subcircuit
+    wire_names_list = [
+        utils.wire_name("flut_cc_mux", "carry_chain")
+    ]
+
+    return wire_names_list
 
 def generate_fmux_l1_output_load(spice_filename):
     """ Creat the fmum level 1 output load in Stratix 10 level 3 which consists of an fmux level 2

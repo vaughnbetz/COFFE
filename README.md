@@ -7,3 +7,10 @@ If you make changes to COFFE, run the test.pl script to do some basic checks tha
 
 How to cite:  
 [Sadegh to fill in].
+
+# Update mode 10
+
+Set updates=10 in the input .txt file to `coffe.py` to model the LUT skip architecture, with these additional parameters:
+- `Z`: number of additional ALM adder direct inputs
+- `sneak_paths`: number of sneak paths present in the S10-like arch
+- `Fc_ad`: Fclocal of each adder direct input mux (w.r.t. sneak path inputs)

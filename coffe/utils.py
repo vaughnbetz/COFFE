@@ -50,7 +50,7 @@ def print_area_and_delay(report_file, fpga_inst):
     # not work as well. The 'ljust' constants would have to be adjusted accordingly.
     
     # Print the header
-    print_and_write(report_file, "  Subcircuit".ljust(24) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22))    
+    print_and_write(report_file, "  Subcircuit".ljust(54) + "Area (um^2)".ljust(13) + "Delay (ps)".ljust(13) + "tfall (ps)".ljust(13) + "trise (ps)".ljust(13) + "Power at 250MHz (uW)".ljust(22))    
     
     # Switch block mux
     print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.sb_mux))
@@ -60,6 +60,10 @@ def print_area_and_delay(report_file, fpga_inst):
 
     # Local mux
     print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.logic_cluster.local_mux))
+
+    #JUNIUS - adder direct local mux for LUT skip (mode 10)
+    if fpga_inst.updates == 10:
+        print_and_write(report_file, subcircuit_ADP(area_dict, fpga_inst.logic_cluster.adder_direct_local_mux))
 
     # Local BLE output
     if not fpga_inst.updates:
@@ -95,6 +99,10 @@ def print_area_and_delay(report_file, fpga_inst):
 
     if fpga_inst.specs.updates:
         print_and_write(report_file, subcircuit_ADP(area_dict, BLE.fmux_l2))
+    
+    #JUNIUS - add FLUT CC Mux for mode 10 (LUT Skip)
+    if fpga_inst.specs.updates == 10:
+        print_and_write(report_file, subcircuit_ADP(area_dict, BLE.flut_cc_mux))
 
     # level 3 mux and flip flop input select mux
     if fpga_inst.specs.updates:
@@ -353,6 +361,10 @@ def print_block_area(report_file, fpga_inst):
         print_and_write(report_file, "  FF".ljust(20) + str(round(ff,3)).ljust(20) + str(round(ff/tile*100,3)) + "%")
         print_and_write(report_file, "  BLE output".ljust(20) + str(round(ble_output,3)).ljust(20) + str(round(ble_output/tile*100,3)) + "%")
         print_and_write(report_file, "  Local mux".ljust(20) + str(round(local_mux,3)).ljust(20) + str(round(local_mux/tile*100,3)) + "%")
+        #JUNIUS - add adder direct local mux reporting for LUT skip (mode 10)
+        if fpga_inst.updates == 10:
+            adder_direct_local_mux = fpga_inst.area_dict["adder_direct_local_mux_total"]/1000000
+            print_and_write(report_file, "  AD local mux".ljust(20) + str(round(adder_direct_local_mux,3)).ljust(20) + str(round(adder_direct_local_mux/tile*100,3)) + "%")
         print_and_write(report_file, "  Connection block".ljust(20) + str(round(cb,3)).ljust(20) + str(round(cb/tile*100,3)) + "%")
         print_and_write(report_file, "  Switch block".ljust(20) + str(round(sb,3)).ljust(20) + str(round(sb/tile*100,3)) + "%")
         print_and_write(report_file, "")
@@ -502,7 +514,7 @@ def load_arch_params(filename):
         
         # Split lines at '='
         words = line.split('=')
-        if words[0] not in arch_params.keys():
+        if words[0] not in arch_params.keys() and words[0] not in ['Z', 'sneak_paths', 'Fc_ad']:
             print "ERROR: Found invalid architecture parameter (" + words[0] + ") in " + filename
             sys.exit()
          
@@ -532,6 +544,15 @@ def load_arch_params(filename):
             arch_params['Ofb'] = int(value)
         elif param == 'Fclocal':
             arch_params['Fclocal'] = float(value)
+        
+        # JUNIUS - add for update mode 10
+        elif param == 'Z':
+            arch_params['Z'] = int(value)
+        elif param == 'sneak_paths':
+            arch_params['sneak_paths'] = int(value)
+        elif param == 'Fc_ad':
+            arch_params['Fc_ad'] = float(value)
+
         elif param == 'Rsel':
             arch_params['Rsel'] = value
         elif param == 'Rfb':
@@ -641,6 +662,12 @@ def load_arch_params(filename):
             print "ERROR: Did not find architecture parameter " + param + " in " + filename
             sys.exit()
     
+    # JUNIUS - check additional parameters for update mode 10
+    if arch_params['updates'] == 10:
+        for param in ['Z', 'sneak_paths', 'Fc_ad']:
+            if param not in arch_params:
+                print "ERROR: Did not find architecture parameter " + param + " in " + filename + " (required for update mode 10)"
+
     # Check architecture parameters to make sure that they are valid
     check_arch_params(arch_params, filename)
 
@@ -912,10 +939,17 @@ def check_arch_params (arch_params, filename):
         print_error_not_compatable("finfet", "BRAM")           
     if arch_params['use_finfet'] == True and arch_params['use_fluts'] == True:
         print_error_not_compatable("finfet", "flut")    
-    if arch_params['updates'] < 0 or arch_params['updates'] > 4:
+    if not (arch_params['updates'] in (0, 1, 2, 3, 4, 10)): #JUNIUS - add mode 10 for LUT skipping
         print_error (str(arch_params['updates']), "updates", filename)      
 
-
+    # JUNIUS - check mode 10 parameters
+    if arch_params['updates'] == 10:
+        if arch_params['Z'] <= 0:
+            print_error(str(arch_params['Z']), "Z", filename)
+        if arch_params['sneak_paths'] <= 0 or arch_params['sneak_paths'] > arch_params['I']:
+            print_error(str(arch_params['sneak_paths']), "sneak_paths", filename)
+        if arch_params['Fc_ad'] <= 0.0 or arch_params['Fc_ad'] > 1.0:
+            print_error(str(arch_params['Fc_ad']), "Fc_ad", filename)
 
 def print_error(value, argument, filename, msg = ""):
     print "ERROR: Invalid value (" + value + ") for " + argument + " in " + filename + " " + msg
@@ -1127,9 +1161,9 @@ def create_output_dir(arch_file_name):
         # so we delete them to avoid from having them pile up if we run COFFE
         # more than once.
         # if the directory already exists ask the user if he wants to delete it or not
-        decision = raw_input("The following directory \"" + arch_folder + "\" exists already are you sure you want to delete it (Y/N): ")
-        if (decision not in ['y', 'Y', 'yes', 'YES']):
-            sys.exit(1)
+        # decision = raw_input("The following directory \"" + arch_folder + "\" exists already are you sure you want to delete it (Y/N): ")
+        # if (decision not in ['y', 'Y', 'yes', 'YES']):
+        #     sys.exit(1)
         dir_contents = os.listdir(arch_folder)
         for content in dir_contents:
             if os.path.isdir(arch_folder + "/" + content):
@@ -1226,7 +1260,7 @@ def subcircuit_ADP(area_dict, subcircuit, name = "", area = "", power = ""):
     if power == "":
         power = str(subcircuit.power/1e-6)
 
-    string = ("  " + name.ljust(22) + area.ljust(13) + str(round(subcircuit.delay/1e-12,4)).ljust(13)
+    string = ("  " + name.ljust(52) + area.ljust(13) + str(round(subcircuit.delay/1e-12,4)).ljust(13)
     + str(round(subcircuit.tfall/1e-12,4)).ljust(13) + str(round(subcircuit.trise/1e-12,4)).ljust(13) + power)
 
     return string
@@ -1282,6 +1316,15 @@ def print_detailed_delays(report_file, fpga_inst):
                 # FLUT mux level 3
                 print_and_write(report_file, ("  FLUT Mux Level 3: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.fmux_l3.delay/1e-12,4)))
     
+    #JUNIUS - report CC MUX delay
+    if fpga_inst.specs.updates == 10:
+        print_and_write(report_file, "")  
+
+        print_and_write(report_file, "  LUT, direct -> Carry Chain Mux Delays:")
+        print_and_write(report_file, "  -----------------------------")
+        print_and_write(report_file, "")
+        print_and_write(report_file, ("  CC Mux: ").ljust(40) + str(round(fpga_inst.logic_cluster.ble.flut_cc_mux.delay/1e-12,4)))
+
     # New Line
     print_and_write(report_file, "")  
 

@@ -99,7 +99,8 @@ class _Specs:
     """ General FPGA specs. """
  
     def __init__(self, arch_params_dict, quick_mode_threshold):
-        
+        self.updates = arch_params_dict['updates']
+
         # FPGA architecture specs
         self.N                       = arch_params_dict['N']
         self.K                       = arch_params_dict['K']
@@ -121,6 +122,11 @@ class _Specs:
         self.carry_chain_type        = arch_params_dict['carry_chain_type']
         self.FAs_per_flut            = arch_params_dict['FAs_per_flut']
 
+        # JUNIUS - adder direct mux spepcs (update mode 10)
+        if self.updates == 10:
+            self.Z              = arch_params_dict['Z']             # ALM adder direct inputs
+            self.sneak_paths    = arch_params_dict['sneak_paths']   # sneak paths available
+            self.Fc_ad          = arch_params_dict['Fc_ad']         # Fclocal of AD local muxes (w.r.t. sneak paths)
 
         # BRAM specs
         self.row_decoder_bits     = arch_params_dict['row_decoder_bits']
@@ -161,7 +167,6 @@ class _Specs:
         self.use_tgate              = arch_params_dict['use_tgate']
         self.use_finfet             = arch_params_dict['use_finfet']
 
-        self.updates                = arch_params_dict['updates']
         self.mult_size              = arch_params_dict['mult_size']
 
         
@@ -545,10 +550,10 @@ class _ConnectionBlockMUX(_SizableCircuit):
 class _LocalMUX(_SizableCircuit):
     """ Local Routing MUX Class: Pass-transistor 2-level mux with no driver """
     
-    def __init__(self, required_size, num_per_tile, use_tgate):
+    def __init__(self, required_size, num_per_tile, use_tgate, name = "local_mux"):
         # Call the constructor of the base class to initialize all
         # its local variables
-        _SizableCircuit.__init__(self, "local_mux", use_tgate)
+        _SizableCircuit.__init__(self, name, use_tgate)
         # How big should this mux be (dictated by architecture specs)
         self.required_size = required_size 
         # How big did we make the mux (it is possible that we had to make the mux bigger for level sizes to work out, this is how big the mux turned out)
@@ -575,7 +580,7 @@ class _LocalMUX(_SizableCircuit):
         
     
     def generate(self, subcircuit_filename):
-        print "Generating local mux"
+        print "Generating " + self.name
         
         if not self.use_tgate :
             # Call MUX generation function
@@ -603,7 +608,7 @@ class _LocalMUX(_SizableCircuit):
 
 
     def generate_top(self):
-        print "Generating top-level local mux"
+        print "Generating top-level " + self.name
         self.top_spice_path = top_level.generate_local_mux_top(self.name)
         
    
@@ -649,7 +654,7 @@ class _LocalMUX(_SizableCircuit):
     def print_details(self, report_file):
         """ Print local mux details """
     
-        utils.print_and_write(report_file, "  LOCAL MUX DETAILS:")
+        utils.print_and_write(report_file, "  LOCAL MUX '" + self.name + "' DETAILS:")
         utils.print_and_write(report_file, "  Style: two-level MUX")
         utils.print_and_write(report_file, "  Required MUX size: " + str(self.required_size) + ":1")
         utils.print_and_write(report_file, "  Implemented MUX size: " + str(self.implemented_size) + ":1")
@@ -1238,7 +1243,7 @@ class _LUT(_SizableCircuit):
             if self.use_fluts:
                 area = 2*area
                 area = area + area_dict["flut_mux"]
-        elif self.updates in (1, 2, 3):
+        elif self.updates in (1, 2, 3, 10):
             area *= 4
             area += 3*area_dict["fmux_l1"]
             area += area_dict["fmux_l2"]
@@ -1692,7 +1697,7 @@ class _CarryChainPer(_SizableCircuit):
         self.initial_transistor_sizes["inv_" + self.name + "_1_nmos"] = 1
         self.initial_transistor_sizes["inv_" + self.name + "_1_pmos"] = 1
 
-        if self.updates in (1, 4):
+        if self.updates in (1, 4, 10):
             self.wire_names.append(utils.wire_name("cc_sout", "reg3_sel"))
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
         elif self.id == 2:
@@ -1726,7 +1731,7 @@ class _CarryChainPer(_SizableCircuit):
     def update_wires(self, width_dict, wire_lengths, wire_layers):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         # TODO: revise this line 
-        if self.updates in (1, 4):
+        if self.updates in (1, 4, 10):
             wire_lengths[utils.wire_name("cc_sout", "reg3_sel")] = width_dict["lut"]
             wire_layers[utils.wire_name("cc_sout", "reg3_sel")] = 0
         # if this is updats 2 and id 1 no need to create the wire from cc1 to cc2 becuase its already created in the carrychain class
@@ -2444,7 +2449,7 @@ class _GeneralBLEOutput(_SizableCircuit):
         print "Generating top-level " + self.name
         self.top_spice_path = top_level.generate_general_ble_output_top(self.name, self.use_tgate, self.use_fluts, 
                                                                         self.updates, self.input_size)
-        if self.updates in (1, 2, 3) and self.input_size == 2:
+        if self.updates in (1, 2, 3, 10) and self.input_size == 2:
             self.wire_names.append(utils.wire_name("fmux_l1_duplicate", "ff"))
             self.wire_names.append(utils.wire_name("ffin", "gbo2"))
         elif self.updates == 4 and self.input_size == 2:
@@ -2468,7 +2473,7 @@ class _GeneralBLEOutput(_SizableCircuit):
         wire_lengths["wire_" + self.name + "_driver"] = (width_dict["inv_" + self.name + "_1"] + width_dict["inv_" + self.name + "_1"])/4
 
         if self.input_size == 2:
-            if self.updates in (1, 2, 3):
+            if self.updates in (1, 2, 3, 10):
                 # TODO: revise all these lengths
                 wire_lengths[utils.wire_name("fmux_l1_duplicate", "ff")] = width_dict["ff"]*2
                 wire_lengths[utils.wire_name("ffin", "gbo2")] = width_dict["ff"]
@@ -2571,10 +2576,14 @@ class _LUTOutputLoad:
                 wire_lengths[utils.wire_name("lut", "flut_mux")] = width_dict["lut"]/2 * lut_ratio
             elif self.updates:
                 wire_lengths[utils.wire_name("lut", "fmux_l1")] = width_dict["lut"]/2 * lut_ratio
-                if self.updates in (1, 2, 3):
+                if self.updates in (1, 2, 3, 10):
                     wire_lengths[utils.wire_name("lut", "fmux_l1_duplicate")] = width_dict["lut"]/2 * lut_ratio
             if self.enable_carry_chain:
-                wire_lengths[utils.wire_name("lut", "carry_chain")] = width_dict["lut"]/2 * lut_ratio
+                #JUNIUS - calculate wire length for mode 10 (LUT skip)
+                if self.updates == 10:
+                    wire_lengths[utils.wire_name("lut", "flut_cc_mux")] = width_dict["lut"]/2 * lut_ratio - width_dict["flut_cc_mux"]
+                else:
+                    wire_lengths[utils.wire_name("lut", "carry_chain")] = width_dict["lut"]/2 * lut_ratio
         
         if not self.updates:
             # Update wire lengths
@@ -2585,6 +2594,46 @@ class _LUTOutputLoad:
         for wire in self.wire_names:
             wire_layers[wire] = 0
 
+#JUNIUS - add carry chain MUX at LUT output for LUT skipping (mode 10)
+class _flut_cc_mux(_SizableCircuit):
+    """
+    Used in updates mode 10, to skip the LUTs and connect directly to the adder-direct local input crossbar.
+    """
+    def __init__(self, use_tgate=False, use_finfet=False):
+        _SizableCircuit.__init__(self, "flut_cc_mux", use_tgate, use_finfet)
+        self.name = "flut_cc_mux"
+        self.mux = _MUX(self.name, self.use_tgate)
+
+    def generate(self, subcircuit_filename):
+        """
+        This function:
+        - Generates the 2:1 MUX
+        - Gets all transistor sizing and wire names needed for the MUX
+        - Adds a wire that feeds the mux the list of wire names
+        """
+        print("Generating " + self.name)
+
+        self.initial_transistor_sizes = self.mux.generate(subcircuit_filename)
+        self.transistor_names = self.mux.transistor_names
+        self.wire_names = self.mux.wire_names
+        self.wire_names.extend(load_subcircuits.generate_flut_cc_mux_output_load(subcircuit_filename))
+
+        return self.initial_transistor_sizes
+    
+    def generate_top(self):
+        print "Generating top-level " + self.name
+        self.top_spice_path = top_level.generate_flut_cc_mux_top(self.name, self.use_tgate)
+    
+    def update_area(self, area_dict, width_dict):
+        return self.mux.update_area(area_dict, width_dict)
+    
+    def update_wires(self, width_dict, wire_lengths, wire_layers, lut_ratio):
+        self.mux.update_wires(width_dict, wire_lengths, wire_layers, lut_ratio)
+        wire_lengths[utils.wire_name("flut_cc_mux", "carry_chain")] = width_dict[self.name] / 2
+
+        # Update layer
+        for name in self.wire_names:
+            wire_layers[name] = 0
 
 class _flut_mux(_SizableCircuit):
     """ TODO: add discreption"""
@@ -2624,7 +2673,7 @@ class _flut_mux(_SizableCircuit):
 
         # For Stratix10: generate the output loading of fmux2
         # For Stratix10 level3: generate the output loading of fmux1 and fmux3
-        if (self.updates in (1, 2, 3) and self.level == 2) or (self.updates == 4 and self.level == 3):
+        if (self.updates in (1, 2, 3, 10) and self.level == 2) or (self.updates == 4 and self.level == 3):
             self.wire_names.extend(load_subcircuits.generate_last_fmux_output_load(subcircuit_filename, self.level, self.updates))
         # generates a load containing the fmux_l2 and fmux_l2_duplicate and resturns the wire connecting them
         elif self.updates == 4 and self.level == 1:
@@ -2644,7 +2693,7 @@ class _flut_mux(_SizableCircuit):
         # in the load circuites created in the generate function
 
         # add wire connecting the flut output load to the flut mux level2
-        if self.updates in (1, 2, 3) and self.level == 1:
+        if self.updates in (1, 2, 3, 10) and self.level == 1:
             self.wire_names.append(utils.wire_name("fmux_l1", "fmux_l2"))
 
         # add the wire connecting the flut mux l2 and flut mux l3
@@ -2683,7 +2732,7 @@ class _flut_mux(_SizableCircuit):
         # two wires connecting the last level fmux and the 3:1 general ble output mux
         # and the input of the 3:1 register input select mux
         # TODO: update those wire lengths
-        if (self.updates in (1, 2, 3) and self.level == 2) or self.level == 3:
+        if (self.updates in (1, 2, 3, 10) and self.level == 2) or self.level == 3:
             wire_lengths[utils.wire_name(fmux1, "gbo3")] = 2*width_dict['ff']
             wire_lengths[utils.wire_name(fmux1, "ff3")] = width_dict['ff']
 
@@ -2870,6 +2919,11 @@ class _BLE(_CompoundCircuit):
             self.fmux_l3 = _flut_mux(specs.use_tgate, specs.use_finfet, specs.enable_carry_chain, specs.updates, 3)
             self.subcircuits[self.fmux_l3.name] = self.fmux_l3
 
+        #JUNIUS - add CC MUX for LUT skip (mode 10)
+        if specs.updates == 10:
+            self.flut_cc_mux = _flut_cc_mux(specs.use_tgate, specs.use_finfet)
+            self.subcircuits[self.flut_cc_mux.name] = self.flut_cc_mux
+
         # Create LUT object
         self.lut = _LUT(specs.K, specs.Rsel, specs.Rfb, specs.use_tgate, specs.use_finfet, specs.use_fluts, specs.min_tran_width, specs.updates)
         self.subcircuits[self.lut.name] = self.lut
@@ -2887,7 +2941,7 @@ class _BLE(_CompoundCircuit):
             self.subcircuits[self.ff.name] = self.ff
             self.ff3 = _FlipFlop('b', specs.use_tgate, specs.use_finfet, 3, specs.updates)
             self.subcircuits[self.ff3.name] = self.ff3
-        if specs.updates in (1, 2, 4):
+        if specs.updates in (1, 2, 4, 10):
             self.ff2 = _FlipFlop('a', specs.use_tgate, specs.use_finfet, 2, specs.updates)
             self.subcircuits[self.ff2.name] = self.ff2
         if specs.updates == 3:
@@ -2956,6 +3010,9 @@ class _BLE(_CompoundCircuit):
             ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + areas[self.ff3.name] + areas[self.ff4.name] + ble_output_area
         elif self.updates:
             ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + areas[self.ff2.name] + areas[self.ff3.name] + ble_output_area
+            #JUNIUS - add CC MUX areas
+            if self.updates == 10:
+                ble_area += areas[self.flut_cc_mux.name] * 4
         elif self.use_fluts:
             ble_area = areas[self.lut.name] + 2 * areas[self.ff.name] + ble_output_area
         else:
@@ -3116,7 +3173,7 @@ class _GeneralBLEOutputLoad:
 class _LocalRoutingWireLoad:
     """ Local routing wire load """
     
-    def __init__(self, I, N, K, num_ble_local_outputs, local_mux_l2_size, local_mux_implemented_size):
+    def __init__(self, I, N, K, num_ble_local_outputs, local_mux_l2_size, local_mux_implemented_size, Z = None, ad_local_mux_l2_size = None, ad_local_mux_implemented_size = None):
         # Name of this wire
         self.name = "local_routing_wire_load"
         # How many LUT inputs are we assuming are used in this logic cluster? (%)
@@ -3143,25 +3200,35 @@ class _LocalRoutingWireLoad:
         self.local_mux_l2_size = local_mux_l2_size
         # Local mux implemented size
         self.local_mux_implemented_size = local_mux_implemented_size
-    
+
+        # JUNIUS - add adder direct local mux L2 and implemented size (update mode 10)
+        self.Z = Z
+        self.ad_local_mux_l2_size = ad_local_mux_l2_size
+        self.ad_local_mux_implemented_size = ad_local_mux_implemented_size
 
     def generate(self, subcircuit_filename):
-        print "Generating local routing wire load"
+        print "Generating " + self.name
         # Compute load (number of on/partial/off per wire)
         self._compute_load()
+
+        # JUNIUS - compute load for adder_direct_local_mux (update mode 10)
+        nums_adder_direct = None
+        if not self.Z is None and not self.ad_local_mux_implemented_size is None and not self.ad_local_mux_l2_size is None:
+            nums_adder_direct = self._compute_load_ad()
+
         # Generate SPICE deck
-        self.wire_names = load_subcircuits.local_routing_load_generate(subcircuit_filename, self.on_inputs_per_wire, self.partial_inputs_per_wire, self.off_inputs_per_wire)
+        self.wire_names = load_subcircuits.local_routing_load_generate(subcircuit_filename, self.on_inputs_per_wire, self.partial_inputs_per_wire, self.off_inputs_per_wire, name=self.name, nums_adder_direct=nums_adder_direct)
     
     
     def update_wires(self, width_dict, wire_lengths, wire_layers, local_routing_wire_load_length):
         """ Update wire lengths and wire layers based on the width of things, obtained from width_dict. """
         
         # Update wire lengths
-        wire_lengths["wire_local_routing"] = width_dict["logic_cluster"]
+        wire_lengths["wire_" + self.name] = width_dict["logic_cluster"]
         if local_routing_wire_load_length !=0:
-            wire_lengths["wire_local_routing"] = local_routing_wire_load_length
+            wire_lengths["wire_" + self.name] = local_routing_wire_load_length
         # Update wire layers
-        wire_layers["wire_local_routing"] = 0
+        wire_layers["wire_" + self.name] = 0
     
         
     def print_details(self):
@@ -3195,7 +3262,36 @@ class _LocalRoutingWireLoad:
         
         # Number of off inputs is simply the difference
         self.off_inputs_per_wire = self.mux_inputs_per_wire - self.on_inputs_per_wire - self.partial_inputs_per_wire
+
+    # JUNIUS - add load computation for adder direct local mux (update mode 10)
+    def _compute_load_ad(self):
+        """ Compute the load on a local routing wire for adder direct local mux (number of on/partial/off) """
         
+        # The first thing we are going to compute is how many local mux inputs are connected to a local routing wire
+        # This is a function of local_mux size, N, K, I and Ofb
+        num_local_routing_wires = self.I+self.N*self.num_ble_local_outputs
+        mux_inputs_per_wire = self.ad_local_mux_implemented_size*self.N*self.Z/num_local_routing_wires
+        
+        # Now we compute how many "on" inputs are connected to each routing wire
+        # This is a funtion of lut input usage, number of lut inputs and number of local routing wires
+        num_local_muxes_used = self.lut_input_usage_assumption*self.N*self.Z
+        on_inputs_per_wire = int(num_local_muxes_used/num_local_routing_wires)
+        # We want to model for the case where at least one "on" input is connected to the local wire, so make sure it's at least 1
+        if on_inputs_per_wire < 1:
+            on_inputs_per_wire = 1
+        
+        # Now we compute how many partially on muxes are connected to each wire
+        # The number of partially on muxes is equal to (level2_size - 1)*num_local_muxes_used/num_local_routing_wire
+        # We can figure out the number of muxes used by using the "on" assumption and the number of local routing wires.
+        partial_inputs_per_wire = int((self.ad_local_mux_l2_size - 1.0)*num_local_muxes_used/num_local_routing_wires)
+        # Make it at least 1
+        if partial_inputs_per_wire < 1:
+            partial_inputs_per_wire = 1
+        
+        # Number of off inputs is simply the difference
+        off_inputs_per_wire = mux_inputs_per_wire - on_inputs_per_wire - partial_inputs_per_wire
+
+        return on_inputs_per_wire, partial_inputs_per_wire, off_inputs_per_wire
 
 class _LogicCluster(_CompoundCircuit):
     
@@ -3217,9 +3313,28 @@ class _LogicCluster(_CompoundCircuit):
         # Adding the local mux subcircuit to the subcircuits dictionary
         self.subcircuits[self.local_mux.name] = self.local_mux
 
+
+        #JUNIUS - add local crossbar for LUT skipping (update mode 10)
+        adder_direct_inputs = None
+        adder_direct_local_mux_l2_size = None
+        adder_direct_local_mux_implemented_size = None
+        if specs.updates == 10:
+            # Create local mux object
+            adder_direct_inputs = specs.Z
+            adder_direct_local_mux_size_required = int(specs.sneak_paths * specs.Fc_ad)
+            num_adder_direct_local_mux_per_tile = specs.N * adder_direct_inputs
+            self.adder_direct_local_mux = _LocalMUX(adder_direct_local_mux_size_required, num_adder_direct_local_mux_per_tile, specs.use_tgate, name = 'adder_direct_local_mux')
+            # Adding the local mux subcircuit to the subcircuits dictionary
+            self.subcircuits[self.adder_direct_local_mux.name] = self.adder_direct_local_mux
+
+            # set L2 and implemented size for local routing wire load
+            adder_direct_local_mux_l2_size = self.adder_direct_local_mux.level2_size
+            adder_direct_local_mux_implemented_size = self.adder_direct_local_mux.implemented_size
+            
         # Create local routing wire load object
         self.local_routing_wire_load = _LocalRoutingWireLoad(specs.I, specs.N, specs.K, 
-            specs.num_ble_local_outputs, self.local_mux.level2_size, self.local_mux.implemented_size)
+            specs.num_ble_local_outputs, self.local_mux.level2_size, self.local_mux.implemented_size,
+            adder_direct_inputs, adder_direct_local_mux_l2_size, adder_direct_local_mux_implemented_size)
         # Adding the local routing wire load to the loads dictionary
         self.loads[self.local_routing_wire_load.name] = self.local_routing_wire_load
 
@@ -3275,12 +3390,17 @@ class _LogicCluster(_CompoundCircuit):
 
         if not self.updates:
             self.local_ble_output_load.update_wires(width_dict, wire_lengths, wire_layers, ble_ic_dis)
-        
+        elif self.updates == 10:
+            #JUNIUS - update adder direct local MUX in LUT skip (mode 10)
+            self.adder_direct_local_mux.update_wires(width_dict, wire_lengths, wire_layers, ic_ratio)        
         
     def print_details(self, report_file):
         """ Print the details of all the subcircuits """
 
         self.local_mux.print_details(report_file)
+        #JUNIUS - print details for LUT skip (mode 10)
+        if self.updates == 10:
+            self.adder_direct_local_mux.print_details(report_file)
         self.ble.print_details(report_file)
     
        
@@ -5876,6 +5996,9 @@ class FPGA:
         self.subcircuits[self.cb_mux.name] = self.cb_mux
         # Local Interconnect Mux Subcircuit
         self.subcircuits[self.logic_cluster.local_mux.name] = self.logic_cluster.local_mux
+        #JUNIUS - Adder Direct Local Interconnect Mux Subcircuit for LUT skip (mode 10)
+        if self.updates == 10:
+            self.subcircuits[self.logic_cluster.adder_direct_local_mux.name] = self.logic_cluster.adder_direct_local_mux
         # General Output Mux Subcircuit
         self.subcircuits[self.logic_cluster.ble.general_output.name] = self.logic_cluster.ble.general_output
         # LUT Subcircuit
@@ -5902,6 +6025,9 @@ class FPGA:
 
         # Carry Chain Subcircuits
         if self.specs.enable_carry_chain:
+            #JUNIUS - add FLUT CC MUX for LUT skip (mode 10)
+            if self.updates == 10:
+                self.subcircuits[self.logic_cluster.ble.flut_cc_mux.name] = self.logic_cluster.ble.flut_cc_mux
             # Carry Chain Subcircuit, Cin to Cout
             self.subcircuits[self.carrychain.name] = self.carrychain
             # Carry Chain Pereferal Subcircuit, Cin to Sout
@@ -5923,7 +6049,7 @@ class FPGA:
             self.subcircuits[self.carrychaininter2.name] = self.carrychaininter2 
 
         # Add the input select mux of the ff to the circuits that needs delay calculations
-        if self.updates in (1, 2, 4):
+        if self.updates in (1, 2, 4, 10):
             self.subcircuits[self.logic_cluster.ble.ff2.input_mux.name] = self.logic_cluster.ble.ff2.input_mux
             self.subcircuits[self.logic_cluster.ble.ff3.input_mux.name] = self.logic_cluster.ble.ff3.input_mux
         elif self.updates == 3:
@@ -6118,6 +6244,12 @@ class FPGA:
             self.area_dict["local_mux_total"] = local_mux_area
             self.width_dict["local_mux_total"] = math.sqrt(local_mux_area)
             
+            #JUNIUS - calculate total area of adder direct local muxes in LUT skip (mode 10)
+            if self.updates == 10:
+                adder_direct_local_mux_area = self.logic_cluster.adder_direct_local_mux.num_per_tile*self.area_dict[self.logic_cluster.adder_direct_local_mux.name + "_sram"]
+                self.area_dict["adder_direct_local_mux_total"] = adder_direct_local_mux_area
+                self.width_dict["adder_direct_local_mux_total"] = math.sqrt(adder_direct_local_mux_area)
+
             # Calculate total lut area
             lut_area = self.specs.N*self.area_dict["lut_and_drivers"]
             self.area_dict["lut_total"] = lut_area
@@ -6156,7 +6288,9 @@ class FPGA:
 
             if self.updates in (2, 3):
                 cluster_area += self.area_dict[self.carrychaininter2.name]
-
+            elif self.updates == 10:
+                #JUNIUS - add adder direct local MUX to cluster area for LUT skip (mode 10)
+                cluster_area += self.area_dict["adder_direct_local_mux_total"]
         else:
 
             # lets do it assuming a given order for the wire updates and no minimum width on sram size.
@@ -6211,7 +6345,13 @@ class FPGA:
 
 
             cluster_area = local_mux_area + local_mux_sram_area + ffableout_area_total + cc_area_total + lut_area + lut_area_sram
-
+            #JUNIUS - add adder direct local MUX to cluster area, and update adder direct local mux area for LUT skip (mode 10)
+            if self.updates == 10:
+                adder_direct_local_mux_area = self.logic_cluster.adder_direct_local_mux.num_per_tile*self.area_dict[self.logic_cluster.adder_direct_local_mux.name]            
+                adder_direct_local_mux_sram_area = self.logic_cluster.adder_direct_local_mux.num_per_tile* (self.area_dict[self.logic_cluster.adder_direct_local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.adder_direct_local_mux.name])
+                cluster_area += adder_direct_local_mux_area + adder_direct_local_mux_sram_area
+                self.area_dict["adder_direct_local_mux_total"] = adder_direct_local_mux_area + adder_direct_local_mux_area
+                self.width_dict["adder_direct_local_mux_total"] = math.sqrt(adder_direct_local_mux_area + adder_direct_local_mux_area)
 
             self.area_dict["cc_area_total"] = cc_area_total
             self.width_dict["cc_area_total"] = math.sqrt(cc_area_total)
@@ -6430,14 +6570,25 @@ class FPGA:
 
         self.w_cb = (self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name])/(self.num_cb_stripes * self.lb_height)
         self.w_sb = (self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name])/(self.num_sb_stripes * self.lb_height)
-        self.w_ic = (self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name])/(self.num_ic_stripes * self.lb_height)
+
+        #JUNIUS - factor in area of adder direct local MUX in LUT skip (mode 10) into interconnect
+        ic_area = self.logic_cluster.local_mux.num_per_tile*self.area_dict[self.logic_cluster.local_mux.name]
+        if self.updates == 10:
+            ic_area += self.logic_cluster.adder_direct_local_mux.num_per_tile*self.area_dict[self.logic_cluster.adder_direct_local_mux.name]
+        self.w_ic = (ic_area)/(self.num_ic_stripes * self.lb_height)
+
         self.w_lut = (self.specs.N*self.area_dict["lut_and_drivers"] - self.specs.N*(2**self.specs.K)*self.area_dict["sram"])/(self.num_lut_stripes * self.lb_height)
         #if self.specs.enable_carry_chain == 1:
         self.w_cc = self.area_dict["cc_area_total"]/(self.num_cc_stripes * self.lb_height)
         self.w_ffble = self.area_dict["ffableout_area_total"]/(self.num_ffble_stripes * self.lb_height)
         self.w_scb = (self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name + "_sram"] - self.cb_mux.num_per_tile*self.area_dict[self.cb_mux.name])/(self.num_cbs_stripes * self.lb_height)
         self.w_ssb = (self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name + "_sram"] - self.sb_mux.num_per_tile*self.area_dict[self.sb_mux.name])/(self.num_sbs_stripes * self.lb_height)
-        self.w_sic = (self.logic_cluster.local_mux.num_per_tile* (self.area_dict[self.logic_cluster.local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.local_mux.name]))/(self.num_ics_stripes * self.lb_height)
+        
+        #JUNIUS - factor in area of adder direct local MUX in LUT skip (mode 10) into interconnect
+        sic_area = self.logic_cluster.local_mux.num_per_tile * (self.area_dict[self.logic_cluster.local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.local_mux.name])
+        if self.updates == 10:
+            sic_area += self.logic_cluster.adder_direct_local_mux.num_per_tile * (self.area_dict[self.logic_cluster.adder_direct_local_mux.name + "_sram"] - self.area_dict[self.logic_cluster.adder_direct_local_mux.name])
+        self.w_sic = (sic_area)/(self.num_ics_stripes * self.lb_height)
         self.w_slut = (self.specs.N*(2**self.specs.K)*self.area_dict["sram"]) / (self.num_luts_stripes * self.lb_height)
 
         # create a temporary dictionary of stripe width to use in distance calculation:
@@ -6846,7 +6997,7 @@ class FPGA:
                 # fmux_l2 for inputs a to d, since those inputs don't control the muxes select signals
                 # input f delay will be only the delay of switching the ptran of the level 2 fmux
                 # TODO: add to the delay dictionary the delay of a to d without the fmux delays might be useful
-                if self.updates in (1, 2, 3): 
+                if self.updates in (1, 2, 3, 10): 
                     if lut_input_name != 'e' and lut_input_name != 'f' :
                         tfall += self.logic_cluster.ble.fmux.tfall + self.logic_cluster.ble.fmux_l2.tfall
                         trise += self.logic_cluster.ble.fmux.trise + self.logic_cluster.ble.fmux_l2.trise
@@ -7908,7 +8059,7 @@ class FPGA:
                 subcircuit == self.carrychaininter2): 
                 return False
         
-        #if self.updates in (1, 2, 4):
+        #if self.updates in (1, 2, 4, 10):
         #    if (subcircuit == self.logic_cluster.ble.ff2.input_mux or
         #        subcircuit == self.logic_cluster.ble.ff3.input_mux):
         #        return False
